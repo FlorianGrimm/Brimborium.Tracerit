@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="src/**/*" />
+    <Compile Remove="public/**/*" />
+    <Compile Remove="node_modules/**/*" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src/**/*" />
+    <None Include="public/**/*" />
+    <None Include="node_modules/**/*" />
+  </ItemGroup>
+</Project>
