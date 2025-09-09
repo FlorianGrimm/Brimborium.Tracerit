@@ -31,7 +31,7 @@ public partial class Program {
                             serviceVersion: serviceVersion))
                         .WithTracing(tracing => tracing
                             .AddSource(serviceName)
-                            .AddAspNetCoreInstrumentation()
+                            //.AddAspNetCoreInstrumentation()
                             .AddConsoleExporter())
                         .WithMetrics(metrics => metrics
                             .AddMeter(serviceName)

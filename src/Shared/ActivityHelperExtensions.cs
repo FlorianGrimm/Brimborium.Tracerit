@@ -12,6 +12,7 @@ namespace OpenTelemetry.Trace;
 /// </summary>
 internal static class ActivityHelperExtensions
 {
+#if WEICHEI
     /// <summary>
     /// Gets the status of activity execution.
     /// Activity class in .NET does not support 'Status'.
@@ -60,7 +61,7 @@ internal static class ActivityHelperExtensions
 
         return foundStatusCode;
     }
-
+#endif
     /// <summary>
     /// Gets the value of a specific tag on an <see cref="Activity"/>.
     /// </summary>

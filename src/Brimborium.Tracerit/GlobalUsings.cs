@@ -20,3 +20,4 @@ global using global::Brimborium.Tracerit.Logger;
 global using global::Brimborium.Tracerit.Service;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Brimborium.Tracerit.Test")]
+//[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Brimborium.Tracerit.AspNetCore")]

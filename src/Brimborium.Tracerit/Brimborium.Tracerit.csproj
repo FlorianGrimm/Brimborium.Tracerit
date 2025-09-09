@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -6,37 +6,53 @@
     <RootNamespace>Brimborium.Tracerit</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
-    <PackageReference Include="Microsoft.Extensions.Options" />
-    <!--
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
-    <PackageReference Include="System.Net.Http" />
+  <!--
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
     -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
+    <!--
+        <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+        <PackageReference Include="System.Net.Http" />
+        -->
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(RepoRoot)\src\Shared\ActivityHelperExtensions.cs" Link="Includes\ActivityHelperExtensions.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\ActivityInstrumentationHelper.cs" Link="Includes\ActivityInstrumentationHelper.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\AssemblyVersionExtensions.cs" Link="Includes\AssemblyVersionExtensions.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\Configuration\*.cs" Link="Includes\Configuration\%(Filename).cs" />
     <Compile Include="$(RepoRoot)\src\Shared\DiagnosticDefinitions.cs" Link="Includes\DiagnosticDefinitions.cs" />
-    <Compile Include="$(RepoRoot)\src\Shared\EnvironmentVariables\*.cs" Link="Includes\EnvironmentVariables\%(Filename).cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\DiagnosticSourceListener.cs" Link="Includes\DiagnosticSourceListener.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\DiagnosticSourceSubscriber.cs" Link="Includes\DiagnosticSourceSubscriber.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\ExceptionExtensions.cs" Link="Includes\ExceptionExtensions.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\GrpcStatusCanonicalCode.cs" Link="Includes\GrpcStatusCanonicalCode.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\GrpcTagHelper.cs" Link="Includes\GrpcTagHelper.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\Guard.cs" Link="Includes\Guard.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\ListenerHandler.cs" Link="Includes\ListenerHandler.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\MathHelper.cs" Link="Includes\MathHelper.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\Metrics\Base2ExponentialBucketHistogramHelper.cs" Link="Includes\Metrics\Base2ExponentialBucketHistogramHelper.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\NullableAttributes.cs" Link="Includes\NullableAttributes.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\Options\*.cs" Link="Includes\Options\%(Filename).cs" />
     <Compile Include="$(RepoRoot)\src\Shared\PeriodicExportingMetricReaderHelper.cs" Link="Includes\PeriodicExportingMetricReaderHelper.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\PropertyFetcher.cs" Link="Includes\PropertyFetcher.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\RedactionHelper.cs" Link="Includes\RedactionHelper.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\RequestDataHelper.cs" Link="Includes\RequestDataHelper.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\ResourceSemanticConventions.cs" Link="Includes\ResourceSemanticConventions.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\SemanticConventions.cs" Link="Includes\SemanticConventions.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\Shims\Lock.cs" Link="Includes\Shims\Lock.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\Shims\NullableAttributes.cs" Link="Includes\Shims\NullableAttributes.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\SpanAttributeConstants.cs" Link="Includes\SpanAttributeConstants.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\SpanHelper.cs" Link="Includes\SpanHelper.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\StatusHelper.cs" Link="Includes\StatusHelper.cs" />
     <Compile Include="$(RepoRoot)\src\Shared\TagWriter\*.cs" Link="Includes\TagWriter\%(Filename).cs" />
     <Compile Include="$(RepoRoot)\src\Shared\ThreadSafeRandom.cs" Link="Includes\ThreadSafeRandom.cs" />
+    <Compile Include="$(RepoRoot)\src\Shared\EnvironmentVariables\*.cs" Link="Includes\EnvironmentVariables\%(Filename).cs" />
   </ItemGroup>
 </Project>

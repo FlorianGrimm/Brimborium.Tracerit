@@ -6,7 +6,7 @@ namespace OpenTelemetry.Trace;
 /// <summary>
 /// Defines well-known span attribute keys.
 /// </summary>
-internal static class SpanAttributeConstants
+/*internal*/public static class SpanAttributeConstants
 {
     public const string StatusCodeKey = "otel.status_code";
     public const string StatusDescriptionKey = "otel.status_description";

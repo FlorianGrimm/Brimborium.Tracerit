@@ -52,6 +52,7 @@ public static class ActivityExtensions
         }
     }
 
+#if WEICHEI
     /// <summary>
     /// Gets the status of activity execution.
     /// </summary>
@@ -86,6 +87,7 @@ public static class ActivityExtensions
 
         return Status.Unset;
     }
+#endif
 
     /// <summary>
     /// Adds an <see cref="ActivityEvent"/>  containing information from the specified exception.
