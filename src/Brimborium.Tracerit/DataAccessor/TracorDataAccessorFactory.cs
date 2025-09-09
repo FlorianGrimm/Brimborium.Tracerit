@@ -31,6 +31,16 @@ public sealed class BoundAccessorTracorDataTyped<TValue> : ITracorData<TValue> {
         this._Value = value;
     }
 
+    public object? this[string propertyName] { 
+        get {
+            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
+                return propertyValue;
+            } else {
+                return null;
+            }
+        }
+    }
+
     public bool TryGetOriginalValue([MaybeNullWhen(false)] out TValue value) {
         value = this._Value;
         return true;

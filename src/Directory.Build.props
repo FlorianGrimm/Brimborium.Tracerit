@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="$([System.IO.Path]::Combine($(MSBuildThisFileDirectory), '..', 'Directory.Build.props'))" />
+</Project>

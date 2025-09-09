@@ -4,22 +4,26 @@ namespace Brimborium.Tracerit.Service;
 public sealed class TesttimeTracorValidator : ITracorValidator {
     private ImmutableArray<ITracorValidatorPath> _ListValidatorPath = ImmutableArray<ITracorValidatorPath>.Empty;
     private readonly Lock _LockListTracorStepPath = new();
+    private readonly ILoggerFactory _LoggerFactory;
+    private ILogger? _LoggerCondition;
+    private LoggerUtility? _LoggerUtility;
 
     public ImmutableDictionary<Type, ITracorDataAccessorFactory> TracorDataAccessorByType { get; set; } = ImmutableDictionary<Type, ITracorDataAccessorFactory>.Empty;
     public ImmutableArray<ITracorDataAccessorFactory> ListTracorDataAccessor { get; set; } = ImmutableArray<ITracorDataAccessorFactory>.Empty;
 
-    public TesttimeTracorValidator() {
+    public TesttimeTracorValidator(ILoggerFactory loggerFactory) {
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<string>());
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<int>());
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<bool>());
         this.AddTracorDataAccessorByType(new TracorDataAccessorFactory<Uri>(new SystemUriTracorDataAccessor()));
         this.AddTracorDataAccessorByType(new JsonDocumentTracorDataFactor());
-
+        this._LoggerFactory = loggerFactory;
     }
 
     public TesttimeTracorValidator(
-        Microsoft.Extensions.Options.IOptions<TracorValidatorOptions> options
-        ) :this() {
+        Microsoft.Extensions.Options.IOptions<TracorValidatorOptions> options,
+        ILoggerFactory loggerFactory
+        ) : this(loggerFactory) {
         this.AddOptions(options.Value);
     }
 
@@ -49,9 +53,13 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
     }
 
     public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState) {
+        if (this._LoggerCondition is null || this._LoggerUtility is null) {
+            this._LoggerCondition ??= this._LoggerFactory.CreateLogger(typeof(AlwaysCondition).Namespace!);
+            this._LoggerUtility ??= new LoggerUtility(this._LoggerCondition);
+        }
         using (this._LockListTracorStepPath.EnterScope()) {
             TracorValidatorPathRemover remover = new(this);
-            var result = new TracorValidatorPath(step, globalState, remover);
+            var result = new TracorValidatorPath(step, globalState, remover, this._LoggerUtility);
             remover.Child = result;
             this._ListValidatorPath = this._ListValidatorPath.Add(result);
             return result;

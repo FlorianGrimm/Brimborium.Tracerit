@@ -19,3 +19,4 @@ global using global::Brimborium.Tracerit.Expression;
 global using global::Brimborium.Tracerit.Logger;
 global using global::Brimborium.Tracerit.Service;
 
+global using static global::Brimborium.Tracerit.TracorExtension;

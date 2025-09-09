@@ -21,10 +21,10 @@ public sealed class JsonDocumentTracorData
     : ITracorData<System.Text.Json.JsonDocument> {
     private readonly System.Text.Json.JsonDocument _Value;
 
-    public string? this[string name] {
+    public object? this[string propertyName] { 
         get {
-            if (this._Value.RootElement.TryGetProperty(name, out var result)) {
-                return result.ToString();
+            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
+                return propertyValue;
             } else {
                 return null;
             }

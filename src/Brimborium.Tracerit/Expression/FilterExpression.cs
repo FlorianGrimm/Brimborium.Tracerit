@@ -55,5 +55,5 @@ public static class FilterExpressionExtension{
         string? label = default,
         params IValidatorExpression[] listChild
         ) 
-        => new FilterExpression<T>(label, condition, listChild);
+        => new(label, condition, listChild);
 }

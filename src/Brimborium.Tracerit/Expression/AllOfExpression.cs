@@ -1,8 +1,17 @@
 ﻿namespace Brimborium.Tracerit.Expression;
 
+/// <summary>
+/// Represents a validator expression that requires all child expressions to be successfully matched.
+/// All child expressions must be satisfied for this expression to be considered successful.
+/// </summary>
 public sealed class AllOfExpression : ValidatorExpression {
     private ImmutableArray<IValidatorExpression> _ListChild = ImmutableArray<IValidatorExpression>.Empty;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AllOfExpression"/> class.
+    /// </summary>
+    /// <param name="label">Optional label for this all-of expression.</param>
+    /// <param name="listChild">The child validator expressions that must all be matched.</param>
     public AllOfExpression(
         string? label = default,
         params IValidatorExpression[] listChild
@@ -10,6 +19,11 @@ public sealed class AllOfExpression : ValidatorExpression {
         if (0 < listChild.Length) { this._ListChild = listChild.ToImmutableArray(); }
     }
 
+    /// <summary>
+    /// Adds a validator expression to the collection of expressions that must all be matched.
+    /// </summary>
+    /// <param name="step">The validator expression to add.</param>
+    /// <returns>This <see cref="AllOfExpression"/> instance for method chaining.</returns>
     public AllOfExpression Add(
         IValidatorExpression step) {
         using (this._Lock.EnterScope()) {

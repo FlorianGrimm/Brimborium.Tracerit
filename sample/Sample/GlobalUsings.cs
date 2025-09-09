@@ -19,4 +19,9 @@ global using global::Microsoft.Extensions.FileProviders;
 global using global::Microsoft.Extensions.Hosting;
 global using global::Microsoft.Extensions.Options;
 
+global using global::OpenTelemetry.Logs;
+global using global::OpenTelemetry.Metrics;
+global using global::OpenTelemetry.Resources;
+global using global::OpenTelemetry.Trace;
+
 global using global::Sample.WebApp.Services;

@@ -6,7 +6,7 @@ internal sealed class TesttimeTracor : ITracor {
 
     public TesttimeTracor(
         TesttimeTracorValidator tracorTestor,
-        ILogger<TesttimeTracor> logger) {
+        LazyCreatedLogger<TesttimeTracor> logger) {
         this._Validator = tracorTestor;
         this._Logger = logger;
     }

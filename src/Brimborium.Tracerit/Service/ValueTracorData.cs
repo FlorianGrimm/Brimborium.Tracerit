@@ -6,6 +6,17 @@ public sealed class ValueTracorData<TValue> : ITracorData<TValue> {
     public ValueTracorData(TValue value) {
         this._Value = value;
     }
+
+    public object? this[string propertyName] { 
+        get {
+            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
+                return propertyValue;
+            } else {
+                return null;
+            }
+        }
+    }
+
     public List<string> GetListPropertyName() {
         return new List<string> { "Value" };
     }

@@ -4,14 +4,16 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
     private readonly Lock _Lock = new();
     private readonly IValidatorExpression _Step;
     private readonly IDisposable _OnDispose;
+    private readonly LoggerUtility _LoggerUtility;
     private readonly TracorValidatorPathModifications _Modifications;
     private ImmutableArray<OnTraceStepExecutionState> _ListRunningExecutionState;
     private readonly List<OnTraceStepExecutionState> _ListFinishedExecutionState = new();
     private TaskCompletionSource<TracorValidatorPath> _TcsFinishedExecutionState = new();
 
-    public TracorValidatorPath(IValidatorExpression step, TracorGlobalState? globalState, IDisposable onDispose) {
+    public TracorValidatorPath(IValidatorExpression step, TracorGlobalState? globalState, IDisposable onDispose, LoggerUtility loggerUtility) {
         this._Step = step;
         this._OnDispose = onDispose;
+        this._LoggerUtility = loggerUtility;
         this._ListRunningExecutionState = [new OnTraceStepExecutionState(globalState)];
         this._Modifications = new TracorValidatorPathModifications(this);
     }
@@ -24,7 +26,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         var rootIdentifier = this._RootIdentifier ??= (new ValidatorStepIdentifier(0, this._Step.GetInstanceIndex()));
         var listRunningExecutionState = this._ListRunningExecutionState;
         foreach (var runningContextState in listRunningExecutionState) {
-            var currentContext = new OnTraceStepCurrentContext(rootIdentifier, runningContextState, this._Modifications);
+            var currentContext = new OnTraceStepCurrentContext(rootIdentifier, runningContextState, this._Modifications, this._LoggerUtility);
             var childResult = this._Step.OnTrace(callee, tracorData, currentContext);
             if (OnTraceResult.Successfull == childResult) {
                 this.HandleFinish(runningContextState);
@@ -184,19 +186,4 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
     public void Dispose() {
         this._OnDispose.Dispose();
     }
-}
-
-public sealed class TracorValidatorPathModifications {
-    private TracorValidatorPath _TracorValidatorPath;
-
-    internal TracorValidatorPathModifications(TracorValidatorPath tracorValidatorPath) {
-        this._TracorValidatorPath = tracorValidatorPath;
-    }
-
-    internal void AddFork(OnTraceStepExecutionState before, OnTraceStepExecutionState value) {
-        this._TracorValidatorPath.AddFork(before, value);
-    }
-
-    internal OnTraceStepExecutionState? TryGetFork(TracorForkState forkState)
-        => this._TracorValidatorPath.TryGetFork(forkState);
 }

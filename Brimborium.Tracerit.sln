@@ -9,6 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brimborium.Tracerit", "src\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution items", "{074A59B8-9848-4495-8FFC-94EB166679C5}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
@@ -104,5 +105,8 @@ Global
 		{1C5CDF6F-5292-4BC4-98C7-0136AE449C15} = {4F9DEAE5-078F-E77A-2E4A-FEB6FFE226FF}
 		{3CEB064E-6ECD-4C7A-B8C5-6392A7D8803A} = {4F9DEAE5-078F-E77A-2E4A-FEB6FFE226FF}
 		{20E16099-7CFB-40E1-8420-10E3B6F4FB62} = {4F9DEAE5-078F-E77A-2E4A-FEB6FFE226FF}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2A939762-DD33-4BB2-95E5-62B2B097B662}
 	EndGlobalSection
 EndGlobal

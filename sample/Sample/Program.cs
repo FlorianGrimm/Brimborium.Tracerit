@@ -19,6 +19,36 @@ public partial class Program {
         builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
             .AddNegotiate();
 
+
+        {
+            var serviceName = SampleInstrumentation.ActivitySourceName;
+            var serviceVersion = SampleInstrumentation.ActivitySourceVersion;
+            builder.Services.AddOpenTelemetry()
+                .ConfigureResource(
+                    resource => resource
+                        .AddService(
+                            serviceName: serviceName,
+                            serviceVersion: serviceVersion))
+                        .WithTracing(tracing => tracing
+                            .AddSource(serviceName)
+                            .AddAspNetCoreInstrumentation()
+                            .AddConsoleExporter())
+                        .WithMetrics(metrics => metrics
+                            .AddMeter(serviceName)
+                            .AddConsoleExporter());
+
+            builder.Logging.AddOpenTelemetry(
+                options => options
+                    .SetResourceBuilder(
+                        ResourceBuilder.CreateDefault()
+                            .AddService(
+                                serviceName: serviceName,
+                                serviceVersion: serviceVersion))
+                    .AddConsoleExporter());
+
+            builder.Services.AddSingleton<SampleInstrumentation>();
+        }
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.

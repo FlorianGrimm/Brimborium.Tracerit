@@ -12,13 +12,17 @@ public sealed class CalleeCondition : IExpressionCondition {
     }
 
     public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
-        if (this._Expected.Equals(callee)) {
+        bool resultCallee = this._Expected.Equals(callee);
+        currentContext.LoggerUtility.LogCondition(callee, resultCallee, callee.ToString());
+        if (resultCallee) {
             if (this._And is { } and) {
-                return and.DoesMatch(callee, tracorData, currentContext);
+                var resultCondition = and.DoesMatch(callee, tracorData, currentContext);
+                return resultCondition;
             } else {
                 return true;
             }
+        } else {
+            return false;
         }
-        return false;
     }
 }
