@@ -1,13 +1,13 @@
 ﻿namespace Brimborium.Tracerit.Logger;
 
 public sealed class LoggerTracorData : ITracorData {
-    private readonly KeyValuePair<string, object?>[] _Arguments;
+    private readonly List<KeyValuePair<string, object?>> _Arguments;
 
-    public LoggerTracorData(KeyValuePair<string, object?>[] arguments) {
-        this._Arguments = arguments;
+    public LoggerTracorData() {
+        this._Arguments = new (128);
     }
 
-    public KeyValuePair<string, object?>[] Arguments => this._Arguments;
+    public List<KeyValuePair<string, object?>> Arguments => this._Arguments;
 
     public object? this[string propertyName] { 
         get {

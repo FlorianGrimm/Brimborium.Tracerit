@@ -99,8 +99,10 @@ public sealed class TracorLogger : ILogger {
         }
 
         //string formatted = formatter(state, exception);
+        LoggerTracorData loggerTracorData = new();
 
-        var arguments = GetProperties(
+        ConvertProperties(
+            loggerTracorData,
             this._Id,
             activityTraceId,
             activitySpanId,
@@ -110,13 +112,14 @@ public sealed class TracorLogger : ILogger {
             exception);
         this._Tracor.Trace(
             new TracorIdentitfier(this._Id, eventId.ToString()),
-            new LoggerTracorData(arguments)
+            loggerTracorData
             );
     }
     private static ExceptionInfo GetExceptionInfo(Exception? exception) {
         return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
     }
-    private static KeyValuePair<string, object?>[] GetProperties(
+    private static void ConvertProperties(
+        LoggerTracorData loggerTracorData,
         TracorIdentitfier id,
         string activityTraceId,
         string activitySpanId,
@@ -124,33 +127,22 @@ public sealed class TracorLogger : ILogger {
         EventId eventId,
         object? state,
         Exception? exception) {
-        if (state is IReadOnlyList<KeyValuePair<string, object?>> keyValuePairs) {
-            KeyValuePair<string, object?>[] arguments;
-            var count = keyValuePairs.Count;
-            if (exception is { }) {
-                arguments = new KeyValuePair<string, object?>[6 + count + 4];
-                var exceptionInfo = GetExceptionInfo(exception);
-                arguments[count + 3] = new KeyValuePair<string, object?>("TypeName", exceptionInfo.TypeName);
-                arguments[count + 3 + 1] = new KeyValuePair<string, object?>("Message", exceptionInfo.Message);
-                arguments[count + 3 + 2] = new KeyValuePair<string, object?>("HResult", exceptionInfo.HResult.ToString());
-                arguments[count + 3 + 3] = new KeyValuePair<string, object?>("VerboseMessage", exceptionInfo.VerboseMessage);
-            } else {
-                arguments = new KeyValuePair<string, object?>[6 + count];
-            }
-            arguments[0] = new KeyValuePair<string, object?>("Source", id.Callee);
-            arguments[1] = new KeyValuePair<string, object?>("Activity.TraceId", activityTraceId);
-            arguments[2] = new KeyValuePair<string, object?>("Activity.SpanId", activitySpanId);
-            arguments[3] = new KeyValuePair<string, object?>("Activity.TraceFlags", activityTraceFlags);
-            arguments[4] = new KeyValuePair<string, object?>("Event.Id", eventId.Id);
-            arguments[5] = new KeyValuePair<string, object?>("Event.Name", eventId.Name);
-
-            for (var i = 0; i < count; i++) {
-                var keyValuePair = keyValuePairs[i];
-                arguments[i + 3] = keyValuePair;
-            }
-            return arguments;
+        // TODO: key from otel
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Source", id.Callee));
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceId", activityTraceId));
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.SpanId", activitySpanId));
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceFlags", activityTraceFlags));
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Id", eventId.Id));
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Name", eventId.Name));
+        if (exception is { }) {
+            var exceptionInfo = GetExceptionInfo(exception);
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("TypeName", exceptionInfo.TypeName));
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Message", exceptionInfo.Message));
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("HResult", exceptionInfo.HResult.ToString()));
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("VerboseMessage", exceptionInfo.VerboseMessage));
         }
-
-        return Array.Empty<KeyValuePair<string, object?>>();
+        if (state is IReadOnlyList<KeyValuePair<string, object?>> keyValuePairs) {
+            loggerTracorData.Arguments.AddRange(keyValuePairs);
+        }
     }
 }
