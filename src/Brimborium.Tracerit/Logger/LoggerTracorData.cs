@@ -1,15 +1,25 @@
-﻿namespace Brimborium.Tracerit.Logger;
+﻿using Brimborium.Tracerit.Utility;
 
-public sealed class LoggerTracorData : ITracorData {
+namespace Brimborium.Tracerit.Logger;
+
+public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
     private readonly List<KeyValuePair<string, object?>> _Arguments;
 
-    public LoggerTracorData() {
-        this._Arguments = new (128);
+    public LoggerTracorData(IReferenceCountPool? referenceCountPool) : base(referenceCountPool) {
+        this._Arguments = new(128);
     }
+
+    protected override void ResetState() {
+        this.Arguments.Clear();
+    }
+
+    protected override bool IsStateReseted() => 0 == this.Arguments.Count && this.Arguments.Capacity <= 128;
 
     public List<KeyValuePair<string, object?>> Arguments => this._Arguments;
 
-    public object? this[string propertyName] { 
+    public int Index { get; set; }
+
+    public object? this[string propertyName] {
         get {
             if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
                 return propertyValue;

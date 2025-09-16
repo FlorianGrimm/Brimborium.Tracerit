@@ -5,6 +5,19 @@
 /// </summary>
 public static class TracorServiceBuilderExtension {
     /// <summary>
+    /// Adds runtime or testtime Tracor services to the service collection.
+    /// </summary>
+    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <returns>The service collection for method chaining.</returns>
+    public static IServiceCollection AddTracor(this IServiceCollection servicebuilder, bool addTestTimeServices) {
+        if (addTestTimeServices) {
+            return servicebuilder.AddTesttimeTracor();
+        } else { 
+            return servicebuilder.AddRuntimeTracor();
+        }
+    }
+
+    /// <summary>
     /// Adds runtime Tracor services to the service collection. Runtime Tracor is optimized for production use with minimal overhead.
     /// </summary>
     /// <param name="servicebuilder">The service collection to add services to.</param>

@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
-#if EXPOSE_EXPERIMENTAL_FEATURES && NET
 using System.Diagnostics.CodeAnalysis;
-#endif
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Internal;
@@ -154,7 +152,6 @@ public sealed class LogRecord
         set => this.ILoggerData.TraceState = value;
     }
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Gets or sets the log category name.
     /// </summary>
@@ -164,11 +161,6 @@ public sealed class LogRecord
     /// Setting a new value for <see cref="CategoryName"/> will result in a new
     /// <see cref="Logger"/> being set.
     /// </remarks>
-#else
-    /// <summary>
-    /// Gets or sets the log category name.
-    /// </summary>
-#endif
     public string? CategoryName
     {
         get => this.Logger.Name;
@@ -349,51 +341,27 @@ public sealed class LogRecord
         set => this.ILoggerData.Exception = value;
     }
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Gets or sets the original string representation of the severity as it is
     /// known at the source.
     /// </summary>
     /// <remarks><inheritdoc cref="Sdk.CreateLoggerProviderBuilder" path="/remarks"/></remarks>
-#if NET
-    [Experimental(DiagnosticDefinitions.LogsBridgeExperimentalApi, UrlFormat = DiagnosticDefinitions.ExperimentalApiUrlFormat)]
-#endif
-    public
-#else
-    /// <summary>
-    /// Gets or sets the original string representation of the severity as it is
-    /// known at the source.
-    /// </summary>
-    internal
-#endif
-    string? SeverityText
+    public    string? SeverityText
     {
         get => this.Data.SeverityText;
         set => this.Data.SeverityText = value;
     }
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Gets or sets the log <see cref="LogRecordSeverity"/>.
     /// </summary>
     /// <remarks><inheritdoc cref="Sdk.CreateLoggerProviderBuilder" path="/remarks"/></remarks>
-#if NET
-    [Experimental(DiagnosticDefinitions.LogsBridgeExperimentalApi, UrlFormat = DiagnosticDefinitions.ExperimentalApiUrlFormat)]
-#endif
-    public
-#else
-    /// <summary>
-    /// Gets or sets the log <see cref="LogRecordSeverity"/>.
-    /// </summary>
-    internal
-#endif
-        LogRecordSeverity? Severity
+    public        LogRecordSeverity? Severity
     {
         get => this.Data.Severity;
         set => this.Data.Severity = value;
     }
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Gets the <see cref="Logs.Logger"/> associated with the <see
     /// cref="LogRecord"/>.
@@ -405,17 +373,7 @@ public sealed class LogRecord
     /// typically the <see cref="Logs.Logger"/> which emitted the <see
     /// cref="LogRecord"/> however the value may be different if <see
     /// cref="CategoryName"/> is modified.</remarks>
-#if NET
-    [Experimental(DiagnosticDefinitions.LogsBridgeExperimentalApi, UrlFormat = DiagnosticDefinitions.ExperimentalApiUrlFormat)]
-#endif
     public Logger Logger { get; internal set; } = InstrumentationScopeLogger.Default;
-#else
-    /// <summary>
-    /// Gets or sets the <see cref="Logs.Logger"/> associated with the <see
-    /// cref="LogRecord"/>.
-    /// </summary>
-    internal Logger Logger { get; set; } = InstrumentationScopeLogger.Default;
-#endif
 
     /// <summary>
     /// Executes callback for each currently active scope objects in order

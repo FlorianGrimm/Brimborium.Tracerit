@@ -5,5 +5,10 @@ internal sealed class RuntimeTracor : ITracor {
 
     public bool IsCurrentlyEnabled() => false;
 
-    public void Trace<T>(TracorIdentitfier callee, T Value) { }
+    public void Trace<T>(TracorIdentitfier callee, T value) {
+        // this is should not be called, but anyway...
+        if (value is IDisposable valueDisposable) {
+            valueDisposable.Dispose();
+        }
+    }
 }

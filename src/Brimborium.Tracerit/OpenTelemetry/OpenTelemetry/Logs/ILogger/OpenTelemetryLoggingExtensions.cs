@@ -18,8 +18,7 @@ namespace Microsoft.Extensions.Logging;
 /// <summary>
 /// Contains extension methods for registering <see cref="OpenTelemetryLoggerProvider"/> into a <see cref="ILoggingBuilder"/> instance.
 /// </summary>
-public static class OpenTelemetryLoggingExtensions
-{
+public static class OpenTelemetryLoggingExtensions {
     /// <summary>
     /// Adds an OpenTelemetry logger named 'OpenTelemetry' to the <see cref="ILoggerFactory"/>.
     /// </summary>
@@ -64,7 +63,6 @@ public static class OpenTelemetryLoggingExtensions
         => AddOpenTelemetryInternal(builder, configureBuilder: null, configureOptions: configure);
 #pragma warning restore CA1062 // Validate arguments of public methods - needed for netstandard2.1
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Adds an OpenTelemetry logger named 'OpenTelemetry' to the <see cref="ILoggerFactory"/>.
     /// </summary>
@@ -75,20 +73,12 @@ public static class OpenTelemetryLoggingExtensions
     /// </remarks>
     /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
     /// <returns>The supplied <see cref="ILoggingBuilder"/> for call chaining.</returns>
-#if NET
-    [Experimental(DiagnosticDefinitions.LoggerProviderExperimentalApi, UrlFormat = DiagnosticDefinitions.ExperimentalApiUrlFormat)]
-#endif
-    public
-#else
-    internal
-#endif
-        static ILoggingBuilder UseOpenTelemetry(
+    public static ILoggingBuilder UseOpenTelemetry(
         this ILoggingBuilder builder)
 #pragma warning disable CA1062 // Validate arguments of public methods - needed for netstandard2.1
         => AddOpenTelemetryInternal(builder, configureBuilder: null, configureOptions: null);
 #pragma warning restore CA1062 // Validate arguments of public methods - needed for netstandard2.1
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Adds an OpenTelemetry logger named 'OpenTelemetry' to the <see cref="ILoggerFactory"/>.
     /// </summary>
@@ -96,17 +86,9 @@ public static class OpenTelemetryLoggingExtensions
     /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
     /// <param name="configure"><see cref="LoggerProviderBuilder"/> configuration action.</param>
     /// <returns>The supplied <see cref="ILoggingBuilder"/> for call chaining.</returns>
-#if NET
-    [Experimental(DiagnosticDefinitions.LoggerProviderExperimentalApi, UrlFormat = DiagnosticDefinitions.ExperimentalApiUrlFormat)]
-#endif
-    public
-#else
-    internal
-#endif
-        static ILoggingBuilder UseOpenTelemetry(
+    public static ILoggingBuilder UseOpenTelemetry(
         this ILoggingBuilder builder,
-        Action<LoggerProviderBuilder> configure)
-    {
+        Action<LoggerProviderBuilder> configure) {
         Guard.ThrowIfNull(configure);
 
 #pragma warning disable CA1062 // Validate arguments of public methods - needed for netstandard2.1
@@ -114,7 +96,6 @@ public static class OpenTelemetryLoggingExtensions
 #pragma warning restore CA1062 // Validate arguments of public methods - needed for netstandard2.1
     }
 
-#if EXPOSE_EXPERIMENTAL_FEATURES
     /// <summary>
     /// Adds an OpenTelemetry logger named 'OpenTelemetry' to the <see cref="ILoggerFactory"/>.
     /// </summary>
@@ -123,14 +104,7 @@ public static class OpenTelemetryLoggingExtensions
     /// <param name="configureBuilder">Optional <see cref="LoggerProviderBuilder"/> configuration action.</param>
     /// <param name="configureOptions">Optional <see cref="OpenTelemetryLoggerOptions"/> configuration action.</param>
     /// <returns>The supplied <see cref="ILoggingBuilder"/> for call chaining.</returns>
-#if NET
-    [Experimental(DiagnosticDefinitions.LoggerProviderExperimentalApi, UrlFormat = DiagnosticDefinitions.ExperimentalApiUrlFormat)]
-#endif
-    public
-#else
-    internal
-#endif
-        static ILoggingBuilder UseOpenTelemetry(
+    public static ILoggingBuilder UseOpenTelemetry(
         this ILoggingBuilder builder,
         Action<LoggerProviderBuilder>? configureBuilder,
         Action<OpenTelemetryLoggerOptions>? configureOptions)
@@ -141,8 +115,7 @@ public static class OpenTelemetryLoggingExtensions
     private static ILoggingBuilder AddOpenTelemetryInternal(
         ILoggingBuilder builder,
         Action<LoggerProviderBuilder>? configureBuilder,
-        Action<OpenTelemetryLoggerOptions>? configureOptions)
-    {
+        Action<OpenTelemetryLoggerOptions>? configureOptions) {
         Guard.ThrowIfNull(builder);
 
         builder.AddConfiguration();
@@ -167,8 +140,7 @@ public static class OpenTelemetryLoggingExtensions
          */
         services.AddOpenTelemetrySharedProviderBuilderServices();
 
-        if (configureOptions != null)
-        {
+        if (configureOptions != null) {
             // Note: Order is important here so that user-supplied delegate
             // fires AFTER the options are bound to Logging:OpenTelemetry
             // configuration.
@@ -176,19 +148,16 @@ public static class OpenTelemetryLoggingExtensions
         }
 
         var loggingBuilder = new LoggerProviderBuilderBase(services).ConfigureBuilder(
-            (sp, logging) =>
-            {
+            (sp, logging) => {
                 var options = sp.GetRequiredService<IOptions<OpenTelemetryLoggerOptions>>().Value;
 
-                if (options.ResourceBuilder != null)
-                {
+                if (options.ResourceBuilder != null) {
                     logging.SetResourceBuilder(options.ResourceBuilder);
 
                     options.ResourceBuilder = null;
                 }
 
-                foreach (var processorFactory in options.ProcessorFactories)
-                {
+                foreach (var processorFactory in options.ProcessorFactories) {
                     logging.AddProcessor(processorFactory);
                 }
 
@@ -199,13 +168,11 @@ public static class OpenTelemetryLoggingExtensions
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<ILoggerProvider, OpenTelemetryLoggerProvider>(
-                sp =>
-                {
+                sp => {
                     var state = sp.GetRequiredService<LoggerProviderBuilderSdk>();
 
                     var provider = state.Provider;
-                    if (provider == null)
-                    {
+                    if (provider == null) {
                         /*
                          * Note:
                          *
@@ -256,8 +223,7 @@ public static class OpenTelemetryLoggingExtensions
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "OpenTelemetryLoggerOptions contains only primitive properties.")]
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "OpenTelemetryLoggerOptions contains only primitive properties.")]
 #endif
-        static void RegisterLoggerProviderOptions(IServiceCollection services)
-        {
+        static void RegisterLoggerProviderOptions(IServiceCollection services) {
             LoggerProviderOptions.RegisterProviderOptions<OpenTelemetryLoggerOptions, OpenTelemetryLoggerProvider>(services);
         }
     }

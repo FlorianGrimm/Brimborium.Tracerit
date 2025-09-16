@@ -13,8 +13,7 @@ namespace OpenTelemetry.Logs;
 /// <summary>
 /// SDK <see cref="LoggerProvider"/> implementation.
 /// </summary>
-internal sealed class LoggerProviderSdk : LoggerProvider
-{
+internal sealed class LoggerProviderSdk : LoggerProvider {
     internal readonly IServiceProvider ServiceProvider;
     internal IDisposable? OwnedServiceProvider;
     internal bool Disposed;
@@ -25,8 +24,7 @@ internal sealed class LoggerProviderSdk : LoggerProvider
 
     public LoggerProviderSdk(
         IServiceProvider serviceProvider,
-        bool ownsServiceProvider)
-    {
+        bool ownsServiceProvider) {
         Debug.Assert(serviceProvider != null, "serviceProvider was null");
 
         var state = serviceProvider!.GetRequiredService<LoggerProviderBuilderSdk>();
@@ -34,8 +32,7 @@ internal sealed class LoggerProviderSdk : LoggerProvider
 
         this.ServiceProvider = serviceProvider!;
 
-        if (ownsServiceProvider)
-        {
+        if (ownsServiceProvider) {
             this.OwnedServiceProvider = serviceProvider as IDisposable;
             Debug.Assert(this.OwnedServiceProvider != null, "ownedServiceProvider was null");
         }
@@ -43,8 +40,7 @@ internal sealed class LoggerProviderSdk : LoggerProvider
         OpenTelemetrySdkEventSource.Log.LoggerProviderSdkEvent("Building LoggerProvider.");
 
         var configureProviderBuilders = serviceProvider!.GetServices<IConfigureLoggerProviderBuilder>();
-        foreach (var configureProviderBuilder in configureProviderBuilders)
-        {
+        foreach (var configureProviderBuilder in configureProviderBuilders) {
             configureProviderBuilder.ConfigureBuilder(serviceProvider!, state);
         }
 
@@ -53,17 +49,14 @@ internal sealed class LoggerProviderSdk : LoggerProvider
         this.Resource = resourceBuilder.Build();
 
         // Note: Linq OrderBy performs a stable sort, which is a requirement here
-        foreach (var processor in state.Processors.OrderBy(p => p.PipelineWeight))
-        {
+        foreach (var processor in state.Processors.OrderBy(p => p.PipelineWeight)) {
             this.AddProcessor(processor);
         }
 
         StringBuilder instrumentationFactoriesAdded = new StringBuilder();
 
-        foreach (var instrumentation in state.Instrumentation)
-        {
-            if (instrumentation.Instance is not null)
-            {
+        foreach (var instrumentation in state.Instrumentation) {
+            if (instrumentation.Instance is not null) {
                 this.instrumentations.Add(instrumentation.Instance);
             }
 
@@ -71,8 +64,7 @@ internal sealed class LoggerProviderSdk : LoggerProvider
             instrumentationFactoriesAdded.Append(';');
         }
 
-        if (instrumentationFactoriesAdded.Length != 0)
-        {
+        if (instrumentationFactoriesAdded.Length != 0) {
             instrumentationFactoriesAdded.Remove(instrumentationFactoriesAdded.Length - 1, 1);
             OpenTelemetrySdkEventSource.Log.LoggerProviderSdkEvent($"Instrumentations added = \"{instrumentationFactoriesAdded}\".");
         }
@@ -88,19 +80,13 @@ internal sealed class LoggerProviderSdk : LoggerProvider
 
     public ILogRecordPool LogRecordPool => this.threadStaticPool ?? LogRecordSharedPool.Current;
 
-    public static bool ContainsBatchProcessor(BaseProcessor<LogRecord> processor)
-    {
-        if (processor is BatchExportProcessor<LogRecord>)
-        {
+    public static bool ContainsBatchProcessor(BaseProcessor<LogRecord> processor) {
+        if (processor is BatchExportProcessor<LogRecord>) {
             return true;
-        }
-        else if (processor is CompositeProcessor<LogRecord> compositeProcessor)
-        {
+        } else if (processor is CompositeProcessor<LogRecord> compositeProcessor) {
             var current = compositeProcessor.Head;
-            while (current != null)
-            {
-                if (ContainsBatchProcessor(current.Value))
-                {
+            while (current != null) {
+                if (ContainsBatchProcessor(current.Value)) {
                     return true;
                 }
 
@@ -111,14 +97,12 @@ internal sealed class LoggerProviderSdk : LoggerProvider
         return false;
     }
 
-    public void AddProcessor(BaseProcessor<LogRecord> processor)
-    {
+    public void AddProcessor(BaseProcessor<LogRecord> processor) {
         Guard.ThrowIfNull(processor);
 
         processor.SetParentProvider(this);
 
-        if (this.threadStaticPool != null && ContainsBatchProcessor(processor))
-        {
+        if (this.threadStaticPool != null && ContainsBatchProcessor(processor)) {
             OpenTelemetrySdkEventSource.Log.LoggerProviderSdkEvent("Using shared thread pool.");
 
             this.threadStaticPool = null;
@@ -126,24 +110,19 @@ internal sealed class LoggerProviderSdk : LoggerProvider
 
         StringBuilder processorAdded = new StringBuilder();
 
-        if (this.Processor == null)
-        {
+        if (this.Processor == null) {
             processorAdded.Append("Setting processor to '");
             processorAdded.Append(processor);
             processorAdded.Append('\'');
 
             this.Processor = processor;
-        }
-        else if (this.Processor is CompositeProcessor<LogRecord> compositeProcessor)
-        {
+        } else if (this.Processor is CompositeProcessor<LogRecord> compositeProcessor) {
             processorAdded.Append("Adding processor '");
             processorAdded.Append(processor);
             processorAdded.Append("' to composite processor");
 
             compositeProcessor.AddProcessor(processor);
-        }
-        else
-        {
+        } else {
             processorAdded.Append("Creating new composite processor and adding new processor '");
             processorAdded.Append(processor);
             processorAdded.Append('\'');
@@ -160,61 +139,42 @@ internal sealed class LoggerProviderSdk : LoggerProvider
         OpenTelemetrySdkEventSource.Log.LoggerProviderSdkEvent($"Completed adding processor = \"{processorAdded}\".");
     }
 
-    public bool ForceFlush(int timeoutMilliseconds = Timeout.Infinite)
-    {
-        try
-        {
+    public bool ForceFlush(int timeoutMilliseconds = Timeout.Infinite) {
+        try {
             return this.Processor?.ForceFlush(timeoutMilliseconds) ?? true;
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             OpenTelemetrySdkEventSource.Log.LoggerProviderException(nameof(this.ForceFlush), ex);
             return false;
         }
     }
 
-    public bool Shutdown(int timeoutMilliseconds)
-    {
-        if (Interlocked.Increment(ref this.ShutdownCount) > 1)
-        {
+    public bool Shutdown(int timeoutMilliseconds) {
+        if (Interlocked.Increment(ref this.ShutdownCount) > 1) {
             return false; // shutdown already called
         }
 
-        try
-        {
+        try {
             return this.Processor?.Shutdown(timeoutMilliseconds) ?? true;
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             OpenTelemetrySdkEventSource.Log.LoggerProviderException(nameof(this.Shutdown), ex);
             return false;
         }
     }
 
     /// <inheritdoc />
-#if EXPOSE_EXPERIMENTAL_FEATURES
-    protected
-#else
-    internal
-#endif
-        override bool TryCreateLogger(
+    protected override bool TryCreateLogger(
         string? name,
         [NotNullWhen(true)]
-        out Logger? logger)
-    {
+        out Logger? logger) {
         logger = new LoggerSdk(this, name);
         return true;
     }
 
     /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
-    {
-        if (!this.Disposed)
-        {
-            if (disposing)
-            {
-                foreach (var item in this.instrumentations)
-                {
+    protected override void Dispose(bool disposing) {
+        if (!this.Disposed) {
+            if (disposing) {
+                foreach (var item in this.instrumentations) {
                     (item as IDisposable)?.Dispose();
                 }
 

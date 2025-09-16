@@ -20,11 +20,6 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
     }
 
     /// <inheritdoc />
-    /// <summary>
-    /// Creates a new <see cref="TracorLogger"/> instance with the specified name.
-    /// </summary>
-    /// <param name="name">The name of the logger.</param>
-    /// <returns>A new <see cref="TracorLogger"/> instance.</returns>
     public ILogger CreateLogger(string name)
     {
         using (this._Lock.EnterScope()) {
@@ -32,21 +27,19 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
                 this._Tracor = this._ServiceProvider.GetRequiredService<ITracor>();
             }
         }
-        return new TracorLogger(name, this._Tracor, this._ExternalScopeProvider);
+        if (this._Tracor.IsGeneralEnabled()) {
+            return new TracorLogger(name, this._Tracor, this._ExternalScopeProvider);
+        } else {
+            return new TracorDisabledLogger();
+        }
     }
 
     /// <inheritdoc />
-    /// <summary>
-    /// Disposes the logger provider. This implementation does not require cleanup.
-    /// </summary>
     public void Dispose() {
+        this._ExternalScopeProvider = null;
     }
 
     /// <inheritdoc />
-    /// <summary>
-    /// Sets the external scope provider for managing logging scopes.
-    /// </summary>
-    /// <param name="scopeProvider">The external scope provider to use.</param>
     public void SetScopeProvider(IExternalScopeProvider scopeProvider) {
         this._ExternalScopeProvider = scopeProvider;
     }

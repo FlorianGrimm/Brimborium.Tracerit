@@ -1,0 +1,17 @@
+﻿namespace OpenTelemetry.Exporter.Tracerit;
+
+public sealed class ActivityTracorDataFactory
+    : ITracorDataAccessorFactory<Activity> {
+    public bool TryGetData(object value, [MaybeNullWhen(false)] out ITracorData tracorData) {
+        if (value is Activity activity) {
+            tracorData = new ActivityTracorData(activity);
+            return true;
+        }
+        tracorData = null;
+        return false;
+    }
+
+    public bool TryGetDataTyped(Activity value, [MaybeNullWhen(false)] out ITracorData tracorData) {
+        throw new NotImplementedException();
+    }
+}

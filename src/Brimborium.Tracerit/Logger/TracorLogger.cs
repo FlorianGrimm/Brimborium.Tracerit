@@ -2,7 +2,7 @@
 
 namespace Brimborium.Tracerit.Logger;
 
-public sealed class TracorLogger : ILogger {
+internal sealed class TracorLogger : ILogger {
     internal const string OwnNamespace = "Brimborium.Tracerit";
     internal const int OwnNamespaceLength = /* OwnNamespace.Length */ 19;
 
@@ -11,9 +11,11 @@ public sealed class TracorLogger : ILogger {
     private readonly IExternalScopeProvider? _ExternalScopeProvider;
     private readonly TracorIdentitfier _Id;
     private readonly bool _IsAllowed;
+    private readonly LoggerTracorDataPool _Pool;
 
     public TracorLogger(string? name, ITracor tracor, IExternalScopeProvider? externalScopeProvider) {
         this._Name = name;
+        this._Pool = new(2048);
 
         // if the name is this namespace or sub-namespace - don't tracor
         if (tracor.IsGeneralEnabled()) {
@@ -99,21 +101,21 @@ public sealed class TracorLogger : ILogger {
         }
 
         //string formatted = formatter(state, exception);
-        LoggerTracorData loggerTracorData = new();
-
-        ConvertProperties(
-            loggerTracorData,
-            this._Id,
-            activityTraceId,
-            activitySpanId,
-            activityTraceFlags,
-            eventId,
-            state,
-            exception);
-        this._Tracor.Trace(
-            new TracorIdentitfier(this._Id, eventId.ToString()),
-            loggerTracorData
-            );
+        using (LoggerTracorData loggerTracorData = this._Pool.Rent()) {
+            ConvertProperties(
+                loggerTracorData,
+                this._Id,
+                activityTraceId,
+                activitySpanId,
+                activityTraceFlags,
+                eventId,
+                state,
+                exception);
+            this._Tracor.Trace(
+                new TracorIdentitfier(this._Id, eventId.ToString()),
+                loggerTracorData
+                );
+        }
     }
     private static ExceptionInfo GetExceptionInfo(Exception? exception) {
         return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
