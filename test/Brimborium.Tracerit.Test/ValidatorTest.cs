@@ -183,7 +183,7 @@ public class ValidatorTest {
         ITracorValidator tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var validatorPath = tracorValidator
         .Add(
-            new FilterExpression<Uri>(
+            new FilterExpression(
                 label: "",
                 condition: new EqualsTracorDataPropertyCondition<Uri, string>(
                     fnGetProperty: static (Uri value) => value.Host,
@@ -191,7 +191,7 @@ public class ValidatorTest {
                     fnEquality: static (a, b) => a == b,
                     setGlobalState: "Host"
                     ),
-                listChild: new FilterExpression<Uri>(
+                listChild: new FilterExpression(
                     label:"",
                     condition:
                         new AlwaysCondition<Uri,string>(

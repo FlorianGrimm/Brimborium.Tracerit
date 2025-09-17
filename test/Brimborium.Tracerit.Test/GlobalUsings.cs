@@ -11,6 +11,7 @@ global using global::System.Threading.Tasks;
 global using global::Microsoft.Extensions.Logging;
 global using global::Microsoft.Extensions.DependencyInjection;
 global using global::Microsoft.Extensions.DependencyInjection.Extensions;
+global using global::Microsoft.Extensions.Options;
 
 global using global::Brimborium.Tracerit;
 global using global::Brimborium.Tracerit.Condition;

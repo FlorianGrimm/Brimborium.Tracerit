@@ -158,5 +158,4 @@ public abstract class ReferenceCountPool<T>
             }
         }
     }
-
 }

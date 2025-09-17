@@ -9,7 +9,7 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
     private readonly ITracor _Tracor;
     private readonly IOptionsMonitor<TracorActivityListenerOptions> _Options;
     private readonly ILogger<TesttimeTracorActivityListener> _Logger;
-    private ImmutableDictionary<ActivitySourceIdenifier, TracorIdentitfierCache> _DictTracorIdentitfierCacheByActivitySource = ImmutableDictionary<ActivitySourceIdenifier, TracorIdentitfierCache>.Empty;
+    private ImmutableDictionary<ActivitySourceIdentifier, TracorIdentitfierCache> _DictTracorIdentitfierCacheByActivitySource = ImmutableDictionary<ActivitySourceIdentifier, TracorIdentitfierCache>.Empty;
     private IDisposable? _OptionsDispose;
     private ActivityListener? _Listener;
     private string? _IsDisposed;
@@ -21,11 +21,11 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
         // do not mutate
         public bool AllowAllActivitySource { get; init; }
         public readonly HashSet<string> HashSetActivitySourceName;
-        public readonly HashSet<ActivitySourceIdenifier> HashSetActivitySourceIdenifier;
+        public readonly HashSet<ActivitySourceIdentifier> HashSetActivitySourceIdenifier;
 
         public OptionState() {
             this.HashSetActivitySourceName = new HashSet<string>(StringComparer.Ordinal);
-            this.HashSetActivitySourceIdenifier = new HashSet<ActivitySourceIdenifier>();
+            this.HashSetActivitySourceIdenifier = new HashSet<ActivitySourceIdentifier>();
         }
         public static OptionState Create(TracorActivityListenerOptions options1, TracorActivityListenerOptions options2) {
             var result = new OptionState() {
@@ -105,11 +105,11 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
     }
 
     private bool OnShouldListenTo(ActivitySource activitySource) {
-        var activitySourceIdenifier = ActivitySourceIdenifier.Create(activitySource.Name, activitySource.Version);
+        var activitySourceIdenifier = ActivitySourceIdentifier.Create(activitySource.Name, activitySource.Version);
         return this.OnShouldListenTo(activitySourceIdenifier);
     }
 
-    private bool OnShouldListenTo(ActivitySourceIdenifier activitySourceIdenifier) {
+    private bool OnShouldListenTo(ActivitySourceIdentifier activitySourceIdenifier) {
         var currentOptionState = this._OptionState;
         if (currentOptionState.HashSetActivitySourceName.Contains(activitySourceIdenifier.Name)) {
             return true;
@@ -128,7 +128,7 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
         var currentOptionState = this._OptionState;
 
         var activitySource = activity.Source;
-        var activitySourceIdenifier = ActivitySourceIdenifier.Create(activitySource.Name, activitySource.Version);
+        var activitySourceIdenifier = ActivitySourceIdentifier.Create(activitySource.Name, activitySource.Version);
         if (currentOptionState.AllowAllActivitySource) {
             // no check needed
         } else if (!this.OnShouldListenTo(activitySourceIdenifier)) {
@@ -152,7 +152,7 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
         var currentOptionState = this._OptionState;
 
         var activitySource = activity.Source;
-        var activitySourceIdenifier = ActivitySourceIdenifier.Create(activitySource.Name, activitySource.Version);
+        var activitySourceIdenifier = ActivitySourceIdentifier.Create(activitySource.Name, activitySource.Version);
         if (currentOptionState.AllowAllActivitySource) {
             // no check needed
         } else if (!this.OnShouldListenTo(activitySourceIdenifier)) {
@@ -204,17 +204,17 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
         }
     }
 
-    public void AddListInstrumentation(ActivitySourceIdenifier instrumentationRegistration) {
+    public void AddListInstrumentation(ActivitySourceIdentifier activitySourceIdentifier) {
         using (this._Lock.EnterScope()) {
-            this._DirectModifications.ListActivitySourceIdenifier.Add(instrumentationRegistration);
+            this._DirectModifications.ListActivitySourceIdenifier.Add(activitySourceIdentifier);
             var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
             this.SetOptionState(nextOptionState);
         }
     }
 
-    public void RemoveListInstrumentation(ActivitySourceIdenifier instrumentationRegistration) {
+    public void RemoveListInstrumentation(ActivitySourceIdentifier activitySourceIdentifier) {
         using (this._Lock.EnterScope()) {
-            if (this._DirectModifications.ListActivitySourceIdenifier.Remove(instrumentationRegistration)) {
+            if (this._DirectModifications.ListActivitySourceIdenifier.Remove(activitySourceIdentifier)) {
                 var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
                 this.SetOptionState(nextOptionState);
             }

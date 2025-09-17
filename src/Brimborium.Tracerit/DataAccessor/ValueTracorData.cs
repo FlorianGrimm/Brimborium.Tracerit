@@ -18,18 +18,19 @@ public sealed class ValueAccessorFactory<TValue>
         return true;
     }
 }
+
 public static class ValueTracorData {
     public static ValueTracorData<TValue> Create<TValue>(TValue value) => new ValueTracorData<TValue>(value);
 }
-public sealed class ValueTracorData<TValue>
-    : ITracorData<TValue> {
+
+public sealed class ValueTracorData<TValue> : ITracorData<TValue> {
     private readonly TValue _Value;
 
     public ValueTracorData(TValue value) {
         this._Value = value;
     }
 
-    public object? this[string propertyName] { 
+    public object? this[string propertyName] {
         get {
             if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
                 return propertyValue;
@@ -47,6 +48,11 @@ public sealed class ValueTracorData<TValue>
     }
 
     public bool TryGetPropertyValue(string propertyName, out object? propertyValue) {
+        if (typeof(TValue).GetProperty(propertyName) is { } propertyInfo) {
+            propertyValue=propertyInfo.GetValue(this._Value);
+            return true;
+        }
+
         if ("Value" == propertyName) {
             propertyValue = this._Value;
             return true;

@@ -1,8 +1,18 @@
 ﻿namespace Brimborium.Tracerit.Expression;
 
+/// <summary>
+/// Represents a validator expression that filters trace data based on a condition and processes all child expressions simultaneously.
+/// Unlike sequence expressions, all child expressions are evaluated for each matching trace event.
+/// </summary>
 public sealed class FilterExpression : ValidatorExpression {
     private ImmutableArray<IValidatorExpression> _ListChild = ImmutableArray<IValidatorExpression>.Empty;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FilterExpression"/> class.
+    /// </summary>
+    /// <param name="label">Optional label for this filter expression.</param>
+    /// <param name="condition">The condition that trace data must match. If null, defaults to <see cref="AlwaysCondition"/>.</param>
+    /// <param name="listChild">The child validator expressions to process when the condition matches.</param>
     public FilterExpression(
         string? label = default,
         IExpressionCondition? condition = default,
@@ -12,6 +22,11 @@ public sealed class FilterExpression : ValidatorExpression {
         if (0 < listChild.Length) { this._ListChild = listChild.ToImmutableArray(); }
     }
 
+    /// <summary>
+    /// Adds a validator expression to the list of child expressions.
+    /// </summary>
+    /// <param name="step">The validator expression to add.</param>
+    /// <returns>This <see cref="FilterExpression"/> instance for method chaining.</returns>
     public FilterExpression Add(
        IValidatorExpression step) {
         using (this._Lock.EnterScope()) {
@@ -20,8 +35,19 @@ public sealed class FilterExpression : ValidatorExpression {
         return this;
     }
 
+    /// <summary>
+    /// Gets or sets the condition that trace data must match for this expression to process child expressions.
+    /// </summary>
     public IExpressionCondition Condition { get; set; } = AlwaysCondition.Instance;
 
+    /// <summary>
+    /// Processes a trace event by checking if it matches the condition, then evaluating all child expressions.
+    /// The expression succeeds when all child expressions have been successfully matched.
+    /// </summary>
+    /// <param name="callee">The identifier of the caller or trace point.</param>
+    /// <param name="tracorData">The trace data to validate.</param>
+    /// <param name="currentContext">The current context of the validation step.</param>
+    /// <returns>The result of the trace validation.</returns>
     public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<FilterExpressionState>();
         if (state.Successfull) {
@@ -44,7 +70,13 @@ public sealed class FilterExpression : ValidatorExpression {
         return OnTraceResult.None;
     }
 
+    /// <summary>
+    /// Internal state class for tracking which child expressions have been successfully matched.
+    /// </summary>
     internal sealed class FilterExpressionState : ValidatorExpressionState {
+        /// <summary>
+        /// Gets or sets the set of child expression indices that have been successfully matched.
+        /// </summary>
         public HashSet<int> ChildSuccessfull = new();
     }
 }
