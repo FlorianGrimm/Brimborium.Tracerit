@@ -1,6 +1,4 @@
-﻿using Brimborium.Tracerit.Utility;
-
-namespace Brimborium.Tracerit.Logger;
+﻿namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class LoggerTracorDataPool : ReferenceCountPool<LoggerTracorData> {
     public LoggerTracorDataPool(int capacity) : base(capacity) {

@@ -6,10 +6,10 @@
 
 */
 
-public partial class LoggerUtility {
+public partial class LoggerExtension {
     private readonly ILogger _Logger;
 
-    public LoggerUtility(ILogger logger) {
+    public LoggerExtension(ILogger logger) {
         this._Logger = logger;
     }
 

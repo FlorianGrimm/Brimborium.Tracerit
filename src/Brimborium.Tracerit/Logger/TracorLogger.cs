@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Brimborium.Tracerit.Logger;
+﻿namespace Brimborium.Tracerit.Logger;
 
 internal sealed class TracorLogger : ILogger {
     internal const string OwnNamespace = "Brimborium.Tracerit";
@@ -8,12 +6,18 @@ internal sealed class TracorLogger : ILogger {
 
     private readonly string? _Name;
     private readonly ITracor _Tracor;
+    private readonly LogLevel? _GlobalLogLevel;
     private readonly IExternalScopeProvider? _ExternalScopeProvider;
     private readonly TracorIdentitfier _Id;
     private readonly bool _IsAllowed;
     private readonly LoggerTracorDataPool _Pool;
+    private readonly TracorIdentitfierCache _IdChildCache;
 
-    public TracorLogger(string? name, ITracor tracor, IExternalScopeProvider? externalScopeProvider) {
+    public TracorLogger(
+        string name,
+        ITracor tracor,
+        LogLevel? globalLogLevel,
+        IExternalScopeProvider? externalScopeProvider) {
         this._Name = name;
         this._Pool = new(2048);
 
@@ -33,17 +37,25 @@ internal sealed class TracorLogger : ILogger {
             this._IsAllowed = false;
         }
         this._Tracor = tracor;
-
+        this._GlobalLogLevel = globalLogLevel;
         this._ExternalScopeProvider = externalScopeProvider;
         if (name is { Length: > 0 }) {
-            this._Id = new TracorIdentitfier(name);
+            this._Id = new TracorIdentitfier("Logger", name);
         } else {
-            this._Id = new TracorIdentitfier("::");
+            this._Id = new TracorIdentitfier("Logger", "");
         }
+        this._IdChildCache = new TracorIdentitfierCache(this._Id);
     }
 
     public bool IsEnabled(LogLevel logLevel) {
-        return this._IsAllowed && this._Tracor.IsCurrentlyEnabled();
+        if (this._IsAllowed && this._Tracor.IsCurrentlyEnabled()) {
+            if (this._GlobalLogLevel is { } globalLogLevel) {
+                return globalLogLevel <= logLevel;
+            } else {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <inheritdoc />
@@ -82,60 +94,87 @@ internal sealed class TracorLogger : ILogger {
 
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
-        if (!(this._IsAllowed && this._Tracor.IsCurrentlyEnabled())) {
-            return;
-        }
+        try {
+            if (!(this._IsAllowed && this._Tracor.IsCurrentlyEnabled())) {
+                return;
+            }
 
-        var activity = Activity.Current;
-        string activityTraceId;
-        string activitySpanId;
-        string activityTraceFlags;
-        if (activity != null && activity.IdFormat == ActivityIdFormat.W3C) {
-            activityTraceId = activity.TraceId.ToHexString();
-            activitySpanId = activity.SpanId.ToHexString();
-            activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
-        } else {
-            activityTraceId = string.Empty;
-            activitySpanId = string.Empty;
-            activityTraceFlags = string.Empty;
-        }
+            var activity = Activity.Current;
+            string activityTraceId;
+            string activitySpanId;
+            string activityTraceFlags;
+            if (activity != null && activity.IdFormat == ActivityIdFormat.W3C) {
+                activityTraceId = activity.TraceId.ToHexString();
+                activitySpanId = activity.SpanId.ToHexString();
+                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+            } else {
+                activityTraceId = string.Empty;
+                activitySpanId = string.Empty;
+                activityTraceFlags = string.Empty;
+            }
 
-        //string formatted = formatter(state, exception);
-        using (LoggerTracorData loggerTracorData = this._Pool.Rent()) {
-            ConvertProperties(
-                loggerTracorData,
-                this._Id,
-                activityTraceId,
-                activitySpanId,
-                activityTraceFlags,
-                eventId,
-                state,
-                exception);
-            this._Tracor.Trace(
-                new TracorIdentitfier(this._Id, eventId.ToString()),
-                loggerTracorData
-                );
+            //string formatted = formatter(state, exception);
+            using (LoggerTracorData loggerTracorData = this._Pool.Rent()) {
+                ConvertProperties(
+                    loggerTracorData,
+                    this._Id,
+                    activityTraceId,
+                    activitySpanId,
+                    activityTraceFlags,
+                    logLevel,
+                    eventId,
+                    state,
+                    exception);
+                this._Tracor.Trace(
+                    this._IdChildCache.Child(eventId.ToString()),
+                    loggerTracorData
+                    );
+            }
+        } catch {
         }
     }
     private static ExceptionInfo GetExceptionInfo(Exception? exception) {
         return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
     }
+
+    private readonly static object[] _ObjLogLevel = [
+        (object)LogLevel.Trace,
+        (object)LogLevel.Debug,
+        (object)LogLevel.Information,
+        (object)LogLevel.Warning,
+        (object)LogLevel.Error,
+        (object)LogLevel.Critical,
+        (object)LogLevel.None 
+    ];
+
     private static void ConvertProperties(
         LoggerTracorData loggerTracorData,
         TracorIdentitfier id,
         string activityTraceId,
         string activitySpanId,
         string activityTraceFlags,
+        LogLevel logLevel,
         EventId eventId,
         object? state,
         Exception? exception) {
         // TODO: key from otel
         loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Source", id.Callee));
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceId", activityTraceId));
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.SpanId", activitySpanId));
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceFlags", activityTraceFlags));
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Id", eventId.Id));
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Name", eventId.Name));
+        if (activityTraceId is { Length: > 0 }) {
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceId", activityTraceId));
+        }
+        if (activitySpanId is { Length: > 0 }) {
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.SpanId", activitySpanId));
+        }
+        if (activityTraceFlags is { Length: > 0 }) {
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceFlags", activityTraceFlags));
+        }
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("LogLevel", (LogLevel.Trace <= logLevel && logLevel <= LogLevel.None) ? _ObjLogLevel[(int)logLevel] : logLevel));
+        if (eventId.Id != 0) { 
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Id", eventId.Id));
+        }
+        if (eventId.Name is { Length: > 0 }) {
+            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Name", eventId.Name));
+        }
         if (exception is { }) {
             var exceptionInfo = GetExceptionInfo(exception);
             loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("TypeName", exceptionInfo.TypeName));

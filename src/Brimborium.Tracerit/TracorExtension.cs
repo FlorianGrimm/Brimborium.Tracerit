@@ -185,4 +185,18 @@ public static partial class TracorExtension {
             condition: expressionCondition,
             listChild: listChild);
     }
+
+    public static FilterExpression FilterExpression(
+        this IExpressionCondition condition,
+        string? label = default,
+        params IValidatorExpression[] listChild) {
+        return new(label, condition, listChild);
+    }
+
+    public static FilterExpression Filter(
+        IExpressionCondition condition,
+        string? label = default,
+        params IValidatorExpression[] listChild) {
+        return new(label, condition, listChild);
+    }
 }

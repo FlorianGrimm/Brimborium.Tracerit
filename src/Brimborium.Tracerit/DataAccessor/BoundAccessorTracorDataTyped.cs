@@ -1,5 +1,4 @@
-﻿
-namespace Brimborium.Tracerit.DataAccessor;
+﻿namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class TracorDataAccessorFactory<TValue> : ITracorDataAccessorFactory<TValue> {
     private readonly ITracorDataAccessor<TValue> _TracorDataAccessor;

@@ -5,6 +5,7 @@
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Flurl" Version="4.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Coyote.Core" Version="1.7.11" />
     <PackageVersion Include="Microsoft.Coyote.Test" Version="1.7.11" />
@@ -13,11 +14,11 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Configuration" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.55.0" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="OpenTelemetry" Version="1.12.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
@@ -27,8 +28,8 @@
     -->
     <PackageVersion Include="System.Net.Http" Version="4.3.4" />
     <PackageVersion Include="TUnit" Version="0.57.65" />
-    <PackageVersion Include="Verify" Version="30.11.0" />
-    <PackageVersion Include="Verify.TUnit" Version="30.11.0" />
+    <PackageVersion Include="Verify" Version="30.13.0" />
+    <PackageVersion Include="Verify.TUnit" Version="30.13.0" />
     <PackageVersion Include="Microsoft.Coyote" Version="1.7.11" />
     <PackageVersion Include="System.Text.Json" Version="9.0.9" />
   </ItemGroup>
@@ -106,7 +107,7 @@
     -->
     <!-- Newer NETCoreApp runtimes need to be redirected to safe versions. -->
     <PackageVersion Update="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebOutOfBandMinimumCoreAppVer)" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <PackageVersion Update="System.Text.Json" Version="$(SystemTextJsonOutOfBandMinimumCoreAppVer)" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <PackageVersion Update="System.Text.Json" Version="9.0.9" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
   <!--
       This section covers packages that are **not** directly referenced by the NuGet packages published from this repository.

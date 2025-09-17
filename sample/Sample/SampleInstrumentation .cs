@@ -1,19 +1,11 @@
 namespace Sample.WebApp;
 
-public class SampleInstrumentation : IDisposable
-{
+public class SampleInstrumentation {
     internal const string ActivitySourceName = "sample";
     internal const string ActivitySourceVersion = "1.0.0";
 
-    public SampleInstrumentation()
-    {
-        this.ActivitySource = new ActivitySource(ActivitySourceName, ActivitySourceVersion);
+    public SampleInstrumentation() {
     }
 
-    public ActivitySource ActivitySource { get; }
-
-    public void Dispose()
-    {
-        this.ActivitySource.Dispose();
-    }
+    public static ActivitySource ActivitySource { get; } = new ActivitySource(ActivitySourceName, ActivitySourceVersion);
 }

@@ -4,13 +4,13 @@ public struct OnTraceStepCurrentContext {
     private readonly ValidatorStepIdentifier _Identifier;
     private readonly OnTraceStepExecutionState _ExecutionState;
     private readonly TracorValidatorPathModifications _Modifications;
-    private readonly LoggerUtility _LoggerUtility;
+    private readonly LoggerExtension _LoggerUtility;
 
     public OnTraceStepCurrentContext(
         ValidatorStepIdentifier identifier,
         OnTraceStepExecutionState executionState,
         TracorValidatorPathModifications modifications,
-        LoggerUtility loggerUtility) {
+        LoggerExtension loggerUtility) {
         this._Identifier = identifier;
         this._ExecutionState = executionState;
         this._Modifications = modifications;
@@ -22,7 +22,7 @@ public struct OnTraceStepCurrentContext {
     public readonly TracorForkState ForkState => this._ExecutionState.ForkState;
     public readonly TracorGlobalState GlobalState => this._ExecutionState.GlobalState;
 
-    public LoggerUtility LoggerUtility => this._LoggerUtility;
+    public LoggerExtension LoggerUtility => this._LoggerUtility;
 
     public TState GetState<TState>()
         where TState : ValidatorExpressionState, new() {

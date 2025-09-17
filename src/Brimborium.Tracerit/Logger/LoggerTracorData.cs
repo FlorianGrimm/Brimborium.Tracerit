@@ -1,6 +1,4 @@
-﻿using Brimborium.Tracerit.Utility;
-
-namespace Brimborium.Tracerit.Logger;
+﻿namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
     private readonly List<KeyValuePair<string, object?>> _Arguments;
@@ -42,5 +40,28 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
         }
         propertyValue = null;
         return false;
+    }
+
+    public bool DoesMatch(string? source, string? eventName) {
+        (bool isSourceFound, bool sourceMatched, string sourceValue) = (source is { Length: > 0 } valueSource) ? (false, false, valueSource) : (true, true, string.Empty);
+        (bool isEventNameFound, bool eventNameMatched, string eventNameValue) = (eventName is { Length: > 0 } valueEventName) ? (false, false, valueEventName) : (true, true, string.Empty);
+
+        foreach (var arg in this._Arguments) {
+            if (!isSourceFound) {
+                if ("Source" == arg.Key) {
+                    isSourceFound = true;
+                    sourceMatched = string.Equals(sourceValue, arg.Value as string, StringComparison.Ordinal);
+                    if (isEventNameFound) { break; }
+                }
+            }
+            if (!isEventNameFound) {
+                if ("Event.Name" == arg.Key) {
+                    isEventNameFound = true;
+                    eventNameMatched = string.Equals(eventNameValue, arg.Value as string, StringComparison.Ordinal);
+                    if (isSourceFound) { break; }
+                }
+            }
+        }
+        return (sourceMatched && eventNameMatched);
     }
 }

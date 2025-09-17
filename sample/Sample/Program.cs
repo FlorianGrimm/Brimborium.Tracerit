@@ -1,13 +1,34 @@
-using System.Threading.Tasks;
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
+
 namespace Sample.WebApp;
 
 public partial class Program {
-    public static async Task Main(string[] args) {
-        await Run(args);
+    public static async Task<int> Main(string[] args) {
+        try {
+            await RunAsync(args).ConfigureAwait(false);
+            return 0;
+        } catch (Microsoft.Extensions.Hosting.HostAbortedException) {
+            return 0;
+        } catch (AggregateException error) {
+            System.Console.Error.WriteLine(error.ToString());
+            error.Handle((e) => {
+                System.Console.Error.WriteLine(e.ToString());
+                return true;
+            });
+            return 1;
+        } catch (Exception error) {
+            System.Console.Error.WriteLine(error.ToString());
+            return 1;
+        }
     }
-    public static async Task Run(string[] args) {
-        var builder = WebApplication.CreateBuilder(args);
 
+    internal static Task RunAsync(
+        string[] args,
+        StartupActions? startupActions = default
+        ) {
+        startupActions ??= new();
+        var builder = WebApplication.CreateBuilder(args);
+        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
         // Add services to the container.
         builder.Services.AddRazorPages();
         builder.Services.AddAngularFileService()
@@ -19,7 +40,11 @@ public partial class Program {
         builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
             .AddNegotiate();
 
+        /*
+        builder.Services.AddHealthChecks().AddTypeActivatedCheck<>();
+        */
 
+#if false
         {
             var serviceName = SampleInstrumentation.ActivitySourceName;
             var serviceVersion = SampleInstrumentation.ActivitySourceVersion;
@@ -46,8 +71,12 @@ public partial class Program {
                                 serviceVersion: serviceVersion))
                     .AddConsoleExporter());
 
-            builder.Services.AddSingleton<SampleInstrumentation>();
         }
+#endif
+
+        builder.Services.AddSingleton(new SampleInstrumentation());
+
+        if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
         var app = builder.Build();
 
@@ -58,7 +87,13 @@ public partial class Program {
             app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        if (startupActions.Runtime) {
+            app.UseHttpsRedirection();
+        }
+
+        /*
+        app.MapHealthChecks("/healthz").AllowAnonymous();
+        */
 
         app.UseAuthentication();
 
@@ -66,8 +101,42 @@ public partial class Program {
 
         app.UseAuthorization();
 
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        app.MapGet("/ping", (HttpContext httpContext) => {
+            var now = System.DateTimeOffset.Now;
+            var result = $"pong {now:u}";
+            logger.LogTrace("pong {now}", now);
+            return result;
+        }).AllowAnonymous();
+
         app.UseAngularFileService();
 
-        await app.RunAsync();
+        if (startupActions.ConfigureWebApplication is { } configureWebApplication) { configureWebApplication(app); }
+        var taskRun = app.RunAsync();
+
+        if (startupActions.RunningWebApplication is { } runningWebApplication) { runningWebApplication(app, taskRun); }
+
+        return taskRun;
     }
+
+    // for test
+    internal static string GetContentRoot() {
+        return _GetContentRoot();
+
+        static string _GetContentRoot([System.Runtime.CompilerServices.CallerFilePath] string callerFilePath = "") {
+            if (System.IO.Path.GetDirectoryName(callerFilePath) is { Length: > 0 } result) {
+                return result;
+            } else {
+                throw new InvalidOperationException("GetContentRoot failed");
+            }
+        }
+    }
+}
+
+internal class StartupActions {
+    public bool Runtime { get; init; } = true;
+    public bool Testtime { get => !this.Runtime; init { this.Runtime = !value; } }
+    public Action<WebApplicationBuilder> ConfigureWebApplicationBuilder { get; init; } = (_) => { };
+    public Action<WebApplication> ConfigureWebApplication { get; init; } = (_) => { };
+    public Action<WebApplication, Task> RunningWebApplication { get; init; } = (_, _) => { };
 }

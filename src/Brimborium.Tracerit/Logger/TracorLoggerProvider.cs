@@ -9,26 +9,29 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
     private readonly Lock _Lock = new();
     private ITracor? _Tracor;
     private readonly IServiceProvider _ServiceProvider;
+    private readonly LogLevel? _GlobalLogLevel;
     private IExternalScopeProvider? _ExternalScopeProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorLoggerProvider"/> class.
     /// </summary>
     /// <param name="serviceProvider">The service provider used to resolve the <see cref="ITracor"/> instance.</param>
-    public TracorLoggerProvider(IServiceProvider serviceProvider) {
+    public TracorLoggerProvider(
+        IServiceProvider serviceProvider,
+        IOptions<TracorLoggerOptions> options) {
         this._ServiceProvider = serviceProvider;
+        this._GlobalLogLevel = options.Value.LogLevel;
     }
 
     /// <inheritdoc />
-    public ILogger CreateLogger(string name)
-    {
+    public ILogger CreateLogger(string name) {
         using (this._Lock.EnterScope()) {
             if (this._Tracor is null) {
                 this._Tracor = this._ServiceProvider.GetRequiredService<ITracor>();
             }
         }
         if (this._Tracor.IsGeneralEnabled()) {
-            return new TracorLogger(name, this._Tracor, this._ExternalScopeProvider);
+            return new TracorLogger(name, this._Tracor, this._GlobalLogLevel, this._ExternalScopeProvider);
         } else {
             return new TracorDisabledLogger();
         }

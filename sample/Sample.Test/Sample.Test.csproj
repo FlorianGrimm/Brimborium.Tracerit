@@ -7,11 +7,18 @@
     <RootNamespace>Sample.WebApp</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Flurl" />
     <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Verify.TUnit" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
     <ProjectReference Include="..\Sample\Sample.csproj" />
   </ItemGroup>
 </Project>

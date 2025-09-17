@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿using Brimborium.Tracerit.TracorActivityListener;
+
+namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Provides extension methods for configuring Tracor services in the dependency injection container.
@@ -9,11 +11,14 @@ public static class TracorServiceBuilderExtension {
     /// </summary>
     /// <param name="servicebuilder">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
-    public static IServiceCollection AddTracor(this IServiceCollection servicebuilder, bool addTestTimeServices) {
+    public static IServiceCollection AddTracor(
+        this IServiceCollection servicebuilder, 
+        bool addTestTimeServices,
+        Action<TracorValidatorOptions>? configure = default) {
         if (addTestTimeServices) {
-            return servicebuilder.AddTesttimeTracor();
-        } else { 
-            return servicebuilder.AddRuntimeTracor();
+            return servicebuilder.AddTesttimeTracor(configure);
+        } else {
+            return servicebuilder.AddRuntimeTracor(configure);
         }
     }
 
@@ -22,23 +27,19 @@ public static class TracorServiceBuilderExtension {
     /// </summary>
     /// <param name="servicebuilder">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
-    public static IServiceCollection AddRuntimeTracor(this IServiceCollection servicebuilder) {
+    public static IServiceCollection AddRuntimeTracor(
+        this IServiceCollection servicebuilder,
+        Action<TracorValidatorOptions>? configure = default) {
         servicebuilder.AddSingleton<ITracor, RuntimeTracor>();
         servicebuilder.AddSingleton<RuntimeTracorValidator>();
         servicebuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<RuntimeTracorValidator>());
+        var optionsBuilder = servicebuilder.AddOptions<TracorValidatorOptions>();
         servicebuilder.AddSingleton(typeof(LazyCreatedLogger<>));
-        return servicebuilder;
-    }
 
-    /// <summary>
-    /// Adds test-time Tracor services to the service collection with default configuration.
-    /// Test-time Tracor is designed for testing scenarios with full validation capabilities.
-    /// </summary>
-    /// <param name="servicebuilder">The service collection to add services to.</param>
-    /// <returns>The service collection for method chaining.</returns>
-    public static IServiceCollection AddTesttimeTracor(this IServiceCollection servicebuilder) {
-        return servicebuilder.AddTesttimeTracor(configure: (options) => { });
+        if (configure is { }) { optionsBuilder.Configure(configure); }
+
+        return servicebuilder;
     }
 
     /// <summary>
@@ -50,7 +51,7 @@ public static class TracorServiceBuilderExtension {
     /// <returns>The service collection for method chaining.</returns>
     public static IServiceCollection AddTesttimeTracor(
         this IServiceCollection servicebuilder,
-        Action<TracorValidatorOptions> configure) {
+        Action<TracorValidatorOptions>? configure = default) {
         servicebuilder.AddLogging();
         servicebuilder.AddSingleton<ITracor, TesttimeTracor>();
         servicebuilder.AddSingleton<TesttimeTracorValidator>();
@@ -62,5 +63,40 @@ public static class TracorServiceBuilderExtension {
         if (configure is { }) { optionsBuilder.Configure(configure); }
 
         return servicebuilder;
+    }
+
+    public static IServiceCollection AddTracorActivityListener(
+        this IServiceCollection servicebuilder,
+        bool addTestTimeServices,
+        Action<TracorActivityListenerOptions>? configure = null
+        ) {
+        if (addTestTimeServices) {
+            return servicebuilder.AddTesttimeTracorActivityListener();
+        } else {
+            return servicebuilder.AddRuntimeTracorActivityListener();
+        }
+    }
+
+    public static IServiceCollection AddRuntimeTracorActivityListener(
+        this IServiceCollection servicebuilder,
+        Action<TracorActivityListenerOptions>? configure = null
+        ) {
+        // add runtime do nothing implementations
+        var optionsBuilder = servicebuilder.AddOptions<TracorActivityListenerOptions>();
+        if (configure is { }) { optionsBuilder.Configure(configure); }
+        return servicebuilder;
+    }
+
+    public static IServiceCollection AddTesttimeTracorActivityListener(
+        this IServiceCollection servicebuilder,
+        Action<TracorActivityListenerOptions>? configure = null
+        ) {
+
+        servicebuilder.AddSingleton<TesttimeTracorActivityListener>();
+        servicebuilder.AddSingleton<ITracorActivityListener>((sp)=>sp.GetRequiredService<TesttimeTracorActivityListener>());
+
+        var optionsBuilder = servicebuilder.AddOptions<TracorActivityListenerOptions>();
+        if (configure is { }) { optionsBuilder.Configure(configure); }
+                return servicebuilder;
     }
 }

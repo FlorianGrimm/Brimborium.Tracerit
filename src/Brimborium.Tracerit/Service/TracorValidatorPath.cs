@@ -4,13 +4,13 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
     private readonly Lock _Lock = new();
     private readonly IValidatorExpression _Step;
     private readonly IDisposable _OnDispose;
-    private readonly LoggerUtility _LoggerUtility;
+    private readonly LoggerExtension _LoggerUtility;
     private readonly TracorValidatorPathModifications _Modifications;
     private ImmutableArray<OnTraceStepExecutionState> _ListRunningExecutionState;
     private readonly List<OnTraceStepExecutionState> _ListFinishedExecutionState = new();
     private TaskCompletionSource<TracorValidatorPath> _TcsFinishedExecutionState = new();
 
-    public TracorValidatorPath(IValidatorExpression step, TracorGlobalState? globalState, IDisposable onDispose, LoggerUtility loggerUtility) {
+    public TracorValidatorPath(IValidatorExpression step, TracorGlobalState? globalState, IDisposable onDispose, LoggerExtension loggerUtility) {
         this._Step = step;
         this._OnDispose = onDispose;
         this._LoggerUtility = loggerUtility;
