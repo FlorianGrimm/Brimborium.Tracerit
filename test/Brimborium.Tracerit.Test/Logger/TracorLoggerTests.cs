@@ -11,10 +11,11 @@ public class TracorLoggerTests {
     [Test]
     public async Task MagicConstantOwnNamespaceLength() {
 #pragma warning disable TUnitAssertions0005 // Assert.That(...) should not be used with a constant value
-        await Assert.That(typeof(TracorLogger).Namespace).StartsWith(TracorLogger.OwnNamespace);
-        await Assert.That(TracorLogger.OwnNamespace.Length).IsEqualTo(TracorLogger.OwnNamespaceLength);
+        await Assert.That(typeof(ITracor).Namespace).IsEqualTo(TracorLogger.OwnNamespace);
+        await Assert.That(typeof(ITracor).Namespace?.Length).IsEqualTo(TracorLogger.OwnNamespaceLength);
 #pragma warning restore TUnitAssertions0005 // Assert.That(...) should not be used with a constant value
     }
+
     [Test]
     public async Task M() {
         var serviceCollection = new ServiceCollection();
@@ -28,7 +29,7 @@ public class TracorLoggerTests {
         var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         using (var validateLog = tracorValidator.Add(
             new CalleeCondition(
-                new TracorIdentitfier("Brimborium_Tracerit_Logger.TracorLoggerTests/456"),
+                TracorIdentitfier.Create("Brimborium_Tracerit_Logger.TracorLoggerTests/456"),
                 Wrap((LoggerTracorData tracorData) =>
                     tracorData.TryGetPropertyValue<int>("abc", out var abc) && (123 == abc)
                 ).PredicateTracorData()

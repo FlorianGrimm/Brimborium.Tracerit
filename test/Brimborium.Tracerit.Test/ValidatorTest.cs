@@ -37,10 +37,10 @@ public class ValidatorTest {
         );
         Uri uriPageLocation1 = new("https://localhost/1", UriKind.Absolute);
         Uri uriPageLocation2 = new("https://localhost/2", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("something"), "something");
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation1);
-        tracor.Trace(new TracorIdentitfier("else"), "else");
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation2);
+        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
+        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNotNull();
@@ -79,22 +79,22 @@ public class ValidatorTest {
         );
         Uri uriPageLocation1 = new("https://localhost/1", UriKind.Absolute);
         Uri uriPageLocation2 = new("https://localhost/2", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("something"), "something");
+        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNull();
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation1);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNull();
         }
-        tracor.Trace(new TracorIdentitfier("else"), "else");
+        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNull();
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation2);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNotNull();
@@ -128,29 +128,29 @@ public class ValidatorTest {
         Uri uriPageLocation3 = new("https://def/1", UriKind.Absolute);
         Uri uriPageLocation4 = new("https://def/2", UriKind.Absolute);
         Uri uriPageLocation5 = new("https://ghi/1", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("something"), "something");
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation1);
+        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation3);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation3);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(3);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("else"), "else");
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation2);
+        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation4);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation4);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation5);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation5);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
@@ -208,29 +208,29 @@ public class ValidatorTest {
         Uri uriPageLocation3 = new("https://def/1", UriKind.Absolute);
         Uri uriPageLocation4 = new("https://def/2", UriKind.Absolute);
         Uri uriPageLocation5 = new("https://ghi/1", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("something"), "something");
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation1);
+        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation3);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation3);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("else"), "else");
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation2);
+        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation4);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation4);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(0);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
-        tracor.Trace(new TracorIdentitfier("Page.Location"), uriPageLocation5);
+        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation5);
         {
             await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(0);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);

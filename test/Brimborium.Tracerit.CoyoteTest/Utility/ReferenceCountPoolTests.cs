@@ -6,6 +6,7 @@
 #pragma warning disable CA1002 // Do not expose generic lists
 #pragma warning disable CA1822 // Mark members as static
 
+using Brimborium.Tracerit.DataAccessor;
 using Microsoft.Coyote.Runtime;
 
 namespace Brimborium.Tracerit.CoyoteTest.Utility;
