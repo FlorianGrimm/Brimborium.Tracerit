@@ -51,8 +51,7 @@ public static class TracorServiceBuilderExtension {
     /// <returns>The service collection for method chaining.</returns>
     public static IServiceCollection AddTesttimeTracor(
         this IServiceCollection servicebuilder,
-        Action<TracorValidatorOptions>? configure = default) {
-        servicebuilder.AddLogging();
+        Action<TracorValidatorOptions>? configure = default) {        
         servicebuilder.AddSingleton<ITracor, TesttimeTracor>();
         servicebuilder.AddSingleton<TesttimeTracorValidator>();
         servicebuilder.AddSingleton<ITracorValidator>(

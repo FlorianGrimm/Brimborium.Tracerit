@@ -64,6 +64,10 @@ internal sealed class TesttimeTracorActivityListener : ITracorActivityListener, 
         this._Options = options;
         this._Logger = logger;
         this._OptionsDispose = this._Options.OnChange(this._OnChangeOptions);
+        {
+            var nextOptionState = OptionState.Create(options.CurrentValue, this._DirectModifications);
+            this.SetOptionState(nextOptionState);
+        }
     }
 
     private void _OnChangeOptions(TracorActivityListenerOptions options, string? name) {

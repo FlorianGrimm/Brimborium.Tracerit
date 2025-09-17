@@ -9,6 +9,8 @@ global using global::System.Text;
 global using global::System.Threading.Tasks;
 
 global using global::Microsoft.Extensions.Logging;
+global using global::Microsoft.Extensions.Primitives;
+global using global::Microsoft.Extensions.Configuration;
 global using global::Microsoft.Extensions.DependencyInjection;
 global using global::Microsoft.Extensions.DependencyInjection.Extensions;
 global using global::Microsoft.Extensions.Options;
