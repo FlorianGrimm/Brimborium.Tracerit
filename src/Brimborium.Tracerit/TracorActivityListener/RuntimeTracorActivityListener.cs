@@ -8,7 +8,7 @@ internal sealed class RuntimeTracorActivityListener : ITracorActivityListener {
         // do nothing
     }
 
-    public void AddListInstrumentation(ActivitySourceIdentifier activitySourceIdentifier) {
+    public void AddActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier) {
         // do nothing
     }
 
@@ -16,7 +16,15 @@ internal sealed class RuntimeTracorActivityListener : ITracorActivityListener {
         // do nothing
     }
 
-    public void RemoveListInstrumentation(ActivitySourceIdentifier activitySourceIdentifier) {
+    public void RemoveActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier) {
+        // do nothing
+    }
+
+    public void AddActivitySourceByType<T>() where T : ActivitySourceBase {
+        // do nothing
+    }
+
+    public void RemoveActivitySourceByType<T>() where T : ActivitySourceBase {
         // do nothing
     }
 

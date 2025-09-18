@@ -9,6 +9,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Coyote.Core" Version="1.7.11" />
     <PackageVersion Include="Microsoft.Coyote.Test" Version="1.7.11" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.9" />

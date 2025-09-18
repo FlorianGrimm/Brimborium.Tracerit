@@ -1,0 +1,22 @@
+{
+  "ActivitySource": {
+    "Default": "Information",
+    "sample.test1": "Trace",
+    "sample.test2": "Warning"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Trace",
+      "Microsoft.AspNetCore": "Trace"
+    },
+    "Tracor": {
+      "LogLevel": {
+        "Default": "Trace",
+        "Microsoft.AspNetCore": "Warning",
+        "Microsoft.AspNetCore.Hosting.Diagnostics": "Warning",
+        "Microsoft.AspNetCore.Routing.EndpointMiddleware": "Warning",
+        "Microsoft.AspNetCore.Server.Kestrel.Connections": "Warning"
+      }
+    }
+  }
+}

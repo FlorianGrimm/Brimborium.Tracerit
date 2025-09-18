@@ -1,3 +1,5 @@
+using Brimborium.Tracerit;
+
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
 
 namespace Sample.WebApp;
@@ -74,7 +76,10 @@ public partial class Program {
         }
 #endif
 
-        builder.Services.AddSingleton(new SampleInstrumentation());
+        builder.Services.AddTracor(startupActions.Testtime);
+        builder.Services.AddTracorActivityListener(startupActions.Testtime, (options)=> { 
+            options.AddActivitySourceByType<SampleInstrumentation>();
+        });
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 

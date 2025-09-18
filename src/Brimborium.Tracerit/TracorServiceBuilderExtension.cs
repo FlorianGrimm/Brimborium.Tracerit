@@ -12,7 +12,7 @@ public static class TracorServiceBuilderExtension {
     /// <param name="servicebuilder">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
     public static IServiceCollection AddTracor(
-        this IServiceCollection servicebuilder, 
+        this IServiceCollection servicebuilder,
         bool addTestTimeServices,
         Action<TracorValidatorOptions>? configure = default) {
         if (addTestTimeServices) {
@@ -51,7 +51,7 @@ public static class TracorServiceBuilderExtension {
     /// <returns>The service collection for method chaining.</returns>
     public static IServiceCollection AddTesttimeTracor(
         this IServiceCollection servicebuilder,
-        Action<TracorValidatorOptions>? configure = default) {        
+        Action<TracorValidatorOptions>? configure = default) {
         servicebuilder.AddSingleton<ITracor, TesttimeTracor>();
         servicebuilder.AddSingleton<TesttimeTracorValidator>();
         servicebuilder.AddSingleton<ITracorValidator>(
@@ -64,15 +64,33 @@ public static class TracorServiceBuilderExtension {
         return servicebuilder;
     }
 
+    /// <summary>
+    /// Adds the Tracor logger provider to the logging builder, enabling integration between logging and tracing.
+    /// </summary>
+    /// <param name="builder">The logging builder to add the Tracor provider to.</param>
+    /// <returns>The logging builder for method chaining.</returns>
+    public static IServiceCollection AddTracorLogger(
+        this IServiceCollection servicebuilder,
+        Action<TracorLoggerOptions>? configure = default) {
+        servicebuilder.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, TracorLoggerProvider>());
+
+        var optionsBuilder = servicebuilder.AddOptions<TracorLoggerOptions>();
+        if (configure is { }) {
+            optionsBuilder.Configure(configure);
+        }
+        return servicebuilder;
+    }
+
+
     public static IServiceCollection AddTracorActivityListener(
         this IServiceCollection servicebuilder,
         bool addTestTimeServices,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         if (addTestTimeServices) {
-            return servicebuilder.AddTesttimeTracorActivityListener();
+            return servicebuilder.AddTesttimeTracorActivityListener(configure);
         } else {
-            return servicebuilder.AddRuntimeTracorActivityListener();
+            return servicebuilder.AddRuntimeTracorActivityListener(configure);
         }
     }
 
@@ -81,8 +99,15 @@ public static class TracorServiceBuilderExtension {
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         // add runtime do nothing implementations
+        servicebuilder.AddSingleton<RuntimeTracorActivityListener>();
+        servicebuilder.AddSingleton<ITracorActivityListener>(
+            (sp) => sp.GetRequiredService<RuntimeTracorActivityListener>());
+
+        // options configure
         var optionsBuilder = servicebuilder.AddOptions<TracorActivityListenerOptions>();
-        if (configure is { }) { optionsBuilder.Configure(configure); }
+        if (configure is { }) {
+            optionsBuilder.Configure(configure);
+        }
         return servicebuilder;
     }
 
@@ -90,12 +115,15 @@ public static class TracorServiceBuilderExtension {
         this IServiceCollection servicebuilder,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
-
         servicebuilder.AddSingleton<TesttimeTracorActivityListener>();
-        servicebuilder.AddSingleton<ITracorActivityListener>((sp)=>sp.GetRequiredService<TesttimeTracorActivityListener>());
+        servicebuilder.AddSingleton<ITracorActivityListener>(
+            (sp) => sp.GetRequiredService<TesttimeTracorActivityListener>());
 
+        // options configure
         var optionsBuilder = servicebuilder.AddOptions<TracorActivityListenerOptions>();
-        if (configure is { }) { optionsBuilder.Configure(configure); }
-                return servicebuilder;
+        if (configure is { }) {
+            optionsBuilder.Configure(configure);
+        }
+        return servicebuilder;
     }
 }

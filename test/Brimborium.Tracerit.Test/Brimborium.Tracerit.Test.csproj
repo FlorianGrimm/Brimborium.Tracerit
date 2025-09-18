@@ -7,7 +7,10 @@
     <NoWarn>$(NoWarn);CA*;CA1852</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Verify" />
     <PackageReference Include="Verify.TUnit" />

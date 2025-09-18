@@ -1,11 +1,11 @@
 namespace Sample.WebApp;
 
-public class SampleInstrumentation {
+public class SampleInstrumentation : Brimborium.Tracerit.ActivitySourceBase {
     internal const string ActivitySourceName = "sample";
     internal const string ActivitySourceVersion = "1.0.0";
 
-    public SampleInstrumentation() {
+    public SampleInstrumentation(
+        IConfiguration? configuration        
+    ) : base(configuration, ActivitySourceName, ActivitySourceVersion) {
     }
-
-    public static ActivitySource ActivitySource { get; } = new ActivitySource(ActivitySourceName, ActivitySourceVersion);
 }

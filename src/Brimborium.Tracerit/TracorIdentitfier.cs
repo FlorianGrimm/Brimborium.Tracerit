@@ -152,12 +152,20 @@ public sealed class TracorIdentitfierCache {
     /// </returns>
     public TracorIdentitfier Child(string? name) {
         if (name is { Length: > 0 } nameValue) {
-            if (this._DictChildByName.TryGetValue(nameValue, out var result)) {
-                return result;
-            } else {
-                result = this._TracorIdentitfier.Child(nameValue);
-                this._DictChildByName = this._DictChildByName.Add(nameValue, result);
-                return result;
+            while (true) {
+                var dictChildByName = this._DictChildByName;
+                if (dictChildByName.TryGetValue(nameValue, out var result)) {
+                    return result;
+                } else {
+                    result = this._TracorIdentitfier.Child(nameValue);
+                    var dictChildByNameNext = dictChildByName.Add(nameValue, result);
+                    var resultCompareExchange = System.Threading.Interlocked.CompareExchange(ref this._DictChildByName, dictChildByNameNext, dictChildByName);
+                    if (ReferenceEquals(resultCompareExchange, dictChildByName)) {
+                        return result;
+                    } else {
+                        continue;
+                    }
+                }
             }
         } else {
             return this._TracorIdentitfier;

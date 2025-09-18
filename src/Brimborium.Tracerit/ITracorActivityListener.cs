@@ -31,13 +31,25 @@ public interface ITracorActivityListener {
     /// Adds an activity source identifier to the instrumentation list for detailed monitoring.
     /// </summary>
     /// <param name="activitySourceIdentifier">The activity source identifier containing name and version information.</param>
-    void AddListInstrumentation(ActivitySourceIdentifier activitySourceIdentifier);
+    void AddActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier);
 
     /// <summary>
     /// Removes an activity source identifier from the instrumentation list.
     /// </summary>
     /// <param name="activitySourceIdentifier">The activity source identifier to remove from monitoring.</param>
-    void RemoveListInstrumentation(ActivitySourceIdentifier activitySourceIdentifier);
+    void RemoveActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier);
+
+    /// <summary>
+    /// Adds an activity source type to the list of monitored sources.
+    /// </summary>
+    /// <typeparam name="T">a type derived from <see cref="ActivitySourceBase"/></typeparam>
+    void AddActivitySourceByType<T>() where T : ActivitySourceBase;
+
+    /// <summary>
+    /// Removes an activity source type from the list of monitored sources.
+    /// </summary>
+    /// <typeparam name="T">a type derived from <see cref="ActivitySourceBase"/></typeparam>
+    void RemoveActivitySourceByType<T>() where T : ActivitySourceBase;
 }
 
 /// <summary>
@@ -61,30 +73,19 @@ public class TracorActivityListenerOptions {
     /// Provides more granular control by specifying both name and version of activity sources to monitor.
     /// </summary>
     public List<ActivitySourceIdentifier> ListActivitySourceIdenifier { get; set; } = new();
-}
 
-/// <summary>
-/// Represents an identifier for an activity source, containing both name and version information.
-/// Used to uniquely identify and filter activity sources for monitoring purposes.
-/// </summary>
-/// <param name="Name">The name of the activity source.</param>
-/// <param name="Version">The version of the activity source. Defaults to an empty string if not specified.</param>
-public record struct ActivitySourceIdentifier(
-    string Name,
-    string Version = ""
-    ) {
     /// <summary>
-    /// Creates an ActivitySourceIdentifier with the specified name and version.
-    /// If the version is null or empty, it defaults to an empty string.
+    /// Better use <see cref="AddActivitySourceByType{T}"/>.
+    /// Gets or sets the list of activity source types to monitor.
     /// </summary>
-    /// <param name="name">The name of the activity source.</param>
-    /// <param name="version">The version of the activity source. Can be null or empty.</param>
-    /// <returns>A new ActivitySourceIdentifier instance.</returns>
-    public static ActivitySourceIdentifier Create(string name, string? version) {
-        if (version is null || version is { Length: 0 }) {
-            return new ActivitySourceIdentifier(name, string.Empty);
-        } else {
-            return new ActivitySourceIdentifier(name, version);
-        }
+    public List<Type> ListActivitySourceByType { get; set; } = new();
+
+    /// <summary>
+    /// Adds an activity source type to the list of monitored sources.
+    /// </summary>
+    /// <typeparam name="T">a type derived from <see cref="ActivitySourceBase"/></typeparam>
+    public void AddActivitySourceByType<T>()
+        where T : ActivitySourceBase {
+        this.ListActivitySourceByType.Add(typeof(T));
     }
 }
