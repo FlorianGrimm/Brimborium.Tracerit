@@ -70,8 +70,8 @@ public class TracorIdentitfierTests {
     public async Task EqualityComparerTracorIdentitfier_ShouldReturnTrueForEqualIdentifiers() {
         // Arrange
         var comparer = EqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("Source", "Callee");
-        var id2 = new TracorIdentitfier("Source", "Callee");
+        var id1 =new TracorIdentitfier("Source", "Scope");
+        var id2 =new TracorIdentitfier("Source", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -82,8 +82,8 @@ public class TracorIdentitfierTests {
     public async Task EqualityComparerTracorIdentitfier_ShouldBeCaseInsensitive() {
         // Arrange
         var comparer = EqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("SOURCE", "CALLEE");
-        var id2 = new TracorIdentitfier("source", "callee");
+        var id1 =new TracorIdentitfier("Source", "Scope");
+        var id2 =new TracorIdentitfier("Source", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -93,8 +93,8 @@ public class TracorIdentitfierTests {
     public async Task EqualityComparerTracorIdentitfier_ShouldReturnFalseForDifferentSources() {
         // Arrange
         var comparer = EqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("Source1", "Callee");
-        var id2 = new TracorIdentitfier("Source2", "Callee");
+        var id1 = new TracorIdentitfier("Source1", "Scope");
+        var id2 = new TracorIdentitfier("Source2", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsFalse();
@@ -115,7 +115,7 @@ public class TracorIdentitfierTests {
     public async Task EqualityComparerTracorIdentitfier_ShouldHandleNullValues() {
         // Arrange
         var comparer = EqualityComparerTracorIdentitfier.Default;
-        var id = new TracorIdentitfier("Source", "Callee");
+        var id =new TracorIdentitfier("Source", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(null, null)).IsTrue();
@@ -127,7 +127,7 @@ public class TracorIdentitfierTests {
     public async Task EqualityComparerTracorIdentitfier_ShouldReturnTrueForSameReference() {
         // Arrange
         var comparer = EqualityComparerTracorIdentitfier.Default;
-        var id = new TracorIdentitfier("Source", "Callee");
+        var id =new TracorIdentitfier("Source", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id, id)).IsTrue();
@@ -137,8 +137,8 @@ public class TracorIdentitfierTests {
     public async Task MatchEqualityComparerTracorIdentitfier_ShouldIgnoreEmptySources() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("", "Callee");
-        var id2 = new TracorIdentitfier("Source", "Callee");
+        var id1 = new TracorIdentitfier("Source", "Scope");
+        var id2 = new TracorIdentitfier("Source", "");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -148,8 +148,8 @@ public class TracorIdentitfierTests {
     public async Task MatchEqualityComparerTracorIdentitfier_ShouldCompareNonEmptySources() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("Source1", "Callee");
-        var id2 = new TracorIdentitfier("Source2", "Callee");
+        var id1 = new TracorIdentitfier("Source1", "Scope");
+        var id2 = new TracorIdentitfier("Source2", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsFalse();
@@ -159,8 +159,8 @@ public class TracorIdentitfierTests {
     public async Task MatchEqualityComparerTracorIdentitfier_ShouldMatchWhenBothSourcesNonEmptyAndEqual() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("Source", "Callee");
-        var id2 = new TracorIdentitfier("Source", "Callee");
+        var id1 =new TracorIdentitfier("Source", "Scope");
+        var id2 =new TracorIdentitfier("Source", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -170,8 +170,8 @@ public class TracorIdentitfierTests {
     public async Task MatchEqualityComparerTracorIdentitfier_ShouldBeCaseInsensitive() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentitfier.Default;
-        var id1 = new TracorIdentitfier("SOURCE", "CALLEE");
-        var id2 = new TracorIdentitfier("source", "callee");
+        var id1 =new TracorIdentitfier("Source", "Scope");
+        var id2 =new TracorIdentitfier("Source", "Scope");
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();

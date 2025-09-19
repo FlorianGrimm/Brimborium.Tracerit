@@ -28,6 +28,10 @@ public sealed record class TracorIdentitfier(string Source, string Scope) {
     public TracorIdentitfier Child(string child)
         => new(this.Source, $"{this.Scope}/{child}");
 
+    public bool IsPartialEquals(TracorIdentitfier currentTracorIdentitfier, TracorIdentitfier expectedtracorIdentitfier) {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Creates a <see cref="CalleeCondition"/> by combining this identifier with an expression condition.
     /// </summary>
@@ -79,9 +83,9 @@ public sealed class EqualityComparerTracorIdentitfier : EqualityComparer<TracorI
 
 
 /// <summary>
-/// Provides case-insensitive equality comparison for TracorIdentitfier instances with flexible Source matching.
-/// The Source property is only compared if both instances have non-empty Source values.
-/// The Callee property is always compared case-insensitively.
+/// Provides partial equality comparison for TracorIdentitfier.
+/// The current property is only compared if the expected property is not empty.
+/// The expected property is always compared case-insensitively.
 /// </summary>
 public sealed class MatchEqualityComparerTracorIdentitfier : EqualityComparer<TracorIdentitfier> {
     private static MatchEqualityComparerTracorIdentitfier? _Default;
@@ -92,22 +96,24 @@ public sealed class MatchEqualityComparerTracorIdentitfier : EqualityComparer<Tr
     public new static MatchEqualityComparerTracorIdentitfier Default => (_Default ??= new());
 
     /// <summary>
-    /// Determines whether two TracorIdentitfier instances are equal using flexible matching rules.
-    /// Source properties are only compared if both are non-empty.
+    /// Determines whether two TracorIdentitfier instances are partial equal.
+    /// The properties are only compare if the y ones are not empty.
     /// </summary>
-    /// <param name="x">The first TracorIdentitfier to compare.</param>
-    /// <param name="y">The second TracorIdentitfier to compare.</param>
-    /// <returns>True if the instances match according to the flexible rules; otherwise, false.</returns>
+    /// <param name="x">The first (current) TracorIdentitfier to compare.</param>
+    /// <param name="y">The second (expected / partial) TracorIdentitfier to compare.</param>
+    /// <returns>True if the instances match; otherwise, false.</returns>
     public override bool Equals(TracorIdentitfier? x, TracorIdentitfier? y) {
         if (ReferenceEquals(x, y)) return true;
         if (x is null || y is null) { return false; }
-        if (x.Source is { Length: > 0 } xSource && y.Source is { Length: > 0 } ySource) {
-            if (!string.Equals(xSource, ySource, StringComparison.OrdinalIgnoreCase)) {
+        if (y.Source is { Length: > 0 } ySource) {
+            if (!string.Equals(x.Source, ySource, StringComparison.Ordinal)) {
                 return false;
             }
         }
-        if (!string.Equals(x.Scope, y.Scope, StringComparison.OrdinalIgnoreCase)) {
-            return false;
+        if (y.Scope is { Length: > 0 }) {
+            if (!string.Equals(x.Scope, y.Scope, StringComparison.Ordinal)) {
+                return false;
+            }
         }
         return true;
     }

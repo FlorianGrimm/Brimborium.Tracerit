@@ -1,4 +1,5 @@
-﻿namespace Brimborium.Tracerit;
+﻿
+namespace Brimborium.Tracerit;
 
 public sealed class TracorDataRecord : ITracorData {
     public TracorDataRecord() { }
@@ -18,7 +19,7 @@ public sealed class TracorDataRecord : ITracorData {
         get {
             if (this.TryGetPropertyValue(propertyName, out var result)) {
                 return result;
-            } else { 
+            } else {
                 return null;
             }
         }
@@ -45,6 +46,35 @@ public sealed class TracorDataRecord : ITracorData {
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         listProperty.AddRange(this.ListProperty);
+    }
+
+    public static bool IsPartialEquals(TracorIdentitfierData currentData, TracorDataRecord expectedData) {
+        if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
+            var currentTracorIdentitfier = currentData.TracorIdentitfier;
+            if (!MatchEqualityComparerTracorIdentitfier.Default.Equals(
+                    currentTracorIdentitfier,
+                    expectedtracorIdentitfier)) {
+                return false;
+            }
+        }
+        if (0 < expectedData.ListProperty.Count) {
+            foreach (var expectedProperty in expectedData.ListProperty) {
+                if (currentData.TracorData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
+                    if (expectedProperty.HasEqualValue(currentPropertyValue)) {
+                        // equal -> ok
+                    } else {
+                        // not equal
+                        return false;
+                    }
+                } else { 
+                    // not found
+                    return false;
+                }
+            }
+        }
+
+        // no diff found
+        return true;
     }
 }
 

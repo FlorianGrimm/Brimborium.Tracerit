@@ -21,7 +21,7 @@ public class TracorLoggerTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddTesttimeTracor();
         serviceCollection.AddLogging(loggingBuilder => {
-            loggingBuilder.AddTracor();
+            loggingBuilder.AddTracorLogger();
         });
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();

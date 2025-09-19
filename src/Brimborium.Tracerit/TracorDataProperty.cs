@@ -259,4 +259,48 @@ public struct TracorDataProperty {
             Value = argValue
         };
 
+    public readonly bool HasEqualValue(object? currentPropertyValue) {
+        if (TypeNameString == this.TypeName) {
+            return string.Equals(this.TextValue, currentPropertyValue as string);
+        }
+        if (TypeNameInteger == this.TypeName) {
+            return (currentPropertyValue is int currentValue)
+                && (this.Value is int thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameLevelValue == this.TypeName) {
+            return (currentPropertyValue is LogLevel currentValue)
+                && (this.Value is LogLevel thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameDateTime == this.TypeName) {
+            return (currentPropertyValue is DateTime currentValue)
+                && (this.Value is DateTime thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameDateTimeOffset == this.TypeName) {
+            return (currentPropertyValue is DateTimeOffset currentValue)
+                && (this.Value is DateTimeOffset thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameBoolean == this.TypeName) {
+            return (currentPropertyValue is bool currentValue)
+                && (this.Value is bool thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameLong == this.TypeName) {
+            return (currentPropertyValue is long currentValue)
+                && (this.Value is long thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameDouble == this.TypeName) {
+            return (currentPropertyValue is double currentValue)
+                && (this.Value is double thisValue)
+                && (currentValue == thisValue);
+        }
+        if (TypeNameAny == this.TypeName) {
+            return false;
+        }
+        return false;
+    }
 }

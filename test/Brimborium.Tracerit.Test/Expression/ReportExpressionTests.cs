@@ -12,7 +12,7 @@ public class ReportExpressionTests {
         serviceBuilder.AddOptions();
         serviceBuilder.AddSingleton<IConfiguration>(configuration);
         serviceBuilder.AddLogging((builder) => {
-            builder.AddTracor();
+            builder.AddTracorLogger();
         });
         serviceBuilder.AddTracor(true);
         serviceBuilder.AddTracorActivityListener(true);
@@ -21,7 +21,6 @@ public class ReportExpressionTests {
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
         var testtimeTracorActivityListener = serviceProvider.GetRequiredService<TesttimeTracorActivityListener>();
-        var act = testtimeTracorActivityListener.GetActivitySourceBase();
 
         var sampleTest1Instrumentation = serviceProvider.GetRequiredService<SampleTest1Instrumentation>();
 

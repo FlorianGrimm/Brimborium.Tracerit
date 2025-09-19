@@ -9,7 +9,7 @@ public static class TracorLoggerLoggingBuilderExtensions {
     /// </summary>
     /// <param name="builder">The logging builder to add the Tracor provider to.</param>
     /// <returns>The logging builder for method chaining.</returns>
-    public static ILoggingBuilder AddTracor(
+    public static ILoggingBuilder AddTracorLogger(
         this ILoggingBuilder builder,
         Action<TracorLoggerOptions>? configure = default) {
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, TracorLoggerProvider>());
