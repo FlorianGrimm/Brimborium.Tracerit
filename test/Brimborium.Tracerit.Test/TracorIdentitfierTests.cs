@@ -12,7 +12,7 @@ public class TracorIdentitfierTests {
 
         // Assert
         await Assert.That(identifier.Source).IsEqualTo("TestSource");
-        await Assert.That(identifier.Callee).IsEqualTo("TestCallee");
+        await Assert.That(identifier.Scope).IsEqualTo("TestCallee");
     }
 
     [Test]
@@ -22,7 +22,7 @@ public class TracorIdentitfierTests {
 
         // Assert
         await Assert.That(identifier.Source).IsEqualTo(string.Empty);
-        await Assert.That(identifier.Callee).IsEqualTo("TestCallee");
+        await Assert.That(identifier.Scope).IsEqualTo("TestCallee");
     }
 
     [Test]
@@ -35,7 +35,7 @@ public class TracorIdentitfierTests {
 
         // Assert
         await Assert.That(child.Source).IsEqualTo("TestSource");
-        await Assert.That(child.Callee).IsEqualTo("Parent/Child");
+        await Assert.That(child.Scope).IsEqualTo("Parent/Child");
     }
 
     [Test]
@@ -49,7 +49,7 @@ public class TracorIdentitfierTests {
 
         // Assert
         await Assert.That(child2.Source).IsEqualTo("TestSource");
-        await Assert.That(child2.Callee).IsEqualTo("Root/Child1/Child2");
+        await Assert.That(child2.Scope).IsEqualTo("Root/Child1/Child2");
     }
 
     [Test]
@@ -200,7 +200,7 @@ public class TracorIdentitfierTests {
         // Assert
         await Assert.That(child1).IsSameReferenceAs(child2);
         await Assert.That(child1.Source).IsEqualTo("TestSource");
-        await Assert.That(child1.Callee).IsEqualTo("Root/Child");
+        await Assert.That(child1.Scope).IsEqualTo("Root/Child");
     }
 
     [Test]
@@ -217,8 +217,8 @@ public class TracorIdentitfierTests {
         // Assert
         await Assert.That(child1).IsSameReferenceAs(child1Again);
         await Assert.That(child1).IsNotSameReferenceAs(child2);
-        await Assert.That(child1.Callee).IsEqualTo("Root/Child1");
-        await Assert.That(child2.Callee).IsEqualTo("Root/Child2");
+        await Assert.That(child1.Scope).IsEqualTo("Root/Child1");
+        await Assert.That(child2.Scope).IsEqualTo("Root/Child2");
     }
 
     [Test]

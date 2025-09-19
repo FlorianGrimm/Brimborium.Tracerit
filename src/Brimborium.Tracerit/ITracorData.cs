@@ -18,7 +18,17 @@ public interface ITracorData {
     /// <returns>True if the property was found; otherwise, false.</returns>
     bool TryGetPropertyValue(string propertyName, out object? propertyValue);
 
+    /// <summary>
+    /// Get the properties.
+    /// </summary>
+    /// <param name="propertyName">the property Name.</param>
+    /// <returns>the property value or null.</returns>
     object? this[string propertyName] { get; }
+
+    /// <summary>
+    /// Convert to <paramref name="listProperty"/>.
+    /// </summary>
+    void ConvertProperties(List<TracorDataProperty> listProperty);
 }
 
 /// <summary>

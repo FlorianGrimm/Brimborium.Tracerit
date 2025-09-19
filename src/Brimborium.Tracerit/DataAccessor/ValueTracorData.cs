@@ -60,4 +60,8 @@ public sealed class ValueTracorData<TValue> : ITracorData<TValue> {
         propertyValue = null;
         return false;
     }
+
+    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+        // TODO: if needed
+    }
 }

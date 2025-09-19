@@ -6,6 +6,7 @@ global using global::System.Diagnostics;
 global using global::System.Diagnostics.CodeAnalysis;
 global using global::System.Linq;
 global using global::System.Text;
+global using global::System.Runtime.CompilerServices;
 global using global::System.Threading.Tasks;
 
 global using global::Microsoft.Extensions.Configuration;
@@ -20,5 +21,7 @@ global using global::Brimborium.Tracerit.DataAccessor;
 global using global::Brimborium.Tracerit.Expression;
 global using global::Brimborium.Tracerit.Logger;
 global using global::Brimborium.Tracerit.Service;
+global using global::Brimborium.Tracerit.TracorActivityListener;
+global using global::Brimborium.Tracerit.Utility;
 
 global using static global::Brimborium.Tracerit.TracorExtension;

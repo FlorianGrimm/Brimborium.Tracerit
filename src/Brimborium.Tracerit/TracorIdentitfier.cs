@@ -10,23 +10,23 @@ https://github.com/martinothamar/Mediator
 /// Represents a unique identifier for a trace point or caller in the tracing system.
 /// </summary>
 /// <param name="Source">The source identifier, typically representing the component or module.</param>
-/// <param name="Callee">The string identifier of the caller or trace point.</param>
-public sealed record class TracorIdentitfier(string Source, string Callee) {
+/// <param name="Scope">The string identifier of the caller or trace point.</param>
+public sealed record class TracorIdentitfier(string Source, string Scope) {
     /// <summary>
     /// Creates a TracorIdentitfier with an empty source for matching purposes.
     /// </summary>
-    /// <param name="callee">The callee identifier.</param>
+    /// <param name="scope">The callee identifier.</param>
     /// <returns>A new TracorIdentitfier with empty source.</returns>
-    public static TracorIdentitfier Create(string callee)
-        => new(string.Empty, callee);
+    public static TracorIdentitfier Create(string scope)
+        => new(string.Empty, scope);
 
     /// <summary>
     /// Creates a child TracorIdentitfier by appending the specified callee to the current callee path.
     /// </summary>
-    /// <param name="callee">The child callee identifier to append.</param>
+    /// <param name="child">The child callee identifier to append.</param>
     /// <returns>A new TracorIdentitfier representing the child path.</returns>
-    public TracorIdentitfier Child(string callee)
-        => new(this.Source, $"{this.Callee}/{callee}");
+    public TracorIdentitfier Child(string child)
+        => new(this.Source, $"{this.Scope}/{child}");
 
     /// <summary>
     /// Creates a <see cref="CalleeCondition"/> by combining this identifier with an expression condition.
@@ -62,7 +62,7 @@ public sealed class EqualityComparerTracorIdentitfier : EqualityComparer<TracorI
         if (!string.Equals(x.Source, y.Source, StringComparison.OrdinalIgnoreCase)) {
             return false;
         }
-        if (!string.Equals(x.Callee, y.Callee, StringComparison.OrdinalIgnoreCase)) {
+        if (!string.Equals(x.Scope, y.Scope, StringComparison.OrdinalIgnoreCase)) {
             return false;
         }
         return true;
@@ -74,7 +74,7 @@ public sealed class EqualityComparerTracorIdentitfier : EqualityComparer<TracorI
     /// <param name="obj">The TracorIdentitfier for which to get a hash code.</param>
     /// <returns>A hash code for the specified object.</returns>
     public override int GetHashCode([DisallowNull] TracorIdentitfier obj)
-        => HashCode.Combine(obj.Source, obj.Callee);
+        => HashCode.Combine(obj.Source, obj.Scope);
 }
 
 
@@ -106,7 +106,7 @@ public sealed class MatchEqualityComparerTracorIdentitfier : EqualityComparer<Tr
                 return false;
             }
         }
-        if (!string.Equals(x.Callee, y.Callee, StringComparison.OrdinalIgnoreCase)) {
+        if (!string.Equals(x.Scope, y.Scope, StringComparison.OrdinalIgnoreCase)) {
             return false;
         }
         return true;
@@ -118,7 +118,7 @@ public sealed class MatchEqualityComparerTracorIdentitfier : EqualityComparer<Tr
     /// <param name="obj">The TracorIdentitfier for which to get a hash code.</param>
     /// <returns>A hash code for the specified object.</returns>
     public override int GetHashCode([DisallowNull] TracorIdentitfier obj)
-        => HashCode.Combine(obj.Source, obj.Callee);
+        => HashCode.Combine(obj.Source, obj.Scope);
 }
 
 /// <summary>

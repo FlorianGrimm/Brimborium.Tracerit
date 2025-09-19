@@ -8,7 +8,7 @@ namespace Brimborium.Tracerit;
 /// <param name="Version">The version of the activity source. Defaults to an empty string if not specified.</param>
 public record struct ActivitySourceIdentifier(
     string Name,
-    string Version = ""
+    string? Version = default
     ) {
     /// <summary>
     /// Creates an ActivitySourceIdentifier with the specified name and version.

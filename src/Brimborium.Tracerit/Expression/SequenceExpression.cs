@@ -73,8 +73,8 @@ public sealed class SequenceExpression : ValidatorExpression {
     internal sealed class SequenceStepState : ValidatorExpressionState {
         public int ChildIndex = 0;
     }
-    
+
     public static SequenceExpression operator +(SequenceExpression left, IValidatorExpression right) {
-        return new( left.Label, left.ListChild.Add(right));
+        return new(left.Label, left.ListChild.Add(right));
     }
 }

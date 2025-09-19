@@ -67,8 +67,9 @@ public static class TracorServiceBuilderExtension {
     /// <summary>
     /// Adds the Tracor logger provider to the logging builder, enabling integration between logging and tracing.
     /// </summary>
-    /// <param name="builder">The logging builder to add the Tracor provider to.</param>
-    /// <returns>The logging builder for method chaining.</returns>
+    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="configure">configure options</param>
+    /// <returns>fluent this</returns>
     public static IServiceCollection AddTracorLogger(
         this IServiceCollection servicebuilder,
         Action<TracorLoggerOptions>? configure = default) {
@@ -81,7 +82,13 @@ public static class TracorServiceBuilderExtension {
         return servicebuilder;
     }
 
-
+    /// <summary>
+    /// Add ITracorActivityListener for runtime or testtime.
+    /// </summary>
+    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="addTestTimeServices">true - testtime; false - runtime</param>
+    /// <param name="configure">configure options</param>
+    /// <returns>fluent this</returns>
     public static IServiceCollection AddTracorActivityListener(
         this IServiceCollection servicebuilder,
         bool addTestTimeServices,
@@ -94,6 +101,12 @@ public static class TracorServiceBuilderExtension {
         }
     }
 
+    /// <summary>
+    /// Add ITracorActivityListener for runtime.
+    /// </summary>
+    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="configure">configure options</param>
+    /// <returns>fluent this</returns>
     public static IServiceCollection AddRuntimeTracorActivityListener(
         this IServiceCollection servicebuilder,
         Action<TracorActivityListenerOptions>? configure = null
@@ -111,6 +124,12 @@ public static class TracorServiceBuilderExtension {
         return servicebuilder;
     }
 
+    /// <summary>
+    /// Add ITracorActivityListener for testtime.
+    /// </summary>
+    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="configure">configure options</param>
+    /// <returns>fluent this</returns>
     public static IServiceCollection AddTesttimeTracorActivityListener(
         this IServiceCollection servicebuilder,
         Action<TracorActivityListenerOptions>? configure = null
@@ -124,6 +143,24 @@ public static class TracorServiceBuilderExtension {
         if (configure is { }) {
             optionsBuilder.Configure(configure);
         }
+        return servicebuilder;
+    }
+
+    /// <summary>
+    /// Add singleton T
+    /// </summary>
+    /// <typeparam name="T">Type inherit <see cref="T:AddActivitySourceBase"/>.</typeparam>
+    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <returns>fluent this</returns>
+    public static IServiceCollection AddActivitySourceBase<T>(
+        this IServiceCollection servicebuilder
+        )
+        where T : ActivitySourceBase {
+        servicebuilder.AddSingleton<T>();
+        servicebuilder.AddOptions<TracorActivityListenerOptions>()
+            .Configure((options) => {
+                options.ListActivitySourceByType.Add(typeof(T));
+            });
         return servicebuilder;
     }
 }

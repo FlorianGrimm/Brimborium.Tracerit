@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit.DataAccessor;
+﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
+
+namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
     private readonly List<KeyValuePair<string, object?>> _Arguments;
@@ -63,5 +65,13 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
             }
         }
         return (sourceMatched && eventNameMatched);
+    }
+
+    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+        foreach (var arg in this._Arguments) {
+            if (arg.Value is { } argValue) {
+                listProperty.Add(TracorDataProperty.Create(arg.Key, argValue));
+            }
+        }
     }
 }

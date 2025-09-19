@@ -1,0 +1,46 @@
+﻿{
+  ListData: [
+    {
+      TracorIdentitfier: {
+        Source: Activity,
+        Scope: sample.test1/Stop
+      },
+      ListProperty: [
+        {
+          Name: operation,
+          TypeName: str,
+          TextValue: test2,
+          Value: test2
+        }
+      ]
+    },
+    {
+      TracorIdentitfier: {
+        Source: Activity,
+        Scope: sample.test1/Stop
+      },
+      ListProperty: [
+        {
+          Name: operation,
+          TypeName: str,
+          TextValue: test3,
+          Value: test3
+        }
+      ]
+    },
+    {
+      TracorIdentitfier: {
+        Source: Activity,
+        Scope: sample.test1/Stop
+      },
+      ListProperty: [
+        {
+          Name: operation,
+          TypeName: str,
+          TextValue: test1,
+          Value: test1
+        }
+      ]
+    }
+  ]
+}

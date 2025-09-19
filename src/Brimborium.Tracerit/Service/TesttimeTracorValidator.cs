@@ -1,12 +1,11 @@
-﻿#pragma warning disable IDE0301 // Simplify collection initialization
-namespace Brimborium.Tracerit.Service;
+﻿namespace Brimborium.Tracerit.Service;
 
 public sealed class TesttimeTracorValidator : ITracorValidator {
     private ImmutableArray<ITracorValidatorPath> _ListValidatorPath = ImmutableArray<ITracorValidatorPath>.Empty;
     private readonly Lock _LockListTracorStepPath = new();
     private readonly ILoggerFactory _LoggerFactory;
     private ILogger? _LoggerCondition;
-    private LoggerExtension? _LoggerUtility;
+    private LoggerUtility? _LoggerUtility;
 
     public ImmutableDictionary<Type, ITracorDataAccessorFactory> TracorDataAccessorByType { get; set; } = ImmutableDictionary<Type, ITracorDataAccessorFactory>.Empty;
     public ImmutableArray<ITracorDataAccessorFactory> ListTracorDataAccessor { get; set; } = ImmutableArray<ITracorDataAccessorFactory>.Empty;
@@ -17,6 +16,8 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<bool>());
         this.AddTracorDataAccessorByType(new TracorDataAccessorFactory<Uri>(new SystemUriTracorDataAccessor()));
         this.AddTracorDataAccessorByType(new JsonDocumentTracorDataFactor());
+        this.AddTracorDataAccessorByType(new ActivityTracorDataFactory());
+        this.AddTracorDataAccessorByType(new LoggerTracorDataFactory());
         this._LoggerFactory = loggerFactory;
     }
 
@@ -55,7 +56,7 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
     public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState) {
         if (this._LoggerCondition is null || this._LoggerUtility is null) {
             this._LoggerCondition ??= this._LoggerFactory.CreateLogger(typeof(AlwaysCondition).Namespace!);
-            this._LoggerUtility ??= new LoggerExtension(this._LoggerCondition);
+            this._LoggerUtility ??= new LoggerUtility(this._LoggerCondition);
         }
         using (this._LockListTracorStepPath.EnterScope()) {
             TracorValidatorPathRemover remover = new(this);
@@ -85,7 +86,7 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
         }
     }
 
-    public ITracorData Convert<T>(TracorIdentitfier callee, T value) {
+    public ITracorData Convert<T>(/*TracorIdentitfier callee,*/ T value) {
         var type = typeof(T);
         if (type.IsClass) {
             if (value is null) {

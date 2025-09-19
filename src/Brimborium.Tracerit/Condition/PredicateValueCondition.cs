@@ -29,7 +29,6 @@ public sealed class PredicateTracorDataCondition : IExpressionCondition {
     }
 }
 
-
 public sealed class PredicateTracorDataCondition<TTracorData> : IExpressionCondition
     where TTracorData : ITracorData {
     private readonly Func<TTracorData, bool> _FnCondition;

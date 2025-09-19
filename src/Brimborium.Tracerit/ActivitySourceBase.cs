@@ -39,11 +39,38 @@ namespace Brimborium.Tracerit;
 /// // Perform work...
 /// </code>
 /// </example>
-public abstract class ActivitySourceBase {
+public abstract class ActivitySourceBase : IDisposable {
     /// <summary>
     /// ActivitySource
     /// </summary>
     public const string ConfigurationSectionName = "ActivitySource";
+
+    private static readonly Lock _LockDictInstanceByType = new();
+    private static Dictionary<Type, ActivitySourceBase> _DictInstanceByType = [];
+
+    protected static T GetInstanceByType<T>()
+        where T : ActivitySourceBase, new() {
+        Type type = typeof(T);
+        if (_DictInstanceByType.TryGetValue(type, out var instance)) {
+            if (instance is T result) {
+                return result;
+            } else {
+                throw new InvalidOperationException("InstanceByType");
+            }
+        } else {
+            return new();
+        }
+    }
+
+    internal static bool TryGetInstanceByType(Type type, [MaybeNullWhen(false)] out ActivitySourceBase activitySourceBase) {
+        if (_DictInstanceByType.TryGetValue(type, out var instance)) {
+            activitySourceBase = instance;
+            return true;
+        } else {
+            activitySourceBase = default;
+            return false;
+        }
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ActivitySourceBase"/> class with the specified configuration and source information.
@@ -67,16 +94,11 @@ public abstract class ActivitySourceBase {
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="sourceName"/> is null or empty.</exception>
     /// <remarks>
     /// <para>
-    /// This constructor is marked with <see cref="Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructorAttribute"/>
-    /// to indicate it should be used by dependency injection containers when creating instances.
-    /// </para>
-    /// <para>
     /// If a configuration is provided, the constructor sets up automatic monitoring of the "ActivitySource"
     /// configuration section. When this section changes, the log level for this activity source will be
     /// automatically updated based on the configuration value for the source name.
     /// </para>
     /// </remarks>
-    [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
     protected ActivitySourceBase(
         IConfiguration? configuration,
         string sourceName,
@@ -88,7 +110,11 @@ public abstract class ActivitySourceBase {
         this.SourceVersion = sourceVersion;
         this._ActivitySource = new ActivitySource(this.SourceName);
         if (logLevel is { } logLevelValue) {
-            this._LogLevel = logLevelValue;
+            if (LogLevel.Trace <= logLevel && logLevel <= LogLevel.None) {
+                this._LogLevel = logLevelValue;
+            } else {
+                throw new ArgumentException($"{logLevel} is invalid.", nameof(logLevel));
+            }
         }
         if (configuration is not null) {
             ChangeToken.OnChange(
@@ -97,6 +123,13 @@ public abstract class ActivitySourceBase {
                 configuration.GetSection(ConfigurationSectionName)
                 );
             this.SetLogLevel(configuration.GetSection(ConfigurationSectionName));
+        }
+
+        using (var scope = _LockDictInstanceByType.EnterScope()) {
+            var next = new Dictionary<Type, ActivitySourceBase>(_DictInstanceByType);
+            var type = this.GetType();
+            next[type] = this;
+            _DictInstanceByType = next;
         }
     }
 
@@ -113,31 +146,34 @@ public abstract class ActivitySourceBase {
     /// to parse and apply the log level.
     /// </remarks>
     private void SetLogLevel(IConfigurationSection sectionActivitySource) {
-        if (sectionActivitySource.GetValue<string>(this.SourceName) is { Length: > 0 } value1) {
-            this.SetLogLevel(value1);
-            return;
-        }
-        if (sectionActivitySource.GetValue<string>("Default") is { Length: > 0 } value2) {
-            this.SetLogLevel(value2);
-            return;
+        if (sectionActivitySource.Exists()) {
+            if (sectionActivitySource.GetValue<string>(this.SourceName) is { Length: > 0 } value1) {
+                this.SetLogLevel(value1);
+                return;
+            }
+            if (sectionActivitySource.GetValue<string>("Default") is { Length: > 0 } value2) {
+                this.SetLogLevel(value2);
+                return;
+            }
         }
     }
 
     /// <summary>
     /// The current log level for this activity source.
     /// </summary>
-    protected LogLevel _LogLevel = LogLevel.Information;
+    protected LogLevel _LogLevel = LogLevel.Trace;
 
     /// <summary>
     /// The underlying .NET ActivitySource instance.
     /// </summary>
-    protected ActivitySource _ActivitySource;
+    protected ActivitySource? _ActivitySource;
 
     /// <summary>
     /// Gets the underlying .NET <see cref="ActivitySource"/> instance used for creating activities.
     /// </summary>
     /// <value>The ActivitySource instance that was created during construction.</value>
-    public ActivitySource ActivitySource => this._ActivitySource;
+    public ActivitySource ActivitySource => this._ActivitySource
+        ?? throw new ObjectDisposedException(nameof(this.ActivitySource));
 
     /// <summary>
     /// Gets the name of this activity source.
@@ -155,7 +191,14 @@ public abstract class ActivitySourceBase {
     /// Sets the log level for this activity source.
     /// </summary>
     /// <param name="level">The log level to set. This determines which activities will be created based on their requested log level.</param>
-    public void SetLogLevel(LogLevel level) { this._LogLevel = level; }
+    public bool SetLogLevel(LogLevel level) {
+        if (LogLevel.Trace <= level && level <= LogLevel.None) {
+            this._LogLevel = level;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     /// <summary>
     /// Gets the current log level for this activity source.
@@ -164,68 +207,14 @@ public abstract class ActivitySourceBase {
     public LogLevel LogLevel => this._LogLevel;
 
     /// <summary>
-    /// Sets whether this activity source is enabled by converting a boolean to a log level.
-    /// </summary>
-    /// <param name="value">
-    /// If true, sets the log level to <see cref="LogLevel.Trace"/> (most verbose).
-    /// If false, sets the log level to <see cref="LogLevel.None"/> (disabled).
-    /// </param>
-    public void SetIsEnabled(bool value) {
-        this._LogLevel = (value) ? LogLevel.Trace : LogLevel.None;
-    }
-
-    /// <summary>
-    /// Static dictionary mapping string representations to LogLevel values for configuration parsing.
-    /// </summary>
-    private static Dictionary<string, LogLevel>? _LogLevelByName;
-
-    /// <summary>
-    /// Gets a dictionary that maps string representations to LogLevel values for configuration parsing.
-    /// </summary>
-    /// <returns>A case-insensitive dictionary mapping log level names to LogLevel enum values.</returns>
-    /// <remarks>
-    /// The dictionary includes standard log level names (Trace, Debug, Information, Warning, Error, Critical, None)
-    /// as well as convenience aliases (True/False, Enable/Disable).
-    /// </remarks>
-    private static Dictionary<string, LogLevel> GetLogLevelByName()
-        => _LogLevelByName ??= new Dictionary<string, LogLevel>(StringComparer.OrdinalIgnoreCase) {
-            { "Trace", LogLevel.Trace },
-            { "Debug", LogLevel.Debug },
-            { "Information", LogLevel.Information },
-            { "Warning", LogLevel.Warning },
-            { "Error", LogLevel.Error },
-            { "Critical", LogLevel.Critical },
-            { "None", LogLevel.None },
-            { "True", LogLevel.Information },
-            { "False", LogLevel.None },
-            { "Enable", LogLevel.Information },
-            { "Disable", LogLevel.None }
-        };
-
-    /// <summary>
     /// Sets the log level for this activity source by parsing a string value.
     /// </summary>
-    /// <param name="value">
-    /// The string representation of the log level. Can be a standard log level name
-    /// (Trace, Debug, Information, Warning, Error, Critical, None) or a convenience alias
-    /// (True, False, Enable, Disable). Case-insensitive. If null, empty, or unrecognized,
-    /// defaults to Information.
-    /// </param>
-    /// <remarks>
-    /// This method is commonly used when reading log levels from configuration files or
-    /// environment variables where the log level is specified as a string.
-    /// </remarks>
-    public void SetLogLevel(string? value) {
-        if (string.IsNullOrEmpty(value)) {
-            this._LogLevel = LogLevel.Information;
-            return;
-        }
-        var logLevelByName = GetLogLevelByName();
-
-        if (logLevelByName.TryGetValue(value, out var result)) {
-            this._LogLevel = result;
+    public bool SetLogLevel(string? value) {
+        if (LogLevelUtility.TryGetLogLevelByName(value, out var logLevel)) {
+            this._LogLevel = logLevel;
+            return true;
         } else {
-            this._LogLevel = LogLevel.Information;
+            return false;
         }
     }
 
@@ -251,15 +240,11 @@ public abstract class ActivitySourceBase {
     /// </para>
     /// </remarks>
     public bool IsEnabled(LogLevel logLevel) {
-        if (!this._ActivitySource.HasListeners()) { return false; }
-        if (LogLevel.None <= logLevel) { return false; }
-        if (LogLevel.None <= this._LogLevel) { return false; }
+        if (this._ActivitySource is not { }) { return false; }
 
-        if (logLevel >= this._LogLevel) {
-            return true;
-        } else {
-            return false;
-        }
+        return
+            (LogLevel.Trace <= logLevel && logLevel < LogLevel.None)
+            && (this._LogLevel <= logLevel);
     }
 
     /// <summary>
@@ -304,17 +289,72 @@ public abstract class ActivitySourceBase {
     /// // Activity is automatically stopped and previous context restored when disposed
     /// </code>
     /// </example>
-    public RestoreRootActivity? StartRootActivity(ActivityKind kind = ActivityKind.Internal, ActivityContext parentContext = default, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default, LogLevel logLevel = LogLevel.Information, [CallerMemberName] string name = "") {
+    public RestoreRootActivity StartRootActivity(
+        ActivityTraceId? activityTraceId = default,
+        ActivityKind kind = ActivityKind.Internal,
+        ActivityContext parentContext = default,
+        IEnumerable<KeyValuePair<string, object?>>? tags = null,
+        IEnumerable<ActivityLink>? links = null,
+        DateTimeOffset startTime = default,
+        LogLevel logLevel = LogLevel.Information,
+        [CallerMemberName] string name = "") {
         if (this.IsEnabled(logLevel)) {
             var previous = Activity.Current;
-            Activity.Current = null;
-            var rootActivity = this.ActivitySource.StartActivity(kind, parentContext, tags, links, startTime, name);
-            Activity.Current = rootActivity;
-            RestoreRootActivity result = new(previous, rootActivity);
-            return result;
+            ActivityTraceId traceId;
+            if (previous is { }) {
+                Activity.Current = null;
+                if (parentContext is { }) {
+                    traceId = parentContext.TraceId;
+                } else {
+                    traceId = ActivityTraceId.CreateRandom();
+                }
+            } else {
+                if (activityTraceId is { } activityTraceIdValue) {
+                    traceId = activityTraceIdValue;
+                } else {
+                    traceId = ActivityTraceId.CreateRandom();
+                }
+            }
+            var rootContext = new ActivityContext(
+                    traceId,
+                    ActivitySpanId.CreateRandom(),
+                    ActivityTraceFlags.Recorded);
+
+            var rootActivity = this.ActivitySource.StartActivity(
+                kind, rootContext, tags, links, startTime, name);
+
+            if (rootActivity is { }) {
+                Activity.Current = rootActivity;
+                RestoreRootActivity result = new(previous, rootActivity);
+                return result;
+            } else {
+                return new(default, default);
+            }
         } else {
-            return default;
+            return new(default, default);
         }
+    }
+
+    protected virtual void Dispose(bool disposing) {
+        using (var activitySource = this._ActivitySource) {
+            this._ActivitySource = null;
+
+            using (var scope = _LockDictInstanceByType.EnterScope()) {
+                var next = new Dictionary<Type, ActivitySourceBase>(_DictInstanceByType);
+                var type = this.GetType();
+                next.Remove(type);
+                _DictInstanceByType = next;
+            }
+        }
+    }
+
+    ~ActivitySourceBase() {
+        this.Dispose(disposing: false);
+    }
+
+    public void Dispose() {
+        this.Dispose(disposing: true);
+        System.GC.SuppressFinalize(this);
     }
 }
 

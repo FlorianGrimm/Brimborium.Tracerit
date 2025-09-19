@@ -92,4 +92,8 @@ public sealed class JsonDocumentTracorData
         propertyValue = null;
         return false;
     }
+
+    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+        // TODO: if needed
+    }
 }

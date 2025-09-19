@@ -3,7 +3,7 @@
 /// <summary>
 /// Provides extension methods for integrating Tracor logging with the Microsoft.Extensions.Logging framework.
 /// </summary>
-public static class TracorLoggerFactoryExtensions {
+public static class TracorLoggerLoggingBuilderExtensions {
     /// <summary>
     /// Adds the Tracor logger provider to the logging builder, enabling integration between logging and tracing.
     /// </summary>

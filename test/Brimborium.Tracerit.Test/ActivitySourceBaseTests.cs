@@ -1,13 +1,44 @@
-using Brimborium.Tracerit.TracorActivityListener;
 using Microsoft.AspNetCore.Builder;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Brimborium.Tracerit.Test;
 
 public class ActivitySourceBaseTests {
+    [Test]
+    public async Task ActivitySourceBaseIsEnabledTest() {
+        using (var activitySource = new SampleTest1Instrumentation(default)) {
+            await Assert.That(activitySource.SetLogLevel(LogLevel.Information)).IsTrue();
+            await Assert.That(activitySource.IsEnabled(LogLevel.Trace)).IsFalse();
+            await Assert.That(activitySource.IsEnabled(LogLevel.Error)).IsTrue();
+
+            await Assert.That(activitySource.SetLogLevel(LogLevel.None)).IsTrue();
+            await Assert.That(activitySource.IsEnabled(LogLevel.Trace)).IsFalse();
+            await Assert.That(activitySource.IsEnabled(LogLevel.Error)).IsFalse();
+
+            await Assert.That(activitySource.SetLogLevel((LogLevel)(-1))).IsFalse();
+            await Assert.That(activitySource.SetLogLevel((LogLevel)100)).IsFalse();
+        }
+    }
+
+    [Test]
+    public async Task GetInstanceReturnsTheSameReferenceTest() {
+        using (var a = SampleTest1Instrumentation.GetInstance()) {
+            using (var b = SampleTest1Instrumentation.GetInstance()) {
+                await Assert.That(a).IsSameReferenceAs(b);
+            }
+        }
+    }
+
+    [Test]
+    public async Task GetInstanceReturnsDiffernetObjectAfterDisposeTest() {
+        using (var a = SampleTest1Instrumentation.GetInstance()) {
+            using (var b = SampleTest1Instrumentation.GetInstance()) {
+                await Assert.That(a).IsSameReferenceAs(b);
+            }
+            using (var c = SampleTest1Instrumentation.GetInstance()) {
+                await Assert.That(a).IsNotSameReferenceAs(c);
+            }
+        }
+    }
     [Test]
     public async Task AddActivitySourceByTypeTest() {
         var configurationBuilder = new ConfigurationBuilder();
@@ -21,13 +52,11 @@ public class ActivitySourceBaseTests {
         serviceBuilder.AddTracorLogger();
         serviceBuilder.AddTracor(true, (options) => {
         });
-        serviceBuilder.AddTracorActivityListener(false, (options) => {
-            options.AddActivitySourceByType<SampleTest1Instrumentation>();
-        });
-        serviceBuilder.AddTracorActivityListener(true, (options) => {
-            options.AddActivitySourceByType<SampleTest2Instrumentation>();
-            options.AddActivitySourceByType<SampleTest3Instrumentation>();
-        });
+        serviceBuilder.AddTracorActivityListener(false);
+        serviceBuilder.AddActivitySourceBase<SampleTest1Instrumentation>();
+        serviceBuilder.AddTracorActivityListener(true);
+        serviceBuilder.AddActivitySourceBase<SampleTest2Instrumentation>();
+        serviceBuilder.AddActivitySourceBase<SampleTest3Instrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();

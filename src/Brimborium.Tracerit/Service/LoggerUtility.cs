@@ -6,22 +6,21 @@
 
 */
 
-public partial class LoggerExtension {
+public partial class LoggerUtility {
     private readonly ILogger _Logger;
 
-    public LoggerExtension(ILogger logger) {
+    public LoggerUtility(ILogger logger) {
         this._Logger = logger;
     }
 
-
-    [LoggerMessage(
-        EventId = 1450604493,
-        EventName = "Condition",
-        Level = LogLevel.Debug,
-        Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
-    static partial void LogCondition(ILogger logger, TracorIdentitfier callee, bool result, string? fnConditionDisplay);
+    //[LoggerMessage(
+    //    EventId = 1450604493,
+    //    EventName = "Condition",
+    //    Level = LogLevel.Debug,
+    //    Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
+    //static partial void LogCondition(ILogger logger, TracorIdentitfier callee, bool result, string? fnConditionDisplay);
 
     public void LogCondition(TracorIdentitfier callee, bool result, string? fnConditionDisplay) {
-        LogCondition(this._Logger, callee, result, fnConditionDisplay);
+        this._Logger.LogCondition(callee, result, fnConditionDisplay);
     }
 }

@@ -5,9 +5,9 @@
 #pragma warning disable CA2201 // Do not raise reserved exception types
 #pragma warning disable CA1002 // Do not expose generic lists
 #pragma warning disable CA1822 // Mark members as static
+#pragma warning disable IDE0039 // Use local function
 
 using Brimborium.Tracerit.DataAccessor;
-using Microsoft.Coyote.Runtime;
 
 namespace Brimborium.Tracerit.CoyoteTest.Utility;
 
@@ -142,5 +142,8 @@ public sealed class LoggerTracorDataForTest : ReferenceCountObject, ITracorData 
         }
         propertyValue = null;
         return false;
+    }
+
+    public void ConvertProperties(List<TracorDataProperty> listProperty) {
     }
 }

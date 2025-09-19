@@ -52,4 +52,8 @@ public sealed class BoundAccessorTracorDataTyped<TValue> : ITracorData<TValue> {
     public bool TryGetPropertyValue(string propertyName, out object? propertyValue) {
         return this._TracorDataAccessor.TryGetPropertyValueTyped(this._Value, propertyName, out propertyValue);
     }
+
+    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+        // TODO: if needed
+    }
 }

@@ -1,7 +1,10 @@
-﻿namespace Brimborium.Tracerit.DataAccessor;
+﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
+
+namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class ActivityTracorData
     : ITracorData<Activity> {
+
     private readonly Activity _Activity;
 
     public ActivityTracorData(Activity activity) {
@@ -12,6 +15,11 @@ public sealed class ActivityTracorData
 
     public List<string> GetListPropertyName() {
         List<string> result = new();
+        foreach (ref readonly var tag in this._Activity.EnumerateTagObjects()) {
+            result.Add(tag.Key);
+            //result.Add($"{TracorDataUtility.PrefixTag}:{tag.Key}");
+        }
+
         return result;
     }
 
@@ -19,6 +27,7 @@ public sealed class ActivityTracorData
         value = this._Activity;
         return true;
     }
+
     public object? this[string propertyName] => this.TryGetPropertyValue(propertyName, out var value) ? value : null;
 
     public bool TryGetPropertyValue(string propertyName, out object? propertyValue) {
@@ -26,14 +35,10 @@ public sealed class ActivityTracorData
         foreach (ref readonly var activityEvent in this._Activity.EnumerateEvents()) {
         }
         */
-        if (this._Activity.GetCustomProperty(propertyName) is { } customPropertyValue) {
-            propertyValue = customPropertyValue;
-            return true;
-        }
-
+        
         foreach (ref readonly var tag in this._Activity.EnumerateTagObjects()) {
-            if (tag.Key == propertyName) {
-                propertyValue= tag.Value;
+            if (propertyName == tag.Key) {
+                propertyValue = tag.Value;
                 return true;
             }
         }
@@ -41,6 +46,8 @@ public sealed class ActivityTracorData
         propertyValue = null;
         return false;
     }
+
+
 
     /// <summary>
     /// Gets the value of a specific tag on an <see cref="Activity"/>.
@@ -66,10 +73,10 @@ public sealed class ActivityTracorData
     /// <param name="tagValue">Tag value.</param>
     /// <returns><see langword="true"/> if the first tag of the supplied Activity matches the user provide tag name.</returns>
     public bool TryGetTagValue(string tagName, out object? tagValue) {
-        var enumerator = this._Activity.EnumerateTagObjects();
+        var enumeratorTagObjects = this._Activity.EnumerateTagObjects();
 
-        if (enumerator.MoveNext()) {
-            ref readonly var tag = ref enumerator.Current;
+        if (enumeratorTagObjects.MoveNext()) {
+            ref readonly var tag = ref enumeratorTagObjects.Current;
 
             if (tag.Key == tagName) {
                 tagValue = tag.Value;
@@ -82,10 +89,10 @@ public sealed class ActivityTracorData
     }
 
     public bool TryGetTagValue<T>(string tagName, [MaybeNullWhen(false)] out T tagValue) {
-        var enumerator = this._Activity.EnumerateTagObjects();
+        var enumeratorTagObjects = this._Activity.EnumerateTagObjects();
 
-        if (enumerator.MoveNext()) {
-            ref readonly var tag = ref enumerator.Current;
+        if (enumeratorTagObjects.MoveNext()) {
+            ref readonly var tag = ref enumeratorTagObjects.Current;
 
             if (tag.Key == tagName && tag.Value is T tValue) {
                 tagValue = tValue;
@@ -97,4 +104,14 @@ public sealed class ActivityTracorData
         return false;
     }
 
+    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+        var enumeratorTagObjects = this._Activity.EnumerateTagObjects();
+
+        if (enumeratorTagObjects.MoveNext()) {
+            ref readonly var tag = ref enumeratorTagObjects.Current;
+            if (tag.Value is { } tagValue){ 
+                listProperty.Add(TracorDataProperty.Create(tag.Key, tagValue));
+            }
+        }
+    }
 }

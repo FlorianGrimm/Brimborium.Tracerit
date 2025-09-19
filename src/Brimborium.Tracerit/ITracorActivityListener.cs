@@ -39,6 +39,7 @@ public interface ITracorActivityListener {
     /// <param name="activitySourceIdentifier">The activity source identifier to remove from monitoring.</param>
     void RemoveActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier);
 
+#if false
     /// <summary>
     /// Adds an activity source type to the list of monitored sources.
     /// </summary>
@@ -50,6 +51,7 @@ public interface ITracorActivityListener {
     /// </summary>
     /// <typeparam name="T">a type derived from <see cref="ActivitySourceBase"/></typeparam>
     void RemoveActivitySourceByType<T>() where T : ActivitySourceBase;
+#endif
 }
 
 /// <summary>
@@ -78,14 +80,5 @@ public class TracorActivityListenerOptions {
     /// Better use <see cref="AddActivitySourceByType{T}"/>.
     /// Gets or sets the list of activity source types to monitor.
     /// </summary>
-    public List<Type> ListActivitySourceByType { get; set; } = new();
-
-    /// <summary>
-    /// Adds an activity source type to the list of monitored sources.
-    /// </summary>
-    /// <typeparam name="T">a type derived from <see cref="ActivitySourceBase"/></typeparam>
-    public void AddActivitySourceByType<T>()
-        where T : ActivitySourceBase {
-        this.ListActivitySourceByType.Add(typeof(T));
-    }
+    internal List<Type> ListActivitySourceByType { get; set; } = new();
 }

@@ -1,0 +1,15 @@
+﻿[
+    [
+        "Source:str:a",
+        "Scope:str:b",
+        "c:str:d",
+        "e:int:6",
+        "f:lvl:Warning",
+        "g:dt:981173106000000000",
+        "h:dto:981173106000000000",
+        "i:bool:0",
+        "j:bool:1",
+        "k:long:123123123",
+        "l:dbl:12312.5"
+    ]
+]

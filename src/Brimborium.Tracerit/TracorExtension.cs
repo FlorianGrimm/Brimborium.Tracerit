@@ -52,12 +52,12 @@ public static partial class TracorExtension {
     /// Wraps a function with caller expression information for use in Tracor expressions.
     /// </summary>
     /// <typeparam name="TValue">The input type of the function.</typeparam>
-    /// <typeparam name="TProperty">The return type of the function.</typeparam>
+    /// <typeparam name="TResult">The return type of the function.</typeparam>
     /// <param name="fn">The function to wrap.</param>
     /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
     /// <returns>A wrapped function with expression information.</returns>
-    public static WrapFunc<TValue, TProperty> Wrap<TValue, TProperty>(
-        Func<TValue, TProperty> fn,
+    public static WrapFunc<TValue, TResult> Wrap<TValue, TResult>(
+        Func<TValue, TResult> fn,
         [CallerArgumentExpression(nameof(fn))] string? doNotPopulateThisValue = null)
         => new(fn, doNotPopulateThisValue);
 
@@ -66,12 +66,12 @@ public static partial class TracorExtension {
     /// </summary>
     /// <typeparam name="T1">The first input type of the function.</typeparam>
     /// <typeparam name="T2">The second input type of the function.</typeparam>
-    /// <typeparam name="TProperty">The return type of the function.</typeparam>
+    /// <typeparam name="TResult">The return type of the function.</typeparam>
     /// <param name="fn">The function to wrap.</param>
     /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
     /// <returns>A wrapped function with expression information.</returns>
-    public static WrapFunc<T1, T2, TProperty> Wrap<T1, T2, TProperty>(
-        Func<T1, T2, TProperty> fn,
+    public static WrapFunc<T1, T2, TResult> Wrap<T1, T2, TResult>(
+        Func<T1, T2, TResult> fn,
         [CallerArgumentExpression(nameof(fn))] string? doNotPopulateThisValue = null)
         => new(fn, doNotPopulateThisValue);
 }

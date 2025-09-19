@@ -1,8 +1,8 @@
 ﻿namespace Brimborium.Tracerit.Logger;
 
 internal sealed class TracorLogger : ILogger {
-    internal const string OwnNamespace = "Brimborium.Tracerit";
-    internal const int OwnNamespaceLength = /* OwnNamespace.Length */ 19;
+    public const string OwnNamespace = "Brimborium.Tracerit";
+    public const int OwnNamespaceLength = /* OwnNamespace.Length */ 19;
 
     private readonly string? _Name;
     private readonly ITracor _Tracor;
@@ -25,10 +25,10 @@ internal sealed class TracorLogger : ILogger {
         if (tracor.IsGeneralEnabled()) {
             if (name is { Length: >= OwnNamespaceLength }
                 && name.StartsWith(OwnNamespace)) {
-                if (name.Length == OwnNamespaceLength) {
-                    this._IsAllowed = false;
+                if (OwnNamespaceLength < name.Length) {
+                    this._IsAllowed = !('.' == name[OwnNamespaceLength]);
                 } else {
-                    this._IsAllowed = '.' != name[OwnNamespaceLength];
+                    this._IsAllowed = false;
                 }
             } else {
                 this._IsAllowed = true;
@@ -63,35 +63,7 @@ internal sealed class TracorLogger : ILogger {
         return this._ExternalScopeProvider?.Push(state);
 
         // https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Logging.EventSource/src/EventSourceLogger.cs
-        //IReadOnlyList<KeyValuePair<string, string?>> arguments = GetProperties(state);
-        //_eventSource.ActivityStart(id, _factoryID, CategoryName, arguments);
-        //return new ActivityScope(_eventSource, CategoryName, id, _factoryID, false);
     }
-
-    //private sealed class ActivityScope : IDisposable {
-    //    private readonly string _categoryName;
-    //    private readonly int _activityID;
-    //    private readonly int _factoryID;
-    //    private readonly bool _isJsonStop;
-    //    private readonly LoggingEventSource _eventSource;
-
-    //    public ActivityScope(LoggingEventSource eventSource, string categoryName, int activityID, int factoryID, bool isJsonStop) {
-    //        _categoryName = categoryName;
-    //        _activityID = activityID;
-    //        _factoryID = factoryID;
-    //        _isJsonStop = isJsonStop;
-    //        _eventSource = eventSource;
-    //    }
-
-    //    public void Dispose() {
-    //        if (_isJsonStop) {
-    //            _eventSource.ActivityJsonStop(_activityID, _factoryID, _categoryName);
-    //        } else {
-    //            _eventSource.ActivityStop(_activityID, _factoryID, _categoryName);
-    //        }
-    //    }
-    //}
-
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
         try {
@@ -158,7 +130,7 @@ internal sealed class TracorLogger : ILogger {
         object? state,
         Exception? exception) {
         // TODO: key from otel
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Source", id.Callee));
+        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Source", id.Scope));
         if (activityTraceId is { Length: > 0 }) {
             loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceId", activityTraceId));
         }

@@ -46,7 +46,7 @@ internal sealed class TesttimeTracor : ITracor {
                 referenceCountObject.IncrementReferenceCount();
             }
             if (value is not ITracorData tracorData) {
-                tracorData = this._Validator.Convert(callee, value);
+                tracorData = this._Validator.Convert(/*callee,*/ value);
             }
             this._Validator.OnTrace(callee, tracorData);
             if (tracorData is IDisposable tracorDataDisposable) {

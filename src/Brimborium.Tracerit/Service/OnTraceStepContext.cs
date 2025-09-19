@@ -4,11 +4,11 @@
 /// Represents the current context for a validation step, providing access to state, identifiers, and utilities.
 /// This struct encapsulates all the information needed during the execution of a validation step.
 /// </summary>
-public struct OnTraceStepCurrentContext {
+public readonly struct OnTraceStepCurrentContext {
     private readonly ValidatorStepIdentifier _Identifier;
     private readonly OnTraceStepExecutionState _ExecutionState;
     private readonly TracorValidatorPathModifications _Modifications;
-    private readonly LoggerExtension _LoggerUtility;
+    private readonly LoggerUtility _LoggerUtility;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OnTraceStepCurrentContext"/> struct.
@@ -21,7 +21,7 @@ public struct OnTraceStepCurrentContext {
         ValidatorStepIdentifier identifier,
         OnTraceStepExecutionState executionState,
         TracorValidatorPathModifications modifications,
-        LoggerExtension loggerUtility) {
+        LoggerUtility loggerUtility) {
         this._Identifier = identifier;
         this._ExecutionState = executionState;
         this._Modifications = modifications;
@@ -46,7 +46,7 @@ public struct OnTraceStepCurrentContext {
     /// <summary>
     /// Gets the logger utility for logging operations.
     /// </summary>
-    public LoggerExtension LoggerUtility => this._LoggerUtility;
+    public LoggerUtility LoggerUtility => this._LoggerUtility;
 
     /// <summary>
     /// Gets or creates a state object for the current validation step.

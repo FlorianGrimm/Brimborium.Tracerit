@@ -1,4 +1,5 @@
 using Brimborium.Tracerit;
+using Sample.WebApp;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
 
@@ -77,9 +78,8 @@ public partial class Program {
 #endif
 
         builder.Services.AddTracor(startupActions.Testtime);
-        builder.Services.AddTracorActivityListener(startupActions.Testtime, (options)=> { 
-            options.AddActivitySourceByType<SampleInstrumentation>();
-        });
+        builder.Services.AddTracorActivityListener(startupActions.Testtime);
+        builder.Services.AddActivitySourceBase<SampleInstrumentation>();
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
@@ -110,7 +110,7 @@ public partial class Program {
         app.MapGet("/ping", (HttpContext httpContext) => {
             var now = System.DateTimeOffset.Now;
             var result = $"pong {now:u}";
-            logger.LogTrace("pong {now}", now);
+            logger.PingResult(now);
             return result;
         }).AllowAnonymous();
 
