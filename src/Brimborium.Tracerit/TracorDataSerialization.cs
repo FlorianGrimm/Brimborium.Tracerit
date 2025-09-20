@@ -14,10 +14,10 @@ public static class TracorDataSerialization {
 
     public static void ToTracorData(TracorIdentitfierData that, TracorDataRecord result) {
         if (that.TracorIdentitfier.Source is string valueSource) {
-            result.ListProperty.Add(TracorDataProperty.ConvertString(nameof(TracorIdentitfier.Source), valueSource));
+            result.ListProperty.Add(TracorDataProperty.CreateString(nameof(TracorIdentitfier.Source), valueSource));
         }
         if (that.TracorIdentitfier.Scope is string valueCallee) {
-            result.ListProperty.Add(TracorDataProperty.ConvertString(nameof(TracorIdentitfier.Scope), valueCallee));
+            result.ListProperty.Add(TracorDataProperty.CreateString(nameof(TracorIdentitfier.Scope), valueCallee));
         }
         that.TracorData.ConvertProperties(result.ListProperty);
     }

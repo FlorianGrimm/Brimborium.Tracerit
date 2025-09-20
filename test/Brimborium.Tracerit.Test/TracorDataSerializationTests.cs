@@ -62,15 +62,15 @@ public class TracorDataSerializationTests {
             new TracorDataRecord() {
                 TracorIdentitfier = new("a", "b"),
                 ListProperty = {
-                    TracorDataProperty.ConvertString("c","d"),
-                    TracorDataProperty.ConvertInteger("e",6),
-                    TracorDataProperty.ConvertLevelValue("f",LogLevel.Warning),
-                    TracorDataProperty.ConvertDateTime("g", new DateTime(2001,2,3,4,5,6)),
-                    TracorDataProperty.ConvertDateTimeOffset("h", new DateTimeOffset(new DateTime(2001,2,3,4,5,6), TimeSpan.Zero)),
-                    TracorDataProperty.ConvertBoolean("i", false),
-                    TracorDataProperty.ConvertBoolean("j", true),
-                    TracorDataProperty.ConvertLong("k", 123123123),
-                    TracorDataProperty.ConvertDouble("l", 12312.5),
+                    TracorDataProperty.CreateString("c","d"),
+                    TracorDataProperty.CreateInteger("e",6),
+                    TracorDataProperty.CreateLevelValue("f",LogLevel.Warning),
+                    TracorDataProperty.CreateDateTime("g", new DateTime(2001,2,3,4,5,6)),
+                    TracorDataProperty.CreateDateTimeOffset("h", new DateTimeOffset(new DateTime(2001,2,3,4,5,6), TimeSpan.Zero)),
+                    TracorDataProperty.CreateBoolean("i", false),
+                    TracorDataProperty.CreateBoolean("j", true),
+                    TracorDataProperty.CreateLong("k", 123123123),
+                    TracorDataProperty.CreateDouble("l", 12312.5),
                 }
             }
             );

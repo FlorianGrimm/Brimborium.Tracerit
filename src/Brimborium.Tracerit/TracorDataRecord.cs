@@ -1,17 +1,48 @@
 ﻿
 namespace Brimborium.Tracerit;
-
 public sealed class TracorDataRecord : ITracorData {
+    private TracorDataRecordOperation _Operation;
+    private TracorIdentitfier? _TracorIdentitfier;
+
     public TracorDataRecord() { }
 
-    public TracorIdentitfier? TracorIdentitfier { get; set; }
+    public TracorIdentitfier? TracorIdentitfier {
+        get {
+            return this._TracorIdentitfier;
+        }
+
+        set {
+            if (value is { } ti) {
+                this._Operation = ti.GetOperation();
+            }
+            this._TracorIdentitfier = value;
+        }
+    }
 
     public List<TracorDataProperty> ListProperty { get; } = [];
 
     public TracorIdentitfierData ToTracorIdentitfierData()
         => new TracorIdentitfierData(
-            this.TracorIdentitfier ?? new(string.Empty, string.Empty),
+            this._TracorIdentitfier ?? new(string.Empty, string.Empty),
             this);
+
+    // think
+
+    public TracorDataRecordOperation GetOperation() {
+        if (TracorDataRecordOperation.Unknown == this._Operation) {
+            if (this._TracorIdentitfier is { } ti) {
+                this._Operation = ti.GetOperation();
+            } else {
+                this._Operation = TracorDataRecordOperation.Data;
+            }
+        }
+        return this._Operation;
+    }
+
+    public void SetOperation(TracorDataRecordOperation value) {
+        this._Operation = value;
+        this._TracorIdentitfier = TracorIdentitfier.CreateForOperation(value) ?? this._TracorIdentitfier;
+    }
 
     // ITracorData
 
@@ -66,7 +97,7 @@ public sealed class TracorDataRecord : ITracorData {
                         // not equal
                         return false;
                     }
-                } else { 
+                } else {
                     // not found
                     return false;
                 }

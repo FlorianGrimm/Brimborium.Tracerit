@@ -4,6 +4,12 @@
 /// Provides extension methods for <see cref="ITracorData"/> to enhance functionality with strongly-typed operations.
 /// </summary>
 public static class ITracorDataExtension {
+    public static bool IsEqual<T>(this ITracorData data, string propertyName, T value)
+        where T:notnull{
+        return data.TryGetPropertyValue(propertyName, out var currentValue)
+            && TracorDataProperty.Create(propertyName, value).HasEqualValue(currentValue);
+    }
+
     /// <summary>
     /// Attempts to get a strongly-typed property value from the trace data.
     /// </summary>

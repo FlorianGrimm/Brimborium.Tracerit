@@ -119,7 +119,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
     }
 
 
-    public TracorGlobalState? GetFinished(Predicate<TracorGlobalState>? predicate) {
+    public TracorGlobalState? GetFinished(Predicate<TracorGlobalState>? predicate = default) {
         for (var idx = 0; idx < this._ListFinishedExecutionState.Count; idx++) {
             var result = this._ListFinishedExecutionState[idx];
             if (result.GlobalState is { } globalState

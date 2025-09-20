@@ -5,10 +5,10 @@ public class TracorDataPropertyTests {
     [Arguments("abc", "def", true)]
     [Arguments("", "def", false)]
     [Arguments("abc", "", true)]
-    public async Task ConvertStringTest(string argName, string argValue, bool successfull) {
+    public async Task CreateStringTest(string argName, string argValue, bool successfull) {
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertString(argName, argValue);
+            var act = TracorDataProperty.CreateString(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:str:{argValue}");
         }
@@ -29,10 +29,10 @@ public class TracorDataPropertyTests {
     [Test]
     [Arguments("abc", 123, true)]
     [Arguments("", 123, false)]
-    public async Task ConvertIntegerTest(string argName, int argValue, bool successfull) {
+    public async Task CreateIntegerTest(string argName, int argValue, bool successfull) {
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertInteger(argName, argValue);
+            var act = TracorDataProperty.CreateInteger(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:int:{argValue}");
         }
@@ -53,10 +53,10 @@ public class TracorDataPropertyTests {
     [Test]
     [Arguments("abc", LogLevel.Warning, true)]
     [Arguments("", LogLevel.Information, false)]
-    public async Task ConvertLevelValueTest(string argName, LogLevel argValue, bool successfull) {
+    public async Task CreateLevelValueTest(string argName, LogLevel argValue, bool successfull) {
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertLevelValue(argName, argValue);
+            var act = TracorDataProperty.CreateLevelValue(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:lvl:{argValue}");
         }
@@ -83,11 +83,11 @@ public class TracorDataPropertyTests {
     [Test]
     [Arguments("abc", "2000-01-02T03:04:05.0000000", 946782245000000000, true)]
     [Arguments("", "2000-01-02T03:04:05.0000000", 946782245000000000, false)]
-    public async Task ConvertDateTimeTest(string argName, string txtArgValue, long ns, bool successfull) {
+    public async Task CreateDateTimeTest(string argName, string txtArgValue, long ns, bool successfull) {
         DateTime argValue = DateTime.ParseExact(txtArgValue, "O", null);
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertDateTime(argName, argValue);
+            var act = TracorDataProperty.CreateDateTime(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:dt:{ns}");
         }
@@ -109,13 +109,13 @@ public class TracorDataPropertyTests {
     [Test]
     [Arguments("abc", "2000-01-02T03:04:05.0000000+02:00", 946782245000000000, true)]
     [Arguments("", "2000-01-02T03:04:05.0000000+02:00", 946782245000000000, false)]
-    public async Task ConvertDateTimeOffsetTest(string argName, string txtArgValue, long ns, bool successfull) {
+    public async Task CreateDateTimeOffsetTest(string argName, string txtArgValue, long ns, bool successfull) {
         DateTimeOffset argValue = DateTimeOffset.ParseExact(txtArgValue, "O", null);
         DateTimeOffset argValueUtc = new DateTimeOffset(new DateTime(argValue.Ticks), TimeSpan.Zero);
 
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertDateTimeOffset(argName, argValue);
+            var act = TracorDataProperty.CreateDateTimeOffset(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:dto:{ns}");
         }
@@ -137,10 +137,10 @@ public class TracorDataPropertyTests {
     [Arguments("abc", true, "1", true)]
     [Arguments("abc", false, "0", true)]
     [Arguments("", false, "0", false)]
-    public async Task ConvertBooleanTest(string argName, bool argValue, string textValue, bool successfull) {
+    public async Task CreateBooleanTest(string argName, bool argValue, string textValue, bool successfull) {
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertBoolean(argName, argValue);
+            var act = TracorDataProperty.CreateBoolean(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:bool:{textValue}");
         }
@@ -162,10 +162,10 @@ public class TracorDataPropertyTests {
     [Arguments("abc", 1, true)]
     [Arguments("abc", 100000, true)]
     [Arguments("", 0, false)]
-    public async Task ConvertLongTest(string argName, long argValue, bool successfull) {
+    public async Task CreateLongTest(string argName, long argValue, bool successfull) {
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.ConvertLong(argName, argValue);
+            var act = TracorDataProperty.CreateLong(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:long:{argValue}");
         }
@@ -187,11 +187,11 @@ public class TracorDataPropertyTests {
     [Arguments("abc", 1.5, true)]
     [Arguments("abc", 100.5, true)]
     [Arguments("", 0, false)]
-    public async Task ConvertDoubleTest(string argName, double argValue, bool successfull) {
+    public async Task CreateDoubleTest(string argName, double argValue, bool successfull) {
         var sb = new StringBuilder();
         var textValue = argValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
         {
-            var act = TracorDataProperty.ConvertDouble(argName, argValue);
+            var act = TracorDataProperty.CreateDouble(argName, argValue);
             act.ToMinimizeString(sb);
             await Assert.That(sb.ToString()).IsEqualTo($"{argName}:dbl:{textValue}");
         }

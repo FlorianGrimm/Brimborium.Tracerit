@@ -10,7 +10,7 @@ public interface ITracorValidator {
     /// <param name="step">The validator expression to add.</param>
     /// <param name="globalState">Optional global state to initialize the validation with.</param>
     /// <returns>A validation path that can be used to track the validation progress.</returns>
-    ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState=default);
+    ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default);
 
     /// <summary>
     /// Processes a trace event with the specified caller and trace data.
@@ -36,7 +36,7 @@ public interface ITracorValidatorPath : IDisposable {
     /// </summary>
     /// <param name="predicate">Optional predicate to filter the finished states.</param>
     /// <returns>A finished validation state if found; otherwise, null.</returns>
-    TracorGlobalState? GetFinished(Predicate<TracorGlobalState>? predicate);
+    TracorGlobalState? GetFinished(Predicate<TracorGlobalState>? predicate = default);
 
     /// <summary>
     /// Asynchronously gets a finished validation state that matches the specified predicate.
@@ -44,7 +44,7 @@ public interface ITracorValidatorPath : IDisposable {
     /// <param name="predicate">Optional predicate to filter the finished states.</param>
     /// <param name="timeSpan">The maximum time to wait for a finished state.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a finished validation state if found; otherwise, null.</returns>
-    Task<TracorGlobalState?> GetFinishedAsync(Predicate<TracorGlobalState>? predicate, TimeSpan timeSpan=default);
+    Task<TracorGlobalState?> GetFinishedAsync(Predicate<TracorGlobalState>? predicate = default, TimeSpan timeSpan = default);
 
     /// <summary>
     /// Gets a list of all currently running validation states.

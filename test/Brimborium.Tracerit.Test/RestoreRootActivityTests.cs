@@ -34,7 +34,7 @@ public class RestoreRootActivityTests {
                 reportExpressionResult,
                 new SequenceExpression(
                     listChild: [
-                        Wrap(static(ITracorData data) => true).Predicate().AsMatch()
+                        Wrap(static(ITracorData data) => data.IsEqual("operation", "test3")).Predicate().AsMatch()
                         ])))
             ) {
             using (var rootActivity = sampleTest1Instrumentation.StartRootActivity(name:"aaa")) {
@@ -52,6 +52,8 @@ public class RestoreRootActivityTests {
                     subActivity1?.SetTag("operation", "test3");
                 }
             }
+
+            await validatorPath.GetFinishedAsync(null);
         }
         serviceProvider.TracorActivityListenerStop();
     }

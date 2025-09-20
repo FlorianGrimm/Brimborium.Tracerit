@@ -108,4 +108,32 @@ public static partial class TracorDataUtility {
             return result;
         }
     }
+
+    public static (TracorDataPropertyTypeValue value, string? name) TracorDataPropertyConvertStringToTypeName(string? name) {
+        return name switch {
+            nameof(TracorDataProperty.TypeNameString) => (TracorDataPropertyTypeValue.String, null),
+            nameof(TracorDataProperty.TypeNameInteger) => (TracorDataPropertyTypeValue.Integer, null),
+            nameof(TracorDataProperty.TypeNameLevelValue) => (TracorDataPropertyTypeValue.LevelValue, null),
+            nameof(TracorDataProperty.TypeNameDateTime) => (TracorDataPropertyTypeValue.DateTime, null),
+            nameof(TracorDataProperty.TypeNameDateTimeOffset) => (TracorDataPropertyTypeValue.DateTimeOffset, null),
+            nameof(TracorDataProperty.TypeNameBoolean) => (TracorDataPropertyTypeValue.Boolean, null),
+            nameof(TracorDataProperty.TypeNameLong) => (TracorDataPropertyTypeValue.Long, null),
+            nameof(TracorDataProperty.TypeNameDouble) => (TracorDataPropertyTypeValue.Double, null),
+             _ => (TracorDataPropertyTypeValue.Any, name)
+        };
+    }
+    public static string TracorDataPropertyConvertTypeValueToString(TracorDataPropertyTypeValue value, string? name) {
+        return value switch {
+            TracorDataPropertyTypeValue.String => TracorDataProperty.TypeNameString,
+            TracorDataPropertyTypeValue.Integer => TracorDataProperty.TypeNameInteger,
+            TracorDataPropertyTypeValue.LevelValue => TracorDataProperty.TypeNameLevelValue,
+            TracorDataPropertyTypeValue.DateTime => TracorDataProperty.TypeNameDateTime,
+            TracorDataPropertyTypeValue.DateTimeOffset => TracorDataProperty.TypeNameDateTimeOffset,
+            TracorDataPropertyTypeValue.Boolean => TracorDataProperty.TypeNameBoolean,
+            TracorDataPropertyTypeValue.Long => TracorDataProperty.TypeNameLong,
+            TracorDataPropertyTypeValue.Double => TracorDataProperty.TypeNameDouble,
+            TracorDataPropertyTypeValue.Any => TracorDataProperty.TypeNameAny,
+            _ => name ?? TracorDataProperty.TypeNameAny
+        };
+    }
 }

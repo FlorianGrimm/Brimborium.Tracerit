@@ -22,9 +22,7 @@ public class ValidatorTest {
             new SequenceExpression()
             .Add(new MatchExpression(
                 condition: new PredicateTracorDataCondition(
-                    static (data) =>
-                        data.TryGetPropertyValue<string>("PathAndQuery", out var pathAndQuery)
-                        && "/1" == pathAndQuery)
+                    static (data) => data.IsEqual("PathAndQuery", "/1"))
                 )
             )
             .Add(new MatchExpression() {

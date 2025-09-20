@@ -5,38 +5,29 @@ namespace Brimborium.Tracerit;
 /// This abstract class wraps the .NET <see cref="ActivitySource"/> with additional functionality for log level control,
 /// configuration-based settings, and specialized activity creation methods.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The <see cref="ActivitySourceBase"/> class serves as a foundation for implementing custom activity sources
-/// that integrate with the .NET distributed tracing system. It provides:
-/// </para>
-/// <list type="bullet">
-/// <item><description>Configuration-based log level management with automatic reloading</description></item>
-/// <item><description>Activity creation with log level filtering</description></item>
-/// <item><description>Root activity management with context restoration</description></item>
-/// <item><description>Integration with dependency injection containers</description></item>
-/// </list>
-/// <para>
-/// Derived classes should implement specific activity sources for different components or services,
-/// providing a consistent interface for distributed tracing across the application.
-/// </para>
-/// </remarks>
 /// <example>
 /// <para>Creating a custom activity source:</para>
 /// <code>
-/// [DisplayName(XYZActivitySource.ActivitySourceName)]
-/// public partial class XYZActivitySource : ActivitySourceBase {
-///     public const string ActivitySourceName = "XYZ";
-///     public XYZActivitySource(IConfiguration? configuration = default)
-///         : base(configuration, ActivitySourceName) { }
-///     public XYZActivitySource() : base(null, ActivitySourceName) { }
-/// }
+///[DisplayName(ActivitySourceName)]
+///public sealed class SampleTest1Instrumentation : Brimborium.Tracerit.ActivitySourceBase {
+///    public const string ActivitySourceName = "sample.test1";
+///    public const string ActivitySourceVersion = "1.0.0";
+///
+///    public static SampleTest1Instrumentation GetInstance() => ActivitySourceBase.GetInstanceByType<SampleTest1Instrumentation>();
+///
+///    public SampleTest1Instrumentation() : base(default, ActivitySourceName, ActivitySourceVersion) { }
+///    public SampleTest1Instrumentation(IConfiguration? configuration) : base(configuration, ActivitySourceName, ActivitySourceVersion) {
+///    }
+///}
 /// </code>
 /// <para>Using the activity source:</para>
 /// <code>
-/// using var activity = activitySource.StartActivity();
-/// activity?.SetTag("operation", "example");
-/// // Perform work...
+/// serviceBuilder.AddActivitySourceBase<SampleTest1Instrumentation>();
+/// 
+/// using (var activity = activitySource.StartActivity()){
+///     activity?.SetTag("operation", "example");
+///     // Perform work...
+/// }
 /// </code>
 /// </example>
 public abstract class ActivitySourceBase : IDisposable {
@@ -85,27 +76,21 @@ public abstract class ActivitySourceBase : IDisposable {
     /// </param>
     /// <param name="sourceVersion">
     /// The version of the activity source. This is optional and can be used for versioning in tracing systems.
-    /// Defaults to null if not specified.
+    /// Defaults to null if not specified. - Having no Version is common.
     /// </param>
     /// <param name="logLevel">
-    /// The initial log level for the activity source. If not specified, defaults to <see cref="LogLevel.Information"/>.
+    /// The initial log level for the activity source. If not specified, defaults to <see cref="LogLevel.Trace"/>.
     /// This level determines which activities will be created based on their requested log level.
     /// </param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="sourceName"/> is null or empty.</exception>
-    /// <remarks>
-    /// <para>
-    /// If a configuration is provided, the constructor sets up automatic monitoring of the "ActivitySource"
-    /// configuration section. When this section changes, the log level for this activity source will be
-    /// automatically updated based on the configuration value for the source name.
-    /// </para>
-    /// </remarks>
     protected ActivitySourceBase(
         IConfiguration? configuration,
         string sourceName,
         string? sourceVersion = default,
         LogLevel? logLevel = default
         ) {
-        if (string.IsNullOrEmpty(sourceName)) { throw new ArgumentNullException(nameof(sourceName)); }
+        ArgumentNullException.ThrowIfNullOrEmpty(sourceName, nameof(sourceName));
+
         this.SourceName = sourceName;
         this.SourceVersion = sourceVersion;
         this._ActivitySource = new ActivitySource(this.SourceName);
@@ -276,28 +261,30 @@ public abstract class ActivitySourceBase : IDisposable {
     /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
     /// <param name="logLevel">The optional log level. Default is Information.</param>
     /// <param name="name">The operation name of the Activity. If not provided, the calling method name is used.</param>
+    /// <param name="activityTraceId">The traceId for the activity</param>
     /// <returns>
     /// A <see cref="RestoreRootActivity"/> instance that manages the new root activity and context restoration,
-    /// or null if there are no listeners or the log level is not enabled.
+    /// the <see cref="RestoreRootActivity.Activity"/> is null if there are no listeners or the log level is not enabled.
     /// </returns>
     /// <example>
     /// <code>
     /// using(var rootActivity = activitySource.StartRootActivity()) {
-    ///     rootActivity?.Activity?.SetTag("operation", "root-operation");
+    ///     rootActivity.Activity?.SetTag("operation", "root-operation");
     ///     // Perform work in the root activity context...
     /// }
     /// // Activity is automatically stopped and previous context restored when disposed
     /// </code>
     /// </example>
     public RestoreRootActivity StartRootActivity(
-        ActivityTraceId? activityTraceId = default,
         ActivityKind kind = ActivityKind.Internal,
         ActivityContext parentContext = default,
         IEnumerable<KeyValuePair<string, object?>>? tags = null,
         IEnumerable<ActivityLink>? links = null,
         DateTimeOffset startTime = default,
         LogLevel logLevel = LogLevel.Information,
-        [CallerMemberName] string name = "") {
+        [CallerMemberName] string name = "",
+        ActivityTraceId? activityTraceId = default
+        ) {
         if (this.IsEnabled(logLevel)) {
             var previous = Activity.Current;
             ActivityTraceId traceId;
@@ -367,7 +354,7 @@ public abstract class ActivitySourceBase : IDisposable {
 /// <code>
 /// using(var rootActivity = activitySource.StartRootActivity()){
 ///   // Work is performed in the root activity context
-///   rootActivity?.Activity?.SetTag("operation", "some-operation");
+///   rootActivity.Activity?.SetTag("operation", "some-operation");
 ///
 /// }
 /// </code>
