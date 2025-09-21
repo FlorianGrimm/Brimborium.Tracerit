@@ -1,3 +1,7 @@
+
+using System;
+using System.Xml.Linq;
+
 namespace Brimborium.Tracerit;
 
 /// <summary>
@@ -22,6 +26,14 @@ public record struct ActivitySourceIdentifier(
             return new ActivitySourceIdentifier(name, string.Empty);
         } else {
             return new ActivitySourceIdentifier(name, version);
+        }
+    }
+
+    public static ActivitySourceIdentifier Create(ActivitySource source) {
+        if (source.Version is null || source.Version is { Length: 0 }) {
+            return new ActivitySourceIdentifier(source.Name, string.Empty);
+        } else {
+            return new ActivitySourceIdentifier(source.Name, source.Version);
         }
     }
 }

@@ -42,15 +42,22 @@ internal sealed class TesttimeTracor : ITracor {
     /// <param name="value">The value to be traced.</param>
     public void Trace<T>(TracorIdentitfier callee, T value) {
         try {
-            if (value is IReferenceCountObject referenceCountObject) {
-                referenceCountObject.IncrementReferenceCount();
-            }
-            if (value is not ITracorData tracorData) {
+            ITracorData tracorData;
+            if (value is ITracorData valueTracorData) {
+                tracorData = valueTracorData;
+            } else { 
                 tracorData = this._Validator.Convert(/*callee,*/ value);
             }
-            this._Validator.OnTrace(callee, tracorData);
-            if (tracorData is IDisposable tracorDataDisposable) {
-                tracorDataDisposable.Dispose();
+
+            if (value is IReferenceCountObject referenceCountObject) {
+                referenceCountObject.IncrementReferenceCount();               
+                this._Validator.OnTrace(callee, tracorData);
+                referenceCountObject.Dispose();
+            } else { 
+                this._Validator.OnTrace(callee, tracorData);
+                if (tracorData is IDisposable disposable) {
+                    disposable.Dispose();
+                }
             }
         } catch (Exception error) {
             this._Logger.LogError(exception: error, message: "Trace Failed");

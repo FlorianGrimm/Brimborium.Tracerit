@@ -59,6 +59,17 @@ public interface ITracorActivityListener {
 /// </summary>
 public class TracorActivityListenerOptions {
     /// <summary>
+    /// Gets or sets a value indicating whether the start event for the activity source is enabled.
+    /// </summary>
+    public bool ActivitySourceStartEventEnabled { get; set; } = false;
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether the "Stop" event is emitted for activities created by the <see
+    /// cref="System.Diagnostics.ActivitySource"/>.
+    /// </summary>
+    public bool ActivitySourceStopEventEnabled { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets a value indicating whether all activity sources should be monitored automatically.
     /// When true, all activity sources will be listened to regardless of specific name or identifier lists.
     /// </summary>

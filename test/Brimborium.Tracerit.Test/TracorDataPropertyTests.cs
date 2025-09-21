@@ -14,7 +14,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameString);
@@ -38,7 +38,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameInteger);
@@ -62,7 +62,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameLevelValue);
@@ -93,7 +93,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameDateTime);
@@ -121,7 +121,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameDateTimeOffset);
@@ -146,7 +146,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameBoolean);
@@ -171,7 +171,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameLong);
@@ -197,7 +197,7 @@ public class TracorDataPropertyTests {
         }
         {
             var stringValue = sb.ToString();
-            var success = TracorDataProperty.TryParseFromJsonString(stringValue, out var act);
+            var success = TracorDataSerialization.ParseTracorDataProperty(stringValue, out var act);
             await Assert.That(success).IsEqualTo(success);
             if (successfull) {
                 await Assert.That(act.TypeName).IsEqualTo(TracorDataProperty.TypeNameDouble);

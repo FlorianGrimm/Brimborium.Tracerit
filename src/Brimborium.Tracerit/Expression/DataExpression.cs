@@ -26,6 +26,7 @@ public sealed class DataExpression : ValidatorExpression {
         if (state.Successfull) {
             return OnTraceResult.Successfull;
         }
+#warning here
         var childIndex = state.DataIndex;
         var count = this._Expected.ListData.Count;
         if (childIndex < count) {
@@ -58,8 +59,9 @@ public sealed class DataExpression : ValidatorExpression {
         OnTraceStepCurrentContext currentContext,
         DataStepState state,
         int childIndex) {
-        var operation = expectedData.GetOperation();
-        if (operation is TracorDataRecordOperation.Data or TracorDataRecordOperation.Unknown) {
+#warning here var operation = expectedData.GetOperation();
+        var operation = TracorDataRecordOperation.Data;
+        if (operation is TracorDataRecordOperation.Data ) {
             return IsPartialEqualsOperationData(
                 currentData,
                 expectedData,
@@ -77,8 +79,7 @@ public sealed class DataExpression : ValidatorExpression {
         TracorDataRecord opArgumentData;
         for (; childIndexArgument < count; childIndexArgument++) {
             opArgumentData = this._Expected.ListData[childIndexArgument];
-            if (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) { 
-            }
+#warning here (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {             }
         }
         if (count <= childIndexArgument) {
             // error
@@ -87,7 +88,7 @@ public sealed class DataExpression : ValidatorExpression {
         }
         var operationData = expectedData;
         if (operation is TracorDataRecordOperation.VariableGet) {
-                opArgumentData
+                //opArgumentData
             foreach (var operationProperty in operationData.ListProperty) {
                 var nameToRead = operationProperty.Name;
                 var nameToWrite = operationProperty.TextValue is { Length:>0}? operationProperty.TextValue:nameToRead;
@@ -105,9 +106,11 @@ public sealed class DataExpression : ValidatorExpression {
         int indexOp = index;
         for (; indexOp < count; indexOp++) {
         var    opArgumentData = this._Expected.ListData[indexOp];
-            if (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {
-                return (opArgumentData, indexOp);
+            /*
+            if (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {              
+            return (opArgumentData, indexOp);
             }
+            */
         }
         if (count <= indexOp) {
             // error

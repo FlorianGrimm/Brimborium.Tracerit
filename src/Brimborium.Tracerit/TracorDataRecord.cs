@@ -1,51 +1,45 @@
-﻿
-namespace Brimborium.Tracerit;
-public sealed class TracorDataRecord : ITracorData {
-    private TracorDataRecordOperation _Operation;
-    private TracorIdentitfier? _TracorIdentitfier;
+﻿using System.Text.Json.Serialization;
 
+namespace Brimborium.Tracerit;
+
+/// <summary>
+/// Represents a record of trace data, including properties and identifiers.
+/// </summary>
+public sealed class TracorDataRecord : ITracorData {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
+    /// </summary>
     public TracorDataRecord() { }
 
-    public TracorIdentitfier? TracorIdentitfier {
-        get {
-            return this._TracorIdentitfier;
-        }
+    /// <summary>
+    /// Gets or sets the operation type for this trace data record.
+    /// </summary>
+    public TracorDataRecordOperation Operation { get; set; }
 
-        set {
-            if (value is { } ti) {
-                this._Operation = ti.GetOperation();
-            }
-            this._TracorIdentitfier = value;
-        }
-    }
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    public TracorIdentitfier? TracorIdentitfier { get; set; }
 
+    /// <summary>
+    /// Gets the list of properties associated with this trace data record.
+    /// </summary>
     public List<TracorDataProperty> ListProperty { get; } = [];
 
+    /// <summary>
+    /// Converts this record to a <see cref="TracorIdentitfierData"/> object.
+    /// </summary>
+    /// <returns>A <see cref="TracorIdentitfierData"/> containing the identifier and this record.</returns>
     public TracorIdentitfierData ToTracorIdentitfierData()
         => new TracorIdentitfierData(
-            this._TracorIdentitfier ?? new(string.Empty, string.Empty),
+            this.TracorIdentitfier ?? new(string.Empty, string.Empty),
             this);
-
-    // think
-
-    public TracorDataRecordOperation GetOperation() {
-        if (TracorDataRecordOperation.Unknown == this._Operation) {
-            if (this._TracorIdentitfier is { } ti) {
-                this._Operation = ti.GetOperation();
-            } else {
-                this._Operation = TracorDataRecordOperation.Data;
-            }
-        }
-        return this._Operation;
-    }
-
-    public void SetOperation(TracorDataRecordOperation value) {
-        this._Operation = value;
-        this._TracorIdentitfier = TracorIdentitfier.CreateForOperation(value) ?? this._TracorIdentitfier;
-    }
-
-    // ITracorData
-
+    
+    /// <summary>
+    /// Gets the value of a property by name.
+    /// </summary>
+    /// <param name="propertyName">The name of the property to retrieve.</param>
+    /// <returns>The value of the property if found; otherwise, null.</returns>
     public object? this[string propertyName] {
         get {
             if (this.TryGetPropertyValue(propertyName, out var result)) {
@@ -56,6 +50,7 @@ public sealed class TracorDataRecord : ITracorData {
         }
     }
 
+    /// <inheritdoc/>
     public List<string> GetListPropertyName() {
         List<string> result = new(this.ListProperty.Count);
         foreach (var property in this.ListProperty) {
@@ -64,6 +59,7 @@ public sealed class TracorDataRecord : ITracorData {
         return result;
     }
 
+    /// <inheritdoc/>
     public bool TryGetPropertyValue(string propertyName, out object? propertyValue) {
         foreach (var property in this.ListProperty) {
             if (propertyName == property.Name) {
@@ -75,10 +71,17 @@ public sealed class TracorDataRecord : ITracorData {
         return false;
     }
 
+    /// <inheritdoc/>
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         listProperty.AddRange(this.ListProperty);
     }
 
+    /// <summary>
+    /// Determines whether the current trace data partially equals the expected data.
+    /// </summary>
+    /// <param name="currentData">The current trace identifier data.</param>
+    /// <param name="expectedData">The expected trace data record.</param>
+    /// <returns>True if the current data matches the expected data; otherwise, false.</returns>
     public static bool IsPartialEquals(TracorIdentitfierData currentData, TracorDataRecord expectedData) {
         if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
             var currentTracorIdentitfier = currentData.TracorIdentitfier;
@@ -109,7 +112,11 @@ public sealed class TracorDataRecord : ITracorData {
     }
 }
 
+/// <summary>
+/// Factory for creating <see cref="TracorDataRecord"/> trace data from objects.
+/// </summary>
 public sealed class TracorDataRecordAccessorFactory : ITracorDataAccessorFactory<TracorDataRecord> {
+    /// <inheritdoc/>
     public bool TryGetData(object value, [MaybeNullWhen(false)] out ITracorData tracorData) {
         if (value is TracorDataRecord tracorDataValue) {
             tracorData = tracorDataValue; return true;
@@ -117,8 +124,19 @@ public sealed class TracorDataRecordAccessorFactory : ITracorDataAccessorFactory
         tracorData = default; return false;
     }
 
+    /// <inheritdoc/>
     public bool TryGetDataTyped(TracorDataRecord value, [MaybeNullWhen(false)] out ITracorData tracorData) {
         tracorData = value;
         return true;
     }
 }
+
+/*
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(TracorDataCollection))]
+[JsonSerializable(typeof(TracorDataRecord))]
+[JsonSerializable(typeof(TracorDataProperty))]
+[JsonSerializable(typeof(TracorIdentitfier))]
+internal partial class TracorDataJsonSerializerContext : JsonSerializerContext {
+}
+*/

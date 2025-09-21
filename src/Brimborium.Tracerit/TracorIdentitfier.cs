@@ -28,27 +28,6 @@ public sealed record class TracorIdentitfier(string Source, string Scope) {
     public TracorIdentitfier Child(string child)
         => new(this.Source, $"{this.Scope}/{child}");
 
-    public TracorDataRecordOperation GetOperation() {
-        // TracorDataRecordOperation.Unknown is no a result
-        return (this.Source, this.Scope) switch {
-            ("operation", "get") => TracorDataRecordOperation.VariableGet,
-            ("operation", "filter") => TracorDataRecordOperation.Filter,
-            ("operation", "set") => TracorDataRecordOperation.VariableSet,
-            _ => TracorDataRecordOperation.Data
-        };
-    }
-
-    public static TracorIdentitfier? CreateForOperation(TracorDataRecordOperation value) {
-        return value switch {
-            TracorDataRecordOperation.Unknown => null,
-            TracorDataRecordOperation.Data => null,
-            TracorDataRecordOperation.Filter => new("operation", "filter"),
-            TracorDataRecordOperation.VariableGet => new("operation", "get"),
-            TracorDataRecordOperation.VariableSet => new("operation", "set"),
-            _ => null
-        };
-    }
-
     /// <summary>
     /// Creates a <see cref="CalleeCondition"/> by combining this identifier with an expression condition.
     /// </summary>

@@ -71,7 +71,7 @@ internal sealed class TesttimeTracorActivityListener
     }
 
     private bool OnShouldListenTo(ActivitySource activitySource) {
-        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activitySource.Name, activitySource.Version);
+        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activitySource);
         bool result;
         if (this._OptionState.AllowAllActivitySource) {
             result = true;
@@ -94,17 +94,18 @@ internal sealed class TesttimeTracorActivityListener
         return false;
     }
     private void OnActivityStarted(Activity activity) {
-#if false
-        if (this._Listener is null || this.IsDisposed) { return; }
 
-        if (!this._Tracor.IsGeneralEnabled()) { return; }
-        if (!this._Tracor.IsCurrentlyEnabled()) { return; }
+        if (this._Listener is null || this.IsDisposed) { return; }
 
         // no locking needed since this._OptionState does not mutate
         var currentOptionState = this._OptionState;
 
-        var activitySource = activity.Source;
-        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activitySource.Name, activitySource.Version);
+        if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
+
+        if (!this._Tracor.IsGeneralEnabled()) { return; }
+        if (!this._Tracor.IsCurrentlyEnabled()) { return; }
+
+        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
         if (currentOptionState.AllowAllActivitySource) {
             // no check needed
         } else if (!this.OnShouldListenTo(activitySourceIdentifier)) {
@@ -117,20 +118,20 @@ internal sealed class TesttimeTracorActivityListener
         }
         var tracorIdentitfier = tracorIdentitfierCache.Child("Start");
         this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
-#endif
     }
 
     private void OnActivityStopped(Activity activity) {
         if (this._Listener is null || this.IsDisposed) { return; }
 
-        if (!this._Tracor.IsGeneralEnabled()) { return; }
-        if (!this._Tracor.IsCurrentlyEnabled()) { return; }
-
         // no locking needed since this._OptionState does not mutate
         var currentOptionState = this._OptionState;
 
-        var activitySource = activity.Source;
-        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activitySource.Name, activitySource.Version);
+        if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
+
+        if (!this._Tracor.IsGeneralEnabled()) { return; }
+        if (!this._Tracor.IsCurrentlyEnabled()) { return; }
+
+        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
         if (currentOptionState.AllowAllActivitySource) {
             // no check needed
         } else if (!this.OnShouldListenTo(activitySourceIdentifier)) {
@@ -147,12 +148,32 @@ internal sealed class TesttimeTracorActivityListener
 
     private void OnExceptionRecorder(Activity activity, Exception exception, ref TagList tags) { }
 
+    private readonly Dictionary<ActivitySourceIdentifier, ActivitySamplingResult> _OnSampleActivitySamplingResult = new();
+
     private ActivitySamplingResult OnSample(ref ActivityCreationOptions<ActivityContext> options) {
-        return ActivitySamplingResult.PropagationData;
+        var activitySourceIdentifier = ActivitySourceIdentifier.Create(options.Source);
+        ActivitySamplingResult result;
+#warning TODO Configure named SamplingResult
+        if (this._OnSampleActivitySamplingResult.TryGetValue(activitySourceIdentifier, out result)) {
+            return result;
+        } else {
+#warning TODO Configure default SamplingResult
+            return ActivitySamplingResult.AllDataAndRecorded;
+        }
     }
 
+    private readonly Dictionary<ActivitySourceIdentifier, ActivitySamplingResult> _OnSampleUsingParentIdActivitySamplingResult = new();
+
     private ActivitySamplingResult OnSampleUsingParentId(ref ActivityCreationOptions<string> options) {
-        return ActivitySamplingResult.PropagationData;
+        var activitySourceIdentifier = ActivitySourceIdentifier.Create(options.Source);
+        ActivitySamplingResult result;
+#warning TODO Configure named SamplingResult
+        if (this._OnSampleUsingParentIdActivitySamplingResult.TryGetValue(activitySourceIdentifier, out result)) {
+            return result;
+        } else {
+#warning TODO Configure default SamplingResult
+            return ActivitySamplingResult.AllDataAndRecorded;
+        }
     }
 
     protected override void Dispose(bool disposing) {

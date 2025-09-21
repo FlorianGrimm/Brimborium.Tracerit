@@ -4,7 +4,9 @@ internal abstract class BaseTracorActivityListener
     : IDisposable {
     protected class OptionState {
         // do not mutate
-        public bool AllowAllActivitySource { get; init; }
+        public required bool ActivitySourceStartEventEnabled;
+        public required bool ActivitySourceStopEventEnabled;
+        public required bool AllowAllActivitySource;
         public readonly HashSet<string> HashSetActivitySourceName;
         public readonly HashSet<ActivitySourceIdentifier> HashSetActivitySourceIdenifier;
         public readonly HashSet<Type> HashSetActivitySourceByType = new();
@@ -15,6 +17,8 @@ internal abstract class BaseTracorActivityListener
         }
         public static OptionState Create(TracorActivityListenerOptions options1, TracorActivityListenerOptions options2) {
             var result = new OptionState() {
+                ActivitySourceStartEventEnabled = options1.ActivitySourceStartEventEnabled || options2.ActivitySourceStartEventEnabled,
+                ActivitySourceStopEventEnabled = options1.ActivitySourceStopEventEnabled || options2.ActivitySourceStopEventEnabled,
                 AllowAllActivitySource = options1.AllowAllActivitySource || options2.AllowAllActivitySource,
             };
 
@@ -59,7 +63,11 @@ internal abstract class BaseTracorActivityListener
 
     protected TracorActivityListenerOptions _LastOptions = new();
     protected TracorActivityListenerOptions _DirectModifications = new();
-    protected OptionState _OptionState = new();
+    protected OptionState _OptionState = new() {
+        ActivitySourceStartEventEnabled = false,
+        ActivitySourceStopEventEnabled = true,
+        AllowAllActivitySource = false,
+    };
 
     public BaseTracorActivityListener(
         IServiceProvider serviceProvider,

@@ -119,7 +119,7 @@ public static partial class TracorDataUtility {
             nameof(TracorDataProperty.TypeNameBoolean) => (TracorDataPropertyTypeValue.Boolean, null),
             nameof(TracorDataProperty.TypeNameLong) => (TracorDataPropertyTypeValue.Long, null),
             nameof(TracorDataProperty.TypeNameDouble) => (TracorDataPropertyTypeValue.Double, null),
-             _ => (TracorDataPropertyTypeValue.Any, name)
+            _ => (TracorDataPropertyTypeValue.Any, name)
         };
     }
     public static string TracorDataPropertyConvertTypeValueToString(TracorDataPropertyTypeValue value, string? name) {
@@ -134,6 +134,57 @@ public static partial class TracorDataUtility {
             TracorDataPropertyTypeValue.Double => TracorDataProperty.TypeNameDouble,
             TracorDataPropertyTypeValue.Any => TracorDataProperty.TypeNameAny,
             _ => name ?? TracorDataProperty.TypeNameAny
+        };
+    }
+
+    public static TracorDataRecordOperation ParseTracorDataRecordOperation(string? value) {
+        return value switch {
+            null => TracorDataRecordOperation.Data,
+            "Data" => TracorDataRecordOperation.Data,
+            "Filter" => TracorDataRecordOperation.Filter,
+            "Get" => TracorDataRecordOperation.VariableGet,
+            "Set" => TracorDataRecordOperation.VariableSet,
+            _ => TracorDataRecordOperation.Data,
+        };
+    }
+
+    public static string TracorDataRecordOperationToString(TracorDataRecordOperation value) {
+        return value switch {
+            TracorDataRecordOperation.Data => "Data",
+            TracorDataRecordOperation.Filter => "Filter",
+            TracorDataRecordOperation.VariableGet => "Get",
+            TracorDataRecordOperation.VariableSet => "Set",
+            _ => "Data",
+        };
+    }
+
+    public static TracorDataPropertyOpertation ParseTracorDataPropertyOpertationParse(string value) {
+        return value switch {
+            "" => TracorDataPropertyOpertation.Data,
+            "Data" => TracorDataPropertyOpertation.Data,
+            "Ignore" => TracorDataPropertyOpertation.Ignore,
+            "==" => TracorDataPropertyOpertation.Equal,
+            "!=" => TracorDataPropertyOpertation.NotEqual,
+            "<" => TracorDataPropertyOpertation.Less,
+            "<=" => TracorDataPropertyOpertation.LessOrEqual,
+            ">" => TracorDataPropertyOpertation.Greater,
+            ">=" => TracorDataPropertyOpertation.GreaterOrEqual,
+            "Like" => TracorDataPropertyOpertation.Like,
+            _ => TracorDataPropertyOpertation.Data,
+        };
+    }
+    public static string TracorDataPropertyOpertationToString(TracorDataPropertyOpertation value) {
+        return value switch {
+            TracorDataPropertyOpertation.Data => "",
+            TracorDataPropertyOpertation.Ignore => "Ignore",
+            TracorDataPropertyOpertation.Equal => "==",
+            TracorDataPropertyOpertation.NotEqual => "!=",
+            TracorDataPropertyOpertation.Less => "<",
+            TracorDataPropertyOpertation.LessOrEqual => "<=",
+            TracorDataPropertyOpertation.Greater => ">",
+            TracorDataPropertyOpertation.GreaterOrEqual => ">=",
+            TracorDataPropertyOpertation.Like => "Like",
+            _ => "Data",
         };
     }
 }
