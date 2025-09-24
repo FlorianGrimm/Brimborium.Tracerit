@@ -53,7 +53,8 @@ public static class TracorServiceBuilderExtension {
         this IServiceCollection servicebuilder,
         Action<TracorValidatorOptions>? configure = default) {
         servicebuilder.AddSingleton<ITracor, TesttimeTracor>();
-        servicebuilder.AddSingleton<TesttimeTracorValidator>();
+        servicebuilder.AddSingleton<ActivityTracorDataPool>();
+        servicebuilder.AddSingleton<TesttimeTracorValidator>(TesttimeTracorValidator.Create);
         servicebuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<TesttimeTracorValidator>());
         var optionsBuilder = servicebuilder.AddOptions<TracorValidatorOptions>();
@@ -92,12 +93,13 @@ public static class TracorServiceBuilderExtension {
     public static IServiceCollection AddTracorActivityListener(
         this IServiceCollection servicebuilder,
         bool addTestTimeServices,
+        IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         if (addTestTimeServices) {
-            return servicebuilder.AddTesttimeTracorActivityListener(configure);
+            return servicebuilder.AddTesttimeTracorActivityListener(configuration, configure);
         } else {
-            return servicebuilder.AddRuntimeTracorActivityListener(configure);
+            return servicebuilder.AddRuntimeTracorActivityListener(configuration, configure);
         }
     }
 
@@ -109,9 +111,11 @@ public static class TracorServiceBuilderExtension {
     /// <returns>fluent this</returns>
     public static IServiceCollection AddRuntimeTracorActivityListener(
         this IServiceCollection servicebuilder,
+        IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         // add runtime do nothing implementations
+        servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
         servicebuilder.AddSingleton<RuntimeTracorActivityListener>();
         servicebuilder.AddSingleton<ITracorActivityListener>(
             (sp) => sp.GetRequiredService<RuntimeTracorActivityListener>());
@@ -132,9 +136,12 @@ public static class TracorServiceBuilderExtension {
     /// <returns>fluent this</returns>
     public static IServiceCollection AddTesttimeTracorActivityListener(
         this IServiceCollection servicebuilder,
+        IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
-        servicebuilder.AddSingleton<TesttimeTracorActivityListener>();
+        servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
+        var configurationSection = configuration;
+        servicebuilder.AddSingleton<TesttimeTracorActivityListener>((IServiceProvider serviceProvider) => TesttimeTracorActivityListener.Create(serviceProvider, configuration));
         servicebuilder.AddSingleton<ITracorActivityListener>(
             (sp) => sp.GetRequiredService<TesttimeTracorActivityListener>());
 

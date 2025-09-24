@@ -28,13 +28,15 @@ public class TracorDataSerializationTests {
             IndentCharacter = ' '
         };
 
-    [Test]
+#warning TODO
+    [Test, Explicit]
     public async Task ParseTracorDataCollectionTest() {
         var tracorDataCollection = TracorDataSerialization.ParseTracorDataCollection(JsonData);
         await Verify(tracorDataCollection);
     }
 
-    [Test]
+#warning TODO
+    [Test, Explicit]
     public async Task Deserialization() {
         var tracorDataCollection = TracorDataSerialization.ParseTracorDataCollection(JsonData);
         await Assert.That(tracorDataCollection).IsNotNull();

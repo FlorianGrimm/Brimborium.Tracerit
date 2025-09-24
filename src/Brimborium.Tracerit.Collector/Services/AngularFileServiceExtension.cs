@@ -1,4 +1,6 @@
-﻿namespace Microsoft.AspNetCore.Builder;
+﻿using Microsoft.Extensions.Options;
+
+namespace Microsoft.AspNetCore.Builder;
 
 public static class AngularFileServiceExtension {
     public static OptionsBuilder<AngularFileServiceOptions> AddAngularFileService(this IServiceCollection services) {

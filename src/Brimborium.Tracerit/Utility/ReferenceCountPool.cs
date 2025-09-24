@@ -66,8 +66,8 @@ public abstract class ReferenceCountPool<T>
     private long rentIndex;
     private long returnIndex;
 
-    public ReferenceCountPool(int capacity) {
-        this.Capacity = capacity;
+    public ReferenceCountPool(int capacity = 0) {
+        this.Capacity = 0 < capacity ? capacity : DefaultMaxPoolSize;
         this.pool = new T?[capacity];
     }
 

@@ -148,126 +148,134 @@ public static class TracorDataSerialization {
 
     public static bool ParseTracorDataProperty(ReadOnlySpan<char> value, out TracorDataProperty result) {
         int posNameColon = value.IndexOf(_SeperationJsonChar);
-        if (1 <= posNameColon) {
+        if (1 <= posNameColon && posNameColon <value.Length) {
             var argName = value[..posNameColon];
             int posAfterNameColon = posNameColon + 1;
             if (posAfterNameColon < value.Length) {
                 var valueAfterNameColon = value[posAfterNameColon..];
-                int posTypeColon = valueAfterNameColon.IndexOf(_SeperationJsonChar);
-                var posTypeColonAfter = posTypeColon + 1;
-                if (1 < posTypeColon && posTypeColonAfter <= valueAfterNameColon.Length) {
-                    var typeName = valueAfterNameColon[..posTypeColon];
-                    var textValue = valueAfterNameColon[posTypeColonAfter..];
-                    var argNameString = TracorDataUtility.GetPropertyName(argName);
-                    var textValueString = TracorDataUtility.GetPropertyValue(textValue);
-                    if (TracorDataProperty.TypeNameString.AsSpan().SequenceEqual(typeName)) {
-                        result = new TracorDataProperty(
-                            name: argNameString,
-                            typeValue: TracorDataPropertyTypeValue.String,
-                            textValue: textValueString,
-                            value: textValueString
-                        );
-                        return true;
-                    } else if (TracorDataProperty.TypeNameInteger.AsSpan().SequenceEqual(typeName)) {
-                        if (int.TryParse(textValue, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var intValue)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.Integer,
-                                textValue: textValueString,
-                                value: intValue
-                            );
-                            return true;
+                int posOperationColon = valueAfterNameColon.IndexOf(_SeperationJsonChar);
+                var posAfterOperationColon = posOperationColon + 1;
+                if (0 <= posOperationColon && posAfterOperationColon <= valueAfterNameColon.Length) {
+                    var valueAfterOperationColon = valueAfterNameColon[posAfterOperationColon..];
+                    int posTypeColon = valueAfterOperationColon.IndexOf(_SeperationJsonChar);
+                    var posAfterTypeColon = posTypeColon + 1;
+                    if (0 < posTypeColon && posAfterTypeColon <= valueAfterOperationColon.Length) {
+                        var typeName = valueAfterOperationColon[..posTypeColon];
+                        var textValue = valueAfterOperationColon[posAfterTypeColon..];
+
+                        {
+                            var argNameString = TracorDataUtility.GetPropertyName(argName);
+                            var textValueString = TracorDataUtility.GetPropertyValue(textValue);
+                            if (TracorDataProperty.TypeNameString.AsSpan().SequenceEqual(typeName)) {
+                                result = new TracorDataProperty(
+                                    name: argNameString,
+                                    typeValue: TracorDataPropertyTypeValue.String,
+                                    textValue: textValueString,
+                                    value: textValueString
+                                );
+                                return true;
+                            } else if (TracorDataProperty.TypeNameInteger.AsSpan().SequenceEqual(typeName)) {
+                                if (int.TryParse(textValue, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var intValue)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.Integer,
+                                        textValue: textValueString,
+                                        value: intValue
+                                    );
+                                    return true;
+                                }
+                            } else if (TracorDataProperty.TypeNameLevelValue.AsSpan().SequenceEqual(typeName)) {
+                                if (LogLevelUtility.TryGetLogLevelByName(textValueString, out var level)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.LevelValue,
+                                        textValue: textValueString,
+                                        value: level
+                                    );
+                                    return true;
+                                } else if (int.TryParse(textValue, out var intValue)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.LevelValue,
+                                        textValue: textValueString,
+                                        value: (LogLevel)intValue
+                                    );
+                                    return true;
+                                }
+                            } else if (TracorDataProperty.TypeNameDateTime.AsSpan().SequenceEqual(typeName)) {
+                                if (long.TryParse(textValue, null, out var ns)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.DateTime,
+                                        textValue: textValueString,
+                                        value: TracorDataUtility.UnixTimeNanosecondsToDateTime(ns)
+                                    );
+                                    return true;
+                                } else if (DateTime.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtValue)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.DateTime,
+                                        textValue: textValueString,
+                                        value: dtValue
+                                    );
+                                    return true;
+                                }
+                            } else if (TracorDataProperty.TypeNameDateTimeOffset.AsSpan().SequenceEqual(typeName)) {
+                                if (long.TryParse(textValue, null, out var ns)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.DateTimeOffset,
+                                        textValue: textValueString,
+                                        value: TracorDataUtility.UnixTimeNanosecondsToDateTimeOffset(ns)
+                                    );
+                                    return true;
+                                } else if (DateTimeOffset.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtoValue)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.DateTime,
+                                        textValue: textValueString,
+                                        value: dtoValue
+                                    );
+                                    return true;
+                                }
+                            } else if (TracorDataProperty.TypeNameBoolean.AsSpan().SequenceEqual(typeName)) {
+                                result = new TracorDataProperty(
+                                    name: argNameString,
+                                    typeValue: TracorDataPropertyTypeValue.Boolean,
+                                    textValue: textValueString,
+                                    value: TracorDataUtility.GetBoolValueBoxes(textValueString)
+                                );
+                                return true;
+                            } else if (TracorDataProperty.TypeNameLong.AsSpan().SequenceEqual(typeName)) {
+                                if (long.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var longValue)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.Long,
+                                        textValue: textValueString,
+                                        value: longValue
+                                    );
+                                    return true;
+                                }
+                            } else if (TracorDataProperty.TypeNameDouble.AsSpan().SequenceEqual(typeName)) {
+                                if (double.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var doubleValue)) {
+                                    result = new TracorDataProperty(
+                                        name: argNameString,
+                                        typeValue: TracorDataPropertyTypeValue.Double,
+                                        textValue: textValueString,
+                                        value: doubleValue
+                                    );
+                                    return true;
+                                }
+                            } else if (TracorDataProperty.TypeNameAny.AsSpan().SequenceEqual(typeName)) {
+                                result = new TracorDataProperty(
+                                    name: argNameString,
+                                    typeValue: TracorDataPropertyTypeValue.Any,
+                                    textValue: textValueString,
+                                    value: textValueString
+                                );
+                                return true;
+                            }
                         }
-                    } else if (TracorDataProperty.TypeNameLevelValue.AsSpan().SequenceEqual(typeName)) {
-                        if (LogLevelUtility.TryGetLogLevelByName(textValueString, out var level)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.LevelValue,
-                                textValue: textValueString,
-                                value: level
-                            );
-                            return true;
-                        } else if (int.TryParse(textValue, out var intValue)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.LevelValue,
-                                textValue: textValueString,
-                                value: (LogLevel)intValue
-                            );
-                            return true;
-                        }
-                    } else if (TracorDataProperty.TypeNameDateTime.AsSpan().SequenceEqual(typeName)) {
-                        if (long.TryParse(textValue, null, out var ns)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.DateTime,
-                                textValue: textValueString,
-                                value: TracorDataUtility.UnixTimeNanosecondsToDateTime(ns)
-                            );
-                            return true;
-                        } else if (DateTime.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtValue)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.DateTime,
-                                textValue: textValueString,
-                                value: dtValue
-                            );
-                            return true;
-                        }
-                    } else if (TracorDataProperty.TypeNameDateTimeOffset.AsSpan().SequenceEqual(typeName)) {
-                        if (long.TryParse(textValue, null, out var ns)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.DateTimeOffset,
-                                textValue: textValueString,
-                                value: TracorDataUtility.UnixTimeNanosecondsToDateTimeOffset(ns)
-                            );
-                            return true;
-                        } else if (DateTimeOffset.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtoValue)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.DateTime,
-                                textValue: textValueString,
-                                value: dtoValue
-                            );
-                            return true;
-                        }
-                    } else if (TracorDataProperty.TypeNameBoolean.AsSpan().SequenceEqual(typeName)) {
-                        result = new TracorDataProperty(
-                            name: argNameString,
-                            typeValue: TracorDataPropertyTypeValue.Boolean,
-                            textValue: textValueString,
-                            value: TracorDataUtility.GetBoolValueBoxes(textValueString)
-                        );
-                        return true;
-                    } else if (TracorDataProperty.TypeNameLong.AsSpan().SequenceEqual(typeName)) {
-                        if (long.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var longValue)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.Long,
-                                textValue: textValueString,
-                                value: longValue
-                            );
-                            return true;
-                        }
-                    } else if (TracorDataProperty.TypeNameDouble.AsSpan().SequenceEqual(typeName)) {
-                        if (double.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var doubleValue)) {
-                            result = new TracorDataProperty(
-                                name: argNameString,
-                                typeValue: TracorDataPropertyTypeValue.Double,
-                                textValue: textValueString,
-                                value: doubleValue
-                            );
-                            return true;
-                        }
-                    } else if (TracorDataProperty.TypeNameAny.AsSpan().SequenceEqual(typeName)) {
-                        result = new TracorDataProperty(
-                            name: argNameString,
-                            typeValue: TracorDataPropertyTypeValue.Any,
-                            textValue: textValueString,
-                            value: textValueString
-                        );
-                        return true;
                     }
                 }
             }

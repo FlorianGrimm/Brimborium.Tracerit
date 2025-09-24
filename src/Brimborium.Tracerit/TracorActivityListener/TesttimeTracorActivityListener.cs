@@ -4,17 +4,40 @@ internal sealed class TesttimeTracorActivityListener
     : BaseTracorActivityListener
     , ITracorActivityListener
     , IDisposable {
+    internal static TesttimeTracorActivityListener Create(
+        IServiceProvider serviceProvider,
+        IConfiguration? configuration
+        ) {
+        //TODO
+        //if (configuration is null) {
+        //    serviceProvider.GetRequiredService<IConfiguration>().GetSection("");
+        //}
+        var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
+        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
+        var logger = serviceProvider.GetRequiredService<ILogger<TesttimeTracorActivityListener>>();
+        return new TesttimeTracorActivityListener(
+            serviceProvider, 
+            activityTracorDataPool, 
+            tracor, 
+            options, 
+            logger);
+    }
+
     private ActivityListener? _Listener;
+    private readonly ActivityTracorDataPool _ActivityTracorDataPool;
     private readonly ITracor _Tracor;
 
     public TesttimeTracorActivityListener(
         IServiceProvider serviceProvider,
+        ActivityTracorDataPool activityTracorDataPool,
         ITracor tracor,
         IOptionsMonitor<TracorActivityListenerOptions> options,
         ILogger<TesttimeTracorActivityListener> logger) : base(
             serviceProvider,
             options,
             logger) {
+        this._ActivityTracorDataPool = activityTracorDataPool;
         this._Tracor = tracor;
     }
 
@@ -117,7 +140,11 @@ internal sealed class TesttimeTracorActivityListener
             this._DictTracorIdentitfierCacheByActivitySource = this._DictTracorIdentitfierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentitfierCache);
         }
         var tracorIdentitfier = tracorIdentitfierCache.Child("Start");
-        this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
+        // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
+        using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
+            activityTracorData.SetActivity(activity);
+            this._Tracor.Trace(tracorIdentitfier, activityTracorData);
+        }
     }
 
     private void OnActivityStopped(Activity activity) {
@@ -143,7 +170,11 @@ internal sealed class TesttimeTracorActivityListener
             this._DictTracorIdentitfierCacheByActivitySource = this._DictTracorIdentitfierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentitfierCache);
         }
         var tracorIdentitfier = tracorIdentitfierCache.Child("Stop");
-        this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
+        // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
+        using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
+            activityTracorData.SetActivity(activity);
+            this._Tracor.Trace(tracorIdentitfier, activityTracorData);
+        }
     }
 
     private void OnExceptionRecorder(Activity activity, Exception exception, ref TagList tags) { }

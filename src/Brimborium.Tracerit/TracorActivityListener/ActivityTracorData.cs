@@ -1,21 +1,29 @@
 ﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
 
+using System.ComponentModel;
+
 namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class ActivityTracorData
-    : ITracorData<Activity> {
+    : ReferenceCountObject
+    , ITracorData<Activity> {
 
-    private readonly Activity _Activity;
+    private Activity? _Activity;
 
-    public ActivityTracorData(Activity activity) {
+    public ActivityTracorData() : base(default) {
+    }
+    public ActivityTracorData(IReferenceCountPool? owner) : base(owner) {
+    }
+
+    public ActivityTracorData(Activity activity) : base(default) {
         this._Activity = activity;
     }
 
-    public Activity Activity => this._Activity;
+    public Activity Activity => this._Activity ?? throw new ObjectDisposedException("ActivityTracorData");
 
     public List<string> GetListPropertyName() {
         List<string> result = new();
-        foreach (ref readonly var tag in this._Activity.EnumerateTagObjects()) {
+        foreach (ref readonly var tag in this.Activity.EnumerateTagObjects()) {
             result.Add(tag.Key);
             //result.Add($"{TracorDataUtility.PrefixTag}:{tag.Key}");
         }
@@ -24,7 +32,7 @@ public sealed class ActivityTracorData
     }
 
     public bool TryGetOriginalValue([MaybeNullWhen(false)] out Activity value) {
-        value = this._Activity;
+        value = this.Activity;
         return true;
     }
 
@@ -35,8 +43,8 @@ public sealed class ActivityTracorData
         foreach (ref readonly var activityEvent in this._Activity.EnumerateEvents()) {
         }
         */
-        
-        foreach (ref readonly var tag in this._Activity.EnumerateTagObjects()) {
+
+        foreach (ref readonly var tag in this.Activity.EnumerateTagObjects()) {
             if (propertyName == tag.Key) {
                 propertyValue = tag.Value;
                 return true;
@@ -47,8 +55,6 @@ public sealed class ActivityTracorData
         return false;
     }
 
-
-
     /// <summary>
     /// Gets the value of a specific tag on an <see cref="Activity"/>.
     /// </summary>
@@ -56,7 +62,7 @@ public sealed class ActivityTracorData
     /// <param name="tagName">Case-sensitive tag name to retrieve.</param>
     /// <returns>Tag value or null if a match was not found.</returns>
     public object? GetTagValue(string? tagName) {
-        foreach (ref readonly var tag in this._Activity.EnumerateTagObjects()) {
+        foreach (ref readonly var tag in this.Activity.EnumerateTagObjects()) {
             if (tag.Key == tagName) {
                 return tag.Value;
             }
@@ -73,7 +79,7 @@ public sealed class ActivityTracorData
     /// <param name="tagValue">Tag value.</param>
     /// <returns><see langword="true"/> if the first tag of the supplied Activity matches the user provide tag name.</returns>
     public bool TryGetTagValue(string tagName, out object? tagValue) {
-        var enumeratorTagObjects = this._Activity.EnumerateTagObjects();
+        var enumeratorTagObjects = this.Activity.EnumerateTagObjects();
 
         if (enumeratorTagObjects.MoveNext()) {
             ref readonly var tag = ref enumeratorTagObjects.Current;
@@ -89,7 +95,7 @@ public sealed class ActivityTracorData
     }
 
     public bool TryGetTagValue<T>(string tagName, [MaybeNullWhen(false)] out T tagValue) {
-        var enumeratorTagObjects = this._Activity.EnumerateTagObjects();
+        var enumeratorTagObjects = this.Activity.EnumerateTagObjects();
 
         if (enumeratorTagObjects.MoveNext()) {
             ref readonly var tag = ref enumeratorTagObjects.Current;
@@ -105,13 +111,25 @@ public sealed class ActivityTracorData
     }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
-        var enumeratorTagObjects = this._Activity.EnumerateTagObjects();
+        var enumeratorTagObjects = this.Activity.EnumerateTagObjects();
 
         if (enumeratorTagObjects.MoveNext()) {
             ref readonly var tag = ref enumeratorTagObjects.Current;
-            if (tag.Value is { } tagValue){ 
+            if (tag.Value is { } tagValue) {
                 listProperty.Add(TracorDataProperty.Create(tag.Key, tagValue));
             }
         }
+    }
+
+    protected override void ResetState() {
+        this._Activity = null;
+    }
+
+    protected override bool IsStateReseted()
+        => this._Activity is null;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void SetActivity(Activity activity) {
+        this._Activity = activity;
     }
 }

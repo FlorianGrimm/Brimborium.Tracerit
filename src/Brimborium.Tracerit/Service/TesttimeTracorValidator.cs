@@ -1,16 +1,26 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
 public sealed class TesttimeTracorValidator : ITracorValidator {
+
+    public static TesttimeTracorValidator Create(IServiceProvider serviceProvider) {
+        var options = serviceProvider.GetRequiredService<IOptions<TracorValidatorOptions>>();
+        var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
+        var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+        return new TesttimeTracorValidator(options, activityTracorDataPool, loggerFactory);
+    }
+
     private ImmutableArray<ITracorValidatorPath> _ListValidatorPath = ImmutableArray<ITracorValidatorPath>.Empty;
     private readonly Lock _LockListTracorStepPath = new();
     private readonly ILoggerFactory _LoggerFactory;
+    private readonly ActivityTracorDataPool _ActivityTracorDataPool;
     private ILogger? _LoggerCondition;
     private LoggerUtility? _LoggerUtility;
 
     public ImmutableDictionary<Type, ITracorDataAccessorFactory> TracorDataAccessorByType { get; set; } = ImmutableDictionary<Type, ITracorDataAccessorFactory>.Empty;
     public ImmutableArray<ITracorDataAccessorFactory> ListTracorDataAccessor { get; set; } = ImmutableArray<ITracorDataAccessorFactory>.Empty;
 
-    public TesttimeTracorValidator(ILoggerFactory loggerFactory) {
+    public TesttimeTracorValidator(ActivityTracorDataPool activityTracorDataPool, ILoggerFactory loggerFactory) {
+        this._ActivityTracorDataPool = activityTracorDataPool;
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<string>());
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<int>());
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<bool>());
@@ -23,8 +33,9 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
 
     public TesttimeTracorValidator(
         Microsoft.Extensions.Options.IOptions<TracorValidatorOptions> options,
+        ActivityTracorDataPool activityTracorDataPool,
         ILoggerFactory loggerFactory
-        ) : this(loggerFactory) {
+        ) : this(activityTracorDataPool, loggerFactory) {
         this.AddOptions(options.Value);
     }
 

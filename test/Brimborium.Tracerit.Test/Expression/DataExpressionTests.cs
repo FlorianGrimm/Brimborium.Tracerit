@@ -65,7 +65,7 @@ public class DataExpressionTests {
                     subActivity1?.SetTag("operation", "test3");
                 }
             }
-            var finished = await validatorPath.GetFinishedAsync(null);
+            var finished = await validatorPath.GetFinishedAsync(null, TimeSpan.FromSeconds(1));
             await Assert.That(finished).IsNotNull();
         }
         serviceProvider.TracorActivityListenerStop();
