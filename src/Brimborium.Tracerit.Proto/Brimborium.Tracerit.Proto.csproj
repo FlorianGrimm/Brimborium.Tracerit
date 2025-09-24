@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Brimborium.Tracerit</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.ClientFactory" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="opentelemetry\proto\collector\logs\v1\logs_service.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\collector\metrics\v1\metrics_service.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\collector\profiles\v1development\profiles_service.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\collector\trace\v1\trace_service.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\common\v1\common.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\logs\v1\logs.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\metrics\v1\metrics.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\profiles\v1development\profiles.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\resource\v1\resource.proto" GrpcServices="Both" />
+    <Protobuf Include="opentelemetry\proto\trace\v1\trace.proto" GrpcServices="Both" />
+  </ItemGroup>
+</Project>

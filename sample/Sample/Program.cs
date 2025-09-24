@@ -8,7 +8,7 @@ namespace Sample.WebApp;
 public partial class Program {
     public static async Task<int> Main(string[] args) {
         try {
-            await RunAsync(args).ConfigureAwait(false);
+            await RunAsync(args, new()).ConfigureAwait(false);
             return 0;
         } catch (Microsoft.Extensions.Hosting.HostAbortedException) {
             return 0;
@@ -27,11 +27,11 @@ public partial class Program {
 
     internal static Task RunAsync(
         string[] args,
-        StartupActions? startupActions = default
+        StartupActions startupActions
         ) {
-        startupActions ??= new();
         var builder = WebApplication.CreateBuilder(args);
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+
         // Add services to the container.
         builder.Services.AddRazorPages();
         builder.Services.AddAngularFileService()

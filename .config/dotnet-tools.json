@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-grpc": {
+      "version": "2.71.0",
+      "commands": [
+        "dotnet-grpc"
+      ],
+      "rollForward": false
+    }
+  }
+}
