@@ -93,7 +93,7 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                         .AddScheme<TestAuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, null);
                     builder.Services.AddTracor(true);
                     builder.Logging.AddTracorLogger((options) => { options.LogLevel = LogLevel.Trace; });
-                    builder.Services.AddTracorActivityListener(true, (options) => {
+                    builder.Services.AddTracorActivityListener(true, null, (options) => {
                         options.AllowAllActivitySource = true;
                     });
                     builder.Services.AddReplacements();

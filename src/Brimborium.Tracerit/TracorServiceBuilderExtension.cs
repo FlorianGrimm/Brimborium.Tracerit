@@ -1,4 +1,6 @@
-﻿using Brimborium.Tracerit.TracorActivityListener;
+﻿using Brimborium.Tracerit.Diagnostics;
+using Brimborium.Tracerit.TracorActivityListener;
+using System.Diagnostics.Metrics;
 
 namespace Brimborium.Tracerit;
 
@@ -30,6 +32,7 @@ public static class TracorServiceBuilderExtension {
     public static IServiceCollection AddRuntimeTracor(
         this IServiceCollection servicebuilder,
         Action<TracorValidatorOptions>? configure = default) {
+        servicebuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         servicebuilder.AddSingleton<ITracor, RuntimeTracor>();
         servicebuilder.AddSingleton<RuntimeTracorValidator>();
         servicebuilder.AddSingleton<ITracorValidator>(
@@ -51,9 +54,10 @@ public static class TracorServiceBuilderExtension {
     /// <returns>The service collection for method chaining.</returns>
     public static IServiceCollection AddTesttimeTracor(
         this IServiceCollection servicebuilder,
-        Action<TracorValidatorOptions>? configure = default) {
+        Action<TracorValidatorOptions>? configure = default) {        
+        servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
+        servicebuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         servicebuilder.AddSingleton<ITracor, TesttimeTracor>();
-        servicebuilder.AddSingleton<ActivityTracorDataPool>();
         servicebuilder.AddSingleton<TesttimeTracorValidator>(TesttimeTracorValidator.Create);
         servicebuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<TesttimeTracorValidator>());
@@ -74,6 +78,7 @@ public static class TracorServiceBuilderExtension {
     public static IServiceCollection AddTracorLogger(
         this IServiceCollection servicebuilder,
         Action<TracorLoggerOptions>? configure = default) {
+        servicebuilder.AddSingleton<LoggerTracorDataPool>(LoggerTracorDataPool.Create);
         servicebuilder.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, TracorLoggerProvider>());
 
         var optionsBuilder = servicebuilder.AddOptions<TracorLoggerOptions>();
@@ -116,6 +121,7 @@ public static class TracorServiceBuilderExtension {
         ) {
         // add runtime do nothing implementations
         servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
+
         servicebuilder.AddSingleton<RuntimeTracorActivityListener>();
         servicebuilder.AddSingleton<ITracorActivityListener>(
             (sp) => sp.GetRequiredService<RuntimeTracorActivityListener>());
@@ -140,6 +146,7 @@ public static class TracorServiceBuilderExtension {
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
+
         var configurationSection = configuration;
         servicebuilder.AddSingleton<TesttimeTracorActivityListener>((IServiceProvider serviceProvider) => TesttimeTracorActivityListener.Create(serviceProvider, configuration));
         servicebuilder.AddSingleton<ITracorActivityListener>(
@@ -159,14 +166,14 @@ public static class TracorServiceBuilderExtension {
     /// <typeparam name="T">Type inherit <see cref="T:AddActivitySourceBase"/>.</typeparam>
     /// <param name="servicebuilder">The service collection to add services to.</param>
     /// <returns>fluent this</returns>
-    public static IServiceCollection AddActivitySourceBase<T>(
+    public static IServiceCollection AddInstrumentation<T>(
         this IServiceCollection servicebuilder
         )
-        where T : ActivitySourceBase {
+        where T : InstrumentationBase {
         servicebuilder.AddSingleton<T>();
         servicebuilder.AddOptions<TracorActivityListenerOptions>()
             .Configure((options) => {
-                options.ListActivitySourceByType.Add(typeof(T));
+                options.ListActivitySourceResolver.Add(new InstrumentationBaseResolver<T>());
             });
         return servicebuilder;
     }

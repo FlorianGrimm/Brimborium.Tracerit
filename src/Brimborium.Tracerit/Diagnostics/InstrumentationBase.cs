@@ -2,10 +2,6 @@ using System.Reflection;
 
 namespace Brimborium.Tracerit.Diagnostics;
 
-public interface IInstrumentation : IDisposable {
-    ActivitySource? ActivitySource { get; }
-}
-
 public class InstrumentationBase : IInstrumentation, IDisposable {
     private ActivitySource? _ActivitySource;
     private readonly bool _IsShared;
@@ -24,11 +20,12 @@ public class InstrumentationBase : IInstrumentation, IDisposable {
                 }
             }
         }
+        var type = this.GetType();
         if (name is null) {
-            var type = this.GetType();
             name = type.Namespace ?? type.Name ?? throw new Exception("anonymous class");
         }
-        this._ActivitySource = new ActivitySource(name);
+        var version = type.Assembly.GetName().Version?.ToString();
+        this._ActivitySource = new ActivitySource(name, version);
         this._IsShared = false;
     }
 
@@ -58,6 +55,4 @@ public class InstrumentationBase : IInstrumentation, IDisposable {
             }
         }
     }
-
-    public static implicit operator ActivitySource?(InstrumentationBase that) => that._ActivitySource;
 }

@@ -109,7 +109,7 @@ public class TracorDataTests {
         // Arrange
         var uri = new Uri("https://example.com");
         var accessor = new SystemUriTracorDataAccessor();
-        var factory = new TracorDataAccessorFactory<Uri>(accessor);
+        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor);
 
         // Act & Assert
         await Assert.That(factory.TryGetData(uri, out var tracorData)).IsTrue();
@@ -124,7 +124,7 @@ public class TracorDataTests {
     public async Task TracorDataAccessorFactory_ShouldReturnFalseForIncorrectType() {
         // Arrange
         var accessor = new SystemUriTracorDataAccessor();
-        var factory = new TracorDataAccessorFactory<Uri>(accessor);
+        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor);
 
         // Act & Assert
         await Assert.That(factory.TryGetData("not a uri", out var tracorData)).IsFalse();

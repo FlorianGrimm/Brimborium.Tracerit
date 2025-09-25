@@ -24,9 +24,9 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<string>());
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<int>());
         this.AddTracorDataAccessorByType(new ValueAccessorFactory<bool>());
-        this.AddTracorDataAccessorByType(new TracorDataAccessorFactory<Uri>(new SystemUriTracorDataAccessor()));
-        this.AddTracorDataAccessorByType(new JsonDocumentTracorDataFactor());
-        this.AddTracorDataAccessorByType(new ActivityTracorDataFactory());
+        this.AddTracorDataAccessorByType(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
+        this.AddTracorDataAccessorByType(new JsonDocumentTracorDataFactory());
+        this.AddTracorDataAccessorByType(new ActivityTracorDataFactory(activityTracorDataPool));
         this.AddTracorDataAccessorByType(new LoggerTracorDataFactory());
         this._LoggerFactory = loggerFactory;
     }

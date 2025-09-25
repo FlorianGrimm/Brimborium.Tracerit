@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit.TracorActivityListener;
+﻿using Brimborium.Tracerit.Diagnostics;
+
+namespace Brimborium.Tracerit.TracorActivityListener;
 
 internal abstract class BaseTracorActivityListener
     : IDisposable {
@@ -9,7 +11,7 @@ internal abstract class BaseTracorActivityListener
         public required bool AllowAllActivitySource;
         public readonly HashSet<string> HashSetActivitySourceName;
         public readonly HashSet<ActivitySourceIdentifier> HashSetActivitySourceIdenifier;
-        public readonly HashSet<Type> HashSetActivitySourceByType = new();
+        public readonly HashSet<IActivitySourceResolver> HashSetActivitySourceResolver = new();
 
         public OptionState() {
             this.HashSetActivitySourceName = new HashSet<string>(StringComparer.Ordinal);
@@ -46,8 +48,8 @@ internal abstract class BaseTracorActivityListener
                 }
             }
             static void addListActivitySourceByType(TracorActivityListenerOptions options, OptionState result) {
-                foreach (var type in options.ListActivitySourceByType) {
-                    result.HashSetActivitySourceByType.Add(type);
+                foreach (var resolver in options.ListActivitySourceResolver) {
+                    result.HashSetActivitySourceResolver.Add(resolver);
                 }
             }
         }
@@ -55,7 +57,6 @@ internal abstract class BaseTracorActivityListener
     private string? _IsDisposed;
     protected readonly Lock _Lock = new();
     protected readonly IServiceProvider _ServiceProvider;
-    protected readonly Dictionary<Type, ActivitySourceBase> _DictActivitySourceByType = new();
     protected readonly IOptionsMonitor<TracorActivityListenerOptions> _Options;
     protected readonly ILogger _Logger;
     protected ImmutableDictionary<ActivitySourceIdentifier, TracorIdentitfierCache> _DictTracorIdentitfierCacheByActivitySource = ImmutableDictionary<ActivitySourceIdentifier, TracorIdentitfierCache>.Empty;
@@ -90,47 +91,11 @@ internal abstract class BaseTracorActivityListener
 
     protected void SetOptionState(OptionState value) {
         this._OptionState = value;
-        foreach (var type in value.HashSetActivitySourceByType) {
-            {
-                if (this._DictActivitySourceByType.TryGetValue(type, out var activitySource)) {
-                    value.HashSetActivitySourceName.Add(activitySource.SourceName);
-                    value.HashSetActivitySourceIdenifier.Add(new ActivitySourceIdentifier(activitySource.SourceName, activitySource.SourceVersion));
-                    continue;
-                }
-            }
-            try {
-                if (!typeof(ActivitySourceBase).IsAssignableFrom(type)) {
-                    continue;
-                }
-                var service = this._ServiceProvider.GetService(type);
-                if (service is null) {
-                    foreach (var constructor in type.GetConstructors()) {
-                        var parameters = constructor.GetParameters();
-                        if (parameters.Length > 0) {
-                            if (typeof(IConfiguration).Equals(parameters[0].ParameterType)) {
-                                var configuration = this._ServiceProvider.GetRequiredService<IConfiguration>();
-                                service = ActivatorUtilities.CreateInstance(this._ServiceProvider, type, configuration);
-                                break;
-                            }
-                        }
-                    }
-                    if (service is null) {
-                        service = ActivatorUtilities.CreateInstance(this._ServiceProvider, type);
-                    }
-                }
-                if (service is ActivitySourceBase activitySource) {
-                    this._DictActivitySourceByType[type] = activitySource;
-                    value.HashSetActivitySourceName.Add(activitySource.SourceName);
-                    value.HashSetActivitySourceIdenifier.Add(new ActivitySourceIdentifier(activitySource.SourceName, activitySource.SourceVersion));
-                    continue;
-                }
-                {
-                    this._Logger.LogError(
-                        message: "Failed to create ActivitySourceBase. Service is not of type ActivitySourceBase. {ServiceType}",
-                        service.GetType().FullName);
-                }
-            } catch (Exception ex) {
-                this._Logger.LogError(exception: ex, message: "Failed to create ActivitySourceBase");
+        foreach (var activitySourceResolver in value.HashSetActivitySourceResolver) {
+            if (activitySourceResolver.Resolve(this._ServiceProvider) is ActivitySource activitySource) {
+                value.HashSetActivitySourceName.Add(activitySource.Name);
+                value.HashSetActivitySourceIdenifier.Add(new ActivitySourceIdentifier(activitySource.Name, activitySource.Version));
+                continue;
             }
         }
     }

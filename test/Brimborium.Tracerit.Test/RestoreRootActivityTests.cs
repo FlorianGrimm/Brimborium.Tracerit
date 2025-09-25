@@ -17,12 +17,11 @@ public class RestoreRootActivityTests {
         serviceBuilder.AddTracorLogger();
         serviceBuilder.AddTracor(true);
         serviceBuilder.AddTracorActivityListener(true);
-        serviceBuilder.AddActivitySourceBase<SampleTest1Instrumentation>();
+        serviceBuilder.AddInstrumentation<SampleTest1Instrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
         var testtimeTracorActivityListener = serviceProvider.GetRequiredService<TesttimeTracorActivityListener>();
-        var act = testtimeTracorActivityListener.GetActivitySourceBase();
 
         var sampleTest1Instrumentation = serviceProvider.GetRequiredService<SampleTest1Instrumentation>();
 
@@ -37,17 +36,17 @@ public class RestoreRootActivityTests {
                         Wrap(static(ITracorData data) => data.IsEqual("operation", "test3")).Predicate().AsMatch()
                         ])))
             ) {
-            using (var rootActivity = sampleTest1Instrumentation.StartRootActivity(name:"aaa")) {
+            using (var rootActivity = sampleTest1Instrumentation.StartRoot(name:"aaa")) {
                 var activity0 = rootActivity.Activity;
                 await Assert.That(activity0).IsNotNull();
                 activity0?.SetTag("operation", "test1");
 
-                using (var subActivity0 = sampleTest1Instrumentation.StartActivity(name:"bbb")) {
+                using (var subActivity0 = sampleTest1Instrumentation.Start(name:"bbb")) {
                     await Assert.That(subActivity0).IsNotNull();
                     subActivity0?.SetTag("operation", "test2");
                 }
 
-                using (var subActivity1 = sampleTest1Instrumentation.StartActivity(name: "ccc")) {
+                using (var subActivity1 = sampleTest1Instrumentation.Start(name: "ccc")) {
                     await Assert.That(subActivity1).IsNotNull();
                     subActivity1?.SetTag("operation", "test3");
                 }

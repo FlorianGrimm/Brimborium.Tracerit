@@ -1,3 +1,4 @@
+#if WEICHEI
 using Microsoft.AspNetCore.Builder;
 
 namespace Brimborium.Tracerit.Test;
@@ -84,3 +85,4 @@ public class ActivitySourceBaseTests {
             "ActivitySourceBaseTests.json");
     }
 }
+#endif

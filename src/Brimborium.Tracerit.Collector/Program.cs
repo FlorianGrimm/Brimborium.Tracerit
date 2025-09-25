@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
-
-namespace Brimborium.Tracerit.Collector; 
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.Test")]
+namespace Brimborium.Tracerit.Collector;
 
 public class Program {
     public static async Task<int> Main(string[] args) {
@@ -44,9 +45,6 @@ public class Program {
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
 
-        builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-            .AddNegotiate();
-
         builder.Services.AddAuthorization(options => {
             // By default, all incoming requests will be authorized according to the default policy.
             options.FallbackPolicy = options.DefaultPolicy;
@@ -62,9 +60,9 @@ public class Program {
             app.MapOpenApi();
         }
 
-        if (startupActions.Runtime) {
-            app.UseHttpsRedirection();
-        }
+        //if (startupActions.Runtime) {
+        //    app.UseHttpsRedirection();
+        //}
 
         app.UseAuthorization();
         app.UseAuthentication();
@@ -77,6 +75,19 @@ public class Program {
         if (startupActions.RunningWebApplication is { } runningWebApplication) { runningWebApplication(app, taskRun); }
 
         return taskRun;
+    }
+
+    // for test
+    internal static string GetContentRoot() {
+        return _GetContentRoot();
+
+        static string _GetContentRoot([System.Runtime.CompilerServices.CallerFilePath] string callerFilePath = "") {
+            if (System.IO.Path.GetDirectoryName(callerFilePath) is { Length: > 0 } result) {
+                return result;
+            } else {
+                throw new InvalidOperationException("GetContentRoot failed");
+            }
+        }
     }
 }
 

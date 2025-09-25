@@ -16,13 +16,13 @@ public class ReportExpressionTests {
         });
         serviceBuilder.AddTracor(true);
         serviceBuilder.AddTracorActivityListener(true);
-        serviceBuilder.AddActivitySourceBase<SampleTest1Instrumentation>();
+        serviceBuilder.AddInstrumentation<SampleTestInstrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
         var testtimeTracorActivityListener = serviceProvider.GetRequiredService<TesttimeTracorActivityListener>();
 
-        var sampleTest1Instrumentation = serviceProvider.GetRequiredService<SampleTest1Instrumentation>();
+        var sampleTestInstrumentation = serviceProvider.GetRequiredService<SampleTestInstrumentation>();
 
         RecordExpressionResult reportExpressionResult = new();
         var tracor = serviceProvider.GetRequiredService<ITracor>();
@@ -43,17 +43,17 @@ public class ReportExpressionTests {
                             && ("test1"==tagValue)).PredicateTracorData().AsMatch()
                     ])))
            ) {
-            using (var rootActivity = sampleTest1Instrumentation.StartRootActivity(name: "aaa")) {
+            using (var rootActivity = sampleTestInstrumentation.StartRoot(name: "aaa")) {
                 var activity0 = rootActivity.Activity;
                 await Assert.That(activity0).IsNotNull();
                 activity0?.SetTag("operation", "test1");
 
-                using (var subActivity0 = sampleTest1Instrumentation.StartActivity(name: "bbb")) {
+                using (var subActivity0 = sampleTestInstrumentation.Start(name: "bbb")) {
                     await Assert.That(subActivity0).IsNotNull();
                     subActivity0?.SetTag("operation", "test2");
                 }
 
-                using (var subActivity1 = sampleTest1Instrumentation.StartActivity(name: "ccc")) {
+                using (var subActivity1 = sampleTestInstrumentation.Start(name: "ccc")) {
                     await Assert.That(subActivity1).IsNotNull();
                     subActivity1?.SetTag("operation", "test3");
                 }

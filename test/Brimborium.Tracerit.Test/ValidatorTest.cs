@@ -10,7 +10,7 @@ public class ValidatorTest {
             options.AddConsole();
         });
         serviceBuilder.AddTesttimeTracor(options => {
-            options.AddTracorDataAccessorByType<Uri>(new TracorDataAccessorFactory<Uri>(new SystemUriTracorDataAccessor()));
+            options.AddTracorDataAccessorByType<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
             options.AddTracorDataAccessorByType<string>(new ValueAccessorFactory<string>());
         });
         var serviceProvider = serviceBuilder.BuildServiceProvider();
@@ -52,7 +52,7 @@ public class ValidatorTest {
             options.AddConsole();
         });
         serviceBuilder.AddTesttimeTracor(options => {
-            options.AddTracorDataAccessorByType<Uri>(new TracorDataAccessorFactory<Uri>(new SystemUriTracorDataAccessor()));
+            options.AddTracorDataAccessorByType<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
             options.AddTracorDataAccessorByType<string>(new ValueAccessorFactory<string>());
         });
         var serviceProvider = serviceBuilder.BuildServiceProvider();

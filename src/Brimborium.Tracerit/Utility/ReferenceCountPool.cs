@@ -5,6 +5,12 @@ public interface IReferenceCountObject : IDisposable {
     bool PrepareRent();
     long CanBeReturned();
 }
+
+public interface IReferenceCountObject<T> {
+    T GetValue();
+    void SetValue(T value);
+}
+
 public interface IReferenceCountPool {
     void Return(IReferenceCountObject value);
 }
@@ -53,6 +59,34 @@ public abstract class ReferenceCountObject
             },
             _ => result
         };
+    }
+}
+
+public abstract class ReferenceCountObject<T>
+    : ReferenceCountObject, IReferenceCountObject<T>
+    where T : class {
+    protected T? _Value;
+
+    protected ReferenceCountObject(IReferenceCountPool? owner) : base(owner) {
+    }
+
+    public T GetValue() => this._Value ?? throw new ObjectDisposedException(this.GetType().Name);
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public void SetValue(T value) {
+        if (!ReferenceEquals(this._Value, null)) {
+            throw new ObjectDisposedException(this.GetType().Name);
+        }
+
+        this._Value = value;
+    }
+
+    protected override bool IsStateReseted() {
+        return this._Value is null;
+    }
+
+    protected override void ResetState() {
+        this._Value = null;
     }
 }
 public abstract class ReferenceCountPool<T>
@@ -129,32 +163,6 @@ public abstract class ReferenceCountPool<T>
             if (Interlocked.CompareExchange(ref this.returnIndex, returnSnapshot + 1, returnSnapshot) == returnSnapshot) {
                 this.pool[returnSnapshot % this.Capacity] = valueT;
                 return;
-            }
-        }
-    }
-
-    private bool TryRentCoreRare(long rentSnapshot, [NotNullWhen(true)] out T? logRecord) {
-        SpinWait wait = default;
-        while (true) {
-            if (wait.NextSpinWillYield) {
-                // Super rare case. If many threads are hammering
-                // rent/return it is possible a read was issued an index and
-                // then yielded while other threads caused the pointers to
-                // wrap around. When the yielded thread wakes up its read
-                // index could have been stolen by another thread. To
-                // prevent deadlock, bail out of read after spinning. This
-                // will cause either a successful rent from another index,
-                // or a new record to be created
-                logRecord = null;
-                return false;
-            }
-
-            wait.SpinOnce();
-
-            logRecord = Interlocked.Exchange(ref this.pool[rentSnapshot % this.Capacity], null);
-            if (logRecord != null) {
-                // Rare case where the write was still working when the read came in
-                return true;
             }
         }
     }

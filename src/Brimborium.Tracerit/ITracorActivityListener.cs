@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿using Brimborium.Tracerit.Diagnostics;
+
+namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Defines a listener interface for tracing activities from various activity sources.
@@ -87,9 +89,5 @@ public class TracorActivityListenerOptions {
     /// </summary>
     public List<ActivitySourceIdentifier> ListActivitySourceIdenifier { get; set; } = new();
 
-    /// <summary>
-    /// Better use <see cref="AddActivitySourceByType{T}"/>.
-    /// Gets or sets the list of activity source types to monitor.
-    /// </summary>
-    internal List<Type> ListActivitySourceByType { get; set; } = new();
+    public List<IActivitySourceResolver> ListActivitySourceResolver { get; set; } = new();
 }

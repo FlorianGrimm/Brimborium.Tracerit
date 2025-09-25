@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 namespace Brimborium.Tracerit.Collector.Services;
@@ -56,7 +58,7 @@ public sealed class AngularFileService : EndpointDataSource {
                 await fileStream.CopyToAsync(context.Response.Body, context.RequestAborted);
             }
         } else {
-            var output = Encoding.UTF8.GetBytes(
+            var output = System.Text.Encoding.UTF8.GetBytes(
                 "<html><body>Not Found</body></html>");
             context.Response.StatusCode = 404;
             context.Response.ContentType = "text/html";

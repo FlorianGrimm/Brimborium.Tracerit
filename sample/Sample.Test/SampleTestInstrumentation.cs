@@ -1,12 +1,12 @@
+using Brimborium.Tracerit.Diagnostics;
+
 namespace Sample.WebApp;
 
-[DisplayName(ActivitySourceName)]
-public class SampleTestInstrumentation : Brimborium.Tracerit.ActivitySourceBase {
+public class SampleTestInstrumentation : InstrumentationBase {
     public const string ActivitySourceName = "sample.test";
     public const string ActivitySourceVersion = "1.0.0";
 
-    public SampleTestInstrumentation(
-        Microsoft.Extensions.Configuration.IConfiguration? configuration
-    ) : base(configuration, ActivitySourceName, ActivitySourceVersion) {
+    public SampleTestInstrumentation()
+        : base(ActivitySourceName, ActivitySourceVersion) {
     }
 }

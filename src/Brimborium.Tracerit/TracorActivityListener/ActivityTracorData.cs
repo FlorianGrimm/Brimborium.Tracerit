@@ -5,25 +5,22 @@ using System.ComponentModel;
 namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class ActivityTracorData
-    : ReferenceCountObject
+    : ReferenceCountObject<Activity>
     , ITracorData<Activity> {
+    public ActivityTracorData() : base(default) { }
 
-    private Activity? _Activity;
-
-    public ActivityTracorData() : base(default) {
-    }
-    public ActivityTracorData(IReferenceCountPool? owner) : base(owner) {
-    }
+    public ActivityTracorData(IReferenceCountPool? owner) : base(owner) { }
 
     public ActivityTracorData(Activity activity) : base(default) {
-        this._Activity = activity;
+        this._Value = activity;
     }
 
-    public Activity Activity => this._Activity ?? throw new ObjectDisposedException("ActivityTracorData");
+    //public Activity Activity => this._Value ?? throw new ObjectDisposedException("ActivityTracorData");
 
     public List<string> GetListPropertyName() {
+        var value = this.GetValue();
         List<string> result = new();
-        foreach (ref readonly var tag in this.Activity.EnumerateTagObjects()) {
+        foreach (ref readonly var tag in value.EnumerateTagObjects()) {
             result.Add(tag.Key);
             //result.Add($"{TracorDataUtility.PrefixTag}:{tag.Key}");
         }
@@ -32,7 +29,7 @@ public sealed class ActivityTracorData
     }
 
     public bool TryGetOriginalValue([MaybeNullWhen(false)] out Activity value) {
-        value = this.Activity;
+        value = this.GetValue();
         return true;
     }
 
@@ -43,8 +40,9 @@ public sealed class ActivityTracorData
         foreach (ref readonly var activityEvent in this._Activity.EnumerateEvents()) {
         }
         */
+        var value = this.GetValue();
 
-        foreach (ref readonly var tag in this.Activity.EnumerateTagObjects()) {
+        foreach (ref readonly var tag in value.EnumerateTagObjects()) {
             if (propertyName == tag.Key) {
                 propertyValue = tag.Value;
                 return true;
@@ -62,7 +60,9 @@ public sealed class ActivityTracorData
     /// <param name="tagName">Case-sensitive tag name to retrieve.</param>
     /// <returns>Tag value or null if a match was not found.</returns>
     public object? GetTagValue(string? tagName) {
-        foreach (ref readonly var tag in this.Activity.EnumerateTagObjects()) {
+        var value = this.GetValue();
+
+        foreach (ref readonly var tag in value.EnumerateTagObjects()) {
             if (tag.Key == tagName) {
                 return tag.Value;
             }
@@ -79,7 +79,8 @@ public sealed class ActivityTracorData
     /// <param name="tagValue">Tag value.</param>
     /// <returns><see langword="true"/> if the first tag of the supplied Activity matches the user provide tag name.</returns>
     public bool TryGetTagValue(string tagName, out object? tagValue) {
-        var enumeratorTagObjects = this.Activity.EnumerateTagObjects();
+        var value = this.GetValue();
+        var enumeratorTagObjects = value.EnumerateTagObjects();
 
         if (enumeratorTagObjects.MoveNext()) {
             ref readonly var tag = ref enumeratorTagObjects.Current;
@@ -95,7 +96,8 @@ public sealed class ActivityTracorData
     }
 
     public bool TryGetTagValue<T>(string tagName, [MaybeNullWhen(false)] out T tagValue) {
-        var enumeratorTagObjects = this.Activity.EnumerateTagObjects();
+        var value = this.GetValue();
+        var enumeratorTagObjects = value.EnumerateTagObjects();
 
         if (enumeratorTagObjects.MoveNext()) {
             ref readonly var tag = ref enumeratorTagObjects.Current;
@@ -111,7 +113,8 @@ public sealed class ActivityTracorData
     }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
-        var enumeratorTagObjects = this.Activity.EnumerateTagObjects();
+        var value = this.GetValue();
+        var enumeratorTagObjects = value.EnumerateTagObjects();
 
         if (enumeratorTagObjects.MoveNext()) {
             ref readonly var tag = ref enumeratorTagObjects.Current;
@@ -122,14 +125,9 @@ public sealed class ActivityTracorData
     }
 
     protected override void ResetState() {
-        this._Activity = null;
+        this._Value = null;
     }
 
     protected override bool IsStateReseted()
-        => this._Activity is null;
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public void SetActivity(Activity activity) {
-        this._Activity = activity;
-    }
+        => this._Value is null;
 }

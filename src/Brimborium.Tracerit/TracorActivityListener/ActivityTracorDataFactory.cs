@@ -4,9 +4,18 @@ namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class ActivityTracorDataFactory
     : ITracorDataAccessorFactory<Activity> {
+    private readonly ActivityTracorDataPool _ActivityTracorDataPool;
+
+    public ActivityTracorDataFactory(ActivityTracorDataPool activityTracorDataPool) {
+        this._ActivityTracorDataPool = activityTracorDataPool;
+    }
+
     public bool TryGetData(object value, [MaybeNullWhen(false)] out ITracorData tracorData) {
         if (value is Activity activity) {
-            tracorData = new ActivityTracorData(activity);
+            // tracorData = new ActivityTracorData(activity);
+            var result = this._ActivityTracorDataPool.Rent();
+            result.SetValue(activity);
+            tracorData = result;
             return true;
         }
         tracorData = null;

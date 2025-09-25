@@ -17,10 +17,10 @@ internal sealed class TesttimeTracorActivityListener
         var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
         var logger = serviceProvider.GetRequiredService<ILogger<TesttimeTracorActivityListener>>();
         return new TesttimeTracorActivityListener(
-            serviceProvider, 
-            activityTracorDataPool, 
-            tracor, 
-            options, 
+            serviceProvider,
+            activityTracorDataPool,
+            tracor,
+            options,
             logger);
     }
 
@@ -142,7 +142,7 @@ internal sealed class TesttimeTracorActivityListener
         var tracorIdentitfier = tracorIdentitfierCache.Child("Start");
         // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
-            activityTracorData.SetActivity(activity);
+            activityTracorData.SetValue(activity);
             this._Tracor.Trace(tracorIdentitfier, activityTracorData);
         }
     }
@@ -153,7 +153,7 @@ internal sealed class TesttimeTracorActivityListener
         // no locking needed since this._OptionState does not mutate
         var currentOptionState = this._OptionState;
 
-        if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
+        if (!currentOptionState.ActivitySourceStopEventEnabled) { return; }
 
         if (!this._Tracor.IsGeneralEnabled()) { return; }
         if (!this._Tracor.IsCurrentlyEnabled()) { return; }
@@ -172,7 +172,7 @@ internal sealed class TesttimeTracorActivityListener
         var tracorIdentitfier = tracorIdentitfierCache.Child("Stop");
         // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
-            activityTracorData.SetActivity(activity);
+            activityTracorData.SetValue(activity);
             this._Tracor.Trace(tracorIdentitfier, activityTracorData);
         }
     }
@@ -208,14 +208,13 @@ internal sealed class TesttimeTracorActivityListener
     }
 
     protected override void Dispose(bool disposing) {
-        using (var optionsDispose = this._OptionsDispose) {
-            if (disposing) {
-                this._OptionsDispose = null;
+        using (var listener = this._Listener) {
+            using (var optionsDispose = this._OptionsDispose) {
+                if (disposing) {
+                    this._OptionsDispose = null;
+                    this._Listener = null;
+                }
             }
-            foreach (var activitySourceBase in this._DictActivitySourceByType.Values) {
-                activitySourceBase.Dispose();
-            }
-            this._DictActivitySourceByType.Clear();
         }
     }
 
@@ -223,9 +222,8 @@ internal sealed class TesttimeTracorActivityListener
         this.PrepareDispose(disposing: false);
     }
 
-    // for testing only
-    public List<ActivitySourceBase> GetActivitySourceBase() {
-        return this._DictActivitySourceByType.Values.ToList();
+    public List<ActivitySourceIdentifier> GetListActivitySourceIdentifier() {
+        return this._OptionState.HashSetActivitySourceIdenifier.ToList();
     }
 
     // ITracorActivityListener

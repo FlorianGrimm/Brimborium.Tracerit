@@ -5,11 +5,14 @@ namespace Brimborium.Tracerit;
 /// <summary>
 /// Represents a record of trace data, including properties and identifiers.
 /// </summary>
-public sealed class TracorDataRecord : ITracorData {
+public sealed class TracorDataRecord
+    : ReferenceCountObject
+    , ITracorData {
+    public TracorDataRecord() : base(null) { }
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
     /// </summary>
-    public TracorDataRecord() { }
+    public TracorDataRecord(IReferenceCountPool? owner) : base(owner) { }
 
     /// <summary>
     /// Gets or sets the operation type for this trace data record.
@@ -24,7 +27,7 @@ public sealed class TracorDataRecord : ITracorData {
     /// <summary>
     /// Gets the list of properties associated with this trace data record.
     /// </summary>
-    public List<TracorDataProperty> ListProperty { get; } = [];
+    public List<TracorDataProperty> ListProperty { get; } = new(64);
 
     /// <summary>
     /// Converts this record to a <see cref="TracorIdentitfierData"/> object.
@@ -34,7 +37,7 @@ public sealed class TracorDataRecord : ITracorData {
         => new TracorIdentitfierData(
             this.TracorIdentitfier ?? new(string.Empty, string.Empty),
             this);
-    
+
     /// <summary>
     /// Gets the value of a property by name.
     /// </summary>
@@ -110,6 +113,14 @@ public sealed class TracorDataRecord : ITracorData {
         // no diff found
         return true;
     }
+
+    protected override void ResetState() {
+        this.ListProperty.Clear();
+    }
+
+    protected override bool IsStateReseted() {
+        return this.ListProperty.Count == 0 && this.ListProperty.Capacity <= 128;
+    }
 }
 
 /// <summary>
@@ -130,7 +141,13 @@ public sealed class TracorDataRecordAccessorFactory : ITracorDataAccessorFactory
         return true;
     }
 }
+public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> {
+    public static TracorDataRecordPool Create(IServiceProvider provider) => new(0);
 
+    public TracorDataRecordPool(int capacity) : base(capacity) { }
+
+    protected override TracorDataRecord Create() => new TracorDataRecord(this);
+}
 /*
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(TracorDataCollection))]

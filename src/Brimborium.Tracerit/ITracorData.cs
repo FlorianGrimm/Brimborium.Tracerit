@@ -112,4 +112,9 @@ public interface ITracorDataAccessor<T> {
     /// <param name="propertyValue">When this method returns, contains the property value if found; otherwise, null.</param>
     /// <returns>True if the property was found; otherwise, false.</returns>
     bool TryGetPropertyValueTyped(T value, string propertyName, out object? propertyValue);
+
+    /// <summary>
+    /// Convert to <paramref name="listProperty"/>.
+    /// </summary>
+    void ConvertProperties(T value, List<TracorDataProperty> listProperty);
 }

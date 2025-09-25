@@ -79,7 +79,7 @@ public partial class Program {
 
         builder.Services.AddTracor(startupActions.Testtime);
         builder.Services.AddTracorActivityListener(startupActions.Testtime);
-        builder.Services.AddActivitySourceBase<SampleInstrumentation>();
+        builder.Services.AddInstrumentation<SampleInstrumentation>();
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 

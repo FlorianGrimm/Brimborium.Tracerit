@@ -5,7 +5,7 @@ public static class TracorDataSerialization {
         List<TracorIdentitfierData> srcListTracorIdentitfierData) {
         TracorDataCollection result = new();
         foreach (var itemData in srcListTracorIdentitfierData) {
-            TracorDataRecord tracorData = new();
+            TracorDataRecord tracorData = new(null);
             ToTracorData(itemData, tracorData);
             result.ListData.Add(tracorData);
         }
@@ -32,7 +32,7 @@ public static class TracorDataSerialization {
     public static List<List<string>> ToTracorDataCollectionMinimizeString(
         List<TracorIdentitfierData> listData) {
         List<List<string>> dstTracorDataCollection = new();
-        TracorDataRecord dstTracorData = new();
+        TracorDataRecord dstTracorData = new(null);
         StringBuilder sbHelper = new();
 
         foreach (var itemData in listData) {
@@ -79,7 +79,7 @@ public static class TracorDataSerialization {
     }
 
     public static TracorDataRecord ParseTracorData(List<string> srcTracorData) {
-        TracorDataRecord result = new();
+        TracorDataRecord result = new(null);
         int state = 0;
         string? tracorIdentitfierSource = null;
         string? tracorIdentitfierScope = null;

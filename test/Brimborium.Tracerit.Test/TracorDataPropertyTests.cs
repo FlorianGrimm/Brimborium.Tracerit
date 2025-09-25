@@ -191,9 +191,18 @@ public class TracorDataPropertyTests {
     }
 
     [Test]
-    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 1.5, true)]
-    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 100.5, true)]
-    [Arguments(TracorDataPropertyTypeValue.Double, "", 0, false)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 1.5d, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 100.5d, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "", 0d, false)]
+    public async Task WhatTest(params object[] args) {
+    //public async Task WhatTest(TracorDataPropertyTypeValue typeValue, string argName, double argValue, bool successfull, params object[] args) {
+        await Task.CompletedTask;
+    }
+
+    [Test]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 1.5d, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 100.5d, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "", 0d, false)]
     public async Task CreateDoubleTest(TracorDataPropertyTypeValue typeValue, string argName, double argValue, bool successfull) {
         var sb = new StringBuilder();
         var textValue = argValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);

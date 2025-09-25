@@ -4,19 +4,19 @@ public class TracorDataSerializationTests {
     public const string JsonData = """
         [
             [
-                "Source:str:Activity",
-                "Scope:str:sample.test1/Stop",
-                "operation:str:test2"
+                "Source::str:Activity",
+                "Scope::str:sample.test1/Stop",
+                "operation::str:test2"
             ],
             [
-                "Source:str:Activity",
-                "Scope:str:sample.test1/Stop",
-                "operation:str:test3"
+                "Source::str:Activity",
+                "Scope::str:sample.test1/Stop",
+                "operation::str:test3"
             ],
             [
-                "Source:str:Activity",
-                "Scope:str:sample.test1/Stop",
-                "operation:str:test1"
+                "Source::str:Activity",
+                "Scope::str:sample.test1/Stop",
+                "operation::str:test1"
             ]
         ]
         """;
@@ -28,15 +28,13 @@ public class TracorDataSerializationTests {
             IndentCharacter = ' '
         };
 
-#warning TODO
-    [Test, Explicit]
+    [Test]
     public async Task ParseTracorDataCollectionTest() {
         var tracorDataCollection = TracorDataSerialization.ParseTracorDataCollection(JsonData);
         await Verify(tracorDataCollection);
     }
 
-#warning TODO
-    [Test, Explicit]
+    [Test]
     public async Task Deserialization() {
         var tracorDataCollection = TracorDataSerialization.ParseTracorDataCollection(JsonData);
         await Assert.That(tracorDataCollection).IsNotNull();
