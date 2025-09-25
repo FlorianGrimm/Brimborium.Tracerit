@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CS0618,NU1510</NoWarn>
+    <NoWarn>$(NoWarn),CS0618,NU1510,NU1605</NoWarn>
     <ReferenceCoyotePackages>true</ReferenceCoyotePackages>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
