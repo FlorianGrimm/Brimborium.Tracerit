@@ -26,7 +26,7 @@ public sealed class DataExpression : ValidatorExpression {
         if (state.Successfull) {
             return OnTraceResult.Successfull;
         }
-#warning here
+        // TODO: here
         var childIndex = state.DataIndex;
         var count = this._Expected.ListData.Count;
         if (childIndex < count) {
@@ -59,7 +59,7 @@ public sealed class DataExpression : ValidatorExpression {
         OnTraceStepCurrentContext currentContext,
         DataStepState state,
         int childIndex) {
-#warning here var operation = expectedData.GetOperation();
+        // TODO: here var operation = expectedData.GetOperation();
         var operation = TracorDataRecordOperation.Data;
         if (operation is TracorDataRecordOperation.Data ) {
             return IsPartialEqualsOperationData(
@@ -79,7 +79,7 @@ public sealed class DataExpression : ValidatorExpression {
         TracorDataRecord opArgumentData;
         for (; childIndexArgument < count; childIndexArgument++) {
             opArgumentData = this._Expected.ListData[childIndexArgument];
-#warning here (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {             }
+            // TODO: here (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {             }
         }
         if (count <= childIndexArgument) {
             // error

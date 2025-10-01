@@ -143,7 +143,7 @@ internal sealed class TesttimeTracorActivityListener
         // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            this._Tracor.Trace(tracorIdentitfier, activityTracorData);
+            this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
         }
     }
 
@@ -173,7 +173,7 @@ internal sealed class TesttimeTracorActivityListener
         // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            this._Tracor.Trace(tracorIdentitfier, activityTracorData);
+            this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
         }
     }
 
@@ -184,11 +184,11 @@ internal sealed class TesttimeTracorActivityListener
     private ActivitySamplingResult OnSample(ref ActivityCreationOptions<ActivityContext> options) {
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(options.Source);
         ActivitySamplingResult result;
-#warning TODO Configure named SamplingResult
+        // TODO: Configure named SamplingResult
         if (this._OnSampleActivitySamplingResult.TryGetValue(activitySourceIdentifier, out result)) {
             return result;
         } else {
-#warning TODO Configure default SamplingResult
+            // TODO: Configure default SamplingResult
             return ActivitySamplingResult.AllDataAndRecorded;
         }
     }
@@ -198,11 +198,11 @@ internal sealed class TesttimeTracorActivityListener
     private ActivitySamplingResult OnSampleUsingParentId(ref ActivityCreationOptions<string> options) {
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(options.Source);
         ActivitySamplingResult result;
-#warning TODO Configure named SamplingResult
+        // TODO: Configure named SamplingResult
         if (this._OnSampleUsingParentIdActivitySamplingResult.TryGetValue(activitySourceIdentifier, out result)) {
             return result;
         } else {
-#warning TODO Configure default SamplingResult
+            // TODO: Configure default SamplingResult
             return ActivitySamplingResult.AllDataAndRecorded;
         }
     }

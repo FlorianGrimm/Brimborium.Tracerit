@@ -3,28 +3,68 @@
 namespace Brimborium_Tracerit_Logger;
 
 // Simple mock implementation for testing
-internal class MockTracor : ITracor, IServiceProvider {
+internal sealed class MockTracor : ITracor, IServiceProvider {
+    public List<(TracorIdentitfier callee, LogLevel level, object value)> TraceCalls { get; } = new();
+
     public bool GeneralEnabled { get; set; } = true;
+
     public bool CurrentlyEnabled { get; set; } = true;
-    public List<(TracorIdentitfier callee, object value)> TraceCalls { get; } = new();
 
-    public bool IsGeneralEnabled() => this.GeneralEnabled;
-    public bool IsCurrentlyEnabled() => this.CurrentlyEnabled;
+    public Func<LogLevel, bool> IsEnabled { get; set; } = (_) => true;
 
-    public void Trace<T>(TracorIdentitfier callee, T value) {
-        this.TraceCalls.Add((callee, value!));
-    }
+    public Func<LogLevel, TracorLevel>? GetTracorEnabled { get; set; }
 
-    public object? GetService(Type serviceType)
-    {
+    public Func<Type, object?>? GetService { get; set; }
+
+    object? IServiceProvider.GetService(Type serviceType) {
         if (typeof(ITracor).Equals(serviceType)) {
             return this;
         }
+        if (this.GetService is { }) {
+            return this.GetServices(serviceType);
+        }
         throw new NotSupportedException("");
+    }
+
+    TracorLevel ITracor.GetPrivateTracorEnabled(LogLevel logLevel) {
+        if (this.GetTracorEnabled is { }) {
+            return this.GetTracorEnabled(logLevel);
+        }
+        return new TracorLevel(false, _NullTracorSink ??= new());
+    }
+
+    TracorLevel ITracor.GetPublicTracorEnabled(LogLevel logLevel) {
+        if (this.GetTracorEnabled is { }) {
+            return this.GetTracorEnabled(logLevel);
+        }
+        return new TracorLevel(false, _NullTracorSink ??= new());
+    }
+
+    bool ITracor.IsGeneralEnabled() => this.GeneralEnabled;
+
+    bool ITracor.IsCurrentlyEnabled() => this.CurrentlyEnabled;
+
+    bool ITracor.IsPrivateEnabled(LogLevel logLevel) => this.IsEnabled(logLevel);
+
+    bool ITracor.IsPublicEnabled(LogLevel logLevel) => this.IsEnabled(logLevel);
+
+    void ITracorSink.TracePrivate<T>(TracorIdentitfier callee, LogLevel level, T value) {
+        this.TraceCalls.Add((callee, level, value!));
+    }
+
+    void ITracorSink.TracePublic<T>(TracorIdentitfier callee, LogLevel level, T value) {
+        this.TraceCalls.Add((callee, level, value!));
+    }
+
+    private static NullTracorSink? _NullTracorSink;
+    private class NullTracorSink : ITracorSink {
+        public void TracePrivate<T>(TracorIdentitfier callee, LogLevel level, T Value) { }
+
+        public void TracePublic<T>(TracorIdentitfier callee, LogLevel level, T Value) { }
     }
 }
 
-internal class MockExternalScopeProvider : IExternalScopeProvider {
+internal sealed class MockExternalScopeProvider : IExternalScopeProvider {
     public List<object> PushedScopes { get; } = new();
 
     public void ForEachScope<TState>(Action<object?, TState> callback, TState state) {
@@ -38,11 +78,11 @@ internal class MockExternalScopeProvider : IExternalScopeProvider {
             this.PushedScopes.Add(state);
             return new MockScopeDisposable(() => this.PushedScopes.Remove(state));
         }
-        return new MockScopeDisposable(()=> { });
+        return new MockScopeDisposable(() => { });
     }
 }
 
-internal class MockScopeDisposable : IDisposable {
+internal sealed class MockScopeDisposable : IDisposable {
     private readonly Action _OnDispose;
     private bool _Disposed;
 

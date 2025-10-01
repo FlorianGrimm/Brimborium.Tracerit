@@ -1,6 +1,4 @@
-﻿using Brimborium.Tracerit.Utility;
-
-namespace Brimborium.Tracerit.Service;
+﻿namespace Brimborium.Tracerit.Service;
 
 /// <summary>
 /// Test-time implementation of <see cref="ITracor"/> that enables full tracing functionality for testing scenarios.
@@ -34,26 +32,73 @@ internal sealed class TesttimeTracor : ITracor {
     /// <returns>True if the validator is enabled; otherwise, false.</returns>
     public bool IsCurrentlyEnabled() => this._Validator.IsEnabled();
 
+
+    public bool IsPrivateEnabled(LogLevel logLevel) {
+        throw new NotImplementedException();
+    }
+
+    public bool IsPublicEnabled(LogLevel logLevel) {
+        throw new NotImplementedException();
+    }
+
+    public TracorLevel GetPrivateTracorEnabled(LogLevel logLevel) {
+        throw new NotImplementedException();
+    }
+
+    public TracorLevel GetPublicTracorEnabled(LogLevel logLevel) {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Traces a value with the specified caller identifier, converting it to trace data and processing it through validators.
     /// </summary>
     /// <typeparam name="T">The type of the value being traced.</typeparam>
     /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="value">The value to be traced.</param>
-    public void Trace<T>(TracorIdentitfier callee, T value) {
+    public void TracePrivate<T>(TracorIdentitfier callee, LogLevel level, T value) {
         try {
             ITracorData tracorData;
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
-            } else { 
-                tracorData = this._Validator.Convert(/*callee,*/ value);
+            } else {
+                tracorData = this._Validator.ConvertPrivate(callee, value);
             }
 
             if (value is IReferenceCountObject referenceCountObject) {
-                referenceCountObject.IncrementReferenceCount();               
+                referenceCountObject.IncrementReferenceCount();
                 this._Validator.OnTrace(callee, tracorData);
                 referenceCountObject.Dispose();
-            } else { 
+            } else {
+                this._Validator.OnTrace(callee, tracorData);
+                if (tracorData is IDisposable disposable) {
+                    disposable.Dispose();
+                }
+            }
+        } catch (Exception error) {
+            this._Logger.LogError(exception: error, message: "Trace Failed");
+        }
+    }
+
+    /// <summary>
+    /// Traces a value with the specified caller identifier, converting it to trace data and processing it through validators.
+    /// </summary>
+    /// <typeparam name="T">The type of the value being traced.</typeparam>
+    /// <param name="callee">The identifier of the caller or trace point.</param>
+    /// <param name="value">The value to be traced.</param>
+    public void TracePublic<T>(TracorIdentitfier callee, LogLevel level, T value) {
+        try {
+            ITracorData tracorData;
+            if (value is ITracorData valueTracorData) {
+                tracorData = valueTracorData;
+            } else {
+                tracorData = this._Validator.ConvertPublic(/*callee,*/ value);
+            }
+
+            if (value is IReferenceCountObject referenceCountObject) {
+                referenceCountObject.IncrementReferenceCount();
+                this._Validator.OnTrace(callee, tracorData);
+                referenceCountObject.Dispose();
+            } else {
                 this._Validator.OnTrace(callee, tracorData);
                 if (tracorData is IDisposable disposable) {
                     disposable.Dispose();

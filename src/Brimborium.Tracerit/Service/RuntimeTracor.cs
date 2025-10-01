@@ -22,11 +22,42 @@ internal sealed class RuntimeTracor : ITracor {
     /// </summary>
     /// <typeparam name="T">The type of the value being traced.</typeparam>
     /// <param name="callee">The identifier of the caller or trace point.</param>
+    /// <param name="level">level</param>
     /// <param name="value">The value to be traced.</param>
-    public void Trace<T>(TracorIdentitfier callee, T value) {
+    public void TracePrivate<T>(TracorIdentitfier callee, LogLevel level, T value) {
         // this is should not be called, but anyway...
         if (value is IDisposable valueDisposable) {
             valueDisposable.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Traces a value with the specified caller identifier. In runtime mode, this only disposes disposable values.
+    /// </summary>
+    /// <typeparam name="T">The type of the value being traced.</typeparam>
+    /// <param name="callee">The identifier of the caller or trace point.</param>
+    /// <param name="level">level</param>
+    /// <param name="value">The value to be traced.</param>
+    public void TracePublic<T>(TracorIdentitfier callee, LogLevel level, T value) {
+        // this is should not be called, but anyway...
+        if (value is IDisposable valueDisposable) {
+            valueDisposable.Dispose();
+        }
+    }
+
+    public bool IsPrivateEnabled(LogLevel logLevel) => false;
+    public bool IsPublicEnabled(LogLevel logLevel) => false;
+
+    public TracorLevel GetPrivateTracorEnabled(LogLevel logLevel)
+        => new(false, _NullTracorSink ??= new());
+
+    public TracorLevel GetPublicTracorEnabled(LogLevel logLevel)
+        => new(false, _NullTracorSink ??= new());
+
+    private static NullTracorSink? _NullTracorSink;
+    private class NullTracorSink : ITracorSink {
+        public void TracePrivate<T>(TracorIdentitfier callee, LogLevel level, T Value) { }
+
+        public void TracePublic<T>(TracorIdentitfier callee, LogLevel level, T Value) { }
     }
 }

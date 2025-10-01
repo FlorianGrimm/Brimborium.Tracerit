@@ -25,7 +25,7 @@ public class TracorTests {
         var callee = new TracorIdentitfier("Test", "Method");
 
         // Act
-        tracor.Trace(callee, disposableValue);
+        tracor.TracePublic(callee, LogLevel.Information, disposableValue);
 
         // Assert
         await Assert.That(disposableValue.IsDisposed).IsTrue();
@@ -38,9 +38,9 @@ public class TracorTests {
         var callee = new TracorIdentitfier("Test", "Method");
 
         // Act & Assert - Should not throw
-        tracor.Trace(callee, "test string");
-        tracor.Trace(callee, 42);
-        tracor.Trace(callee, new object());
+        tracor.TracePublic(callee, LogLevel.Information, "test string");
+        tracor.TracePublic(callee, LogLevel.Information, 42);
+        tracor.TracePublic(callee, LogLevel.Information, new object());
 
         await ValueTask.CompletedTask;
     }
@@ -74,7 +74,7 @@ public class TracorTests {
         var validatorPath = validator.Add(new MatchExpression());
 
         // Act
-        tracor.Trace(callee, "test value");
+        tracor.TracePublic(callee, LogLevel.Information, "test value");
 
         // Assert - Should not throw and validator should be processing
         await Assert.That(tracor.IsCurrentlyEnabled()).IsTrue();
@@ -103,7 +103,7 @@ public class TracorTests {
         }));
 
         // Act
-        tracor.Trace(callee, "test value");
+        tracor.TracePublic(callee, LogLevel.Information, "test value");
 
         // Assert
         await Assert.That(tracorDataReceived).IsTrue();
@@ -133,7 +133,7 @@ public class TracorTests {
         }));
 
         // Act
-        tracor.Trace(callee, originalTracorData);
+        tracor.TracePublic(callee, LogLevel.Information, originalTracorData);
 
         // Assert
         await Assert.That(receivedData).IsEqualTo(originalTracorData);
@@ -155,7 +155,7 @@ public class TracorTests {
         var validatorPath = validator.Add(new MatchExpression());
 
         // Act
-        tracor.Trace(callee, refCountObject);
+        tracor.TracePublic(callee, LogLevel.Information, refCountObject);
 
         // Assert
         await Assert.That(refCountObject.ReferenceCount).IsGreaterThan(0);

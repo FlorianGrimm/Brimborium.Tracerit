@@ -97,9 +97,9 @@ internal sealed class TracorLogger : ILogger {
                     eventId,
                     state,
                     exception);
-                // TODO: is it better to call this._Validator.OnTrace(callee, tracorData);                
-                this._Tracor.Trace(
+                this._Tracor.TracePublic(
                     this._IdChildCache.Child(eventId.ToString()),
+                    logLevel,
                     loggerTracorData
                     );
             }
