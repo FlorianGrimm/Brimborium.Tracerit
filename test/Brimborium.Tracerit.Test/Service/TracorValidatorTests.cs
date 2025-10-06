@@ -178,7 +178,7 @@ public class TracorValidatorTests {
         var tracorData = new ValueTracorData<string>("test");
 
         // Act
-        validator.OnTrace(callee, tracorData);
+        validator.OnTrace(true, callee, tracorData);
 
         // Assert
         await Assert.That(validatorPath1.GetListFinished()).HasCount().EqualTo(1);

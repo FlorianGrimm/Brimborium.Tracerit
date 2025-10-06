@@ -1,4 +1,5 @@
 using Brimborium.Tracerit;
+using Brimborium.Tracerit.Filter;
 using Sample.WebApp;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
@@ -30,7 +31,8 @@ public partial class Program {
         StartupActions startupActions
         ) {
         var builder = WebApplication.CreateBuilder(args);
-        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+        builder.Logging.AddConfiguration(
+            builder.Configuration.GetSection("Logging"));
 
         // Add services to the container.
         builder.Services.AddRazorPages();
@@ -42,7 +44,6 @@ public partial class Program {
             });
         builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
             .AddNegotiate();
-
         /*
         builder.Services.AddHealthChecks().AddTypeActivatedCheck<>();
         */
@@ -77,9 +78,12 @@ public partial class Program {
         }
 #endif
 
-        builder.Services.AddTracor(startupActions.Testtime);
-        builder.Services.AddTracorActivityListener(startupActions.Testtime);
-        builder.Services.AddInstrumentation<SampleInstrumentation>();
+        builder.Services.AddTracor(startupActions.Testtime)
+            .AddTracorActivityListener(startupActions.Testtime)
+            .AddTracorInstrumentation<SampleInstrumentation>();
+        builder.Services.AddTracorScopedFilter((builder) => {
+            builder.AddTracorScopedFilterConfiguration();
+        });
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
@@ -96,7 +100,9 @@ public partial class Program {
             app.UseHttpsRedirection();
         }
 
-        /*
+        // app.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
+        
+            /*
         app.MapHealthChecks("/healthz").AllowAnonymous();
         */
 

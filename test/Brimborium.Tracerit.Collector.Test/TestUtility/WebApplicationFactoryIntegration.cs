@@ -7,9 +7,9 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
     public WebApplication GetApplication() => this._Application ?? throw new InvalidOperationException("Application yet is not set");
     public IServiceProvider GetServices() => this.GetApplication().Services;
 
-    private ITracor? _Tracor;
-    public ITracor GetTracor() => this._Tracor
-        ??= this.GetServices().GetRequiredService<ITracor>();
+    private ITracorServiceSink? _Tracor;
+    public ITracorServiceSink GetTracor() => this._Tracor
+        ??= this.GetServices().GetRequiredService<ITracorServiceSink>();
 
     private ITracorValidator? _TracorValidator;
     public ITracorValidator GetTracorValidator() => this._TracorValidator
@@ -91,11 +91,12 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                     builder.Configuration.AddJsonFile(GetAppsettingsJson(), optional: false);
                     builder.Services.AddAuthentication(TestAuthHandler.AuthenticationScheme)
                         .AddScheme<TestAuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, null);
-                    builder.Services.AddTracor(true);
-                    builder.Logging.AddTracorLogger((options) => { options.LogLevel = LogLevel.Trace; });
-                    builder.Services.AddTracorActivityListener(true, null, (options) => {
-                        options.AllowAllActivitySource = true;
-                    });
+                    builder.Services.AddTracor(true)
+                        .AddTracorActivityListener(true, null, (options) => {
+                            options.AllowAllActivitySource = true;
+                        }).AddTracorLogger((options) => { 
+                            options.LogLevel = LogLevel.Trace; 
+                        });
                     builder.Services.AddReplacements();
                 },
                 ConfigureWebApplication = (app) => {

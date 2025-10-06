@@ -9,6 +9,5 @@ public enum TracorDataPropertyTypeValue {
     DateTimeOffset,
     Boolean,
     Long,
-    Double,
-    Compare
+    Double
 }

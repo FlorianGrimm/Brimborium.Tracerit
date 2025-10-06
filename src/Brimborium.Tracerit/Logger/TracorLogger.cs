@@ -5,7 +5,8 @@ internal sealed class TracorLogger : ILogger {
     public const int OwnNamespaceLength = /* OwnNamespace.Length */ 19;
 
     private readonly string? _Name;
-    private readonly ITracor _Tracor;
+    private readonly ITracorServiceSink _Tracor;
+    private readonly ITracorValidator _TracorValidator;
     private readonly LogLevel? _GlobalLogLevel;
     private readonly IExternalScopeProvider? _ExternalScopeProvider;
     private readonly TracorIdentitfier _Id;
@@ -15,7 +16,8 @@ internal sealed class TracorLogger : ILogger {
 
     public TracorLogger(
         string name,
-        ITracor tracor,
+        ITracorServiceSink tracor,
+        ITracorValidator tracorValidator,
         LogLevel? globalLogLevel,
         IExternalScopeProvider? externalScopeProvider) {
         this._Name = name;
@@ -37,6 +39,7 @@ internal sealed class TracorLogger : ILogger {
             this._IsAllowed = false;
         }
         this._Tracor = tracor;
+        this._TracorValidator = tracorValidator;
         this._GlobalLogLevel = globalLogLevel;
         this._ExternalScopeProvider = externalScopeProvider;
         if (name is { Length: > 0 }) {
@@ -97,9 +100,9 @@ internal sealed class TracorLogger : ILogger {
                     eventId,
                     state,
                     exception);
-                this._Tracor.TracePublic(
+                this._TracorValidator.OnTrace(
+                    true,
                     this._IdChildCache.Child(eventId.ToString()),
-                    logLevel,
                     loggerTracorData
                     );
             }

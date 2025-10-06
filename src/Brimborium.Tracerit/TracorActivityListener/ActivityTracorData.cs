@@ -112,6 +112,12 @@ public sealed class ActivityTracorData
         return false;
     }
 
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    public TracorIdentitfier? TracorIdentitfier { get; set; }
+
+
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         var value = this.GetValue();
         var enumeratorTagObjects = value.EnumerateTagObjects();
@@ -126,6 +132,7 @@ public sealed class ActivityTracorData
 
     protected override void ResetState() {
         this._Value = null;
+        this.TracorIdentitfier = default;
     }
 
     protected override bool IsStateReseted()

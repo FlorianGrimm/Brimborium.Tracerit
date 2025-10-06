@@ -26,6 +26,11 @@ public interface ITracorData {
     object? this[string propertyName] { get; }
 
     /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    TracorIdentitfier? TracorIdentitfier { get; set; }
+
+    /// <summary>
     /// Convert to <paramref name="listProperty"/>.
     /// </summary>
     void ConvertProperties(List<TracorDataProperty> listProperty);

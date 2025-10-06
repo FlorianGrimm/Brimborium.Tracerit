@@ -13,12 +13,7 @@ public sealed class TracorDataRecord
     /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
     /// </summary>
     public TracorDataRecord(IReferenceCountPool? owner) : base(owner) { }
-
-    /// <summary>
-    /// Gets or sets the operation type for this trace data record.
-    /// </summary>
-    public TracorDataRecordOperation Operation { get; set; }
-
+        
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>

@@ -13,25 +13,29 @@ internal sealed class TesttimeTracorActivityListener
         //    serviceProvider.GetRequiredService<IConfiguration>().GetSection("");
         //}
         var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracorServiceSink = serviceProvider.GetRequiredService<ITracorServiceSink>();
+        var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
         var logger = serviceProvider.GetRequiredService<ILogger<TesttimeTracorActivityListener>>();
         return new TesttimeTracorActivityListener(
             serviceProvider,
             activityTracorDataPool,
-            tracor,
+            tracorServiceSink,
+            tracorValidator,
             options,
             logger);
     }
 
     private ActivityListener? _Listener;
     private readonly ActivityTracorDataPool _ActivityTracorDataPool;
-    private readonly ITracor _Tracor;
+    private readonly ITracorServiceSink _Tracor;
+    private readonly ITracorValidator _Validator;
 
     public TesttimeTracorActivityListener(
         IServiceProvider serviceProvider,
         ActivityTracorDataPool activityTracorDataPool,
-        ITracor tracor,
+        ITracorServiceSink tracor,
+        ITracorValidator validator,
         IOptionsMonitor<TracorActivityListenerOptions> options,
         ILogger<TesttimeTracorActivityListener> logger) : base(
             serviceProvider,
@@ -39,6 +43,7 @@ internal sealed class TesttimeTracorActivityListener
             logger) {
         this._ActivityTracorDataPool = activityTracorDataPool;
         this._Tracor = tracor;
+        this._Validator = validator;
     }
 
     protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
@@ -143,7 +148,8 @@ internal sealed class TesttimeTracorActivityListener
         // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
+            //this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
+            this._Validator.OnTrace(true, tracorIdentitfier, activityTracorData);
         }
     }
 
@@ -173,7 +179,8 @@ internal sealed class TesttimeTracorActivityListener
         // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
+            //this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
+            this._Validator.OnTrace(true, tracorIdentitfier, activityTracorData);
         }
     }
 

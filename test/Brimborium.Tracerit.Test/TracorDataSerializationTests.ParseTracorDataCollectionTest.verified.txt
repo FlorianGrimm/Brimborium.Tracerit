@@ -3,7 +3,8 @@
     {
       TracorIdentitfier: {
         Source: Activity,
-        Scope: sample.test1/Stop
+        Scope: sample.test1.Stop,
+        Message: 
       },
       ListProperty: [
         {
@@ -18,7 +19,8 @@
     {
       TracorIdentitfier: {
         Source: Activity,
-        Scope: sample.test1/Stop
+        Scope: sample.test1.Stop,
+        Message: 
       },
       ListProperty: [
         {
@@ -33,7 +35,8 @@
     {
       TracorIdentitfier: {
         Source: Activity,
-        Scope: sample.test1/Stop
+        Scope: sample.test1.Stop,
+        Message: 
       },
       ListProperty: [
         {

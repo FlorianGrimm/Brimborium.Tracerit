@@ -8,16 +8,20 @@ internal sealed partial class RuntimeTracorValidator : ITracorValidator {
         ) {
         this._Logger = logger;
     }
+
     public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default) {
         return new RuntimeTracorValidatorPath(step);
     }
 
+    public bool IsEnabled() => false;
+
     [Microsoft.Extensions.Logging.LoggerMessage(1, LogLevel.Debug, "RuntimeTracorValidator.OnTrace - Should not be called {callee}")]
     partial void OnTraceLog(TracorIdentitfier callee);
 
-    public void OnTrace(TracorIdentitfier callee, ITracorData tracorData) {
+    public void OnTrace(bool isPublic, TracorIdentitfier callee, ITracorData tracorData) {
         this.OnTraceLog(callee);
     }
+
 }
 
 internal sealed class RuntimeTracorValidatorPath : ITracorValidatorPath {

@@ -3,11 +3,11 @@
 /// <summary>
 /// Configuration options for the Tracor validator, including data accessor factories for different types.
 /// </summary>
-public sealed class TracorValidatorOptions {
+public sealed class TracorDataConvertOptions {
     /// <summary>
-    /// Initializes a new instance of the <see cref="TracorValidatorOptions"/> class.
+    /// Initializes a new instance of the <see cref="TracorDataConvertOptions"/> class.
     /// </summary>
-    public TracorValidatorOptions() { }
+    public TracorDataConvertOptions() { }
 
     /// <summary>
     /// Gets a dictionary of data accessor factories indexed by TracorIdentitfierType.
@@ -31,7 +31,7 @@ public sealed class TracorValidatorOptions {
     /// <param name="tracorIdentitfier">the matching tracorIdentitfier</param>
     /// <param name="tracorDataAccessorFactory">the factory</param>
     /// <returns>fluent this</returns>
-    public TracorValidatorOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentitfier tracorIdentitfier, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
+    public TracorDataConvertOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentitfier tracorIdentitfier, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
         TracorIdentitfierType tracorIdentitfierType = new(tracorIdentitfier.Source, tracorIdentitfier.Scope, typeof(T));
         this.TracorDataAccessorByTypePrivate.Add(new (tracorIdentitfierType, tracorDataAccessorFactory));
         return this;
@@ -45,7 +45,7 @@ public sealed class TracorValidatorOptions {
     /// <param name="tracorDataAccessorFactory"></param>
     /// <returns>fluent this</returns>
     /// <exception cref="ArgumentException">if <typeparamref name="T"/> does not matched <paramref name="tracorDataAccessorFactory"/> TypeParameter.</exception>
-    public TracorValidatorOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentitfierType tracorIdentitfierType, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
+    public TracorDataConvertOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentitfierType tracorIdentitfierType, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
         if (!typeof(T).Equals(tracorIdentitfierType.TypeParameter)) {
             throw new ArgumentException(nameof(tracorIdentitfierType));
         }
@@ -58,8 +58,8 @@ public sealed class TracorValidatorOptions {
     /// </summary>
     /// <typeparam name="T">The type that the data accessor factory can handle.</typeparam>
     /// <param name="tracorDataAccessorFactory">The data accessor factory to add.</param>
-    /// <returns>This <see cref="TracorValidatorOptions"/> instance for method chaining.</returns>
-    public TracorValidatorOptions AddTracorDataAccessorByTypePublic<T>(ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
+    /// <returns>This <see cref="TracorDataConvertOptions"/> instance for method chaining.</returns>
+    public TracorDataConvertOptions AddTracorDataAccessorByTypePublic<T>(ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
         this.TracorDataAccessorByTypePublic[typeof(T)] = tracorDataAccessorFactory;
         return this;
     }

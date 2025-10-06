@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿using System.Text.Json.Serialization;
+
+namespace Brimborium.Tracerit;
 
 public partial struct TracorDataProperty {
     private string? _TypeName;
@@ -29,15 +31,16 @@ public partial struct TracorDataProperty {
         this.Value = value;
     }
 
+    [JsonInclude]
     public string Name { get; set; }
 
-    public TracorDataPropertyOpertation Operation { get; set; } = TracorDataPropertyOpertation.Data;
-
+    [JsonIgnore]
     public string TypeName {
         readonly get => TracorDataUtility.TracorDataPropertyConvertTypeValueToString(this._TypeValue, this._TypeName);
         set => this._TypeName = value;
     }
 
+    [JsonInclude]
     public TracorDataPropertyTypeValue TypeValue {
         readonly get {
             return this._TypeValue;
@@ -48,8 +51,10 @@ public partial struct TracorDataProperty {
         }
     }
 
+    [JsonInclude]
     public string TextValue { get; set; }
 
+    [JsonIgnore]
     public object? Value { get; set; }
 
     private const char _SeperationJsonChar = ':';
@@ -57,8 +62,6 @@ public partial struct TracorDataProperty {
     public readonly void ToMinimizeString(StringBuilder sbOut) {
         sbOut
             .Append(this.Name)
-            .Append(_SeperationJsonChar)
-            .Append(TracorDataUtility.TracorDataPropertyOpertationToString(this.Operation))
             .Append(_SeperationJsonChar)
             .Append(this.TypeName)
             .Append(_SeperationJsonChar)

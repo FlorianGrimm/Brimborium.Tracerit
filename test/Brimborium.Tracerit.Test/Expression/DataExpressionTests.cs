@@ -15,16 +15,16 @@ public class DataExpressionTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddTracorLogger();
         });
-        serviceBuilder.AddTracor(true);
-        serviceBuilder.AddTracorActivityListener(true);
-        serviceBuilder.AddInstrumentation<SampleTestInstrumentation>();
+        serviceBuilder.AddTracor(true)
+            .AddTracorActivityListener(true)
+            .AddTracorInstrumentation<SampleTestInstrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
 
         var sampleTestInstrumentation = serviceProvider.GetRequiredService<SampleTestInstrumentation>();
 
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         RecordExpressionResult reportExpressionResult = new();
         using (var validatorPath = tracorValidator.Add(
@@ -35,17 +35,17 @@ public class DataExpressionTests {
                         [
                           [
                             "Source::str:Activity",
-                            "Scope::str:sample.test/Stop",
+                            "Scope::str:sample.test.Stop",
                             "operation::str:test2"
                           ],
                           [
                             "Source::str:Activity",
-                            "Scope::str:sample.test/Stop",
+                            "Scope::str:sample.test.Stop",
                             "operation::str:test3"
                           ],
                           [
                             "Source::str:Activity",
-                            "Scope::str:sample.test/Stop",
+                            "Scope::str:sample.test.Stop",
                             "operation::str:test1"
                           ]
                         ]
@@ -78,8 +78,6 @@ public class DataExpressionTests {
         */
     }
 
-
-
     [Test, Explicit]
     public async Task DataExpressionUsageOps() {
         var configurationBuilder = new ConfigurationBuilder();
@@ -91,16 +89,16 @@ public class DataExpressionTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddTracorLogger();
         });
-        serviceBuilder.AddTracor(true);
-        serviceBuilder.AddTracorActivityListener(true);
-        serviceBuilder.AddInstrumentation<SampleTestInstrumentation>();
+        serviceBuilder.AddTracor(true)
+            .AddTracorActivityListener(true)
+            .AddTracorInstrumentation<SampleTestInstrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
 
         var sampleTestInstrumentation = serviceProvider.GetRequiredService<SampleTestInstrumentation>();
 
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         RecordExpressionResult reportExpressionResult = new();
         using (var validatorPath = tracorValidator.Add(
@@ -111,18 +109,18 @@ public class DataExpressionTests {
                         [
                           [
                             "Source::str:Activity",
-                            "Scope::str:sample.test/Stop",
+                            "Scope::str:sample.test.Stop",
                             "operation:equal:str:test2"
                           ],
                           [
                             "Source::str:Activity",
-                            "Scope::str:sample.test/Stop",
+                            "Scope::str:sample.test.Stop",
                             "operation::str:test3",
                             "operation:ignore:set:something"
                           ],
                           [
                             "Source::str:Activity",
-                            "Scope::str:sample.test/Stop",
+                            "Scope::str:sample.test.Stop",
                             "operation:equal:get:stop"
                           ]
                         ]

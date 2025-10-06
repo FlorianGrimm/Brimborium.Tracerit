@@ -5,17 +5,17 @@ public class TracorDataSerializationTests {
         [
             [
                 "Source::str:Activity",
-                "Scope::str:sample.test1/Stop",
+                "Scope::str:sample.test1.Stop",
                 "operation::str:test2"
             ],
             [
                 "Source::str:Activity",
-                "Scope::str:sample.test1/Stop",
+                "Scope::str:sample.test1.Stop",
                 "operation::str:test3"
             ],
             [
                 "Source::str:Activity",
-                "Scope::str:sample.test1/Stop",
+                "Scope::str:sample.test1.Stop",
                 "operation::str:test1"
             ]
         ]
@@ -41,7 +41,7 @@ public class TracorDataSerializationTests {
         await Assert.That(tracorDataCollection.ListData.Count).IsEqualTo(3);
 
         await Assert.That(tracorDataCollection.ListData.Select(tdr => tdr.TracorIdentitfier?.Source ?? "").ToList()).IsEquivalentTo(["Activity", "Activity", "Activity"]);
-        await Assert.That(tracorDataCollection.ListData.Select(tdr => tdr.TracorIdentitfier?.Scope ?? "")).IsEquivalentTo(["sample.test1/Stop", "sample.test1/Stop", "sample.test1/Stop"]);
+        await Assert.That(tracorDataCollection.ListData.Select(tdr => tdr.TracorIdentitfier?.Scope ?? "")).IsEquivalentTo(["sample.test1.Stop", "sample.test1.Stop", "sample.test1.Stop"]);
         await Assert.That(tracorDataCollection.ListData.Select(rec => (rec["operation"] as string) ?? "")).IsEquivalentTo(["test2", "test3", "test1"]);
 
         string jsonAct = TracorDataSerialization.ToTracorDataCollectionJson(

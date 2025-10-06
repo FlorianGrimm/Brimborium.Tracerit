@@ -1,5 +1,3 @@
-using Brimborium.Tracerit.Diagnostics;
-
 namespace System.Diagnostics;
 
 /// <summary>

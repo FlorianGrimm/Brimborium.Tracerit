@@ -14,9 +14,9 @@ public class ReportExpressionTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddTracorLogger();
         });
-        serviceBuilder.AddTracor(true);
-        serviceBuilder.AddTracorActivityListener(true);
-        serviceBuilder.AddInstrumentation<SampleTestInstrumentation>();
+        serviceBuilder.AddTracor(true)
+            .AddTracorActivityListener(true)
+            .AddTracorInstrumentation<SampleTestInstrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
@@ -25,7 +25,7 @@ public class ReportExpressionTests {
         var sampleTestInstrumentation = serviceProvider.GetRequiredService<SampleTestInstrumentation>();
 
         RecordExpressionResult reportExpressionResult = new();
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         using (var validatorPath = tracorValidator.Add(
             new RecordExpression(

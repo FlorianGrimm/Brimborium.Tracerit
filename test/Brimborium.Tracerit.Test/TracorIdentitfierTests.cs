@@ -35,7 +35,7 @@ public class TracorIdentitfierTests {
 
         // Assert
         await Assert.That(child.Source).IsEqualTo("TestSource");
-        await Assert.That(child.Scope).IsEqualTo("Parent/Child");
+        await Assert.That(child.Scope).IsEqualTo("Parent.Child");
     }
 
     [Test]
@@ -49,7 +49,7 @@ public class TracorIdentitfierTests {
 
         // Assert
         await Assert.That(child2.Source).IsEqualTo("TestSource");
-        await Assert.That(child2.Scope).IsEqualTo("Root/Child1/Child2");
+        await Assert.That(child2.Scope).IsEqualTo("Root.Child1.Child2");
     }
 
     [Test]
@@ -109,18 +109,6 @@ public class TracorIdentitfierTests {
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsFalse();
-    }
-
-    [Test]
-    public async Task EqualityComparerTracorIdentitfier_ShouldHandleNullValues() {
-        // Arrange
-        var comparer = EqualityComparerTracorIdentitfier.Default;
-        var id =new TracorIdentitfier("Source", "Scope");
-
-        // Act & Assert
-        await Assert.That(comparer.Equals(null, null)).IsTrue();
-        await Assert.That(comparer.Equals(id, null)).IsFalse();
-        await Assert.That(comparer.Equals(null, id)).IsFalse();
     }
 
     [Test]
@@ -198,9 +186,9 @@ public class TracorIdentitfierTests {
         var child2 = cache.Child("Child"); // Should return cached instance
 
         // Assert
-        await Assert.That(child1).IsSameReferenceAs(child2);
+        await Assert.That(child1.Scope).IsSameReferenceAs(child2.Scope);
         await Assert.That(child1.Source).IsEqualTo("TestSource");
-        await Assert.That(child1.Scope).IsEqualTo("Root/Child");
+        await Assert.That(child1.Scope).IsEqualTo("Root.Child");
     }
 
     [Test]
@@ -215,10 +203,10 @@ public class TracorIdentitfierTests {
         var child1Again = cache.Child("Child1");
 
         // Assert
-        await Assert.That(child1).IsSameReferenceAs(child1Again);
-        await Assert.That(child1).IsNotSameReferenceAs(child2);
-        await Assert.That(child1.Scope).IsEqualTo("Root/Child1");
-        await Assert.That(child2.Scope).IsEqualTo("Root/Child2");
+        await Assert.That(child1.Scope).IsSameReferenceAs(child1Again.Scope);
+        await Assert.That(child1.Scope).IsNotSameReferenceAs(child2.Scope);
+        await Assert.That(child1.Scope).IsEqualTo("Root.Child1");
+        await Assert.That(child2.Scope).IsEqualTo("Root.Child2");
     }
 
     [Test]
@@ -238,7 +226,7 @@ public class TracorIdentitfierTests {
         // Assert - All results should be the same cached instance
         var firstResult = results[0];
         foreach (var result in results) {
-            await Assert.That(result).IsSameReferenceAs(firstResult);
+            await Assert.That(result.Scope).IsSameReferenceAs(firstResult.Scope);
         }
     }
 

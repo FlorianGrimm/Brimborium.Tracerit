@@ -84,7 +84,7 @@ public static class TracorDataSerialization {
         string? tracorIdentitfierSource = null;
         string? tracorIdentitfierScope = null;
         
-        int idx = 0;
+        int idx = 1;
         for (; idx < srcTracorData.Count; idx++) {
             string itemTracorDataProperty = srcTracorData[idx];
             var success = ParseTracorDataProperty(itemTracorDataProperty, out var dstTracorDataProperty);
@@ -93,18 +93,18 @@ public static class TracorDataSerialization {
             if (state < 4) {
                 // state = 0: before Operation
                 // state = 1: after Operation
-                if (0 == state) {
-                    if (nameof(TracorDataRecord.Operation) == dstTracorDataProperty.Name) {
-                        state = 1;
-                        if (TracorDataProperty.TypeNameString == dstTracorDataProperty.TypeName) {
-                            result.Operation = TracorDataUtility.ParseTracorDataRecordOperation(
-                                dstTracorDataProperty.TextValue);
-                            continue;
-                        }
-                    } else {
-                        state = 1;
-                    }
-                }
+                //if (0 == state) {
+                //    if (nameof(TracorDataRecord.Operation) == dstTracorDataProperty.Name) {
+                //        state = 1;
+                //        if (TracorDataProperty.TypeNameString == dstTracorDataProperty.TypeName) {
+                //            result.Operation = TracorDataUtility.ParseTracorDataRecordOperation(
+                //                dstTracorDataProperty.TextValue);
+                //            continue;
+                //        }
+                //    } else {
+                //        state = 1;
+                //    }
+                //}
 
                 // state 1 : after Operation
                 // state 2 : after Source

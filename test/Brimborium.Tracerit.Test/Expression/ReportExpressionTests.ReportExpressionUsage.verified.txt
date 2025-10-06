@@ -1,17 +1,17 @@
 ﻿[
   [
     "Source::str:Activity",
-    "Scope::str:sample.test/Stop",
+    "Scope::str:sample.test.Stop",
     "operation::str:test2"
   ],
   [
     "Source::str:Activity",
-    "Scope::str:sample.test/Stop",
+    "Scope::str:sample.test.Stop",
     "operation::str:test3"
   ],
   [
     "Source::str:Activity",
-    "Scope::str:sample.test/Stop",
+    "Scope::str:sample.test.Stop",
     "operation::str:test1"
   ]
 ]

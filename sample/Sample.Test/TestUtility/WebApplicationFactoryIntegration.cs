@@ -3,13 +3,50 @@
 namespace Sample.WebApp.TestUtility;
 
 public class WebApplicationFactoryIntegration : IAsyncInitializer {
+    public async Task InitializeAsync() {
+        string pathStaticAssets = GetPathStaticAssets();
+        var contentRoot = Program.GetContentRoot();
+        var tsc = new TaskCompletionSource<WebApplication>();
+        var taskServer = Program.RunAsync(
+            args: new string[] {
+                @"--environment=Development",
+                $"--contentRoot={contentRoot}",
+                @"--applicationName=Sample.Test",
+                $"--StaticAssets={pathStaticAssets}"
+            },
+            new StartupActions() {
+                Testtime = true,
+                ConfigureWebApplicationBuilder = (builder) => {
+                    builder.Configuration.AddJsonFile(GetAppsettingsJson(), optional: false);
+                    builder.Services.AddAuthentication(TestAuthHandler.AuthenticationScheme)
+                        .AddScheme<TestAuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, null);
+                    builder.Services.AddTracor(true)
+                        .AddTracorActivityListener(true, null, (options) => {
+                            options.AllowAllActivitySource = true;
+                        })
+                        .AddTracorLogger((options) => {
+                            options.LogLevel = LogLevel.Trace;
+                        });
+                    builder.Services.AddReplacements();
+                },
+                ConfigureWebApplication = (app) => {
+                    app.Services.TracorActivityListenerStart();
+                },
+                RunningWebApplication = (app, task) => {
+                    tsc.SetResult(app);
+                }
+            });
+        await Task.Delay(100);
+        this._Application = await tsc.Task;
+    }
+
     private WebApplication? _Application;
     public WebApplication GetApplication() => this._Application ?? throw new InvalidOperationException("Application yet is not set");
     public IServiceProvider GetServices() => this.GetApplication().Services;
 
-    private ITracor? _Tracor;
-    public ITracor GetTracor() => this._Tracor
-        ??= this.GetServices().GetRequiredService<ITracor>();
+    private ITracorServiceSink? _Tracor;
+    public ITracorServiceSink GetTracor() => this._Tracor
+        ??= this.GetServices().GetRequiredService<ITracorServiceSink>();
 
     private ITracorValidator? _TracorValidator;
     public ITracorValidator GetTracorValidator() => this._TracorValidator
@@ -74,41 +111,6 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
         return result;
     }
 
-    public async Task InitializeAsync() {
-        string pathStaticAssets = GetPathStaticAssets();
-        var contentRoot = Program.GetContentRoot();
-        var tsc = new TaskCompletionSource<WebApplication>();
-        var taskServer = Program.RunAsync(
-            args: new string[] {
-                @"--environment=Development",
-                $"--contentRoot={contentRoot}",
-                @"--applicationName=Sample.Test",
-                $"--StaticAssets={pathStaticAssets}"
-            },
-            new StartupActions() {
-                Testtime = true,
-                ConfigureWebApplicationBuilder = (builder) => {
-                    builder.Configuration.AddJsonFile(GetAppsettingsJson(), optional: false);
-                    builder.Services.AddAuthentication(TestAuthHandler.AuthenticationScheme)
-                        .AddScheme<TestAuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, null);
-                    builder.Services.AddTracor(true);
-                    builder.Logging.AddTracorLogger((options) => { options.LogLevel = LogLevel.Trace; });
-                    builder.Services.AddTracorActivityListener(true, null, (options) => {
-                        options.AllowAllActivitySource = true;
-                    });
-                    builder.Services.AddReplacements();
-                },
-                ConfigureWebApplication = (app) => {
-                    app.Services.TracorActivityListenerStart();
-                },
-                RunningWebApplication = (app, task) => {
-                    tsc.SetResult(app);
-                }
-            });
-        await Task.Delay(100);
-        this._Application = await tsc.Task;
-    }
-
     private static string GetPathStaticAssets() {
         var assemblyLocation = Path.GetDirectoryName(
                 typeof(WebApplicationFactoryIntegration).Assembly.Location ?? throw new Exception("")
@@ -118,6 +120,7 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
             "Sample.staticwebassets.endpoints.json");
         return result;
     }
+
     private static string GetAppsettingsJson([CallerFilePath] string callerFilePath = "") {
         var testUtilityDir = System.IO.Path.GetDirectoryName(callerFilePath) ?? throw new Exception();
         var projectDir = System.IO.Path.GetDirectoryName(testUtilityDir) ?? throw new Exception();

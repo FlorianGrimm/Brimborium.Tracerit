@@ -42,6 +42,11 @@ public sealed class ValueTracorData<TValue> : ITracorData<TValue> {
         return false;
     }
 
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    public TracorIdentitfier? TracorIdentitfier { get; set; }
+
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         // TODO: if needed
     }

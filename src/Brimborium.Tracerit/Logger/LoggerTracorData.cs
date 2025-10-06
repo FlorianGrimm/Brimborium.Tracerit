@@ -67,6 +67,11 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
         return (sourceMatched && eventNameMatched);
     }
 
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    public TracorIdentitfier? TracorIdentitfier { get; set; }
+
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         foreach (var arg in this._Arguments) {
             if (arg.Value is { } argValue) {

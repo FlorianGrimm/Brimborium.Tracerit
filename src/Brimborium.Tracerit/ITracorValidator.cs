@@ -3,7 +3,7 @@
 /// <summary>
 /// Validates trace data against defined expressions and manages validation paths.
 /// </summary>
-public interface ITracorValidator {
+public interface ITracorValidator : ITracorCollectiveSink {
     /// <summary>
     /// Adds a validation expression with optional global state and returns a validation path.
     /// </summary>
@@ -12,12 +12,6 @@ public interface ITracorValidator {
     /// <returns>A validation path that can be used to track the validation progress.</returns>
     ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default);
 
-    /// <summary>
-    /// Processes a trace event with the specified caller and trace data.
-    /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
-    /// <param name="tracorData">The trace data to process.</param>
-    void OnTrace(TracorIdentitfier callee, ITracorData tracorData);
 }
 
 /// <summary>

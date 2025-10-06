@@ -10,7 +10,7 @@ public class TracorTests {
     [Test]
     public async Task RuntimeTracor_ShouldAlwaysReturnFalseForEnabled() {
         // Arrange
-        var tracor = new RuntimeTracor();
+        var tracor = new RuntimeTracorServiceSink();
 
         // Act & Assert
         await Assert.That(tracor.IsGeneralEnabled()).IsFalse();
@@ -18,29 +18,27 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task RuntimeTracor_ShouldDisposeDisposableValues() {
+    public async Task RuntimeTracor_ShouldNotDisposeDisposableValues() {
         // Arrange
-        var tracor = new RuntimeTracor();
+        var tracor = new RuntimeTracorServiceSink();
         var disposableValue = new TestDisposable();
-        var callee = new TracorIdentitfier("Test", "Method");
 
         // Act
-        tracor.TracePublic(callee, LogLevel.Information, disposableValue);
+        tracor.TracePublic("test", LogLevel.Information, "test", disposableValue);
 
         // Assert
-        await Assert.That(disposableValue.IsDisposed).IsTrue();
+        await Assert.That(disposableValue.IsDisposed).IsFalse();
     }
 
     [Test]
     public async Task RuntimeTracor_ShouldNotThrowForNonDisposableValues() {
         // Arrange
-        var tracor = new RuntimeTracor();
-        var callee = new TracorIdentitfier("Test", "Method");
-
+        var tracor = new RuntimeTracorServiceSink();
+        
         // Act & Assert - Should not throw
-        tracor.TracePublic(callee, LogLevel.Information, "test string");
-        tracor.TracePublic(callee, LogLevel.Information, 42);
-        tracor.TracePublic(callee, LogLevel.Information, new object());
+        tracor.TracePublic("test", LogLevel.Information, "test", "test string");
+        tracor.TracePublic("test", LogLevel.Information, "test", 42);
+        tracor.TracePublic("test", LogLevel.Information, "test", new object());
 
         await ValueTask.CompletedTask;
     }
@@ -52,7 +50,7 @@ public class TracorTests {
         serviceCollection.AddLogging();
         serviceCollection.AddTesttimeTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
 
         // Act & Assert
         await Assert.That(tracor.IsGeneralEnabled()).IsTrue();
@@ -66,15 +64,14 @@ public class TracorTests {
         serviceCollection.AddTesttimeTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-        var callee = new TracorIdentitfier("Test", "Method");
 
         // Create a simple validation path
         var validatorPath = validator.Add(new MatchExpression());
 
         // Act
-        tracor.TracePublic(callee, LogLevel.Information, "test value");
+        tracor.TracePublic("test", LogLevel.Information, "test", "test value");
 
         // Assert - Should not throw and validator should be processing
         await Assert.That(tracor.IsCurrentlyEnabled()).IsTrue();
@@ -88,7 +85,7 @@ public class TracorTests {
         serviceCollection.AddTesttimeTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
         var callee = new TracorIdentitfier("Test", "Method");
 
@@ -103,7 +100,7 @@ public class TracorTests {
         }));
 
         // Act
-        tracor.TracePublic(callee, LogLevel.Information, "test value");
+        tracor.TracePublic("test", LogLevel.Information, "test", "test value");
 
         // Assert
         await Assert.That(tracorDataReceived).IsTrue();
@@ -120,7 +117,7 @@ public class TracorTests {
         serviceCollection.AddTesttimeTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
         var callee = new TracorIdentitfier("Test", "Method");
 
@@ -133,7 +130,7 @@ public class TracorTests {
         }));
 
         // Act
-        tracor.TracePublic(callee, LogLevel.Information, originalTracorData);
+        tracor.TracePublic("test", LogLevel.Information, "test", originalTracorData);
 
         // Assert
         await Assert.That(receivedData).IsEqualTo(originalTracorData);
@@ -147,15 +144,14 @@ public class TracorTests {
         serviceCollection.AddTesttimeTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-        var callee = new TracorIdentitfier("Test", "Method");
 
         var refCountObject = new TestReferenceCountObject();
         var validatorPath = validator.Add(new MatchExpression());
 
         // Act
-        tracor.TracePublic(callee, LogLevel.Information, refCountObject);
+        tracor.TracePublic("test", LogLevel.Information, "test", refCountObject);
 
         // Assert
         await Assert.That(refCountObject.ReferenceCount).IsGreaterThan(0);
