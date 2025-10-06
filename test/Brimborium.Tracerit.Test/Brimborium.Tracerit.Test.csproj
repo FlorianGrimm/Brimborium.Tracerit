@@ -18,7 +18,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="FileSink\LogDestination\Log\" />
-  </ItemGroup>
 </Project>

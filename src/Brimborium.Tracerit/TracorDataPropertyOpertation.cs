@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit; 
+﻿namespace Brimborium.Tracerit;
+
+[Obsolete]
 public enum TracorDataPropertyOpertation {
     Data,
     Ignore,

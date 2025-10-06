@@ -144,7 +144,9 @@ public sealed class LoggerTracorDataForTest : ReferenceCountObject, ITracorData 
         return false;
     }
 
-    public TracorIdentitfier? TracorIdentitfier { get; set; }
+    public TracorIdentitfier TracorIdentitfier { get; set; }
+
+    public DateTime Timestamp { get; set; }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
     }

@@ -40,6 +40,7 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
     private readonly ChannelWriter<ITracorData> _ChannelWriter;
     private Task? _TaskLoop;
     private CancellationTokenSource _TaskLoopEnds = new();
+    private readonly SemaphoreSlim _AsyncLockWriteFile = new(initialCount: 1, maxCount: 1);
 
     public FileTracorCollectiveSink(FileTracorOptions options) {
         this._Channel = System.Threading.Channels.Channel.CreateBounded<ITracorData>(10000);
@@ -131,21 +132,25 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
         return directoryCombined;
     }
 
+    public string GetLogFilePath(DateTime utcNow) {
+        var timestamp = utcNow.ToString("yyyy-MM-dd-HH-mm", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat);
+        return @$"log-{timestamp}.jsonl";
+    }
+
     private void OnApplicationStopping() {
         this._ChannelWriter.Complete();
         this._FlushPeriod = TimeSpan.Zero;
-        this.Flush();
-        this.Dispose();
+        var _ = this.FlushAsync().ContinueWith((t) => { this.Dispose(); });
     }
 
     private void Dispose(bool disposing) {
         using (var optionsMonitorDisposing = this._OptionsMonitorDisposing) {
             using (var onApplicationStoppingDisposing = this._OnApplicationStoppingDisposing) {
-                this.Flush();
                 if (disposing) {
                     this._OptionsMonitorDisposing = null;
                     this._OnApplicationStoppingDisposing = null;
                 }
+                this.Flush();
             }
         }
     }
@@ -174,44 +179,54 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
             // channel full
         }
         if (this._TaskLoop is null) {
+            this._TaskLoop = Task.CompletedTask;
             this._TaskLoop = Task.Run(this.Loop).ContinueWith((_) => { this._TaskLoop = null; });
         }
     }
 
-    private async void Loop() {
+    private async Task Loop() {
         var reader = this._Channel.Reader;
         List<ITracorData> listTracorData = new(1000);
         List<TracorDataProperty> listTracorDataProperty = new(1000);
-        int watchDog = 0;
-        while (!_TaskLoopEnds.IsCancellationRequested) {
-            if (watchDog < 10) {
-                await Task.Delay(this._FlushPeriod);
-                watchDog++;
-            } else {
-                await reader.WaitToReadAsync(this._TaskLoopEnds.Token);
+        try {
+            int watchDog = 0;
+            while (!_TaskLoopEnds.IsCancellationRequested) {
+                if (watchDog < 10) {
+                    await Task.Delay(this._FlushPeriod);
+                    watchDog++;
+                } else {
+                    await reader.WaitToReadAsync(this._TaskLoopEnds.Token);
+                }
+                if (await this.FlushAsync(reader, listTracorData, listTracorDataProperty)) {
+                    watchDog = 0;
+                }
             }
-            if (await this.FlushAsync(reader, listTracorData, listTracorDataProperty)) {
-                watchDog = 0;
-            }
+            await this.FlushAsync(reader, listTracorData, listTracorDataProperty);
+        } catch (System.Exception error) {
+            System.Console.Error.WriteLine(error.ToString());
         }
-        await this.FlushAsync(reader, listTracorData, listTracorDataProperty);
     }
 
     private async Task<bool> FlushAsync(
         ChannelReader<ITracorData> reader,
         List<ITracorData> listTracorData,
         List<TracorDataProperty> listTracorDataProperty) {
-        while (reader.TryRead(out var tracorData)) {
-            listTracorData.Add(tracorData);
-        }
-        if (0 == listTracorData.Count) {
-            return false;
-        }
+        await this._AsyncLockWriteFile.WaitAsync();
+        try {
+            while (reader.TryRead(out var tracorData)) {
+                listTracorData.Add(tracorData);
+            }
+            if (0 == listTracorData.Count) {
+                return false;
+            }
 
-        {
-            await this.WriterAsync(listTracorData, listTracorDataProperty);
-            listTracorData.Clear();
-            return true;
+            {
+                await this.WriterAsync(listTracorData, listTracorDataProperty);
+                listTracorData.Clear();
+                return true;
+            }
+        } finally {
+            this._AsyncLockWriteFile.Release();
         }
     }
 
@@ -222,7 +237,7 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
         Stream? currentFileStream;
         Utf8JsonWriter? utf8JsonWriter;
         long currentPeriodStarted;
-
+        bool addNewLine = true;
         using (this._LockProperties.EnterScope()) {
             statePeriod = this._Period;
             statePeriodStarted = this._PeriodStarted;
@@ -230,7 +245,7 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
             currentPeriodStarted = utcNow.Ticks / statePeriod.Ticks;
             utf8JsonWriter = this._Utf8JsonWriter;
         }
-        
+
         {
             if (currentFileStream is not null) {
                 if (60 <= statePeriod.TotalSeconds) {
@@ -244,10 +259,16 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
                 }
             }
         }
-        if (currentFileStream is null) {
-            using (this._LockProperties.EnterScope()) {                
+
+        if (currentFileStream is null && this._Directory is { Length: > 0 } directory) {
+            using (this._LockProperties.EnterScope()) {
                 var logFilePath = this.GetLogFilePath(new DateTime(currentPeriodStarted * statePeriod.Ticks));
-                this._CurrentFileStream = currentFileStream = this.GetLogFileStream(logFilePath);
+                var logFileFQN = System.IO.Path.Combine(directory, logFilePath);
+                bool created;
+                (currentFileStream, created) = this.GetLogFileStream(logFileFQN);
+                this._CurrentFileStream = currentFileStream;
+                if (created) { addNewLine = false; }
+
                 this._PeriodStarted = currentPeriodStarted;
                 if (utf8JsonWriter is null) {
                     System.Text.Json.JsonWriterOptions jsonWriterOptions;
@@ -260,31 +281,45 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
                     this._Utf8JsonWriter = utf8JsonWriter = new System.Text.Json.Utf8JsonWriter(currentFileStream, jsonWriterOptions);
                 } else {
                     utf8JsonWriter.Reset(currentFileStream);
-                }                
+                }
             }
         }
-        if (currentFileStream is {} && utf8JsonWriter is { }) {
+
+        if (currentFileStream is { } && utf8JsonWriter is { }) {
+            byte[] nl = (_ArrayNewLine ??= Encoding.UTF8.GetBytes(System.Environment.NewLine));
             foreach (var tracorData in listTracorData) {
-                byte[] nl = (_ArrayNewLine ??= Encoding.UTF8.GetBytes(System.Environment.NewLine));
-                if (0 < listTracorData.Count) { listTracorData.Clear(); }
+
+                listTracorDataProperty.Clear();
                 tracorData.ConvertProperties(listTracorDataProperty);
-                currentFileStream.Write(nl, 0, nl.Length);
+                if (addNewLine) {
+                    currentFileStream.Write(nl, 0, nl.Length);
+                } else {
+                    addNewLine = true;
+                }
                 utf8JsonWriter.Reset(currentFileStream);
                 utf8JsonWriter.WriteStartArray();
 
                 // TODO:  use Json  converter
+                //if (tracorData.TracorIdentitfier.Source)
+                //{
+                //    utf8JsonWriter.WriteStartObject();
+                //    utf8JsonWriter.WriteString("name", "");
+                //    utf8JsonWriter.WriteString("type", TracorDataProperty.TypeNameString);
+                //    utf8JsonWriter.WriteString("text_Value", tracorDataProperty.TextValue);
+                //    utf8JsonWriter.WriteEndObject();
+                //}
                 foreach (var tracorDataProperty in listTracorDataProperty) {
                     utf8JsonWriter.WriteStartObject();
                     utf8JsonWriter.WriteString("name", tracorDataProperty.Name);
-                    utf8JsonWriter.WriteString("name", tracorDataProperty.TypeName);
+                    utf8JsonWriter.WriteString("type", tracorDataProperty.TypeName);
                     utf8JsonWriter.WriteString("text_Value", tracorDataProperty.TextValue);
                     utf8JsonWriter.WriteEndObject();
-
                 }
                 utf8JsonWriter.WriteEndArray();
                 await utf8JsonWriter.FlushAsync();
-                listTracorData.Clear();
             }
+            listTracorDataProperty.Clear();
+            listTracorData.Clear();
         }
     }
 
@@ -344,22 +379,28 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
         }
     }
 #endif
-    private string GetLogFilePath(DateTime utcNow) {
-        var timestamp = utcNow.ToString("yyyy-MM-dd-HH-mm", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat);
-        return @$"c:\temp\log-{timestamp}.jsonl";
-    }
 
 
-    private Stream? GetLogFileStream(string logFilePath) {
+    private (Stream? stream, bool created) GetLogFileStream(string logFilePath) {
         if (System.IO.File.Exists(logFilePath)) {
-            return new System.IO.FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read);
+            return (
+                stream: new System.IO.FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read),
+                created: false);
         } else {
-            return new System.IO.FileStream(logFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            return (
+                stream: new System.IO.FileStream(logFilePath, FileMode.Create, FileAccess.Write, FileShare.Read),
+                created: true);
         }
     }
 
     private void Flush() {
-        throw new NotImplementedException();
+        this.FlushAsync().GetAwaiter().GetResult();
     }
 
+    public async Task FlushAsync() {
+        var reader = this._Channel.Reader;
+        List<ITracorData> listTracorData = new(1000);
+        List<TracorDataProperty> listTracorDataProperty = new(128);
+        await this.FlushAsync(reader, listTracorData, listTracorDataProperty);
+    }
 }

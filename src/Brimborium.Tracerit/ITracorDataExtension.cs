@@ -5,7 +5,7 @@
 /// </summary>
 public static class ITracorDataExtension {
     public static bool IsEqual<T>(this ITracorData data, string propertyName, T value)
-        where T:notnull{
+        where T : notnull {
         return data.TryGetPropertyValue(propertyName, out var currentValue)
             && TracorDataProperty.Create(propertyName, value).HasEqualValue(currentValue);
     }
@@ -27,5 +27,21 @@ public static class ITracorDataExtension {
         }
         value = default;
         return false;
+    }
+
+    public static void ConvertPropertiesBase<TTracorData>(
+        this ITracorData thatTracorData,
+        List<TracorDataProperty> listProperty)
+        where TTracorData : ITracorData {
+        listProperty.Add(TracorDataProperty.CreateDateTime("timestamp", thatTracorData.Timestamp));
+        if (thatTracorData.TracorIdentitfier.Source is { Length: > 0 } source) {
+            listProperty.Add(TracorDataProperty.CreateString("source", source));
+        }
+        if (thatTracorData.TracorIdentitfier.Scope is { Length: > 0 } scope) {
+            listProperty.Add(TracorDataProperty.CreateString("scope", scope));
+        }
+        if (thatTracorData.TracorIdentitfier.Message is { Length: > 0 } message) {
+            listProperty.Add(TracorDataProperty.CreateString("message", message));
+        }
     }
 }

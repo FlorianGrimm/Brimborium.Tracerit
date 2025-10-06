@@ -1,4 +1,5 @@
-﻿namespace Brimborium.Tracerit.DataAccessor;
+﻿
+namespace Brimborium.Tracerit.DataAccessor;
 public sealed class JsonDocumentTracorData
     : ReferenceCountObject<System.Text.Json.JsonDocument>
     , ITracorData<System.Text.Json.JsonDocument> {
@@ -85,7 +86,9 @@ public sealed class JsonDocumentTracorData
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier? TracorIdentitfier { get; set; }
+    public TracorIdentitfier TracorIdentitfier { get; set; }
+    
+    public DateTime Timestamp { get; set; }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         // TODO: if needed

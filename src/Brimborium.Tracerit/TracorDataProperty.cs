@@ -9,30 +9,29 @@ public partial struct TracorDataProperty {
     public TracorDataProperty(
        string name,
        TracorDataPropertyTypeValue typeValue,
-       string textValue,
-       object? value
+       string textValue
        ) {
         this.Name = name;
         this._TypeValue = typeValue;
         this._TypeName = null;
         this.TextValue = textValue;
-        this.Value = value;
     }
 
     public TracorDataProperty(
         string name,
         string typeName,
-        string textValue,
-        object? value
+        string textValue
         ) {
         this.Name = name;
         (this._TypeValue, this._TypeName) = TracorDataUtility.TracorDataPropertyConvertStringToTypeName(typeName);
         this.TextValue = textValue;
-        this.Value = value;
     }
 
     [JsonInclude]
     public string Name { get; set; }
+
+#warning here
+    public object? Value { get; set; }
 
     [JsonIgnore]
     public string TypeName {
@@ -54,8 +53,18 @@ public partial struct TracorDataProperty {
     [JsonInclude]
     public string TextValue { get; set; }
 
+    // Boolean
     [JsonIgnore]
-    public object? Value { get; set; }
+    internal long LongValue;
+
+    [JsonIgnore]
+    internal double FloatValue;
+
+    [JsonIgnore]
+    internal Guid UuidValue;
+        
+    [JsonIgnore]
+    public object? AnyValue { get; set; }
 
     private const char _SeperationJsonChar = ':';
 
@@ -70,48 +79,41 @@ public partial struct TracorDataProperty {
     }
 
     public readonly bool HasEqualValue(object? currentPropertyValue) {
-        if (TypeNameString == this.TypeName) {
-            return string.Equals(this.TextValue, currentPropertyValue as string);
+        switch (this.TypeValue) {
+            case TracorDataPropertyTypeValue.Any:
+                return false;
+            case TracorDataPropertyTypeValue.String:
+                return (currentPropertyValue is string stringValue)
+                    && string.Equals(this.TextValue, stringValue);
+            case TracorDataPropertyTypeValue.Integer:
+                return (currentPropertyValue is int intValue)
+                    && (intValue == this.LongValue);
+            case TracorDataPropertyTypeValue.LevelValue:
+                return (currentPropertyValue is LogLevel logLevelValue)
+                    && ((long)logLevelValue == this.LongValue);
+            case TracorDataPropertyTypeValue.DateTime:
+                return (currentPropertyValue is DateTime dateTimeValue)
+                    && (dateTimeValue.Ticks == this.LongValue);
+            case TracorDataPropertyTypeValue.DateTimeOffset:
+                return (currentPropertyValue is DateTimeOffset dateTimeOffsetValue)
+                    && (dateTimeOffsetValue.Ticks == this.LongValue);
+            case TracorDataPropertyTypeValue.Boolean:
+                return (currentPropertyValue is bool booleanValue)
+                && ((booleanValue ? 1 : 0) == this.LongValue);
+            case TracorDataPropertyTypeValue.Long:
+                return (currentPropertyValue is long longValue)
+                && (longValue == this.LongValue);
+            case TracorDataPropertyTypeValue.Float:
+                return (currentPropertyValue is double floatValue)
+                && (floatValue == this.FloatValue);
+            default:
+                throw new NotSupportedException($"{this.TypeValue} is unknown");
         }
-        if (TypeNameInteger == this.TypeName) {
-            return (currentPropertyValue is int currentValue)
-                && (this.Value is int thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameLevelValue == this.TypeName) {
-            return (currentPropertyValue is LogLevel currentValue)
-                && (this.Value is LogLevel thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameDateTime == this.TypeName) {
-            return (currentPropertyValue is DateTime currentValue)
-                && (this.Value is DateTime thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameDateTimeOffset == this.TypeName) {
-            return (currentPropertyValue is DateTimeOffset currentValue)
-                && (this.Value is DateTimeOffset thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameBoolean == this.TypeName) {
-            return (currentPropertyValue is bool currentValue)
-                && (this.Value is bool thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameLong == this.TypeName) {
-            return (currentPropertyValue is long currentValue)
-                && (this.Value is long thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameDouble == this.TypeName) {
-            return (currentPropertyValue is double currentValue)
-                && (this.Value is double thisValue)
-                && (currentValue == thisValue);
-        }
-        if (TypeNameAny == this.TypeName) {
-            return false;
-        }
-        return false;
     }
 }
-    
+
+
+[JsonSourceGenerationOptions(WriteIndented = false)]
+[JsonSerializable(typeof(TracorDataProperty))]
+internal partial class SourceGenerationContext : JsonSerializerContext {
+}

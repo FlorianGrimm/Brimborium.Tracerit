@@ -170,8 +170,8 @@ public static class TracorDataSerialization {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.String,
-                                    textValue: textValueString,
-                                    value: textValueString
+                                    textValue: textValueString
+                                    #warning TODO value: textValueString
                                 );
                                 return true;
                             } else if (TracorDataProperty.TypeNameInteger.AsSpan().SequenceEqual(typeName)) {
@@ -179,8 +179,8 @@ public static class TracorDataSerialization {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.Integer,
-                                        textValue: textValueString,
-                                        value: intValue
+                                        textValue: textValueString
+#warning TODO                                         value: intValue
                                     );
                                     return true;
                                 }
@@ -189,16 +189,16 @@ public static class TracorDataSerialization {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.LevelValue,
-                                        textValue: textValueString,
-                                        value: level
+                                        textValue: textValueString
+#warning TODO                                         value: level
                                     );
                                     return true;
                                 } else if (int.TryParse(textValue, out var intValue)) {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.LevelValue,
-                                        textValue: textValueString,
-                                        value: (LogLevel)intValue
+                                        textValue: textValueString
+#warning TODO value: (LogLevel)intValue
                                     );
                                     return true;
                                 }
@@ -207,16 +207,16 @@ public static class TracorDataSerialization {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.DateTime,
-                                        textValue: textValueString,
-                                        value: TracorDataUtility.UnixTimeNanosecondsToDateTime(ns)
+                                        textValue: textValueString
+#warning TODO                                         value: TracorDataUtility.UnixTimeNanosecondsToDateTime(ns)
                                     );
                                     return true;
                                 } else if (DateTime.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtValue)) {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.DateTime,
-                                        textValue: textValueString,
-                                        value: dtValue
+                                        textValue: textValueString
+#warning TODO                                         value: dtValue
                                     );
                                     return true;
                                 }
@@ -225,16 +225,16 @@ public static class TracorDataSerialization {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.DateTimeOffset,
-                                        textValue: textValueString,
-                                        value: TracorDataUtility.UnixTimeNanosecondsToDateTimeOffset(ns)
+                                        textValue: textValueString
+#warning TODO                                         value: TracorDataUtility.UnixTimeNanosecondsToDateTimeOffset(ns)
                                     );
                                     return true;
                                 } else if (DateTimeOffset.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtoValue)) {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.DateTime,
-                                        textValue: textValueString,
-                                        value: dtoValue
+                                        textValue: textValueString
+#warning TODO                                         value: dtoValue
                                     );
                                     return true;
                                 }
@@ -242,8 +242,8 @@ public static class TracorDataSerialization {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.Boolean,
-                                    textValue: textValueString,
-                                    value: TracorDataUtility.GetBoolValueBoxes(textValueString)
+                                    textValue: textValueString
+#warning TODO                                     value: TracorDataUtility.GetBoolValueBoxes(textValueString)
                                 );
                                 return true;
                             } else if (TracorDataProperty.TypeNameLong.AsSpan().SequenceEqual(typeName)) {
@@ -251,8 +251,8 @@ public static class TracorDataSerialization {
                                     result = new TracorDataProperty(
                                         name: argNameString,
                                         typeValue: TracorDataPropertyTypeValue.Long,
-                                        textValue: textValueString,
-                                        value: longValue
+                                        textValue: textValueString
+#warning TODO                                         value: longValue
                                     );
                                     return true;
                                 }
@@ -260,9 +260,9 @@ public static class TracorDataSerialization {
                                 if (double.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var doubleValue)) {
                                     result = new TracorDataProperty(
                                         name: argNameString,
-                                        typeValue: TracorDataPropertyTypeValue.Double,
-                                        textValue: textValueString,
-                                        value: doubleValue
+                                        typeValue: TracorDataPropertyTypeValue.Float,
+                                        textValue: textValueString
+#warning TODO                                         value: doubleValue
                                     );
                                     return true;
                                 }
@@ -270,8 +270,8 @@ public static class TracorDataSerialization {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.Any,
-                                    textValue: textValueString,
-                                    value: textValueString
+                                    textValue: textValueString
+#warning TODO                                     value: textValueString
                                 );
                                 return true;
                             }
@@ -286,8 +286,7 @@ public static class TracorDataSerialization {
             result = new(
                 name: string.Empty,
                 typeValue: TracorDataPropertyTypeValue.Any,
-                textValue: string.Empty,
-                value: string.Empty
+                textValue: string.Empty
                 );
             return false;
         }

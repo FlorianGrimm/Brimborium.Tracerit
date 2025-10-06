@@ -118,7 +118,7 @@ public static partial class TracorDataUtility {
             nameof(TracorDataProperty.TypeNameDateTimeOffset) => (TracorDataPropertyTypeValue.DateTimeOffset, null),
             nameof(TracorDataProperty.TypeNameBoolean) => (TracorDataPropertyTypeValue.Boolean, null),
             nameof(TracorDataProperty.TypeNameLong) => (TracorDataPropertyTypeValue.Long, null),
-            nameof(TracorDataProperty.TypeNameDouble) => (TracorDataPropertyTypeValue.Double, null),
+            nameof(TracorDataProperty.TypeNameDouble) => (TracorDataPropertyTypeValue.Float, null),
             _ => (TracorDataPropertyTypeValue.Any, name)
         };
     }
@@ -131,7 +131,7 @@ public static partial class TracorDataUtility {
             TracorDataPropertyTypeValue.DateTimeOffset => TracorDataProperty.TypeNameDateTimeOffset,
             TracorDataPropertyTypeValue.Boolean => TracorDataProperty.TypeNameBoolean,
             TracorDataPropertyTypeValue.Long => TracorDataProperty.TypeNameLong,
-            TracorDataPropertyTypeValue.Double => TracorDataProperty.TypeNameDouble,
+            TracorDataPropertyTypeValue.Float => TracorDataProperty.TypeNameDouble,
             TracorDataPropertyTypeValue.Any => TracorDataProperty.TypeNameAny,
             _ => name ?? TracorDataProperty.TypeNameAny
         };

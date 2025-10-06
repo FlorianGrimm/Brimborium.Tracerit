@@ -17,7 +17,9 @@ public sealed class TracorDataRecord
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier? TracorIdentitfier { get; set; }
+    public TracorIdentitfier TracorIdentitfier { get; set; }
+
+    public DateTime Timestamp { get; set; }
 
     /// <summary>
     /// Gets the list of properties associated with this trace data record.
@@ -30,7 +32,7 @@ public sealed class TracorDataRecord
     /// <returns>A <see cref="TracorIdentitfierData"/> containing the identifier and this record.</returns>
     public TracorIdentitfierData ToTracorIdentitfierData()
         => new TracorIdentitfierData(
-            this.TracorIdentitfier ?? new(string.Empty, string.Empty),
+            this.TracorIdentitfier,
             this);
 
     /// <summary>
