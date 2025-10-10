@@ -1,12 +1,11 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
-public sealed class TesttimeTracorValidator : ITracorValidator {
+public sealed class TracorValidator : ITracorValidator {
 
-    public static TesttimeTracorValidator Create(IServiceProvider serviceProvider) {
-        
+    public static TracorValidator Create(IServiceProvider serviceProvider) {
         var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-        return new TesttimeTracorValidator(
+        return new TracorValidator(
             activityTracorDataPool,
             loggerFactory);
     }
@@ -19,13 +18,14 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
     private LoggerUtility? _LoggerUtility;
 
 
-    public TesttimeTracorValidator(
+    public TracorValidator(
         ActivityTracorDataPool activityTracorDataPool,
         ILoggerFactory loggerFactory) {
         this._ActivityTracorDataPool = activityTracorDataPool;
         this._LoggerFactory = loggerFactory;
     }
 
+    public bool IsGeneralEnabled() => true;
 
     public bool IsEnabled() {
         return 0 < this._ListValidatorPath.Length;
@@ -46,10 +46,10 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
     }
 
     private sealed class TracorValidatorPathRemover : IDisposable {
-        private readonly TesttimeTracorValidator? _Owner;
+        private readonly TracorValidator? _Owner;
         public TracorValidatorPath? Child;
 
-        public TracorValidatorPathRemover(TesttimeTracorValidator owner) {
+        public TracorValidatorPathRemover(TracorValidator owner) {
             this._Owner = owner;
         }
 
@@ -64,9 +64,10 @@ public sealed class TesttimeTracorValidator : ITracorValidator {
         }
     }
 
-    public void OnTrace(bool isPublic, TracorIdentitfier callee, ITracorData tracorData) {
+    public void OnTrace(bool isPublic, ITracorData tracorData) {
+        // no need for checking isPublic
         foreach (var validatorPath in this._ListValidatorPath) {
-            validatorPath.OnTrace(callee, tracorData);
+            validatorPath.OnTrace(tracorData);
         }
     }
 }

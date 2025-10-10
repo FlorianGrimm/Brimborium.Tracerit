@@ -21,9 +21,8 @@ public interface ITracorValidatorPath : IDisposable {
     /// <summary>
     /// Processes a trace event for this validation path.
     /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="tracorData">The trace data to process.</param>
-    void OnTrace(TracorIdentitfier callee, ITracorData tracorData);
+    void OnTrace(ITracorData tracorData);
 
     /// <summary>
     /// Gets a finished validation state that matches the specified predicate.

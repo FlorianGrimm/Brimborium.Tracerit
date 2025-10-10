@@ -18,11 +18,10 @@ public interface IValidatorExpression {
     /// <summary>
     /// Processes a trace event and returns the result of the validation.
     /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext);
+    OnTraceResult OnTrace(ITracorData tracorData, OnTraceStepCurrentContext currentContext);
 }
 
 /// <summary>

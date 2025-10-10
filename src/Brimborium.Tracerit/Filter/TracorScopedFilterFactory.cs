@@ -99,8 +99,8 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
                         } else {
                             var filter = new TracorScopedFilter(categoryName, []);
                             this._DictFilterByName[categoryName] = filter;
-                            filter.Tracors = this.CreateTracors(categoryName);
-                            filter.FilteredTracors = this.ApplyFiltersWithinLock(filter.Tracors, tracorScopedFilterOptions);
+                            filter.ListCategotryInformation = this.CreateTracors(categoryName);
+                            filter.ListFilteredTracors = this.ApplyFiltersWithinLock(filter.ListCategotryInformation, tracorScopedFilterOptions);
                         }
                     }
                 }
@@ -120,7 +120,7 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
             {
                 foreach (KeyValuePair<string, TracorScopedFilter> kvFilter in this._DictFilterByName) {
                     TracorScopedFilter tracor = kvFilter.Value;
-                    tracor.FilteredTracors = this.ApplyFiltersWithinLock(tracor.Tracors, tracorScopedFilterOptions);
+                    tracor.ListFilteredTracors = this.ApplyFiltersWithinLock(tracor.ListCategotryInformation, tracorScopedFilterOptions);
                 }
             }
         }
@@ -131,7 +131,7 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
     /// </summary>
     /// <param name="categoryName">The category name for messages produced by the tracor.</param>
     /// <returns>The <see cref="ITracorScopedFilter"/> that was created.</returns>
-    public ITracorScopedFilter CreateTracor(string categoryName) {
+    public ITracorScopedFilter CreateTracorScopedFilter(string categoryName) {
         if (this.CheckDisposed()) {
             throw new ObjectDisposedException(nameof(TracorScopedFilterFactory));
         }
@@ -142,8 +142,8 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
                     tracor = new TracorScopedFilter(categoryName, []);
                     this._DictFilterByName[categoryName] = tracor;
                     var listTracorInformation = this.CreateTracors(categoryName);
-                    tracor.Tracors = listTracorInformation;
-                    tracor.FilteredTracors = this.ApplyFiltersWithinLock(
+                    tracor.ListCategotryInformation = listTracorInformation;
+                    tracor.ListFilteredTracors = this.ApplyFiltersWithinLock(
                         listTracorInformation, this._TracorScopedFilterOptions);
                 }
             }
@@ -175,7 +175,7 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
 
             foreach (KeyValuePair<string, TracorScopedFilter> existingTracor in this._DictFilterByName) {
                 TracorScopedFilter tracor = existingTracor.Value;
-                TracorScopedFilterCategotryInformation[] tracorInformation = tracor.Tracors;
+                TracorScopedFilterCategotryInformation[] tracorInformation = tracor.ListCategotryInformation;
                 var sourceName = tsfSourceName.GetSourceName();
 
                 int length = tracorInformation.Length;
@@ -207,8 +207,8 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
                     tracorInformation[newTracorIndex] = item;
                 }
 
-                tracor.Tracors = tracorInformation;
-                tracor.FilteredTracors = this.ApplyFiltersWithinLock(tracorInformation, tracorScopedFilterOptions);
+                tracor.ListCategotryInformation = tracorInformation;
+                tracor.ListFilteredTracors = this.ApplyFiltersWithinLock(tracorInformation, tracorScopedFilterOptions);
             }
         }
     }
@@ -320,8 +320,8 @@ public class TracorScopedFilterFactory : ITracorScopedFilterFactory {
             this._ServiceProvider.Dispose();
         }
 
-        public ITracorScopedFilter CreateTracor(string categoryName) {
-            return this._TracorFactory.CreateTracor(categoryName);
+        public ITracorScopedFilter CreateTracorScopedFilter(string categoryName) {
+            return this._TracorFactory.CreateTracorScopedFilter(categoryName);
         }
 
         public void AddTracorScopedFilterSourceRegister(ITracorScopedFilterSource register) {

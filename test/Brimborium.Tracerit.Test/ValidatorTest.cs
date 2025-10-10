@@ -9,10 +9,11 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor(options => {
-            options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
-            options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>());
-        });
+        serviceBuilder.AddEnabledTracor(
+            configureConvert: options => {
+                options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
+                options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>());
+            });
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
         ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -22,7 +23,7 @@ public class ValidatorTest {
             new SequenceExpression()
             .Add(new MatchExpression(
                 condition: new PredicateTracorDataCondition(
-                    static (data) => data.IsEqual("PathAndQuery", "/1"))
+                    static (data) => data.IsEqualString("PathAndQuery", "/1"))
                 )
             )
             .Add(new MatchExpression() {
@@ -51,7 +52,8 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor(options => {
+        serviceBuilder.AddEnabledTracor(
+            configureConvert: options => {
             options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
             options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>());
         });
@@ -105,7 +107,7 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(static options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor();
+        serviceBuilder.AddEnabledTracor();
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
         ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -174,7 +176,7 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(static options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor();
+        serviceBuilder.AddEnabledTracor();
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
         ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();

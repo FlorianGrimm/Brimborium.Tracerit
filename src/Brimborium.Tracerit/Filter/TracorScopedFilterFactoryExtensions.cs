@@ -10,7 +10,7 @@ public static class TracorScopedFilterFactoryExtensions {
     /// <param name="factory">The factory.</param>
     /// <typeparam name="T">The type.</typeparam>
     /// <returns>The <see cref="ITracorScopedFilter"/> that was created.</returns>
-    public static ITracorScopedFilter<T> CreateTracor<T>(this ITracorScopedFilterFactory factory) {
+    public static ITracorScopedFilter<T> CreateTracorScopedFilter<T>(this ITracorScopedFilterFactory factory) {
         ArgumentNullException.ThrowIfNull(factory);
 
         return new TracorScopedFilter<T>(factory);
@@ -21,10 +21,14 @@ public static class TracorScopedFilterFactoryExtensions {
     /// <param name="factory">The factory.</param>
     /// <param name="type">The type.</param>
     /// <returns>The <see cref="ITracorScopedFilter"/> that was created.</returns>
-    public static ITracorScopedFilter CreateTracor(this ITracorScopedFilterFactory factory, Type type) {
+    public static ITracorScopedFilter CreateTracorScopedFilter(this ITracorScopedFilterFactory factory, Type type) {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentNullException.ThrowIfNull(type);
 
-        return factory.CreateTracor(TypeNameHelper.GetTypeDisplayName(type, includeGenericParameters: false, nestedTypeDelimiter: '.'));
+        return factory.CreateTracorScopedFilter(
+            TypeNameHelper.GetTypeDisplayName(
+                type, 
+                includeGenericParameters: 
+                false, nestedTypeDelimiter: '.'));
     }
 }

@@ -1,6 +1,16 @@
-﻿namespace Brimborium.Tracerit;
+﻿using Brimborium.Tracerit.FileSink;
+
+namespace Brimborium.Tracerit;
 
 public static class TracorBuilderExtension {
+
+    internal static IConfiguration GetConfigurationTracorSection(IConfigurationRoot configuration) {
+        return configuration.GetSection("Tracor");
+    }
+    internal static IConfiguration GetConfigurationTracorSinkFileSection(IConfigurationRoot configuration) {
+        return configuration.GetSection("Tracor").GetSection("SinkFile");
+    }
+
 
     /// <summary>
     /// Adds the Tracor logger provider to the logging builder, enabling integration between logging and tracing.
@@ -107,22 +117,67 @@ public static class TracorBuilderExtension {
         return tracorBuilder;
     }
 
+    public static ITracorBuilder AddTracorScopedFilter(
+            this ITracorBuilder tracorBuilder,
+            Action<ITracorScopedFilterBuilder>? configure) {
+        if (configure is null) {
+            tracorBuilder.Services.AddTracorScopedFilter();
+        } else {
+            tracorBuilder.Services.AddTracorScopedFilter(configure);
+        }
+        return tracorBuilder;
+    }
+
+    internal static ITracorBuilder AddFileTracorCollectiveSinkServices(
+        this ITracorBuilder tracorBuilder) {
+        tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
+        tracorBuilder.Services.Add(ServiceDescriptor.Transient(typeof(ITracorSink<>), typeof(TracorSink<>)));
+        return tracorBuilder;
+    }
+
     /// <summary>
-    /// Add singleton T
+    /// Add a file persitence for tracor
     /// </summary>
-    /// <typeparam name="T">Type inherit <see cref="T:AddActivitySourceBase"/>.</typeparam>
-    /// <param name="servicebuilder">The service collection to add services to.</param>
-    /// <returns>fluent this</returns>
-    public static IServiceCollection AddTracorInstrumentation<T>(
-        this IServiceCollection servicebuilder
-        )
-        where T : InstrumentationBase {
-        servicebuilder.AddSingleton<T>();
-        servicebuilder.AddOptions<TracorActivityListenerOptions>()
-            .Configure((options) => {
-                options.ListActivitySourceResolver.Add(new InstrumentationBaseResolver<T>());
-            });
-        return servicebuilder;
+    /// <param name="tracorBuilder">that</param>
+    /// <param name="configuration">optional: the configurationroot:Tracor:SinkFile will be used</param>
+    /// <param name="configure">optional: additional configuration - allows to set GetApplicationStopping</param>
+    /// <returns></returns>
+    /// <example>
+    /// .AddFileTracorCollectiveSinkDefault(
+    ///    configuration: builder.Configuration,
+    ///               configure: (fileTracorOptions) => {
+    ///                   fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
+    ///})
+    /// </example>
+    public static ITracorBuilder AddFileTracorCollectiveSinkDefault(
+        this ITracorBuilder tracorBuilder,
+        IConfigurationRoot? configuration = default,
+        Action<FileTracorOptions>? configure = default) {
+        tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
+        var optionsBuilder = tracorBuilder.Services.AddOptions<FileTracorOptions>();
+        if (configuration is { }) {
+            optionsBuilder.Bind(GetConfigurationTracorSinkFileSection(configuration));
+        }
+        if (configure is { }) {
+            optionsBuilder.Configure(configure);
+        }
+        return tracorBuilder.AddFileTracorCollectiveSinkServices();
+    }
+
+
+    public static ITracorBuilder AddFileTracorCollectiveSinkCustom(
+        this ITracorBuilder tracorBuilder,
+        IConfiguration? configuration = default,
+        Action<FileTracorOptions>? configure = default) {
+        tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
+        var optionsBuilder = tracorBuilder.Services.AddOptions<FileTracorOptions>();
+        if (configuration is { }) {
+            optionsBuilder.Bind(configuration);
+        }
+        if (configure is { }) {
+            optionsBuilder.Configure(configure);
+        }
+        return tracorBuilder.AddFileTracorCollectiveSinkServices();
     }
 
 }

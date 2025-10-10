@@ -1,10 +1,10 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
-internal sealed partial class RuntimeTracorValidator : ITracorValidator {
-    private readonly ILogger<RuntimeTracorValidator> _Logger;
+internal sealed partial class DisabledTracorValidator : ITracorValidator {
+    private readonly ILogger<DisabledTracorValidator> _Logger;
 
-    public RuntimeTracorValidator(
-        ILogger<RuntimeTracorValidator> logger
+    public DisabledTracorValidator(
+        ILogger<DisabledTracorValidator> logger
         ) {
         this._Logger = logger;
     }
@@ -12,14 +12,15 @@ internal sealed partial class RuntimeTracorValidator : ITracorValidator {
     public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default) {
         return new RuntimeTracorValidatorPath(step);
     }
+    public bool IsGeneralEnabled() => false;
 
     public bool IsEnabled() => false;
 
     [Microsoft.Extensions.Logging.LoggerMessage(1, LogLevel.Debug, "RuntimeTracorValidator.OnTrace - Should not be called {callee}")]
     partial void OnTraceLog(TracorIdentitfier callee);
 
-    public void OnTrace(bool isPublic, TracorIdentitfier callee, ITracorData tracorData) {
-        this.OnTraceLog(callee);
+    public void OnTrace(bool isPublic, ITracorData tracorData) {
+        this.OnTraceLog(tracorData.TracorIdentitfier);
     }
 
 }
@@ -31,7 +32,7 @@ internal sealed class RuntimeTracorValidatorPath : ITracorValidatorPath {
         this._Step = step;
     }
 
-    public void OnTrace(TracorIdentitfier callee, ITracorData tracorData) {
+    public void OnTrace(ITracorData tracorData) {
     }
 
     public TracorGlobalState? GetRunnging(string searchSuccessState) => default;

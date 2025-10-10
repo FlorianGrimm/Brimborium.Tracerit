@@ -101,6 +101,10 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                 },
                 ConfigureWebApplication = (app) => {
                     app.Services.TracorActivityListenerStart();
+                    app.Map("/_test/ping", () => {
+                        var utcNow= DateTime.UtcNow;
+                        return $"pong {utcNow:O}";
+                    }).AllowAnonymous();
                 },
                 RunningWebApplication = (app, task) => {
                     tsc.SetResult(app);

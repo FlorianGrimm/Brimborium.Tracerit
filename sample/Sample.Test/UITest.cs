@@ -19,13 +19,11 @@ public class UITest : AppPageTest {
                     new SequenceExpression()
                     + Wrap(static (LoggerTracorData loggerTracorData) => {
                         return loggerTracorData.DoesMatch("Sample.WebApp.UITest", nameof(LogExtension.PingReceived))
-                            && (loggerTracorData.TryGetPropertyValue<int>("i", out var i))
-                            && (0 == i);
+                            && (loggerTracorData.IsEqualInteger("i", 0));
                     }).PredicateTracorData().AsMatch()
                     + Wrap(static (LoggerTracorData loggerTracorData) => {
                         return loggerTracorData.DoesMatch("Sample.WebApp.UITest", nameof(LogExtension.PingReceived))
-                            && (loggerTracorData.TryGetPropertyValue<int>("i", out var i))
-                            && (9 == i);
+                            && (loggerTracorData.IsEqualInteger("i", 9));
                     }).PredicateTracorData().AsMatch()
                 ]
             ))) {

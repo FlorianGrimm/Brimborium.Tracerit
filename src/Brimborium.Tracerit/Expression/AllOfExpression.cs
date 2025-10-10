@@ -32,7 +32,9 @@ public sealed class AllOfExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<OneOfExpressionState>();
         if (state.Successfull) {
             return OnTraceResult.Successfull;
@@ -42,7 +44,7 @@ public sealed class AllOfExpression : ValidatorExpression {
                 // skip
             } else {
                 var child = this._ListChild[idx];
-                var childResult = child.OnTrace(callee, tracorData, currentContext.GetChildContext(idx));
+                var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
                 if (OnTraceResult.Successfull == childResult) {
                     state.ChildSuccessfull.Add(idx);
                     if (state.ChildSuccessfull.Count == this._ListChild.Length) {

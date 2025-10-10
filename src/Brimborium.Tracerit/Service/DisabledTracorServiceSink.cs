@@ -4,7 +4,11 @@
 /// Runtime implementation of <see cref="ITracorServiceSink"/> that disables tracing for production scenarios.
 /// This implementation provides a no-op tracer that disposes of disposable values but performs no actual tracing.
 /// </summary>
-internal sealed class RuntimeTracorServiceSink : ITracorServiceSink {
+internal sealed class DisabledTracorServiceSink : ITracorServiceSink {
+
+    public ITracorScopedFilterFactory GetTracorScopedFilterFactory() 
+        => NullTracorScopedFilterFactory.Instance;
+
     /// <summary>
     /// Determines if tracing is generally enabled at the configuration level.
     /// </summary>

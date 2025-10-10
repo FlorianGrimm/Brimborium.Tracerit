@@ -96,13 +96,13 @@ public abstract class ReferenceCountPool<T>
     //public static LoggerTracorDataSharedPool Current = new(DefaultMaxPoolSize);
 
     public readonly int Capacity;
-    private readonly T?[] pool;
+    private readonly T?[] _Pool;
     private long rentIndex;
     private long returnIndex;
 
     public ReferenceCountPool(int capacity = 0) {
         this.Capacity = 0 < capacity ? capacity : DefaultMaxPoolSize;
-        this.pool = new T?[capacity];
+        this._Pool = new T?[this.Capacity];
     }
 
     public int Count => (int)(Volatile.Read(ref this.returnIndex) - Volatile.Read(ref this.rentIndex));
@@ -118,7 +118,7 @@ public abstract class ReferenceCountPool<T>
 
             if (Interlocked.CompareExchange(ref this.rentIndex, rentSnapshot + 1, rentSnapshot) == rentSnapshot) {
                 {
-                    var result = Interlocked.Exchange(ref this.pool[rentSnapshot % this.Capacity], null);
+                    var result = Interlocked.Exchange(ref this._Pool[rentSnapshot % this._Pool.Length], null);
                     if (result is { }) {
                         if (result.PrepareRent()) {
                             return result;
@@ -161,7 +161,7 @@ public abstract class ReferenceCountPool<T>
             }
 
             if (Interlocked.CompareExchange(ref this.returnIndex, returnSnapshot + 1, returnSnapshot) == returnSnapshot) {
-                this.pool[returnSnapshot % this.Capacity] = valueT;
+                this._Pool[returnSnapshot % this._Pool.Length] = valueT;
                 return;
             }
         }

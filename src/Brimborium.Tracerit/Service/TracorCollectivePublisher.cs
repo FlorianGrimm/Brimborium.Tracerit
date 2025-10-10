@@ -9,8 +9,8 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     public TracorCollectivePublisher(
         IEnumerable<ITracorCollectiveSink> listSinks) {
         foreach (var sink in listSinks) {
-            if (sink.IsEnabled()) {
-                _ListSubscribedSinks.Add(sink);
+            if (sink.IsGeneralEnabled()) {
+                this._ListSubscribedSinks.Add(sink);
             }
         }
     }
@@ -43,29 +43,22 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
         }
 
         public void Dispose() {
-            if (System.Threading.Interlocked.Exchange(ref _Sink, null) is { } sink) {
+            if (System.Threading.Interlocked.Exchange(ref this._Sink, null) is { } sink) {
                 this._TracorCollectivePublisher.UnsubscribeCollectiveSink(sink);
             }
 
         }
     }
+    public bool IsGeneralEnabled() => true;
 
     public bool IsEnabled() {
-        //    var listSinks = this._ListSubscribedSinks;
-        //    if (0 == listSinks.Count) { return false; }
-        //    foreach (var sink in listSinks) {
-        //        if (sink.IsEnabled()) {
-        //            return true;
-        //        }
-        //    }
-        //    return false;
         return 0 < this._ListSubscribedSinks.Count;
     }
 
-    public void OnTrace(bool isPublic, TracorIdentitfier callee, ITracorData tracorData) {
+    public void OnTrace(bool isPublic, ITracorData tracorData) {
         var listSinks = this._ListSubscribedSinks;
         foreach (var sink in listSinks) {
-            sink.OnTrace(isPublic, callee, tracorData);
+            sink.OnTrace(isPublic, tracorData);
         }
     }
 }

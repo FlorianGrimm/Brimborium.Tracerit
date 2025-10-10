@@ -10,10 +10,10 @@ public sealed class OrCondition : IExpressionCondition {
 
     public IExpressionCondition[] ExpressionConditions => this._ExpressionConditions;
 
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         for (int idx = 0; idx < this._ExpressionConditions.Length; idx++) {
             IExpressionCondition condition = this._ExpressionConditions[idx];
-            bool result = condition.DoesMatch(callee, tracorData, currentContext);
+            bool result = condition.DoesMatch(tracorData, currentContext);
             if (result) {
                 return true;
             } else {

@@ -10,7 +10,7 @@ public class TracorTests {
     [Test]
     public async Task RuntimeTracor_ShouldAlwaysReturnFalseForEnabled() {
         // Arrange
-        var tracor = new RuntimeTracorServiceSink();
+        var tracor = new DisabledTracorServiceSink();
 
         // Act & Assert
         await Assert.That(tracor.IsGeneralEnabled()).IsFalse();
@@ -20,7 +20,7 @@ public class TracorTests {
     [Test]
     public async Task RuntimeTracor_ShouldNotDisposeDisposableValues() {
         // Arrange
-        var tracor = new RuntimeTracorServiceSink();
+        var tracor = new DisabledTracorServiceSink();
         var disposableValue = new TestDisposable();
 
         // Act
@@ -33,7 +33,7 @@ public class TracorTests {
     [Test]
     public async Task RuntimeTracor_ShouldNotThrowForNonDisposableValues() {
         // Arrange
-        var tracor = new RuntimeTracorServiceSink();
+        var tracor = new DisabledTracorServiceSink();
         
         // Act & Assert - Should not throw
         tracor.TracePublic("test", LogLevel.Information, "test", "test string");
@@ -48,7 +48,7 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
 
@@ -61,7 +61,7 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -82,7 +82,7 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -114,7 +114,7 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -141,7 +141,7 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -207,13 +207,15 @@ public class TracorTests {
             this._condition = condition;
         }
 
-        public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+        public override OnTraceResult OnTrace(
+            ITracorData tracorData, 
+            OnTraceStepCurrentContext currentContext) {
             var state = currentContext.GetState<TestMatchState>();
             if (state.Successfull) {
                 return OnTraceResult.Successfull;
             }
 
-            if (this._condition(callee, tracorData, currentContext)) {
+            if (this._condition(tracorData.TracorIdentitfier, tracorData, currentContext)) {
                 currentContext.SetStateSuccessfull(this, state);
                 return OnTraceResult.Successfull;
             }

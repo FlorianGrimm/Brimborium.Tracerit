@@ -22,10 +22,10 @@ public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondit
         this._SetGlobalState = setGlobalState;
         this._FnGetPropertyDisplay = doNotPopulateThisValue;
     }
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         var propertyValue = this._FnGetProperty(tracorData);
         var result = this._FnEquality(propertyValue, this._ExpectedValue);
-        currentContext.LoggerUtility.LogCondition(callee, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
+        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
         if (result) {
             if (!string.IsNullOrEmpty(this._SetGlobalState)) {
                 if (propertyValue is not null) {
@@ -59,10 +59,10 @@ public sealed class EqualPropertyNameCondition<TProperty> : IExpressionCondition
         this._FnEquality = fnEquality ?? EqualityComparer<TProperty>.Default.Equals;
         this._SetGlobalState = setGlobalState;
     }
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData.TryGetPropertyValue<TProperty>(this._Property, out var propertyValue)) {
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
-            currentContext.LoggerUtility.LogCondition(callee, result, $"{this._Property} == {this._ExpectedValue}");
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, $"{this._Property} == {this._ExpectedValue}");
             if (result) {
                 if (!string.IsNullOrEmpty(this._SetGlobalState)) {
                     if (propertyValue is not null) {
@@ -96,15 +96,15 @@ public sealed class EqualsTracorDataPropertyCondition<TValue, TProperty> : IExpr
         this._SetGlobalState = setGlobalState;
         this._FnGetPropertyDisplay = doNotPopulateThisValue;
     }
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
             var propertyValue = this._FnGetProperty(value);
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
             if (this._FnGetPropertyDisplay is { }) {
-                currentContext.LoggerUtility.LogCondition(callee, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
+                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
             } else {
-                currentContext.LoggerUtility.LogCondition(callee, result, default);
+                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, default);
             }
             if (result) {
                 if (!string.IsNullOrEmpty(this._SetGlobalState)) {

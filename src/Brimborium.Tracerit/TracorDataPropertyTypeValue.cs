@@ -1,15 +1,15 @@
 ﻿namespace Brimborium.Tracerit;
 
 public enum TracorDataPropertyTypeValue {
-    Any,
+    Null,
     String,
     Integer,
-    LevelValue,
+    Boolean,
     Enum,
+    LevelValue,
+    Float,
     DateTime,
     DateTimeOffset,
-    Boolean,
-    Long,
-    Float,
-    Uuid
+    Uuid,
+    Any
 }

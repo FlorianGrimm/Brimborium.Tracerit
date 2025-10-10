@@ -1,17 +1,68 @@
 ﻿[
   [
-    "Source::str:Activity",
-    "Scope::str:sample.test.Stop",
-    "operation::str:test2"
+    [
+      "timestamp",
+      "dt",
+      "0001-01-01T00:00:00.0000000"
+    ],
+    [
+      "source",
+      "str",
+      "Activity"
+    ],
+    [
+      "scope",
+      "str",
+      "sample.test.Stop"
+    ],
+    [
+      "operation",
+      "str",
+      "test2"
+    ]
   ],
   [
-    "Source::str:Activity",
-    "Scope::str:sample.test.Stop",
-    "operation::str:test3"
+    [
+      "timestamp",
+      "dt",
+      "0001-01-01T00:00:00.0000000"
+    ],
+    [
+      "source",
+      "str",
+      "Activity"
+    ],
+    [
+      "scope",
+      "str",
+      "sample.test.Stop"
+    ],
+    [
+      "operation",
+      "str",
+      "test3"
+    ]
   ],
   [
-    "Source::str:Activity",
-    "Scope::str:sample.test.Stop",
-    "operation::str:test1"
+    [
+      "timestamp",
+      "dt",
+      "0001-01-01T00:00:00.0000000"
+    ],
+    [
+      "source",
+      "str",
+      "Activity"
+    ],
+    [
+      "scope",
+      "str",
+      "sample.test.Stop"
+    ],
+    [
+      "operation",
+      "str",
+      "test1"
+    ]
   ]
 ]

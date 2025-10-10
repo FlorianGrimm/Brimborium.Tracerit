@@ -14,9 +14,9 @@ public sealed class PredicateTracorDataCondition : IExpressionCondition {
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
 
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         bool result = this._FnCondition(tracorData);
-        currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
+        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
         return result;
     }
 
@@ -41,10 +41,10 @@ public sealed class PredicateTracorDataCondition<TTracorData> : IExpressionCondi
         this._FnCondition = fnCondition;
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData is TTracorData tracorDataTyped) {
             var result = this._FnCondition(tracorDataTyped);
-            currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
             return result;
         }
         return false;
@@ -71,11 +71,13 @@ public sealed class PredicateValueCondition<TValue> : IExpressionCondition<TValu
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
 
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(
+        ITracorData tracorData, 
+        OnTraceStepCurrentContext currentContext) {
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
             bool result = this._FnCondition(value);
-            currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
             return result;
         }
         return false;
@@ -102,11 +104,13 @@ public sealed class PredicateValueGlobalStateCondition<TValue> : IExpressionCond
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
 
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public bool DoesMatch(
+        ITracorData tracorData, 
+        OnTraceStepCurrentContext currentContext) {
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
             bool result = this._FnCondition(value, currentContext.GlobalState);
-            currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
             return result;
         }
         return false;

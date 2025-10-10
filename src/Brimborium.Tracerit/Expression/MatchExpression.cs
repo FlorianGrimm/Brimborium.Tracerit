@@ -43,17 +43,18 @@ public sealed class MatchExpression : ValidatorExpression {
     /// <summary>
     /// Processes a trace event by first checking if it matches the condition, then processing child expressions in sequence.
     /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<MatchStepState>();
         if (state.Successfull) {
             return OnTraceResult.Successfull;
         }
         if (!state.Matched) {
-            var matched = this.Condition.DoesMatch(callee, tracorData, currentContext);
+            var matched = this.Condition.DoesMatch(tracorData, currentContext);
             if (matched) {
                 state.Matched = true;
                 if (0 == this._ListChild.Length) {
@@ -70,7 +71,7 @@ public sealed class MatchExpression : ValidatorExpression {
             var childIndex = state.ChildIndex;
             if (childIndex < this._ListChild.Length) {
                 var childContext = currentContext.GetChildContext(childIndex);
-                var childResult = this._ListChild[childIndex].OnTrace(callee, tracorData, childContext);
+                var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
                 if (OnTraceResult.Successfull == childResult) {
                     childIndex++;
                     if (childIndex < this._ListChild.Length) {

@@ -7,10 +7,9 @@
 [ProviderAlias("Tracor")]
 public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScope {
     private readonly Lock _Lock = new();
-    private ITracorServiceSink? _Tracor;
-    private ITracorValidator? _TracorValidator;
+    private ITracorCollectivePublisher? _Publisher;
     private readonly IServiceProvider _ServiceProvider;
-    private readonly LogLevel? _GlobalLogLevel;
+    private readonly LogLevel? _MinimumLogLevel;
     private IExternalScopeProvider? _ExternalScopeProvider;
 
     /// <summary>
@@ -21,21 +20,20 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
         IServiceProvider serviceProvider,
         IOptions<TracorLoggerOptions> options) {
         this._ServiceProvider = serviceProvider;
-        this._GlobalLogLevel = options.Value.LogLevel;
+        this._MinimumLogLevel = options.Value.LogLevel;
     }
 
     /// <inheritdoc />
     public ILogger CreateLogger(string name) {
+        var publisher = this._Publisher;
         using (this._Lock.EnterScope()) {
-            if (this._Tracor is null) {
-                this._Tracor = this._ServiceProvider.GetRequiredService<ITracorServiceSink>();
-            }
-            if (this._TracorValidator is null) {
-                this._TracorValidator = this._ServiceProvider.GetRequiredService<ITracorValidator>();
+            publisher = this._Publisher;
+            if (publisher is null) {
+                this._Publisher = publisher = this._ServiceProvider.GetRequiredService<ITracorCollectivePublisher>();
             }
         }
-        if (this._Tracor.IsGeneralEnabled()) {
-            return new TracorLogger(name, this._Tracor, this._TracorValidator, this._GlobalLogLevel, this._ExternalScopeProvider);
+        if (publisher.IsEnabled()) {
+            return new TracorLogger(name, publisher, this._MinimumLogLevel, this._ExternalScopeProvider);
         } else {
             return new TracorDisabledLogger();
         }

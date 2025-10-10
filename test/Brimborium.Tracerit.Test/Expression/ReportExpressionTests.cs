@@ -61,18 +61,21 @@ public class ReportExpressionTests {
         }
         serviceProvider.TracorActivityListenerStop();
         await Assert.That(reportExpressionResult.ListData.Count).IsEqualTo(3);
-        if (reportExpressionResult.ListData[0].TracorData is ActivityTracorData activityTracorData0) {
+        if (reportExpressionResult.ListData[0] is ActivityTracorData activityTracorData0) {
             await Assert.That(activityTracorData0.TryGetTagValue<string>("operation", out var tagValue) ? tagValue : "").IsEqualTo("test2");
         }
-        if (reportExpressionResult.ListData[1].TracorData is ActivityTracorData activityTracorData1) {
+        if (reportExpressionResult.ListData[1] is ActivityTracorData activityTracorData1) {
             await Assert.That(activityTracorData1.TryGetTagValue<string>("operation", out var tagValue) ? tagValue : "").IsEqualTo("test3");
         }
-        if (reportExpressionResult.ListData[2].TracorData is ActivityTracorData activityTracorData2) {
+        if (reportExpressionResult.ListData[2] is ActivityTracorData activityTracorData2) {
             await Assert.That(activityTracorData2.TryGetTagValue<string>("operation", out var tagValue) ? tagValue : "").IsEqualTo("test1");
         }
-
-        var json = reportExpressionResult.ToTracorDataCollectionJson(
-            new System.Text.Json.JsonSerializerOptions() { WriteIndented = true });
+        foreach (var data in reportExpressionResult.ListData) {
+            data.Timestamp = new DateTime(0);
+        }
+        var json = TracorDataSerialization.SerializeSimple(
+            reportExpressionResult.ListData,
+            new System.Text.Json.JsonSerializerOptions(TracorDataSerialization.GetMinimalJsonSerializerOptions()) { WriteIndented = true });
         await Verify(json);
     }
 }

@@ -1,7 +1,7 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
 internal sealed class NeverTracorValidatorPath : ITracorValidatorPath {
-    public void OnTrace(TracorIdentitfier callee, ITracorData tracorData) { }
+    public void OnTrace(ITracorData tracorData) { }
 
     public TracorGlobalState? GetRunnging(string searchSuccessState) => default;
     public Task<TracorGlobalState?> GetRunngingAsync(string searchSuccessState, TimeSpan timeout = default) => Task.FromResult(default(TracorGlobalState));

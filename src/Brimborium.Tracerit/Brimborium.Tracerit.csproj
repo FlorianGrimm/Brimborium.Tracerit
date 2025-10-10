@@ -4,9 +4,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Brimborium.Tracerit</RootNamespace>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
   <!--
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>

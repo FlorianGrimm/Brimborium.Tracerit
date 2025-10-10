@@ -41,7 +41,9 @@ public sealed class SequenceExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<SequenceStepState>();
         if (state.Successfull) {
             return OnTraceResult.Successfull;
@@ -50,7 +52,7 @@ public sealed class SequenceExpression : ValidatorExpression {
         var childIndex = state.ChildIndex;
         if (childIndex < this._ListChild.Length) {
             var childContext = currentContext.GetChildContext(childIndex);
-            var childResult = this._ListChild[childIndex].OnTrace(callee, tracorData, childContext);
+            var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
             if (OnTraceResult.Successfull == childResult) {
                 childIndex++;
                 if (childIndex < this._ListChild.Length) {

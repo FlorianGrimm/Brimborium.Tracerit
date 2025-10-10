@@ -13,7 +13,7 @@ public sealed class TracorDataRecord
     /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
     /// </summary>
     public TracorDataRecord(IReferenceCountPool? owner) : base(owner) { }
-        
+
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
@@ -25,15 +25,6 @@ public sealed class TracorDataRecord
     /// Gets the list of properties associated with this trace data record.
     /// </summary>
     public List<TracorDataProperty> ListProperty { get; } = new(64);
-
-    /// <summary>
-    /// Converts this record to a <see cref="TracorIdentitfierData"/> object.
-    /// </summary>
-    /// <returns>A <see cref="TracorIdentitfierData"/> containing the identifier and this record.</returns>
-    public TracorIdentitfierData ToTracorIdentitfierData()
-        => new TracorIdentitfierData(
-            this.TracorIdentitfier,
-            this);
 
     /// <summary>
     /// Gets the value of a property by name.
@@ -82,7 +73,7 @@ public sealed class TracorDataRecord
     /// <param name="currentData">The current trace identifier data.</param>
     /// <param name="expectedData">The expected trace data record.</param>
     /// <returns>True if the current data matches the expected data; otherwise, false.</returns>
-    public static bool IsPartialEquals(TracorIdentitfierData currentData, TracorDataRecord expectedData) {
+    public static bool IsPartialEquals(ITracorData currentData, TracorDataRecord expectedData) {
         if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
             var currentTracorIdentitfier = currentData.TracorIdentitfier;
             if (!MatchEqualityComparerTracorIdentitfier.Default.Equals(
@@ -93,7 +84,7 @@ public sealed class TracorDataRecord
         }
         if (0 < expectedData.ListProperty.Count) {
             foreach (var expectedProperty in expectedData.ListProperty) {
-                if (currentData.TracorData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
+                if (currentData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
                     if (expectedProperty.HasEqualValue(currentPropertyValue)) {
                         // equal -> ok
                     } else {
@@ -117,6 +108,21 @@ public sealed class TracorDataRecord
 
     protected override bool IsStateReseted() {
         return this.ListProperty.Count == 0 && this.ListProperty.Capacity <= 128;
+    }
+
+    public static TracorDataRecord Convert(ITracorData src) {
+        if (src is TracorDataRecord result) {
+            return result;
+        }
+        {
+            result = new TracorDataRecord();
+
+            result.TracorIdentitfier = src.TracorIdentitfier;
+            result.Timestamp = src.Timestamp;
+            src.ConvertProperties(result.ListProperty);
+
+            return result;
+        }
     }
 }
 

@@ -39,7 +39,7 @@ public sealed class NullTracorScopedFilterFactory : ITracorScopedFilterFactory {
     /// <remarks>
     /// This returns a <see cref="NullTracorScopedFilter"/> instance that logs nothing.
     /// </remarks>
-    public ITracorScopedFilter CreateTracor(string name) {
+    public ITracorScopedFilter CreateTracorScopedFilter(string name) {
         return NullTracorScopedFilter.Instance;
     }
 

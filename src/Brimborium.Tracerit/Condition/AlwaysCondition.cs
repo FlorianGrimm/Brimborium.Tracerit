@@ -16,11 +16,10 @@ public sealed class AlwaysCondition : IExpressionCondition {
     /// <summary>
     /// Always returns true, indicating that this condition is always satisfied.
     /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="tracorData">The trace data to evaluate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>Always returns true.</returns>
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) => true;
+    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) => true;
 }
 
 /// <summary>
@@ -46,7 +45,6 @@ public sealed class AlwaysCondition<TValue, TProperty> : IExpressionCondition {
     }
 
     public bool DoesMatch(
-        TracorIdentitfier callee,
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         if (this._FnGetProperty is { } fnGetProperty

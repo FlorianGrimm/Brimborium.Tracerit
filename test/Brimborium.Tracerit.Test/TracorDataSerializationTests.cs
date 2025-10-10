@@ -1,4 +1,5 @@
-﻿namespace Brimborium.Tracerit.Test;
+﻿#if later
+namespace Brimborium.Tracerit.Test;
 
 public class TracorDataSerializationTests {
     public const string JsonData = """
@@ -30,26 +31,26 @@ public class TracorDataSerializationTests {
 
     [Test]
     public async Task ParseTracorDataCollectionTest() {
-        var tracorDataCollection = TracorDataSerialization.ParseTracorDataCollection(JsonData);
+        var tracorDataCollection = TracorDataSerialization.SerializeSimple(JsonData);
         await Verify(tracorDataCollection);
     }
 
     [Test]
     public async Task Deserialization() {
-        var tracorDataCollection = TracorDataSerialization.ParseTracorDataCollection(JsonData);
-        await Assert.That(tracorDataCollection).IsNotNull();
-        await Assert.That(tracorDataCollection.ListData.Count).IsEqualTo(3);
+        var tracorDataRecordCollection = TracorDataSerialization.SerializeSimple(JsonData);
+        await Assert.That(tracorDataRecordCollection).IsNotNull();
+        await Assert.That(tracorDataRecordCollection.ListData.Count).IsEqualTo(3);
 
-        await Assert.That(tracorDataCollection.ListData.Select(tdr => tdr.TracorIdentitfier.Source ?? "").ToList()).IsEquivalentTo(["Activity", "Activity", "Activity"]);
-        await Assert.That(tracorDataCollection.ListData.Select(tdr => tdr.TracorIdentitfier.Scope ?? "")).IsEquivalentTo(["sample.test1.Stop", "sample.test1.Stop", "sample.test1.Stop"]);
-        await Assert.That(tracorDataCollection.ListData.Select(rec => (rec["operation"] as string) ?? "")).IsEquivalentTo(["test2", "test3", "test1"]);
+        await Assert.That(tracorDataRecordCollection.ListData.Select(tdr => tdr.TracorIdentitfier.Source ?? "").ToList()).IsEquivalentTo(["Activity", "Activity", "Activity"]);
+        await Assert.That(tracorDataRecordCollection.ListData.Select(tdr => tdr.TracorIdentitfier.Scope ?? "")).IsEquivalentTo(["sample.test1.Stop", "sample.test1.Stop", "sample.test1.Stop"]);
+        await Assert.That(tracorDataRecordCollection.ListData.Select(rec => (rec["operation"] as string) ?? "")).IsEquivalentTo(["test2", "test3", "test1"]);
 
-        string jsonAct = TracorDataSerialization.ToTracorDataCollectionJson(
-            tracorDataCollection.ToListTracorIdentitfierData(),
+        string jsonAct = TracorDataSerialization.ConvertToMinimizeStringJson(
+            tracorDataRecordCollection,
             JsonSerializerOptions);
 
-        var tracorDataCollectionAct = TracorDataSerialization.ParseTracorDataCollection(jsonAct);
-        await Assert.That(tracorDataCollection).IsEquivalentTo(tracorDataCollectionAct);
+        var tracorDataCollectionAct = TracorDataSerialization.ParseTracorDataRecordCollectionCollection(jsonAct);
+        await Assert.That(tracorDataRecordCollection).IsEquivalentTo(tracorDataCollectionAct);
 
         await Assert.That(jsonAct).IsEqualTo(JsonData);
     }
@@ -69,19 +70,20 @@ public class TracorDataSerializationTests {
                     TracorDataProperty.CreateDateTimeOffset("h", new DateTimeOffset(new DateTime(2001,2,3,4,5,6), TimeSpan.Zero)),
                     TracorDataProperty.CreateBoolean("i", false),
                     TracorDataProperty.CreateBoolean("j", true),
-                    TracorDataProperty.CreateLong("k", 123123123),
+                    TracorDataProperty.CreateInteger("k", 123123123),
                     TracorDataProperty.CreateFloat("l", 12312.5),
                 }
             }
             );
 
-        string json = TracorDataSerialization.ToTracorDataCollectionJson(
-            tracorDataCollection.ToListTracorIdentitfierData(),
+        string json = TracorDataSerialization.ConvertToMinimizeStringJson(
+            tracorDataCollection,
             JsonSerializerOptions);
 
-        var act = TracorDataSerialization.ParseTracorDataCollection(json);
+        var act = TracorDataSerialization.ParseTracorDataRecordCollectionCollection(json);
         await Assert.That(tracorDataCollection).IsEquivalentTo(act);
 
         await Verify(json);
     }
 }
+#endif

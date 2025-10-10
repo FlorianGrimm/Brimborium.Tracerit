@@ -15,7 +15,9 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         if (string.IsNullOrEmpty(this.PropertyName)) {
             return OnTraceResult.None;
         }
@@ -52,7 +54,7 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
         }
         var state = currentContext.GetState<GroupByExpressionState>();
         if (this.Expression is { } expression) {
-            var childResult = expression.OnTrace(callee, tracorData, currentContext.GetChildContext(0));
+            var childResult = expression.OnTrace(tracorData, currentContext.GetChildContext(0));
             if (OnTraceResult.Successfull == childResult) {
                 currentContext.SetStateSuccessfull(this, state);
                 return OnTraceResult.Successfull;

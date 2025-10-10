@@ -26,12 +26,12 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
 
     private ValidatorStepIdentifier? _RootIdentifier;
 
-    public void OnTrace(TracorIdentitfier callee, ITracorData tracorData) {
+    public void OnTrace(ITracorData tracorData) {
         var rootIdentifier = this._RootIdentifier ??= (new ValidatorStepIdentifier(0, this._Step.GetInstanceIndex()));
         var listRunningExecutionState = this._ListRunningExecutionState;
         foreach (var runningContextState in listRunningExecutionState) {
             var currentContext = new OnTraceStepCurrentContext(rootIdentifier, runningContextState, this._Modifications, this._LoggerUtility);
-            var childResult = this._Step.OnTrace(callee, tracorData, currentContext);
+            var childResult = this._Step.OnTrace(tracorData, currentContext);
             if (OnTraceResult.Successfull == childResult) {
                 this.HandleFinish(runningContextState);
             }

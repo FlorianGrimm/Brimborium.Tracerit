@@ -1,11 +1,11 @@
 ﻿namespace Brimborium.Tracerit;
 
-public static partial class ITracorExtension {
+public static partial class ITracorSinkExtension {
     public static OptionalTracorPrivate GetPrivateTracor(
         this ITracorSink tracorSink,
-        string scope,
         LogLevel logLevel,
-        string message
+        string message,
+        [CallerMemberName]string scope=""
         ) {
         if (tracorSink.IsPrivateEnabled(scope, logLevel)) {
             return new(true, scope, logLevel, message, tracorSink);
@@ -16,9 +16,9 @@ public static partial class ITracorExtension {
 
     public static OptionalTracorPublic GetPublicTracor(
         this ITracorSink tracorSink,
-        string scope,
         LogLevel logLevel,
-        string message
+        string message,
+        [CallerMemberName] string scope = ""
         ) {
         if (tracorSink.IsPublicEnabled(scope, logLevel)) {
             return new(true, scope, logLevel, message, tracorSink);
@@ -52,8 +52,8 @@ public readonly record struct OptionalTracorPrivate {
     public bool Enabled => this._Enabled;
 
     public void TracePrivate<T>(T value) {
-        if (_Enabled) {
-            _TracorSink.TracePrivate<T>(_Scope, _Level, _Message, value);
+        if (this._Enabled) {
+            this._TracorSink.TracePrivate<T>(this._Scope, this._Level, this._Message, value);
         }
     }
 
@@ -86,8 +86,8 @@ public readonly record struct OptionalTracorPublic {
     public bool Enabled => this._Enabled;
 
     public void TracePrivate<T>(T value) {
-        if (_Enabled) {
-            _TracorSink.TracePublic<T>(_Scope, _Level, _Message, value);
+        if (this._Enabled) {
+            this._TracorSink.TracePublic<T>(this._Scope, this._Level, this._Message, value);
         }
     }
 

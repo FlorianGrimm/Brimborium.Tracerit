@@ -10,7 +10,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -29,7 +29,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -48,7 +48,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -62,7 +62,7 @@ public class TracorValidatorTests {
         var callee = new TracorIdentitfier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("first"));
+        validatorPath.OnTrace(new ValueTracorData<string>("first") { TracorIdentitfier = callee });
         var runningStates = validatorPath.GetListRunnging();
 
         // Assert
@@ -75,7 +75,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -86,7 +86,7 @@ public class TracorValidatorTests {
         var callee = new TracorIdentitfier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
         var finishedStates = validatorPath.GetListFinished();
 
         // Assert
@@ -99,7 +99,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -111,7 +111,7 @@ public class TracorValidatorTests {
         var callee = new TracorIdentitfier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test value"));
+        validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentitfier = callee });
         var finishedState = validatorPath.GetFinished(state =>
             state.TryGetValue("TestProperty", out var prop) && prop is string str && str == "test value");
 
@@ -125,7 +125,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -134,7 +134,7 @@ public class TracorValidatorTests {
         var callee = new TracorIdentitfier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
         var finishedState = validatorPath.GetFinished(state =>
             state.TryGetValue("NonExistentKey", out var _));
 
@@ -147,7 +147,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -165,7 +165,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -175,10 +175,10 @@ public class TracorValidatorTests {
         var validatorPath1 = validator.Add(expression1);
         var validatorPath2 = validator.Add(expression2);
         var callee = new TracorIdentitfier("Test", "Method");
-        var tracorData = new ValueTracorData<string>("test");
+        var tracorData = new ValueTracorData<string>("test") { TracorIdentitfier = callee };
 
         // Act
-        validator.OnTrace(true, callee, tracorData);
+        validator.OnTrace(true, tracorData);
 
         // Assert
         await Assert.That(validatorPath1.GetListFinished()).HasCount().EqualTo(1);
@@ -190,7 +190,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -201,7 +201,7 @@ public class TracorValidatorTests {
         // Act
         var traceTask = Task.Run(() => {
             Thread.Sleep(100); // Small delay to simulate async processing
-            validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
         });
 
         var finishedState = await validatorPath.GetFinishedAsync(null, TimeSpan.FromSeconds(1));
@@ -216,7 +216,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -228,7 +228,7 @@ public class TracorValidatorTests {
             var callee = new TracorIdentitfier("Test", "Method");
 
             // Act
-            validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
 
             var runningStateTestLabel = validatorPath.GetRunnging("TestLabel");
             var runningStateFirstMatch = validatorPath.GetRunnging("FirstMatch");

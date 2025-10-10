@@ -5,9 +5,8 @@ internal sealed class TracorLogger : ILogger {
     public const int OwnNamespaceLength = /* OwnNamespace.Length */ 19;
 
     private readonly string? _Name;
-    private readonly ITracorServiceSink _Tracor;
-    private readonly ITracorValidator _TracorValidator;
-    private readonly LogLevel? _GlobalLogLevel;
+    private readonly ITracorCollectivePublisher _Publisher;
+    private readonly LogLevel? _MinimumLogLevel;
     private readonly IExternalScopeProvider? _ExternalScopeProvider;
     private readonly TracorIdentitfier _Id;
     private readonly bool _IsAllowed;
@@ -16,15 +15,15 @@ internal sealed class TracorLogger : ILogger {
 
     public TracorLogger(
         string name,
-        ITracorServiceSink tracor,
-        ITracorValidator tracorValidator,
-        LogLevel? globalLogLevel,
+        ITracorCollectivePublisher publisher,
+        LogLevel? minimumLogLevel,
         IExternalScopeProvider? externalScopeProvider) {
         this._Name = name;
+        this._Publisher = publisher;
         this._Pool = new(2048);
 
         // if the name is this namespace or sub-namespace - don't tracor
-        if (tracor.IsGeneralEnabled()) {
+        if (publisher.IsEnabled()) {
             if (name is { Length: >= OwnNamespaceLength }
                 && name.StartsWith(OwnNamespace)) {
                 if (OwnNamespaceLength < name.Length) {
@@ -38,9 +37,7 @@ internal sealed class TracorLogger : ILogger {
         } else {
             this._IsAllowed = false;
         }
-        this._Tracor = tracor;
-        this._TracorValidator = tracorValidator;
-        this._GlobalLogLevel = globalLogLevel;
+        this._MinimumLogLevel = minimumLogLevel;
         this._ExternalScopeProvider = externalScopeProvider;
         if (name is { Length: > 0 }) {
             this._Id = new TracorIdentitfier("Logger", name);
@@ -51,9 +48,9 @@ internal sealed class TracorLogger : ILogger {
     }
 
     public bool IsEnabled(LogLevel logLevel) {
-        if (this._IsAllowed && this._Tracor.IsCurrentlyEnabled()) {
-            if (this._GlobalLogLevel is { } globalLogLevel) {
-                return globalLogLevel <= logLevel;
+        if (this._IsAllowed && this._Publisher.IsEnabled()) {
+            if (this._MinimumLogLevel is { } minimumLogLevel) {
+                return minimumLogLevel <= logLevel;
             } else {
                 return true;
             }
@@ -70,7 +67,7 @@ internal sealed class TracorLogger : ILogger {
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
         try {
-            if (!(this._IsAllowed && this._Tracor.IsCurrentlyEnabled())) {
+            if (!this._IsAllowed) {
                 return;
             }
 
@@ -100,11 +97,9 @@ internal sealed class TracorLogger : ILogger {
                     eventId,
                     state,
                     exception);
-                this._TracorValidator.OnTrace(
-                    true,
-                    this._IdChildCache.Child(eventId.ToString()),
-                    loggerTracorData
-                    );
+                loggerTracorData.TracorIdentitfier = this._IdChildCache.Child(eventId.ToString());
+                loggerTracorData.Timestamp = DateTime.UtcNow;
+                this._Publisher.OnTrace(true, loggerTracorData);
             }
         } catch {
         }
@@ -120,7 +115,7 @@ internal sealed class TracorLogger : ILogger {
         (object)LogLevel.Warning,
         (object)LogLevel.Error,
         (object)LogLevel.Critical,
-        (object)LogLevel.None 
+        (object)LogLevel.None
     ];
 
     private static void ConvertProperties(
@@ -145,7 +140,7 @@ internal sealed class TracorLogger : ILogger {
             loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceFlags", activityTraceFlags));
         }
         loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("LogLevel", (LogLevel.Trace <= logLevel && logLevel <= LogLevel.None) ? _ObjLogLevel[(int)logLevel] : logLevel));
-        if (eventId.Id != 0) { 
+        if (eventId.Id != 0) {
             loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Id", eventId.Id));
         }
         if (eventId.Name is { Length: > 0 }) {

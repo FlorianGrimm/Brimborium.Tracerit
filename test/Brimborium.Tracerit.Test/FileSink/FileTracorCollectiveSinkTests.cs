@@ -49,15 +49,19 @@ public class FileTracorCollectiveSinkTests {
 
     [Test]
     public async Task OnTraceHandlesReferenceCount() {
+        var start = System.DateTime.UtcNow;
         var root = GetLogRootDirectory();
         var rootLog2 = System.IO.Path.Combine(root, "Log2");
         System.IO.Directory.CreateDirectory(rootLog2);
-            TracorIdentitfier callee = new("test", "a", "b");
-            TracorDataRecordPool tracorDataRecordPool = new TracorDataRecordPool(0);
-            List<TracorDataRecord> listTracorDataRecord = new();
+        TracorIdentitfier callee = new("test", "a", "b");
+        TracorDataRecordPool tracorDataRecordPool = new TracorDataRecordPool(0);
+        List<TracorDataRecord> listTracorDataRecord = new();
         var ctsApplicationStopping = new CancellationTokenSource();
 
         using (var sutFileTracorCollectiveSink = new FileTracorCollectiveSink(
+            new TracorOptions() {
+                ApplicationName = "test"
+            },
             new FileTracorOptions() {
                 BaseDirectory = root,
                 Directory = "Log2",
@@ -65,20 +69,32 @@ public class FileTracorCollectiveSinkTests {
                 FlushPeriod = TimeSpan.FromSeconds(10),
                 GetApplicationStopping = (_) => ctsApplicationStopping.Token
             })) {
-            for (int idx = 0; idx < 100; idx++) {
+            for (int idx = 0; idx < 1000; idx++) {
                 using (TracorDataRecord tracorDataRecord = tracorDataRecordPool.Rent()) {
                     tracorDataRecord.TracorIdentitfier = callee;
+                    tracorDataRecord.Timestamp = DateTime.UtcNow;
                     tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateInteger("idx", idx));
                     tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("c", "d"));
                     tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e", "f"));
-                    sutFileTracorCollectiveSink.OnTrace(true, callee, tracorDataRecord);
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e1", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e2", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e3", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e4", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e5", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e6", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e7", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e8", "f"));
+                    tracorDataRecord.ListProperty.Add(TracorDataProperty.CreateString("e9", "f"));
+                    sutFileTracorCollectiveSink.OnTrace(true, tracorDataRecord);
                     listTracorDataRecord.Add(tracorDataRecord);
                 }
             }
             await Assert.That(listTracorDataRecord[0]).IsNotSameReferenceAs(listTracorDataRecord[1]);
             await sutFileTracorCollectiveSink.FlushAsync();
-            await Task.Delay(1000);
+            var elapsed = System.DateTime.UtcNow - start;
+            System.Console.Out.WriteLine(elapsed.TotalMilliseconds);
             ctsApplicationStopping.Cancel();
+
         }
     }
 

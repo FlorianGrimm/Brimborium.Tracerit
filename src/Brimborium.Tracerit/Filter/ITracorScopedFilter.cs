@@ -27,7 +27,7 @@ public interface ITracorScopedFilterFactory : IDisposable {
     /// </summary>
     /// <param name="categoryName">The category name for messages produced by the tracor.</param>
     /// <returns>The <see cref="ITracorScopedFilter"/>.</returns>
-    ITracorScopedFilter CreateTracor(string categoryName);
+    ITracorScopedFilter CreateTracorScopedFilter(string categoryName);
 
     /// <summary>
     /// Adds an <see cref="ITracorScopedFilterSource"/> to the TracorScopedFilter system.

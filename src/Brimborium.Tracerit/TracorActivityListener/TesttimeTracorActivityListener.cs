@@ -145,11 +145,12 @@ internal sealed class TesttimeTracorActivityListener
             this._DictTracorIdentitfierCacheByActivitySource = this._DictTracorIdentitfierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentitfierCache);
         }
         var tracorIdentitfier = tracorIdentitfierCache.Child("Start");
-        // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
+
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            //this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
-            this._Validator.OnTrace(true, tracorIdentitfier, activityTracorData);
+            activityTracorData.TracorIdentitfier = tracorIdentitfier;
+            activityTracorData.Timestamp = activity.StartTimeUtc;
+            this._Validator.OnTrace(true, activityTracorData);
         }
     }
 
@@ -175,12 +176,13 @@ internal sealed class TesttimeTracorActivityListener
             tracorIdentitfierCache = new(new("Activity", activitySourceIdentifier.Name));
             this._DictTracorIdentitfierCacheByActivitySource = this._DictTracorIdentitfierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentitfierCache);
         }
-        var tracorIdentitfier = tracorIdentitfierCache.Child("Stop");
-        // this._Tracor.Trace(tracorIdentitfier, new ActivityTracorData(activity));
+
+        var tracorIdentitfier = tracorIdentitfierCache.Child("Stop");        
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            //this._Tracor.TracePublic(tracorIdentitfier, LogLevel.Information, activityTracorData);
-            this._Validator.OnTrace(true, tracorIdentitfier, activityTracorData);
+            activityTracorData.TracorIdentitfier = tracorIdentitfier;
+            activityTracorData.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
+            this._Validator.OnTrace(true, activityTracorData);
         }
     }
 

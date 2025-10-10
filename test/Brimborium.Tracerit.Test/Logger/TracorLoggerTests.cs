@@ -17,11 +17,15 @@ public class TracorLoggerTests {
     [Test]
     public async Task TracorValidatorSimpleTest() {
         var serviceCollection = new ServiceCollection();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         serviceCollection.AddLogging(loggingBuilder => {
             loggingBuilder.AddTracorLogger();
         });
         var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        var publisher = serviceProvider.GetRequiredService<ITracorCollectivePublisher>();
+        await Assert.That(publisher.IsEnabled).IsEqualTo(true);
+
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory!.CreateLogger<TracorLoggerTests>();
         var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();

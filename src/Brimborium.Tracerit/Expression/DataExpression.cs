@@ -3,23 +3,21 @@
 namespace Brimborium.Tracerit.Expression;
 
 public sealed class DataExpression : ValidatorExpression {
-    private readonly TracorDataCollection _Expected;
-
+    private readonly TracorDataRecordCollection _Expected;
 
     public DataExpression(
         string expected
         ) {
-        this._Expected = TracorDataSerialization.ParseTracorDataCollection(expected);
+        this._Expected = TracorDataSerialization.DeserializeSimple(expected);
     }
 
     public DataExpression(
-        TracorDataCollection expected
+        TracorDataRecordCollection expected
         ) {
         this._Expected = expected;
     }
 
     public override OnTraceResult OnTrace(
-        TracorIdentitfier callee,
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<DataStepState>();
@@ -30,8 +28,8 @@ public sealed class DataExpression : ValidatorExpression {
         var childIndex = state.DataIndex;
         var count = this._Expected.ListData.Count;
         if (childIndex < count) {
-            var childResult = IsPartialEquals(
-                currentData: new TracorIdentitfierData(callee, tracorData),
+            var childResult = this.IsPartialEquals(
+                currentData: tracorData,
                 expectedData: this._Expected.ListData[childIndex],
                 currentContext, state, childIndex);
             if (childResult) {
@@ -54,74 +52,7 @@ public sealed class DataExpression : ValidatorExpression {
     }
 
     private bool IsPartialEquals(
-        TracorIdentitfierData currentData,
-        TracorDataRecord expectedData,
-        OnTraceStepCurrentContext currentContext,
-        DataStepState state,
-        int childIndex) {
-        // TODO: here var operation = expectedData.GetOperation();
-        var operation = TracorDataRecordOperation.Data;
-        if (operation is TracorDataRecordOperation.Data ) {
-            return IsPartialEqualsOperationData(
-                currentData,
-                expectedData,
-                currentContext,
-                state,
-                childIndex);
-        }
-
-        if (operation is TracorDataRecordOperation.Filter) {
-        }
-
-        var count = this._Expected.ListData.Count;
-        var childIndexArgument = childIndex + 1;
-        this.GetOpArgumentData(childIndex + 1);
-        TracorDataRecord opArgumentData;
-        for (; childIndexArgument < count; childIndexArgument++) {
-            opArgumentData = this._Expected.ListData[childIndexArgument];
-            // TODO: here (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {             }
-        }
-        if (count <= childIndexArgument) {
-            // error
-            // TODO: report
-            return true;
-        }
-        var operationData = expectedData;
-        if (operation is TracorDataRecordOperation.VariableGet) {
-                //opArgumentData
-            foreach (var operationProperty in operationData.ListProperty) {
-                var nameToRead = operationProperty.Name;
-                var nameToWrite = operationProperty.TextValue is { Length:>0}? operationProperty.TextValue:nameToRead;
-            }
-        }
-        if (operation is TracorDataRecordOperation.VariableSet) {
-        }
-
-        // no diff found
-        return true;
-    }
-
-    private (TracorDataRecord? tdr, int index) GetOpArgumentData(int index) {
-        var count = this._Expected.ListData.Count;
-        int indexOp = index;
-        for (; indexOp < count; indexOp++) {
-        var    opArgumentData = this._Expected.ListData[indexOp];
-            /*
-            if (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {              
-            return (opArgumentData, indexOp);
-            }
-            */
-        }
-        if (count <= indexOp) {
-            // error
-            // TODO: report
-            return (null, indexOp);
-        }
-        return (null, index);
-    }
-
-    private static bool IsPartialEqualsOperationData(
-        TracorIdentitfierData currentData,
+        ITracorData currentData,
         TracorDataRecord expectedData,
         OnTraceStepCurrentContext currentContext,
         DataStepState state,
@@ -137,7 +68,7 @@ public sealed class DataExpression : ValidatorExpression {
         }
         if (0 < expectedData.ListProperty.Count) {
             foreach (var expectedProperty in expectedData.ListProperty) {
-                if (currentData.TracorData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
+                if (currentData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
                     if (expectedProperty.HasEqualValue(currentPropertyValue)) {
                         // equal -> ok
                     } else {

@@ -8,7 +8,7 @@ public class TestsIntegration {
     public async Task PingTest() {
         var client = this.WebApplicationFactory.CreateClient();
 
-        var response = await client.GetAsync("/ping");
+        var response = await client.GetAsync("/_test/ping");
 
         var stringContent = await response.Content.ReadAsStringAsync();
 

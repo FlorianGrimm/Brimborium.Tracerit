@@ -18,14 +18,16 @@ public sealed class OneOfExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<OneOfExpressionState>();
         if (state.Successfull) {
             return OnTraceResult.Successfull;
         }
         for (var idx = 0; idx < this._ListChild.Length; idx++) {
             var child = this._ListChild[idx];
-            var childResult = child.OnTrace(callee, tracorData, currentContext.GetChildContext(idx));
+            var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
             if (OnTraceResult.Successfull == childResult) {
                 currentContext.SetStateSuccessfull(this, state);
                 return OnTraceResult.Successfull;

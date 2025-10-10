@@ -3,22 +3,22 @@ namespace Brimborium.Tracerit.Filter;
 internal sealed class TracorScopedFilter : ITracorScopedFilter {
     private readonly string _CategoryName;
 
-    public TracorScopedFilter(string categoryName, TracorScopedFilterCategotryInformation[] tracors) {
+    public TracorScopedFilter(string categoryName, TracorScopedFilterCategotryInformation[] listCategotryInformation) {
         this._CategoryName = categoryName;
-        this.Tracors = tracors;
+        this.ListCategotryInformation = listCategotryInformation;
     }
 
-    public TracorScopedFilterCategotryInformation[] Tracors;
-    public TracorScopedFilterCategoryFiltered[]? FilteredTracors;
+    public TracorScopedFilterCategotryInformation[] ListCategotryInformation;
+    public TracorScopedFilterCategoryFiltered[]? ListFilteredTracors;
 
     public bool IsEnabled(string sourceName, LogLevel logLevel) {
-        TracorScopedFilterCategoryFiltered[]? tracors = this.FilteredTracors;
-        if (tracors == null) {
+        TracorScopedFilterCategoryFiltered[]? listFilteredTracors = this.ListFilteredTracors;
+        if (listFilteredTracors == null) {
             return false;
         }
 
-        for (int idxTracors = 0; idxTracors < tracors.Length; idxTracors++) {
-            ref readonly TracorScopedFilterCategoryFiltered tracorInfo = ref tracors[idxTracors];
+        for (int idxFilteredTracors = 0; idxFilteredTracors < listFilteredTracors.Length; idxFilteredTracors++) {
+            ref readonly TracorScopedFilterCategoryFiltered tracorInfo = ref listFilteredTracors[idxFilteredTracors];
 
             var cmp = StringComparer.OrdinalIgnoreCase.Compare(tracorInfo.SourceName, sourceName);
             if (cmp < 0) {
@@ -44,7 +44,7 @@ public class TracorScopedFilter<T> : ITracorScopedFilter<T> {
     public TracorScopedFilter(ITracorScopedFilterFactory factory) {
         ArgumentNullException.ThrowIfNull(factory);
 
-        this._tracor = factory.CreateTracor(GetCategoryName());
+        this._tracor = factory.CreateTracorScopedFilter(GetCategoryName());
     }
 
     /// <inheritdoc />
