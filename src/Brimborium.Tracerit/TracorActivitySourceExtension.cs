@@ -4,7 +4,7 @@ namespace System.Diagnostics;
 /// The Activity has strange overloads for StartActivity so let's add this for better confusion.
 /// Only one overload, all parameter with default so you can use named parameters.
 /// </summary>
-public static class ActivitySourceExtensíon {
+public static class TracorActivitySourceExtension {
     public static RestoreRootActivity StartRoot(
         this InstrumentationBase? that,
         [CallerMemberName] string name = "",
