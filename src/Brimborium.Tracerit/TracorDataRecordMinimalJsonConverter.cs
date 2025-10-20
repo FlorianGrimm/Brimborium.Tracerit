@@ -2,11 +2,19 @@
 
 public sealed class TracorDataRecordMinimalJsonConverter
     : System.Text.Json.Serialization.JsonConverter<TracorDataRecord> {
+    private readonly TracorDataRecordPool? _TracorDataRecordPool;
+
+    public TracorDataRecordMinimalJsonConverter(
+        TracorDataRecordPool? tracorDataRecordPool
+        ) {
+        this._TracorDataRecordPool = tracorDataRecordPool;
+    }
+
     public override TracorDataRecord? Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options) {
-        return ITracorDataJsonMinimalConverterUtility.Read(ref reader, typeToConvert, options);
+        return ITracorDataJsonMinimalConverterUtility.Read(ref reader, typeToConvert, options,this._TracorDataRecordPool);
     }
 
     public override void Write(
@@ -31,12 +39,25 @@ public sealed class ITracorDataMinimalJsonConverter
 }
 
 public static class ITracorDataJsonMinimalConverterUtility {
-    public static TracorDataRecord? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-        if (reader.TokenType != JsonTokenType.StartArray) { throw new JsonException($"StartArray expected, but {reader.TokenType} found."); }
+    public static TracorDataRecord? Read(
+        ref Utf8JsonReader reader, 
+        Type typeToConvert, 
+        JsonSerializerOptions options,
+        TracorDataRecordPool? tracorDataRecordPool = default) {
+        if (reader.TokenType != JsonTokenType.StartArray) { 
+            throw new JsonException($"StartArray expected, but {reader.TokenType} found."); 
+        }
+
         var depth = reader.CurrentDepth;
         var typeTracorDataProperty = typeof(TracorDataProperty);
         var converterTracorDataProperty = (System.Text.Json.Serialization.JsonConverter<TracorDataProperty>)options.GetConverter(typeTracorDataProperty);
-        TracorDataRecord result = new();
+
+        TracorDataRecord result;
+        if (tracorDataRecordPool is { } pool) {
+            result = pool.Rent();
+        } else { 
+            result = new();
+        }
         TracorIdentitfier tracorIdentitfier = new TracorIdentitfier();
         int state = 0;
         while (reader.Read()) {
@@ -92,7 +113,6 @@ public static class ITracorDataJsonMinimalConverterUtility {
         }
 
         if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
-        // if (!reader.Read()) { throw new JsonException("Content expected"); }
 
         result.TracorIdentitfier = tracorIdentitfier;
         return result;
@@ -142,8 +162,16 @@ public static class ITracorDataJsonMinimalConverterUtility {
 }
 
 public sealed class TracorDataJsonMinimalConverterFactory : JsonConverterFactory {
+    private readonly TracorDataRecordPool? _TracorDataRecordPool;
+    
     private TracorDataRecordMinimalJsonConverter? _TracorDataRecordJsonConverter;
     private ITracorDataMinimalJsonConverter? _ITracorDataJsonConverter;
+
+    public TracorDataJsonMinimalConverterFactory(
+        TracorDataRecordPool? tracorDataRecordPool
+        ) {
+        this._TracorDataRecordPool = tracorDataRecordPool;
+    }
 
     public override bool CanConvert(Type typeToConvert) {
         if (typeof(ITracorData) == typeToConvert) { return true; }
@@ -158,7 +186,7 @@ public sealed class TracorDataJsonMinimalConverterFactory : JsonConverterFactory
             return result;
         }
         if (typeof(TracorDataRecord) == typeToConvert) {
-            var result = (this._TracorDataRecordJsonConverter ??= new TracorDataRecordMinimalJsonConverter());
+            var result = (this._TracorDataRecordJsonConverter ??= new TracorDataRecordMinimalJsonConverter(this._TracorDataRecordPool));
             return result;
         }
         if (typeof(ITracorData).IsAssignableFrom(typeToConvert)) {
@@ -166,5 +194,17 @@ public sealed class TracorDataJsonMinimalConverterFactory : JsonConverterFactory
             return result;
         }
         return default;
+    }
+}
+
+public static class JsonSerializerOptionsExtensions {
+    public static JsonSerializerOptions AddTracorDataMinimalJsonConverter(
+        this JsonSerializerOptions? that,
+        TracorDataRecordPool? tracorDataRecordPool) {
+        that ??= new();
+        that.Converters.Add(new TracorDataRecordMinimalJsonConverter(tracorDataRecordPool));
+        that.Converters.Add(new TracorDataPropertyMinimalJsonConverter());
+        return that;
+
     }
 }

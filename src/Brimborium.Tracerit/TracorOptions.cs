@@ -1,8 +1,22 @@
 ﻿namespace Brimborium.Tracerit;
 
-public class TracorOptions {
+/// <summary>
+/// Tracor Options
+/// </summary>
+public sealed class TracorOptions {
+    /// <summary>
+    /// Tracor is enabled.
+    /// </summary>
     public bool IsEnabled { get; set; }
 
+    /// <summary>
+    /// Log to System.Console
+    /// </summary>
+    public bool IsEmergencyLogging { get; set; }
+
+    /// <summary>
+    /// Get or set ApplicationName
+    /// </summary>
     public string? ApplicationName { get; set; }
 }
 

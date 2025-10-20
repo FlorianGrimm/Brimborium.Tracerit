@@ -3,32 +3,47 @@ namespace Brimborium.Tracerit.Service;
 
 public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     private readonly Lock _LockWrite = new();
-    // is treated as immutable - no need to Lock when reading
-    private List<ITracorCollectiveSink> _ListSubscribedSinks = [];
+    private readonly TracorEmergencyLogging _TracorEmergencyLogging;
 
-    public TracorCollectivePublisher(
-        IEnumerable<ITracorCollectiveSink> listSinks) {
+    // is treated as immutable - no need to Lock when reading
+    private ITracorCollectiveSink[] _ListSubscribedSinks = [];
+
+    public TracorCollectivePublisher(        
+        IEnumerable<ITracorCollectiveSink> listSinks,
+        TracorEmergencyLogging tracorEmergencyLogging
+        ) {
+        this._TracorEmergencyLogging = tracorEmergencyLogging;
+        List<ITracorCollectiveSink> listSubscribedSinks = new(listSinks.Count());
         foreach (var sink in listSinks) {
             if (sink.IsGeneralEnabled()) {
-                this._ListSubscribedSinks.Add(sink);
+                if (tracorEmergencyLogging.IsEnabled) { 
+                    tracorEmergencyLogging.Log($"TracorCollectivePublisher add sink {sink.GetType().Name}");
+                }
+                listSubscribedSinks.Add(sink);
+            } else {
+                if (tracorEmergencyLogging.IsEnabled) {
+                    tracorEmergencyLogging.Log($"TracorCollectivePublisher ignore sink {sink.GetType().Name}");
+                }
             }
         }
+        this._ListSubscribedSinks = listSubscribedSinks.ToArray();
     }
 
     public IDisposable SubscribeCollectiveSink(ITracorCollectiveSink sink) {
         using (this._LockWrite.EnterScope()) {
-            this._ListSubscribedSinks = new(
-                this._ListSubscribedSinks.Concat([sink])
-            );
+            List<ITracorCollectiveSink> listSubscribedSinks = new(this._ListSubscribedSinks.Length + 1);
+            listSubscribedSinks.AddRange(this._ListSubscribedSinks);
+            listSubscribedSinks.Add(sink);
+            this._ListSubscribedSinks = listSubscribedSinks.ToArray();
             System.Threading.Interlocked.MemoryBarrier();
         }
         return new RemoveSubscribedSink(this, sink);
     }
     internal void UnsubscribeCollectiveSink(ITracorCollectiveSink sink) {
         using (this._LockWrite.EnterScope()) {
-            this._ListSubscribedSinks = new(
-                this._ListSubscribedSinks.Where(s => s != sink)
-            );
+            List<ITracorCollectiveSink> listSubscribedSinks = new(this._ListSubscribedSinks.Length);
+            listSubscribedSinks.AddRange(this._ListSubscribedSinks.Where(s => s != sink));            
+            this._ListSubscribedSinks = listSubscribedSinks.ToArray();
             System.Threading.Interlocked.MemoryBarrier();
         }
     }
@@ -46,19 +61,16 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
             if (System.Threading.Interlocked.Exchange(ref this._Sink, null) is { } sink) {
                 this._TracorCollectivePublisher.UnsubscribeCollectiveSink(sink);
             }
-
         }
     }
     public bool IsGeneralEnabled() => true;
 
-    public bool IsEnabled() {
-        return 0 < this._ListSubscribedSinks.Count;
-    }
+    public bool IsEnabled() => (0 < this._ListSubscribedSinks.Length);
 
     public void OnTrace(bool isPublic, ITracorData tracorData) {
         var listSinks = this._ListSubscribedSinks;
-        foreach (var sink in listSinks) {
-            sink.OnTrace(isPublic, tracorData);
+        for (int idx = 0; idx < listSinks.Length; idx++) {
+            listSinks[idx].OnTrace(isPublic, tracorData);
         }
     }
 }

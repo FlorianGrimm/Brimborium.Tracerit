@@ -59,6 +59,7 @@ public static partial class TracorServiceCollectionExtensions {
         Action<TracorOptions>? configureTracor = default,
         Action<TracorDataConvertOptions>? configureConvert = default,
         string tracorScopedFilterSection = "") {
+        servicebuilder.AddSingleton<TracorEmergencyLogging>();
         servicebuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
         servicebuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         servicebuilder.AddSingleton<ITracorServiceSink, DisabledTracorServiceSink>();
@@ -92,6 +93,7 @@ public static partial class TracorServiceCollectionExtensions {
         Action<TracorOptions>? configureTracor = default,
         Action<TracorDataConvertOptions>? configureConvert = default,
         string tracorScopedFilterSection = "") {
+        servicebuilder.AddSingleton<TracorEmergencyLogging>();
         servicebuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
         servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
         servicebuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
@@ -108,13 +110,17 @@ public static partial class TracorServiceCollectionExtensions {
             builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
         });
 
-        var optionsBuilder = servicebuilder.AddOptions<TracorDataConvertOptions>();
-        if (configureConvert is { }) { optionsBuilder.Configure(configureConvert); }
+        {
+            var optionsBuilder = servicebuilder.AddOptions<TracorOptions>();
+            if (configureTracor is { }) { optionsBuilder.Configure(configureTracor); }
+        }
+        {
+            var optionsBuilder = servicebuilder.AddOptions<TracorDataConvertOptions>();
+            if (configureConvert is { }) { optionsBuilder.Configure(configureConvert); }
+        }
 
         return new TracorBuilder(servicebuilder);
     }
-
-
 
     /// <summary>
     /// Add singleton T

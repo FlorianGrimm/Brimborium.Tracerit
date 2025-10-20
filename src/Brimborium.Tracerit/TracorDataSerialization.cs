@@ -1,43 +1,34 @@
-﻿namespace Brimborium.Tracerit;
+﻿using Brimborium.Tracerit.FileSink;
+using System.IO.Compression;
+
+namespace Brimborium.Tracerit;
 
 public static class TracorDataSerialization {
-    /*
-    private static JsonSerializerOptions? _CacheGetSimpleJsonSerializerOptions;
+    public static JsonSerializerOptions GetMinimalJsonSerializerOptions(
+        JsonSerializerOptions? options,
+        TracorDataRecordPool? tracorDataRecordPool
+        ) {
+        options ??= new();
+        options.Converters.Add(new TracorDataJsonMinimalConverterFactory(tracorDataRecordPool));
+        options.Converters.Add(new TracorDataRecordMinimalJsonConverter(tracorDataRecordPool));
+        options.Converters.Add(new TracorDataPropertyMinimalJsonConverter());
 
-    public static JsonSerializerOptions GetSimpleJsonSerializerOptions() {
-        if (_CacheGetJsonSerializerOptions is { } result) { return result; }
-        {
-            result = new();
-            result.Converters.Add(new TracorDataJsonSimpleConverterFactory());
-            result.Converters.Add(new TracorDataRecordSimpleJsonConverter());
-            result.Converters.Add(new TracorDataPropertySimpleJsonConverter());
-
-            _CacheGetJsonSerializerOptions = result;
-            return result;
-        }
+        /*
+        result.Converters.Add(new TracorDataJsonSimpleConverterFactory());
+        result.Converters.Add(new TracorDataRecordSimpleJsonConverter());
+        result.Converters.Add(new TracorDataPropertySimpleJsonConverter());
+        */
+        return options;
     }
-    */
-    private static JsonSerializerOptions? _CacheGetMinimalJsonSerializerOptions;
 
-    public static JsonSerializerOptions GetMinimalJsonSerializerOptions() {
-        if (_CacheGetMinimalJsonSerializerOptions is { } result) { return result; }
-        {
-            result = new();
-            result.Converters.Add(new TracorDataJsonMinimalConverterFactory());
-            result.Converters.Add(new TracorDataRecordMinimalJsonConverter());
-            result.Converters.Add(new TracorDataPropertyMinimalJsonConverter());
-
-            _CacheGetMinimalJsonSerializerOptions = result;
-            return result;
-        }
-    }
 
     public static TracorDataRecordCollection DeserializeSimple(
         string json,
         System.Text.Json.JsonSerializerOptions? options = null) {
-        options ??= GetMinimalJsonSerializerOptions();
+        var usedOptions = GetMinimalJsonSerializerOptions(options, null);
         var listTracorDataRecord = System.Text.Json.JsonSerializer.Deserialize<List<TracorDataRecord>>(
-            json, options);
+            json,
+            usedOptions);
         TracorDataRecordCollection result = new();
         if (listTracorDataRecord is not null) {
             result.ListData.AddRange(listTracorDataRecord);
@@ -48,8 +39,8 @@ public static class TracorDataSerialization {
     public static string SerializeSimple(
         IEnumerable<ITracorData> value,
         System.Text.Json.JsonSerializerOptions? options = null) {
-        options ??= GetMinimalJsonSerializerOptions();
-        var json = System.Text.Json.JsonSerializer.Serialize<IEnumerable<ITracorData>>(value, options);
+        var usedOptions = GetMinimalJsonSerializerOptions(options, null);
+        var json = System.Text.Json.JsonSerializer.Serialize<IEnumerable<ITracorData>>(value, usedOptions);
         return json;
     }
 
@@ -66,6 +57,44 @@ public static class TracorDataSerialization {
             }
         }
         return result;
+    }
+
+    public static Stream? GetReadStream(
+        string logfile) {
+        var compression = FileTracorCollectiveSink.GetCompressionFromFileName(logfile);
+        if (compression is { } compressionValue) {
+            var fileStream = System.IO.File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            if (FileTracorCollectiveCompression.Gzip == compression) {
+                return new GZipStream(fileStream, new ZLibCompressionOptions() { }, leaveOpen: false);
+            }
+            if (FileTracorCollectiveCompression.Brotli == compression) {
+                return new BrotliStream(fileStream, new BrotliCompressionOptions() { }, leaveOpen: false);
+            }
+            return fileStream;
+        } else {
+            return default;
+        }
+    }
+
+    public static async Task DeserializeMinimalJsonlCallbackAsync(
+        string logfile,
+        Action<TracorDataRecord> callback,
+        JsonSerializerOptions options,
+        CancellationToken cancellationToken) {
+        using (var utf8Json = TracorDataSerialization.GetReadStream(logfile)) {
+            if (utf8Json is null) { throw new Exception("Cannot open file"); }
+            using (var splitStream = new Brimborium.JSONLines.SplitStream(utf8Json, false)) {
+                while (splitStream.MoveNextStream()) {
+                    var item = await System.Text.Json.JsonSerializer.DeserializeAsync<TracorDataRecord>(
+                        splitStream,
+                        options,
+                        cancellationToken);
+                    if (item is { }) {
+                        callback(item);
+                    }
+                }
+            }
+        }
     }
 
 #if later

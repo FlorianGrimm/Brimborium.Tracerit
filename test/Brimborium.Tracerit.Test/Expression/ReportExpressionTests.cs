@@ -75,7 +75,10 @@ public class ReportExpressionTests {
         }
         var json = TracorDataSerialization.SerializeSimple(
             reportExpressionResult.ListData,
-            new System.Text.Json.JsonSerializerOptions(TracorDataSerialization.GetMinimalJsonSerializerOptions()) { WriteIndented = true });
+            new System.Text.Json.JsonSerializerOptions(
+                TracorDataSerialization.GetMinimalJsonSerializerOptions(null, null)) {
+                WriteIndented = true
+            });
         await Verify(json);
     }
 }

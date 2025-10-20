@@ -10,6 +10,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     private readonly ITracorScopedFilterFactory _TracorScopedFilterFactory;
     private readonly ITracorDataConvertService _TracorDataConvertService;
     private readonly ILogger _Logger;
+    private readonly TracorEmergencyLogging _TracorEmergencyLogging;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorServiceSink"/> class.
@@ -20,11 +21,13 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
         ITracorCollectivePublisher publisher,
         ITracorScopedFilterFactory tracorScopedFilterFactory,
         ITracorDataConvertService tracorDataConvertService,
-        LazyCreatedLogger<TracorServiceSink> logger) {
+        LazyCreatedLogger<TracorServiceSink> logger,
+        TracorEmergencyLogging tracorEmergencyLogging) {
         this._Publisher = publisher;
         this._TracorScopedFilterFactory = tracorScopedFilterFactory;
         this._TracorDataConvertService = tracorDataConvertService;
         this._Logger = logger;
+        this._TracorEmergencyLogging = tracorEmergencyLogging;
     }
 
     public ITracorScopedFilterFactory GetTracorScopedFilterFactory() {

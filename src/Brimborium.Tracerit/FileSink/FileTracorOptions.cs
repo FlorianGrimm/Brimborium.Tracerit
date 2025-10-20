@@ -37,6 +37,8 @@ public sealed class FileTracorOptions {
     /// </summary>
     public TimeSpan FlushPeriod { get; set; } = TimeSpan.FromSeconds(1);
 
+    public string? Compression { get; set; }
+
     /// <summary>
     /// If enabled periodical will checked if the old files should be deleted.
     /// </summary>

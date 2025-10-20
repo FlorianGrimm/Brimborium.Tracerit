@@ -70,6 +70,7 @@ internal sealed class TracorLogger : ILogger {
             if (!this._IsAllowed) {
                 return;
             }
+            DateTime utcNow = DateTime.UtcNow;
 
             var activity = Activity.Current;
             string activityTraceId;
@@ -98,7 +99,7 @@ internal sealed class TracorLogger : ILogger {
                     state,
                     exception);
                 loggerTracorData.TracorIdentitfier = this._IdChildCache.Child(eventId.ToString());
-                loggerTracorData.Timestamp = DateTime.UtcNow;
+                loggerTracorData.Timestamp = utcNow;
                 this._Publisher.OnTrace(true, loggerTracorData);
             }
         } catch {

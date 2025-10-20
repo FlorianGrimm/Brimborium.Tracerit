@@ -32,7 +32,7 @@ public partial class Program {
         StartupActions startupActions
         ) {
         var builder = WebApplication.CreateBuilder(args);
-        builder.Logging.AddConfiguration(
+        _ = builder.Logging.AddConfiguration(
             builder.Configuration.GetSection("Logging"));
 
         // Add services to the container.
@@ -98,6 +98,9 @@ public partial class Program {
 
         var app = builder.Build();
 
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Start App {MachineName}", System.Environment.MachineName);
+
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment()) {
             app.UseExceptionHandler("/Error");
@@ -121,7 +124,6 @@ public partial class Program {
 
         app.UseAuthorization();
 
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
         app.MapGet("/ping", (HttpContext httpContext) => {
             var now = System.DateTimeOffset.Now;
             var result = $"pong {now:u}";

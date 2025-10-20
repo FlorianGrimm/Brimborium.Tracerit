@@ -176,7 +176,7 @@ public partial struct TracorDataProperty {
 
     public readonly bool TryGetStringValue(out string value) {
         if (this.TypeValue == TracorDataPropertyTypeValue.String) {
-            value = this.InnerTextValue;
+            value = this.InnerTextValue ?? string.Empty;
             return true;
         }
         value = string.Empty;

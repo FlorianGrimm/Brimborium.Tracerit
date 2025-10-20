@@ -310,6 +310,10 @@ dotnet_diagnostic.IDE0066.severity = none
 dotnet_style_prefer_simplified_boolean_expressions = false
 dotnet_diagnostic.IDE0075.severity = none
 
+[*.{cs,vb,html}]
+spelling_languages = en-us,de-de
+spelling_error_severity = information
+spelling_exclusion_path = .\exclusion.dic
 
 # Verify
 [*.{received,verified}.{txt}]
@@ -320,3 +324,4 @@ indent_style = unset
 insert_final_newline = false
 tab_width = unset
 trim_trailing_whitespace = false
+

@@ -91,7 +91,9 @@ public static class TracorBuilderExtension {
         tracorBuilder.Services.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
 
         var configurationSection = configuration;
-        tracorBuilder.Services.AddSingleton<TesttimeTracorActivityListener>((IServiceProvider serviceProvider) => TesttimeTracorActivityListener.Create(serviceProvider, configuration));
+        tracorBuilder.Services.AddSingleton<TesttimeTracorActivityListener>(
+            (IServiceProvider serviceProvider) => TesttimeTracorActivityListener.Create(
+                serviceProvider, configuration));
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>(
             (sp) => sp.GetRequiredService<TesttimeTracorActivityListener>());
 
@@ -130,8 +132,13 @@ public static class TracorBuilderExtension {
 
     internal static ITracorBuilder AddFileTracorCollectiveSinkServices(
         this ITracorBuilder tracorBuilder) {
-        tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
-        tracorBuilder.Services.Add(ServiceDescriptor.Transient(typeof(ITracorSink<>), typeof(TracorSink<>)));
+        //tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
+        tracorBuilder.Services.AddSingleton<FileTracorCollectiveSink>();
+        tracorBuilder.Services.Add(
+            ServiceDescriptor.Singleton<ITracorCollectiveSink>(
+                static (IServiceProvider sp) => sp.GetRequiredService<FileTracorCollectiveSink>()));
+        tracorBuilder.Services.Add(ServiceDescriptor.Transient(
+            typeof(ITracorSink<>), typeof(TracorSink<>)));
         return tracorBuilder;
     }
 
@@ -153,7 +160,6 @@ public static class TracorBuilderExtension {
         this ITracorBuilder tracorBuilder,
         IConfigurationRoot? configuration = default,
         Action<FileTracorOptions>? configure = default) {
-        tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
         var optionsBuilder = tracorBuilder.Services.AddOptions<FileTracorOptions>();
         if (configuration is { }) {
             optionsBuilder.Bind(GetConfigurationTracorSinkFileSection(configuration));
@@ -169,7 +175,6 @@ public static class TracorBuilderExtension {
         this ITracorBuilder tracorBuilder,
         IConfiguration? configuration = default,
         Action<FileTracorOptions>? configure = default) {
-        tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
         var optionsBuilder = tracorBuilder.Services.AddOptions<FileTracorOptions>();
         if (configuration is { }) {
             optionsBuilder.Bind(configuration);

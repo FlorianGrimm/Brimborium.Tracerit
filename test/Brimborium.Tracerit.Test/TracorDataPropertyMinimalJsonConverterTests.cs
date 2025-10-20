@@ -22,7 +22,7 @@ public class TracorDataPropertyMinimalJsonConverterTests {
     public async Task SerializeTracorDataRecord() {
         TracorDataRecord given = getTestData();
         var options = new JsonSerializerOptions(
-            TracorDataSerialization.GetMinimalJsonSerializerOptions()
+            TracorDataSerialization.GetMinimalJsonSerializerOptions(null, null)
             ) {
             WriteIndented = true
         };
@@ -30,12 +30,12 @@ public class TracorDataPropertyMinimalJsonConverterTests {
         await Verify(act);
     }
 
-  
+
     [Test]
     public async Task DeSerializeTracorDataRecord() {
         TracorDataRecord givenData = getTestData();
         var options = new JsonSerializerOptions(
-            TracorDataSerialization.GetMinimalJsonSerializerOptions()
+            TracorDataSerialization.GetMinimalJsonSerializerOptions(null, null)
             ) {
             WriteIndented = true
         };
