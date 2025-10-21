@@ -112,12 +112,20 @@ public readonly struct OnTraceStepCurrentContext {
         forkState[propertyName] = propertyValue;
         return this._Modifications.TryGetFork(forkState);
     }
+    
     public readonly void SetStateSuccessfull(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
-        state.Successfull = true;
-        if (validatorExpression.Label is { } label) {
-            this._ExecutionState.ListSuccessState.Add(label);
-        }
+        state.Result = TracorValidatorOnTraceResult.Successfull;
     }
 
-    // public void SuccessFull() {     }
+    public readonly void SetStateFailed(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
+        state.Result = TracorValidatorOnTraceResult.Failed;
+    }
+
+    public readonly TracorValidatorOnTraceResult SetStateComplete(
+        IValidatorExpression validatorExpression, 
+        ValidatorExpressionState state, 
+        TracorValidatorOnTraceResult result) {
+        state.Result = result;
+        return result;
+    }
 }

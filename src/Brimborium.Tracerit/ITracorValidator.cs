@@ -4,6 +4,8 @@
 /// Validates trace data against defined expressions and manages validation paths.
 /// </summary>
 public interface ITracorValidator : ITracorCollectiveSink {
+    ITracorValidatorPath? GetExisting(IValidatorExpression step);
+
     /// <summary>
     /// Adds a validation expression with optional global state and returns a validation path.
     /// </summary>
@@ -11,13 +13,20 @@ public interface ITracorValidator : ITracorCollectiveSink {
     /// <param name="globalState">Optional global state to initialize the validation with.</param>
     /// <returns>A validation path that can be used to track the validation progress.</returns>
     ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default);
-
 }
 
 /// <summary>
 /// Represents a validation path that tracks the progress of validation expressions.
 /// </summary>
 public interface ITracorValidatorPath : IDisposable {
+    IValidatorExpression Step { get; }
+
+    bool EnableFinished { get; set; }
+
+    IDisposable AddFinishCallback(
+       Action<ITracorValidatorPath, OnTraceStepExecutionState> callback
+       );
+
     /// <summary>
     /// Processes a trace event for this validation path.
     /// </summary>
@@ -43,7 +52,7 @@ public interface ITracorValidatorPath : IDisposable {
     /// Gets a list of all currently running validation states.
     /// </summary>
     /// <returns>A list of running validation states.</returns>
-    List<TracorGlobalState> GetListRunnging();
+    List<TracorGlobalState> GetListRunning();
 
     /// <summary>
     /// Gets a list of all finished validation states.
@@ -57,12 +66,12 @@ public interface ITracorValidatorPath : IDisposable {
     /// <param name="searchSuccessState">The success state to search for.</param>
     /// <param name="timeout">The maximum time to wait for the running state.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a running validation state if found; otherwise, null.</returns>
-    Task<TracorGlobalState?> GetRunngingAsync(string searchSuccessState, TimeSpan timeout = default);
+    Task<TracorGlobalState?> GetRunningAsync(string searchSuccessState, TimeSpan timeout = default);
 
     /// <summary>
     /// Gets a running validation state that matches the specified success state.
     /// </summary>
     /// <param name="searchSuccessState">The success state to search for.</param>
     /// <returns>A running validation state if found; otherwise, null.</returns>
-    TracorGlobalState? GetRunnging(string searchSuccessState);
+    TracorGlobalState? GetRunning(string searchSuccessState);
 }

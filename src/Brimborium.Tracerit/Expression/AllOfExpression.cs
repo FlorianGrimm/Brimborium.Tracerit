@@ -32,12 +32,12 @@ public sealed class AllOfExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<OneOfExpressionState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
         for (var idx = 0; idx < this._ListChild.Length; idx++) {
             if (state.ChildSuccessfull.Contains(idx)) {
@@ -45,16 +45,16 @@ public sealed class AllOfExpression : ValidatorExpression {
             } else {
                 var child = this._ListChild[idx];
                 var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
-                if (OnTraceResult.Successfull == childResult) {
+                if (TracorValidatorOnTraceResult.Successfull == childResult) {
                     state.ChildSuccessfull.Add(idx);
                     if (state.ChildSuccessfull.Count == this._ListChild.Length) {
                         currentContext.SetStateSuccessfull(this, state);
-                        return OnTraceResult.Successfull;
+                        return TracorValidatorOnTraceResult.Successfull;
                     }
                 }
             }
         }
-        return OnTraceResult.None;
+        return TracorValidatorOnTraceResult.None;
     }
 
     internal sealed class OneOfExpressionState : ValidatorExpressionState {

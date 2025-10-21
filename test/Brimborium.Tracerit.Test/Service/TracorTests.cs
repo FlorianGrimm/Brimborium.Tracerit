@@ -207,20 +207,20 @@ public class TracorTests {
             this._condition = condition;
         }
 
-        public override OnTraceResult OnTrace(
+        public override TracorValidatorOnTraceResult OnTrace(
             ITracorData tracorData, 
             OnTraceStepCurrentContext currentContext) {
             var state = currentContext.GetState<TestMatchState>();
-            if (state.Successfull) {
-                return OnTraceResult.Successfull;
+            if (state.Result.IsComplete()) {
+                return state.Result;
             }
 
             if (this._condition(tracorData.TracorIdentitfier, tracorData, currentContext)) {
                 currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+                return TracorValidatorOnTraceResult.Successfull;
             }
 
-            return OnTraceResult.None;
+            return TracorValidatorOnTraceResult.None;
         }
 
         private class TestMatchState : ValidatorExpressionState {

@@ -1,4 +1,6 @@
-﻿namespace ReadAndWrite;
+﻿using System.Diagnostics;
+
+namespace ReadAndWrite;
 
 public class Program {
     //public static TimeSpan TimeSpanPeriod = TimeSpan.FromSeconds(2);
@@ -84,30 +86,35 @@ public class ControlService {
 }
 
 public class WriterService : BackgroundService {
+    private readonly ReadAndWriteInstrumentation _ReadAndWriteInstrumentation;
     private readonly ControlService _ControlService;
     private readonly FileTracorCollectiveSink _FileTracorCollectiveSink;
     private readonly ILogger<WriterService> _Logger;
 
     public WriterService(
+        ReadAndWriteInstrumentation readAndWriteInstrumentation,
         ControlService controlService,
         FileTracorCollectiveSink fileTracorCollectiveSink,
         ILogger<WriterService> logger
         ) {
+        this._ReadAndWriteInstrumentation = readAndWriteInstrumentation;
         this._ControlService = controlService;
         this._FileTracorCollectiveSink = fileTracorCollectiveSink;
         this._Logger = logger;
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
-            for (int outerloop = 0; outerloop < 1000; outerloop++) {
-                int sum = 0;
-                for (int innerloop = 0; innerloop < 1000; innerloop++) {
-                    this._Logger.WriterInnerLoop(innerloop);
-                    sum += innerloop;
+            for (int outerloop = 0; outerloop < 10; outerloop++) {
+                using (var root = this._ReadAndWriteInstrumentation.ActivitySource.StartRoot()) {
+                    int sum = 0;
+                    for (int innerloop = 0; innerloop < 1000; innerloop++) {
+                        this._Logger.WriterInnerLoop(innerloop);
+                        sum += innerloop;
+                    }
+                    this._Logger.WriterInnerSum(sum);
+                    await this._FileTracorCollectiveSink.FlushAsync();
+                    await Task.Delay(Program.TimeSpanPeriod);
                 }
-                this._Logger.WriterInnerSum(sum);
-                await this._FileTracorCollectiveSink.FlushAsync();
-                await Task.Delay(Program.TimeSpanPeriod);
             }
         } finally {
             await this._ControlService.WriterDone();

@@ -41,34 +41,34 @@ public sealed class SequenceExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<SequenceStepState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
 
         var childIndex = state.ChildIndex;
         if (childIndex < this._ListChild.Length) {
             var childContext = currentContext.GetChildContext(childIndex);
             var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
-            if (OnTraceResult.Successfull == childResult) {
+            if (TracorValidatorOnTraceResult.Successfull == childResult) {
                 childIndex++;
                 if (childIndex < this._ListChild.Length) {
                     state.ChildIndex = childIndex;
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 } else {
                     state.ChildIndex = this._ListChild.Length;
                     currentContext.SetStateSuccessfull(this, state);
-                    return OnTraceResult.Successfull;
+                    return TracorValidatorOnTraceResult.Successfull;
                 }
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         } else {
             currentContext.SetStateSuccessfull(this, state);
-            return OnTraceResult.Successfull;
+            return TracorValidatorOnTraceResult.Successfull;
         }
     }
 

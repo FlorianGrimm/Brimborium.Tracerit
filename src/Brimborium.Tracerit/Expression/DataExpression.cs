@@ -17,12 +17,12 @@ public sealed class DataExpression : ValidatorExpression {
         this._Expected = expected;
     }
 
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<DataStepState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
         // TODO: here
         var childIndex = state.DataIndex;
@@ -36,18 +36,18 @@ public sealed class DataExpression : ValidatorExpression {
                 childIndex++;
                 if (childIndex < count) {
                     state.DataIndex = childIndex;
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 } else {
                     state.DataIndex = count;
                     currentContext.SetStateSuccessfull(this, state);
-                    return OnTraceResult.Successfull;
+                    return TracorValidatorOnTraceResult.Successfull;
                 }
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         } else {
             currentContext.SetStateSuccessfull(this, state);
-            return OnTraceResult.Successfull;
+            return TracorValidatorOnTraceResult.Successfull;
         }
     }
 

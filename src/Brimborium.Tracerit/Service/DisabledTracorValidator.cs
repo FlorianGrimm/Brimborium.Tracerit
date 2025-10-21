@@ -9,8 +9,10 @@ internal sealed partial class DisabledTracorValidator : ITracorValidator {
         this._Logger = logger;
     }
 
+    public ITracorValidatorPath? GetExisting(IValidatorExpression step) => default;
+
     public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default) {
-        return new RuntimeTracorValidatorPath(step);
+        return new DisabledTracorValidatorPath(step);
     }
     public bool IsGeneralEnabled() => false;
 
@@ -25,26 +27,36 @@ internal sealed partial class DisabledTracorValidator : ITracorValidator {
 
 }
 
-internal sealed class RuntimeTracorValidatorPath : ITracorValidatorPath {
+internal sealed class DisabledTracorValidatorPath : ITracorValidatorPath {
     private readonly IValidatorExpression _Step;
 
-    public RuntimeTracorValidatorPath(IValidatorExpression step) {
+    public DisabledTracorValidatorPath(IValidatorExpression step) {
         this._Step = step;
     }
 
-    public void OnTrace(ITracorData tracorData) {
-    }
+    public IValidatorExpression Step => this._Step;
 
-    public TracorGlobalState? GetRunnging(string searchSuccessState) => default;
-    public Task<TracorGlobalState?> GetRunngingAsync(string searchSuccessState, TimeSpan timeout = default) => Task.FromResult(default(TracorGlobalState));
+    public bool EnableFinished { get; set; }
+
+    public void OnTrace(ITracorData tracorData) { }
+
+    public TracorGlobalState? GetRunning(string searchSuccessState) => default;
+    public Task<TracorGlobalState?> GetRunningAsync(string searchSuccessState, TimeSpan timeout = default) => Task.FromResult(default(TracorGlobalState));
 
     public TracorGlobalState? GetFinished(Predicate<TracorGlobalState>? predicate = default) => default;
     public Task<TracorGlobalState?> GetFinishedAsync(Predicate<TracorGlobalState>? predicate = default, TimeSpan timeSpan = default) => Task.FromResult(default(TracorGlobalState));
 
-    public List<TracorGlobalState> GetListRunnging() => [];
+    public List<TracorGlobalState> GetListRunning() => [];
     public List<TracorGlobalState> GetListFinished() => [];
 
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
     void IDisposable.Dispose() { }
+
+    public IDisposable AddFinishCallback(Action<ITracorValidatorPath, OnTraceStepExecutionState> callback) {
+        return new DisabledDisposable();
+    }
+    class DisabledDisposable : IDisposable {
+        public void Dispose() { }
+    }
 }

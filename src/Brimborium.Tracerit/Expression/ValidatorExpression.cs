@@ -25,5 +25,5 @@ public abstract class ValidatorExpression : IValidatorExpression {
     }
 
     /// <inheritdoc />
-    public abstract OnTraceResult OnTrace(ITracorData tracorData, OnTraceStepCurrentContext onTraceStepCurrentContext);
+    public abstract TracorValidatorOnTraceResult OnTrace(ITracorData tracorData, OnTraceStepCurrentContext onTraceStepCurrentContext);
 }

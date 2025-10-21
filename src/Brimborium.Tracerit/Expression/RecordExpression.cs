@@ -9,7 +9,7 @@ public sealed class RecordExpression : ValidatorExpression {
         this._Child = child;
     }
 
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         if (tracorData is TracorDataRecord tracorDataRecord) {

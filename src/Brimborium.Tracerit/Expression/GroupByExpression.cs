@@ -15,20 +15,20 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         if (string.IsNullOrEmpty(this.PropertyName)) {
-            return OnTraceResult.None;
+            return TracorValidatorOnTraceResult.None;
         }
         if (!tracorData.TryGetPropertyValue(this.PropertyName, out var propertyValue)) {
-            return OnTraceResult.None;
+            return TracorValidatorOnTraceResult.None;
         }
         if (propertyValue is null) {
-            return OnTraceResult.None;
+            return TracorValidatorOnTraceResult.None;
         }
         if (propertyValue is not T propertyValueTyped) {
-            return OnTraceResult.None;
+            return TracorValidatorOnTraceResult.None;
         }
         if (currentContext.ForkState.TryGetValue(this.PropertyName, out var globalStateValue)) {
             if (globalStateValue is T globalStateValueTyped) {
@@ -36,17 +36,17 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
                 if (isEqual) {
                     // continue this is a bound fork
                 } else {
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 }
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         } else {
             {
                 // is their a fork that handels this?
                 var fork = currentContext.TryGetFork(this.PropertyName, propertyValueTyped);
                 if (fork is not null) {
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 }
             }
             currentContext.CreateFork(this.PropertyName, propertyValueTyped, this.EqualityComparer);
@@ -55,17 +55,16 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
         var state = currentContext.GetState<GroupByExpressionState>();
         if (this.Expression is { } expression) {
             var childResult = expression.OnTrace(tracorData, currentContext.GetChildContext(0));
-            if (OnTraceResult.Successfull == childResult) {
-                currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+            if (childResult.IsComplete()) {
+                return currentContext.SetStateComplete(this, state, childResult);
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         } else {
             // the unbound groupby never terminates
             // the bound groupby terminates
             currentContext.SetStateSuccessfull(this, state);
-            return OnTraceResult.Successfull;
+            return TracorValidatorOnTraceResult.Successfull;
         }
     }
 

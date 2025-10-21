@@ -47,7 +47,7 @@ public class ExpressionTests {
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunnging()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
     }
 
     [Test]
@@ -99,7 +99,7 @@ public class ExpressionTests {
         // Act
         validatorPath.OnTrace(new ValueTracorData<string>("first") { TracorIdentitfier = callee });
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunnging()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
 
         validatorPath.OnTrace(new ValueTracorData<string>("second") { TracorIdentitfier = callee });
 
@@ -233,7 +233,7 @@ public class ExpressionTests {
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunnging()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
     }
 
     [Test]

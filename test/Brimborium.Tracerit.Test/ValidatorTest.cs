@@ -131,28 +131,28 @@ public class ValidatorTest {
         tracor.TracePublic("something", LogLevel.Information, "test", "something");
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation1);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation3);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(3);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(3);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
         tracor.TracePublic("else", LogLevel.Information, "test", "else");
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation2);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation4);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
         }
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation5);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
         }
         {
@@ -211,28 +211,28 @@ public class ValidatorTest {
         tracor.TracePublic("something", LogLevel.Information, "test", "something");
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation1);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation3);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
         tracor.TracePublic("else", LogLevel.Information, "test", "else");
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation2);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation4);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(0);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(0);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
         tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation5);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(0);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(0);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
         {

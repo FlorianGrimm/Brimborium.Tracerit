@@ -3,5 +3,5 @@
 public class ValidatorExpressionState {
     protected ValidatorExpressionState() { }
 
-    public bool Successfull;
+    public TracorValidatorOnTraceResult Result = TracorValidatorOnTraceResult.None;
 }

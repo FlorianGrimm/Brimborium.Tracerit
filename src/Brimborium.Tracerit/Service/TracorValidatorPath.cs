@@ -9,6 +9,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
     private ImmutableArray<OnTraceStepExecutionState> _ListRunningExecutionState;
     private readonly List<OnTraceStepExecutionState> _ListFinishedExecutionState = new();
     private TaskCompletionSource<TracorValidatorPath> _TcsFinishedExecutionState = new();
+    private ImmutableArray<CallbackDisposable> _ListFinishCallback = ImmutableArray<CallbackDisposable>.Empty;
 
     public TracorValidatorPath(
         IValidatorExpression step,
@@ -22,6 +23,37 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         this._Modifications = new TracorValidatorPathModifications(this);
     }
 
+    public bool EnableFinished { get; set; } = true;
+
+    public IDisposable AddFinishCallback(
+        Action<ITracorValidatorPath, OnTraceStepExecutionState> callback
+        ) {
+        var result = new CallbackDisposable(callback);
+        this._ListFinishCallback = this._ListFinishCallback.Add(result);
+        return result;
+    }
+
+    class CallbackDisposable : IDisposable {
+        public bool IsDisposed;
+        private Action<ITracorValidatorPath, OnTraceStepExecutionState>? _Callback;
+
+        public CallbackDisposable(
+            Action<ITracorValidatorPath, OnTraceStepExecutionState> callback
+            ) {
+            this._Callback = callback;
+        }
+
+        public void Execute(ITracorValidatorPath tracorValidatorPath, OnTraceStepExecutionState runningContextState) {
+            if (this.IsDisposed) { return; }
+            if (this._Callback is not { } callback) { return; }
+
+            this._Callback(tracorValidatorPath, runningContextState);
+        }
+
+        public void Dispose() {
+            this.IsDisposed = true;
+        }
+    }
     public IValidatorExpression Step => this._Step;
 
     private ValidatorStepIdentifier? _RootIdentifier;
@@ -32,7 +64,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         foreach (var runningContextState in listRunningExecutionState) {
             var currentContext = new OnTraceStepCurrentContext(rootIdentifier, runningContextState, this._Modifications, this._LoggerUtility);
             var childResult = this._Step.OnTrace(tracorData, currentContext);
-            if (OnTraceResult.Successfull == childResult) {
+            if (TracorValidatorOnTraceResult.Successfull == childResult) {
                 this.HandleFinish(runningContextState);
             }
         }
@@ -40,14 +72,35 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
 
     private void HandleFinish(OnTraceStepExecutionState runningContextState) {
         if (this._ListRunningExecutionState.Contains(runningContextState)) {
-            using (this._Lock.EnterScope()) {
-                this._ListRunningExecutionState = this._ListRunningExecutionState.Remove(runningContextState);
-                this._ListFinishedExecutionState.Add(runningContextState);
-            }
+            var listFinishCallback = this._ListFinishCallback;
+            if (!this.EnableFinished && 0 < listFinishCallback.Length) {
+                using (this._Lock.EnterScope()) {
+                    this._ListRunningExecutionState = this._ListRunningExecutionState.Remove(runningContextState);
+                }
 
-            var oldTcs = this._TcsFinishedExecutionState;
-            this._TcsFinishedExecutionState = new TaskCompletionSource<TracorValidatorPath>();
-            oldTcs.TrySetResult(this);
+                if (0 < listFinishCallback.Length) {
+                    foreach (var item in listFinishCallback) {
+                        item.Execute(this, runningContextState);
+                    }
+                }
+            } else {
+                using (this._Lock.EnterScope()) {
+                    this._ListRunningExecutionState = this._ListRunningExecutionState.Remove(runningContextState);
+                    this._ListFinishedExecutionState.Add(runningContextState);
+                }
+
+                if (EnableFinished) {
+                    var oldTcs = this._TcsFinishedExecutionState;
+                    this._TcsFinishedExecutionState = new TaskCompletionSource<TracorValidatorPath>();
+                    oldTcs.TrySetResult(this);
+                }
+
+                if (0 < listFinishCallback.Length) {
+                    foreach (var item in listFinishCallback) {
+                        item.Execute(this, runningContextState);
+                    }
+                }
+            }
         }
     }
 
@@ -69,21 +122,21 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         return null;
     }
 
-    public TracorGlobalState? GetRunnging(string searchSuccessState) {
+    public TracorGlobalState? GetRunning(string searchSuccessState) {
         foreach (var state in this._ListRunningExecutionState) {
             if (state.GlobalState is { } globalState) {
-                if (state.ListSuccessState.Contains(searchSuccessState)) {
-                    return globalState;
-                }
+                //if (state.DictStateByStep.ContainsKey(new ValidatorStepIdentifier( searchSuccessState))) {
+                //    return globalState;
+                //}
             }
         }
         return null;
     }
 
-    public async Task<TracorGlobalState?> GetRunngingAsync(string searchSuccessState, TimeSpan timeout = default) {
+    public async Task<TracorGlobalState?> GetRunningAsync(string searchSuccessState, TimeSpan timeout = default) {
         {
             // quick
-            var result = this.GetRunnging(searchSuccessState);
+            var result = this.GetRunning(searchSuccessState);
             if (result is not null) {
                 return result;
             }
@@ -97,13 +150,13 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
                 }
             }
         }
-        {
+        if (EnableFinished) {
             using (var cts = new CancellationTokenSource()) {
                 var taskExecution = this._TcsFinishedExecutionState.Task;
                 // wait
                 var limit = DateTime.UtcNow + timeout;
                 while (DateTime.UtcNow < limit) {
-                    var result = this.GetRunnging(searchSuccessState);
+                    var result = this.GetRunning(searchSuccessState);
                     if (result is not null) {
                         return result;
                     }
@@ -147,7 +200,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
                 }
             }
         }
-        {
+        if (EnableFinished) {
             using (var cts = new CancellationTokenSource()) {
                 var taskExecution = this._TcsFinishedExecutionState.Task;
                 // wait
@@ -168,7 +221,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         return null;
     }
 
-    public List<TracorGlobalState> GetListRunnging() {
+    public List<TracorGlobalState> GetListRunning() {
         List<TracorGlobalState> result = new();
         foreach (var state in this._ListRunningExecutionState) {
             result.Add(state.GlobalState);

@@ -185,4 +185,18 @@ public static class TracorBuilderExtension {
         return tracorBuilder.AddFileTracorCollectiveSinkServices();
     }
 
+
+    public static ITracorBuilder AddTracorValidatorService(
+        this ITracorBuilder tracorBuilder,
+        Action<TracorValidatorServiceOptions>? configure = default) {
+        tracorBuilder.Services.AddSingleton<TracorValidatorService>();
+
+        var optionsBuilder = tracorBuilder.Services.AddOptions<TracorValidatorServiceOptions>();
+        if (configure is { }) {
+            optionsBuilder.Configure(configure);
+        }
+
+        return tracorBuilder;
+    }
+
 }

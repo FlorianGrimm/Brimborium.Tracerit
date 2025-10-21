@@ -31,6 +31,15 @@ public sealed class TracorValidator : ITracorValidator {
         return 0 < this._ListValidatorPath.Length;
     }
 
+    public ITracorValidatorPath? GetExisting(IValidatorExpression step) {
+        foreach (var validatorPath in this._ListValidatorPath) {
+            if (ReferenceEquals(step, validatorPath.Step)) {
+                return validatorPath;
+            }
+        }
+        return default;
+    }
+
     public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState) {
         if (this._LoggerCondition is null || this._LoggerUtility is null) {
             this._LoggerCondition ??= this._LoggerFactory.CreateLogger(typeof(AlwaysCondition).Namespace!);

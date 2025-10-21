@@ -46,12 +46,12 @@ public sealed class MatchExpression : ValidatorExpression {
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<MatchStepState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
         if (!state.Matched) {
             var matched = this.Condition.DoesMatch(tracorData, currentContext);
@@ -59,12 +59,12 @@ public sealed class MatchExpression : ValidatorExpression {
                 state.Matched = true;
                 if (0 == this._ListChild.Length) {
                     currentContext.SetStateSuccessfull(this, state);
-                    return OnTraceResult.Successfull;
+                    return TracorValidatorOnTraceResult.Successfull;
                 } else {
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 }
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         }
         {
@@ -72,22 +72,22 @@ public sealed class MatchExpression : ValidatorExpression {
             if (childIndex < this._ListChild.Length) {
                 var childContext = currentContext.GetChildContext(childIndex);
                 var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
-                if (OnTraceResult.Successfull == childResult) {
+                if (TracorValidatorOnTraceResult.Successfull == childResult) {
                     childIndex++;
                     if (childIndex < this._ListChild.Length) {
                         state.ChildIndex = childIndex;
-                        return OnTraceResult.None;
+                        return TracorValidatorOnTraceResult.None;
                     } else {
                         state.ChildIndex = this._ListChild.Length;
                         currentContext.SetStateSuccessfull(this, state);
-                        return OnTraceResult.Successfull;
+                        return TracorValidatorOnTraceResult.Successfull;
                     }
                 } else {
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 }
             } else {
                 currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+                return TracorValidatorOnTraceResult.Successfull;
             }
         }
     }

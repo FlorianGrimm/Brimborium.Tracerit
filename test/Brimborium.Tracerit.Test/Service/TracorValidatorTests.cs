@@ -63,7 +63,7 @@ public class TracorValidatorTests {
 
         // Act
         validatorPath.OnTrace(new ValueTracorData<string>("first") { TracorIdentitfier = callee });
-        var runningStates = validatorPath.GetListRunnging();
+        var runningStates = validatorPath.GetListRunning();
 
         // Assert
         await Assert.That(runningStates).HasCount().EqualTo(1);
@@ -91,7 +91,7 @@ public class TracorValidatorTests {
 
         // Assert
         await Assert.That(finishedStates).HasCount().EqualTo(1);
-        await Assert.That(validatorPath.GetListRunnging()).IsEmpty();
+        await Assert.That(validatorPath.GetListRunning()).IsEmpty();
     }
 
     [Test]
@@ -230,8 +230,8 @@ public class TracorValidatorTests {
             // Act
             validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
 
-            var runningStateTestLabel = validatorPath.GetRunnging("TestLabel");
-            var runningStateFirstMatch = validatorPath.GetRunnging("FirstMatch");
+            var runningStateTestLabel = validatorPath.GetRunning("TestLabel");
+            var runningStateFirstMatch = validatorPath.GetRunning("FirstMatch");
 
             // Assert
             await Assert.That(runningStateTestLabel).IsNull();

@@ -48,28 +48,28 @@ public sealed class FilterExpression : ValidatorExpression {
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<FilterExpressionState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
 
         if (this.Condition.DoesMatch(tracorData, currentContext)) {
             for (var idx = 0; idx < this._ListChild.Length; idx++) {
                 var child = this._ListChild[idx];
                 var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
-                if (OnTraceResult.Successfull == childResult) {
+                if (TracorValidatorOnTraceResult.Successfull == childResult) {
                     state.ChildSuccessfull.Add(idx);
                 }
             }
             if (state.ChildSuccessfull.Count == this._ListChild.Length) {
                 currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+                return TracorValidatorOnTraceResult.Successfull;
             }
         }
-        return OnTraceResult.None;
+        return TracorValidatorOnTraceResult.None;
     }
 
     /// <summary>

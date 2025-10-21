@@ -18,22 +18,22 @@ public sealed class OneOfExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<OneOfExpressionState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
         for (var idx = 0; idx < this._ListChild.Length; idx++) {
             var child = this._ListChild[idx];
             var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
-            if (OnTraceResult.Successfull == childResult) {
+            if (TracorValidatorOnTraceResult.Successfull == childResult) {
                 currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+                return TracorValidatorOnTraceResult.Successfull;
             }
         }
-        return OnTraceResult.None;
+        return TracorValidatorOnTraceResult.None;
     }
 
     internal sealed class OneOfExpressionState : ValidatorExpressionState {

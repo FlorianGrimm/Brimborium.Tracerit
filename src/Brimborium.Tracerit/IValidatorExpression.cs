@@ -21,20 +21,5 @@ public interface IValidatorExpression {
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    OnTraceResult OnTrace(ITracorData tracorData, OnTraceStepCurrentContext currentContext);
-}
-
-/// <summary>
-/// Represents the result of processing a trace event in a validator expression.
-/// </summary>
-public enum OnTraceResult {
-    /// <summary>
-    /// No specific result or the validation is still in progress.
-    /// </summary>
-    None,
-
-    /// <summary>
-    /// The validation was successful.
-    /// </summary>
-    Successfull
+    TracorValidatorOnTraceResult OnTrace(ITracorData tracorData, OnTraceStepCurrentContext currentContext);
 }
