@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ReadAndWrite;
 
 public class Program {
-    //public static TimeSpan TimeSpanPeriod = TimeSpan.FromSeconds(2);
-    public static TimeSpan TimeSpanPeriod = TimeSpan.FromMilliseconds(1);
+    public static TimeSpan TimeSpanPeriod = TimeSpan.FromSeconds(2);
+
     public static async Task<int> Main(string[] args) {
         try {
             await RunAsync(args).ConfigureAwait(false);
@@ -38,11 +39,16 @@ public class Program {
             .AddFileTracorCollectiveSinkDefault(
                configuration: builder.Configuration,
                configure: (fileTracorOptions) => {
-                   fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
+                   fileTracorOptions.OnGetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
                })
             .AddTracorActivityListener(tracorEnabled)
             .AddTracorInstrumentation<ReadAndWriteInstrumentation>()
             .AddTracorLogger()
+            .AddTracorScopedFilter((tracorScopedFilterBuilder) => {
+                tracorScopedFilterBuilder.AddTracorScopedFilterBoth();
+                tracorScopedFilterBuilder.AddTracorScopedFilterConfiguration(
+                    builder.Configuration.GetSection("Logging"));
+            })
             ;
         builder.Services.AddSingleton<ControlService>();
         builder.Services.AddHostedService<WriterService>();
@@ -89,22 +95,33 @@ public class WriterService : BackgroundService {
     private readonly ReadAndWriteInstrumentation _ReadAndWriteInstrumentation;
     private readonly ControlService _ControlService;
     private readonly FileTracorCollectiveSink _FileTracorCollectiveSink;
+    private readonly ITracorSink<WriterService> _Tracor;
     private readonly ILogger<WriterService> _Logger;
 
     public WriterService(
         ReadAndWriteInstrumentation readAndWriteInstrumentation,
         ControlService controlService,
         FileTracorCollectiveSink fileTracorCollectiveSink,
+        ITracorSink<WriterService> tracor,
         ILogger<WriterService> logger
         ) {
         this._ReadAndWriteInstrumentation = readAndWriteInstrumentation;
         this._ControlService = controlService;
         this._FileTracorCollectiveSink = fileTracorCollectiveSink;
+        this._Tracor = tracor;
         this._Logger = logger;
     }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         try {
-            for (int outerloop = 0; outerloop < 10; outerloop++) {
+            for (int outerloop = 0; outerloop < 1; outerloop++) {
+                this._Logger.WriterToBeIgnored(outerloop);
+                if (this._Tracor.GetPublicTracor(LogLevel.Information, "Test") is { Enabled: true } tracorInformation) {
+                    tracorInformation.TracePublic(LogLevel.Information);
+                }
+                if (this._Tracor.GetPublicTracor(LogLevel.Trace, "Test") is { Enabled: true } tracorTrace) {
+                    tracorTrace.TracePublic(LogLevel.Trace);
+                }
                 using (var root = this._ReadAndWriteInstrumentation.ActivitySource.StartRoot()) {
                     int sum = 0;
                     for (int innerloop = 0; innerloop < 1000; innerloop++) {
@@ -123,6 +140,9 @@ public class WriterService : BackgroundService {
 }
 
 public static partial class ReadAndWriteLoggerExtension {
+    [LoggerMessage(LogLevel.Trace, "To be ignored:{number}")]
+    public static partial void WriterToBeIgnored(this ILogger logger, int number);
+    
     [LoggerMessage(LogLevel.Information, "Inner loop iteration:{number}")]
     public static partial void WriterInnerLoop(this ILogger logger, int number);
 

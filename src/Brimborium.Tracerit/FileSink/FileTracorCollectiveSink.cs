@@ -9,13 +9,14 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
     private CancellationTokenRegistration? _OnApplicationStoppingDisposing;
     private Func<CancellationToken?> _GetOnApplicationStoppingDisposing = () => null;
 
-    private Lock _LockProperties = new Lock();
+    private readonly Lock _LockProperties = new Lock();
     private string? _Directory;
     private DateTime _DirectoryRecheck = new DateTime(0);
     private string? _FileName;
     private TimeSpan _Period = TimeSpan.Zero;
     private TimeSpan _FlushPeriod = TimeSpan.Zero;
     private FileTracorCollectiveCompression _Compression = FileTracorCollectiveCompression.None;
+    private TracorDataRecord? _Resource;
     private System.IO.Stream? _CurrentFileStream;
     private string? _CurrentFileFQN;
     private long _PeriodStarted;
@@ -76,14 +77,14 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
     internal void SetFileTracorOptions(FileTracorOptions options) {
         using (this._LockProperties.EnterScope()) {
             if (this._ServiceProvider is { } serviceProvider
-                && options.GetApplicationStopping is { } getApplicationStopping) {
+                && options.OnGetApplicationStopping is { } getApplicationStopping) {
                 // using the callback avoids 
                 this._GetOnApplicationStoppingDisposing = (() => getApplicationStopping(serviceProvider));
             }
             this._CleanupEnabled = options.CleanupEnabled;
             this._CleanupPeriod = options.CleanupPeriod;
 
-            // reset PeriodStarted since _Period may have changed
+            // reset PeriodStarted since _Period may have change
             this._PeriodStarted = 0;
 
             string? directory = GetDirectory(
@@ -109,7 +110,18 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
                     "gzip" => FileTracorCollectiveCompression.Gzip,
                     _ => FileTracorCollectiveCompression.None
                 };
-
+                if (options.GetResource() is { } resource) {
+                    this._Resource = new TracorDataRecord() {
+                        TracorIdentifier = new("Resource", resource.TracorIdentifier.Scope),
+                        Timestamp = DateTime.UtcNow
+                    };
+                    this._Resource.ListProperty.AddRange(resource.ListProperty);
+                } else {
+                    this._Resource = new TracorDataRecord() {
+                        TracorIdentifier = new("Resource", this._ApplicationName ?? string.Empty),
+                        Timestamp = DateTime.UtcNow
+                    };
+                }
                 if (this._TracorEmergencyLogging.IsEnabled) {
                     this._TracorEmergencyLogging.Log($"FileTracorCollectiveSink directory:{directory}");
                 }
@@ -282,7 +294,7 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
             }
 
             {
-                await this.WriterAsync(listTracorData, listTracorDataProperty);
+                await this.WriteAsync(listTracorData, listTracorDataProperty);
 
                 return true;
             }
@@ -291,13 +303,12 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
         }
     }
 
-    private async Task WriterAsync(List<ITracorData> listTracorData, List<TracorDataProperty> listTracorDataProperty) {
+    private async Task WriteAsync(List<ITracorData> listTracorData, List<TracorDataProperty> listTracorDataProperty) {
         DateTime utcNow = DateTime.UtcNow;
         TimeSpan statePeriod;
         long statePeriodStarted;
         Stream? currentFileStream;
         long currentPeriodStarted;
-        bool addNewLine = true;
         using (this._LockProperties.EnterScope()) {
             statePeriod = this._Period;
             statePeriodStarted = this._PeriodStarted;
@@ -326,6 +337,8 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
                 }
             }
         }
+        bool addNewLine = false;
+        bool addResource = false;
 
         if (currentFileStream is null && this._Directory is { Length: > 0 } directory) {
             if (utcNow < this._DirectoryRecheck) {
@@ -366,7 +379,8 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
                     (currentFileStream, created) = this.GetLogFileStream(logFileFQN);
                     this._CurrentFileStream = currentFileStream;
                     this._CurrentFileFQN = logFileFQN;
-                    if (created) { addNewLine = false; }
+                    addResource = created;
+                    addNewLine = !created;
 
                     this._PeriodStarted = currentPeriodStarted;
 
@@ -382,16 +396,22 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
             System.Text.Json.JsonSerializerOptions jsonSerializerOptions =
                 TracorDataSerialization.GetMinimalJsonSerializerOptions(null, null);
 
+            if (addNewLine) {
+                currentFileStream.Write(nl, 0, nl.Length);
+            }
+            if (addResource) {
+                if (this._Resource is { } resource) {
+                    System.Text.Json.JsonSerializer.Serialize(currentFileStream, resource, jsonSerializerOptions);
+                    currentFileStream.Write(nl, 0, nl.Length);
+                }
+            }
+
             foreach (var tracorData in listTracorData) {
                 listTracorDataProperty.Clear();
                 tracorData.ConvertProperties(listTracorDataProperty);
-                if (addNewLine) {
-                    currentFileStream.Write(nl, 0, nl.Length);
-                } else {
-                    addNewLine = true;
-                }
 
                 System.Text.Json.JsonSerializer.Serialize(currentFileStream, tracorData, jsonSerializerOptions);
+                currentFileStream.Write(nl, 0, nl.Length);
 
                 if (tracorData is IReferenceCountObject referenceCountObject) {
                     referenceCountObject.Dispose();
@@ -407,7 +427,7 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
         }
     }
 
-    private (Stream? stream, bool created) GetLogFileStream(string logFilePath) {
+    private (FileStream stream, bool created) GetLogFileStream(string logFilePath) {
         if (System.IO.File.Exists(logFilePath)) {
             return (
                 stream: new System.IO.FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read),

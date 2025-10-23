@@ -8,7 +8,7 @@ public static partial class LoggerExtension {
         Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
     public static partial void LogCondition(
         this ILogger logger,
-        TracorIdentitfier callee, bool result, string? fnConditionDisplay);
+        TracorIdentifier callee, bool result, string? fnConditionDisplay);
 
     [LoggerMessage(LogLevel.Debug, "{activitySourceIdentifier} returns {result}")]
     public static partial void OnShouldListenToReturns(

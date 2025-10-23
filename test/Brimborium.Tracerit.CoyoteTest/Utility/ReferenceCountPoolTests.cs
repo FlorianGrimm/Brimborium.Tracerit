@@ -115,7 +115,7 @@ public sealed class LoggerTracorDataForTest : ReferenceCountObject, ITracorData 
         this.Arguments.Clear();
     }
 
-    protected override bool IsStateReseted() => 0 == this.Arguments.Count && this.Arguments.Capacity <= 128;
+    protected override bool IsStateReset() => 0 == this.Arguments.Count && this.Arguments.Capacity <= 128;
 
     public List<KeyValuePair<string, object?>> Arguments => this._Arguments;
 
@@ -144,10 +144,15 @@ public sealed class LoggerTracorDataForTest : ReferenceCountObject, ITracorData 
         return false;
     }
 
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
 
     public DateTime Timestamp { get; set; }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
+    }
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        result = new();
+        return false;
     }
 }

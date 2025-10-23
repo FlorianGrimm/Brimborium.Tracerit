@@ -16,7 +16,7 @@ public sealed class PredicateTracorDataCondition : IExpressionCondition {
 
     public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         bool result = this._FnCondition(tracorData);
-        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
+        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
         return result;
     }
 
@@ -44,7 +44,7 @@ public sealed class PredicateTracorDataCondition<TTracorData> : IExpressionCondi
     public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData is TTracorData tracorDataTyped) {
             var result = this._FnCondition(tracorDataTyped);
-            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
             return result;
         }
         return false;
@@ -77,7 +77,7 @@ public sealed class PredicateValueCondition<TValue> : IExpressionCondition<TValu
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
             bool result = this._FnCondition(value);
-            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
             return result;
         }
         return false;
@@ -110,7 +110,7 @@ public sealed class PredicateValueGlobalStateCondition<TValue> : IExpressionCond
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
             bool result = this._FnCondition(value, currentContext.GlobalState);
-            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, this._FnConditionDisplay);
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
             return result;
         }
         return false;

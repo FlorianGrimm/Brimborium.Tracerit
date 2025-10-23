@@ -11,9 +11,9 @@ public class TracorDataConvertService : ITracorDataConvertService {
     }
 
 
-    public ImmutableDictionary<TracorIdentitfierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateScopeNoSource { get; set; } = ImmutableDictionary<TracorIdentitfierType, ITracorDataAccessorFactory>.Empty;
-    public ImmutableDictionary<TracorIdentitfierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateNoScopeSource { get; set; } = ImmutableDictionary<TracorIdentitfierType, ITracorDataAccessorFactory>.Empty;
-    public ImmutableDictionary<TracorIdentitfierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateScopeSource { get; set; } = ImmutableDictionary<TracorIdentitfierType, ITracorDataAccessorFactory>.Empty;
+    public ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateScopeNoSource { get; set; } = ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory>.Empty;
+    public ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateNoScopeSource { get; set; } = ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory>.Empty;
+    public ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateScopeSource { get; set; } = ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory>.Empty;
     public ImmutableDictionary<Type, ITracorDataAccessorFactory> TracorDataAccessorByTypePublic { get; set; } = ImmutableDictionary<Type, ITracorDataAccessorFactory>.Empty;
     public ImmutableArray<ITracorDataAccessorFactory> ListTracorDataAccessorPublic { get; set; } = ImmutableArray<ITracorDataAccessorFactory>.Empty;
 
@@ -39,8 +39,8 @@ public class TracorDataConvertService : ITracorDataConvertService {
 
     internal void AddOptions(TracorDataConvertOptions value) {
         if (0 < value.TracorDataAccessorByTypePrivate.Count) {
-            foreach (var (tracorIdentitfierType, tracorDataAccessorFactory) in value.TracorDataAccessorByTypePrivate) {
-                this.AddTracorDataAccessorByTypePrivate(tracorIdentitfierType, tracorDataAccessorFactory);
+            foreach (var (tracorIdentifierType, tracorDataAccessorFactory) in value.TracorDataAccessorByTypePrivate) {
+                this.AddTracorDataAccessorByTypePrivate(tracorIdentifierType, tracorDataAccessorFactory);
             }
         }
 
@@ -55,22 +55,22 @@ public class TracorDataConvertService : ITracorDataConvertService {
         }
     }
 
-    public TracorDataConvertService AddTracorDataAccessorByTypePrivate(TracorIdentitfierType tracorIdentitfierType, ITracorDataAccessorFactory tracorDataAccessorFactory) {
-        bool isSourceEmpty = string.IsNullOrEmpty(tracorIdentitfierType.Source);
-        bool isScopeEmpty = string.IsNullOrEmpty(tracorIdentitfierType.Scope);
+    public TracorDataConvertService AddTracorDataAccessorByTypePrivate(TracorIdentifierType tracorIdentifierType, ITracorDataAccessorFactory tracorDataAccessorFactory) {
+        bool isSourceEmpty = string.IsNullOrEmpty(tracorIdentifierType.Source);
+        bool isScopeEmpty = string.IsNullOrEmpty(tracorIdentifierType.Scope);
         if (!isScopeEmpty && isSourceEmpty) {
-            this.TracorDataAccessorByTypePrivateScopeNoSource = this.TracorDataAccessorByTypePrivateScopeNoSource.SetItem(tracorIdentitfierType, tracorDataAccessorFactory);
+            this.TracorDataAccessorByTypePrivateScopeNoSource = this.TracorDataAccessorByTypePrivateScopeNoSource.SetItem(tracorIdentifierType, tracorDataAccessorFactory);
 
         } else if (isScopeEmpty && !isScopeEmpty) {
-            this.TracorDataAccessorByTypePrivateNoScopeSource = this.TracorDataAccessorByTypePrivateNoScopeSource.SetItem(tracorIdentitfierType, tracorDataAccessorFactory);
+            this.TracorDataAccessorByTypePrivateNoScopeSource = this.TracorDataAccessorByTypePrivateNoScopeSource.SetItem(tracorIdentifierType, tracorDataAccessorFactory);
 
         } else if (!isSourceEmpty && !isScopeEmpty) {
-            this.TracorDataAccessorByTypePrivateScopeSource = this.TracorDataAccessorByTypePrivateScopeSource.SetItem(tracorIdentitfierType, tracorDataAccessorFactory);
+            this.TracorDataAccessorByTypePrivateScopeSource = this.TracorDataAccessorByTypePrivateScopeSource.SetItem(tracorIdentifierType, tracorDataAccessorFactory);
 
         } else {
             // seam like a leak
-            // this.TracorDataAccessorByTypePublic = this.TracorDataAccessorByTypePublic.SetItem(tracorIdentitfierType.TypeParameter, tracorDataAccessorFactory);
-            throw new ArgumentException("Source and Scope is empty.", nameof(tracorIdentitfierType));
+            // this.TracorDataAccessorByTypePublic = this.TracorDataAccessorByTypePublic.SetItem(tracorIdentifierType.TypeParameter, tracorDataAccessorFactory);
+            throw new ArgumentException("Source and Scope is empty.", nameof(tracorIdentifierType));
         }
         return this;
     }
@@ -87,7 +87,7 @@ public class TracorDataConvertService : ITracorDataConvertService {
         return this;
     }
 
-    public ITracorData ConvertPrivate<T>(TracorIdentitfier callee, T value) {
+    public ITracorData ConvertPrivate<T>(TracorIdentifier callee, T value) {
         var type = typeof(T);
         if (type.IsClass) {
             if (value is null) {
@@ -95,8 +95,8 @@ public class TracorDataConvertService : ITracorDataConvertService {
             }
         }
         if (0 < this.TracorDataAccessorByTypePrivateScopeSource.Count) {
-            TracorIdentitfierType tracorIdentitfierType = new(callee.Source, callee.Scope, type);
-            if (this.TracorDataAccessorByTypePrivateScopeSource.TryGetValue(tracorIdentitfierType, out var tracorDataAccessorFactory)) {
+            TracorIdentifierType tracorIdentifierType = new(callee.Source, callee.Scope, type);
+            if (this.TracorDataAccessorByTypePrivateScopeSource.TryGetValue(tracorIdentifierType, out var tracorDataAccessorFactory)) {
                 if (tracorDataAccessorFactory is ITracorDataAccessorFactory<T> tracorDataAccessorFactoryTyped) {
                     if (tracorDataAccessorFactoryTyped.TryGetDataTyped(value, out var tracorDataTyped)) {
                         return tracorDataTyped;
@@ -108,8 +108,8 @@ public class TracorDataConvertService : ITracorDataConvertService {
             }
         }
         if (0 < this.TracorDataAccessorByTypePrivateScopeNoSource.Count) {
-            TracorIdentitfierType tracorIdentitfierType = new(callee.Source, callee.Scope, type);
-            if (this.TracorDataAccessorByTypePrivateScopeNoSource.TryGetValue(tracorIdentitfierType, out var tracorDataAccessorFactory)) {
+            TracorIdentifierType tracorIdentifierType = new(callee.Source, callee.Scope, type);
+            if (this.TracorDataAccessorByTypePrivateScopeNoSource.TryGetValue(tracorIdentifierType, out var tracorDataAccessorFactory)) {
                 if (tracorDataAccessorFactory is ITracorDataAccessorFactory<T> tracorDataAccessorFactoryTyped) {
                     if (tracorDataAccessorFactoryTyped.TryGetDataTyped(value, out var tracorDataTyped)) {
                         return tracorDataTyped;
@@ -121,8 +121,8 @@ public class TracorDataConvertService : ITracorDataConvertService {
             }
         }
         if (0 < this.TracorDataAccessorByTypePrivateNoScopeSource.Count) {
-            TracorIdentitfierType tracorIdentitfierType = new(callee.Source, callee.Scope, type);
-            if (this.TracorDataAccessorByTypePrivateNoScopeSource.TryGetValue(tracorIdentitfierType, out var tracorDataAccessorFactory)) {
+            TracorIdentifierType tracorIdentifierType = new(callee.Source, callee.Scope, type);
+            if (this.TracorDataAccessorByTypePrivateNoScopeSource.TryGetValue(tracorIdentifierType, out var tracorDataAccessorFactory)) {
                 if (tracorDataAccessorFactory is ITracorDataAccessorFactory<T> tracorDataAccessorFactoryTyped) {
                     if (tracorDataAccessorFactoryTyped.TryGetDataTyped(value, out var tracorDataTyped)) {
                         return tracorDataTyped;

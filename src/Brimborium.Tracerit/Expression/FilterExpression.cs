@@ -106,7 +106,7 @@ public sealed class FilterExpression<T> : ValidatorExpression {
 
     public IExpressionCondition Condition { get; set; } = AlwaysCondition.Instance;
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(TracorIdentifier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<FilterExpressionState>();
         if (state.Successfull) {
             return OnTraceResult.Successfull;

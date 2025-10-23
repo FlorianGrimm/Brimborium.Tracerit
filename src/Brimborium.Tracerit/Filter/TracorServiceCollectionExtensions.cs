@@ -25,7 +25,6 @@ public static partial class TracorServiceCollectionExtensions {
             services.TryAdd(ServiceDescriptor.Singleton<ITracorScopedFilterFactory, TracorScopedFilterFactory>());
             services.TryAdd(ServiceDescriptor.Singleton(typeof(ITracorScopedFilter<>), typeof(TracorScopedFilter<>)));
 
-#warning parameter LogLevel or add extension
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<TracorScopedFilterOptions>>(
                 new DefaultTracorScopedFilterOptions(LogLevel.Information)));
         }

@@ -14,7 +14,7 @@ public sealed class TracorDataRecordMinimalJsonConverter
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options) {
-        return ITracorDataJsonMinimalConverterUtility.Read(ref reader, typeToConvert, options,this._TracorDataRecordPool);
+        return ITracorDataJsonMinimalConverterUtility.Read(ref reader, typeToConvert, options, this._TracorDataRecordPool);
     }
 
     public override void Write(
@@ -40,12 +40,12 @@ public sealed class ITracorDataMinimalJsonConverter
 
 public static class ITracorDataJsonMinimalConverterUtility {
     public static TracorDataRecord? Read(
-        ref Utf8JsonReader reader, 
-        Type typeToConvert, 
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
         JsonSerializerOptions options,
         TracorDataRecordPool? tracorDataRecordPool = default) {
-        if (reader.TokenType != JsonTokenType.StartArray) { 
-            throw new JsonException($"StartArray expected, but {reader.TokenType} found."); 
+        if (reader.TokenType != JsonTokenType.StartArray) {
+            throw new JsonException($"StartArray expected, but {reader.TokenType} found.");
         }
 
         var depth = reader.CurrentDepth;
@@ -55,10 +55,10 @@ public static class ITracorDataJsonMinimalConverterUtility {
         TracorDataRecord result;
         if (tracorDataRecordPool is { } pool) {
             result = pool.Rent();
-        } else { 
+        } else {
             result = new();
         }
-        TracorIdentitfier tracorIdentitfier = new TracorIdentitfier();
+        TracorIdentifier tracorIdentifier = new TracorIdentifier();
         int state = 0;
         while (reader.Read()) {
             if (JsonTokenType.EndArray == reader.TokenType) {
@@ -68,7 +68,7 @@ public static class ITracorDataJsonMinimalConverterUtility {
             var tracorDataProperty = converterTracorDataProperty.Read(ref reader, typeTracorDataProperty, options);
             if (state < 4) {
                 if (state == 0) {
-                    if ("timestamp" == tracorDataProperty.Name) {
+                    if (TracorConstants.TracorDataPropertyNameTimestamp == tracorDataProperty.Name) {
                         state = 1;
                         if (tracorDataProperty.TryGetDateTimeValue(out var timestampValue)) {
                             result.Timestamp = timestampValue;
@@ -77,30 +77,30 @@ public static class ITracorDataJsonMinimalConverterUtility {
                     }
                 }
                 if (state is 0 or 1) {
-                    if ("source" == tracorDataProperty.Name) {
+                    if (TracorConstants.TracorDataPropertyNameSource == tracorDataProperty.Name) {
                         state = 2;
                         if (tracorDataProperty.TryGetStringValue(out var sourceValue)) {
-                            tracorIdentitfier.Source = sourceValue ?? string.Empty;
+                            tracorIdentifier.Source = sourceValue ?? string.Empty;
                             continue;
                         }
                     }
                 }
 
                 if (state is 0 or 1 or 2) {
-                    if ("scope" == tracorDataProperty.Name) {
+                    if (TracorConstants.TracorDataPropertyNameScope == tracorDataProperty.Name) {
                         state = 3;
                         if (tracorDataProperty.TryGetStringValue(out var scopeValue)) {
-                            tracorIdentitfier.Scope = scopeValue ?? string.Empty;
+                            tracorIdentifier.Scope = scopeValue ?? string.Empty;
                             continue;
                         }
                     }
                 }
 
                 if (state is 0 or 1 or 2 or 3) {
-                    if ("message" == tracorDataProperty.Name) {
+                    if (TracorConstants.TracorDataPropertyNameMessage == tracorDataProperty.Name) {
                         state = 4;
                         if (tracorDataProperty.TryGetStringValue(out var messageValue)) {
-                            tracorIdentitfier.Message = messageValue ?? string.Empty;
+                            tracorIdentifier.Message = messageValue ?? string.Empty;
                             continue;
                         }
                     }
@@ -114,7 +114,7 @@ public static class ITracorDataJsonMinimalConverterUtility {
 
         if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
 
-        result.TracorIdentitfier = tracorIdentitfier;
+        result.TracorIdentifier = tracorIdentifier;
         return result;
     }
 
@@ -163,7 +163,7 @@ public static class ITracorDataJsonMinimalConverterUtility {
 
 public sealed class TracorDataJsonMinimalConverterFactory : JsonConverterFactory {
     private readonly TracorDataRecordPool? _TracorDataRecordPool;
-    
+
     private TracorDataRecordMinimalJsonConverter? _TracorDataRecordJsonConverter;
     private ITracorDataMinimalJsonConverter? _ITracorDataJsonConverter;
 

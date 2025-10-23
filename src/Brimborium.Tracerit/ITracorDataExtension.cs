@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿using System.Xml.Xsl;
+
+namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Provides extension methods for <see cref="ITracorData"/> to enhance functionality with strongly-typed operations.
@@ -10,53 +12,55 @@ public static class ITracorDataExtension {
 
     public static bool IsEqualString(this ITracorData data, string propertyName, string expected, StringComparison comparisonType = StringComparison.Ordinal)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToStringValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToStringValue(currentValue, out var value))
             && (string.Equals(value, expected, comparisonType));
 
     public static bool IsEqualInteger(this ITracorData data, string propertyName, long expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToIntValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToIntegerValue(currentValue, out var value))
             && (value == expected);
 
     public static bool IsEqualBoolean(this ITracorData data, string propertyName, bool expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToBoolValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToBooleanValue(currentValue, out var value))
             && (value == expected);
 
     public static bool IsEqualEnum(this ITracorData data, string propertyName, string expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToEnumValue(currentValue, out var value))
-            && (value == expected);
+            && (TracorDataUtility.TryConvertObjectToEnumValue(currentValue, out var thisLongValue, out var thisTextValue))
+            && (string.Equals(thisTextValue, expected, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(thisLongValue.ToString(), expected, StringComparison.OrdinalIgnoreCase))
+        ;
 
     public static bool IsEqualLevelValue(this ITracorData data, string propertyName, LogLevel expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToLevelValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToLogLevelValue(currentValue, out var value))
             && (value == expected);
 
-    public static bool IsEqualFloat(this ITracorData data, string propertyName, double expected)
+    public static bool IsEqualDouble(this ITracorData data, string propertyName, double expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToFloatValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToDoubleValue(currentValue, out var value))
             && (value == expected);
 
     public static bool IsEqualDateTime(this ITracorData data, string propertyName, DateTime expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToDateTimeValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToDateTimeValue(currentValue, out var value))
             && (value == expected);
 
     public static bool IsEqualDateTimeOffset(this ITracorData data, string propertyName, DateTimeOffset expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToDateTimeOffsetValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToDateTimeOffsetValue(currentValue, out var value))
             && (value == expected);
 
     public static bool IsEqualUuid(this ITracorData data, string propertyName, Guid expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertToUuidValue(currentValue, out var value))
+            && (TracorDataUtility.TryConvertObjectToUuidValue(currentValue, out var value))
             && (value == expected);
 
 
     public static bool TryGetPropertyValueString(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out string value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToStringValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToStringValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -65,7 +69,7 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueInteger(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out long value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToIntValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToIntegerValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -74,7 +78,7 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueBoolean(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out bool value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToBoolValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToBooleanValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -83,7 +87,12 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueEnum(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out string value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToEnumValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToEnumValue(propertyValue, out var longValue, out var textValue)) {
+            if (textValue is { Length: > 0 }) {
+                value = textValue;
+            } else {
+                value = longValue.ToString();
+            }
             return true;
         }
         value = default;
@@ -92,16 +101,16 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueLevelValue(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out LogLevel value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToLevelValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToLogLevelValue(propertyValue, out value)) {
             return true;
         }
         value = default;
         return false;
     }
 
-    public static bool TryGetPropertyValueFloat(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out double value) {
+    public static bool TryGetPropertyValueDouble(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out double value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToFloatValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToDoubleValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -110,7 +119,7 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueDateTime(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out DateTime value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToDateTimeValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToDateTimeValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -119,7 +128,7 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueDateTimeOffset(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out DateTimeOffset value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToDateTimeOffsetValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToDateTimeOffsetValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -128,7 +137,7 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueUuid(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out Guid value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertToUuidValue(propertyValue, out value)) {
+            && TracorDataUtility.TryConvertObjectToUuidValue(propertyValue, out value)) {
             return true;
         }
         value = default;
@@ -154,19 +163,66 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    public static bool TryGetTracorDataProperty(
+        this ITracorData thatTracorData,
+        string propertyName,
+        out TracorDataProperty result) {
+        if (string.Equals(TracorConstants.TracorDataPropertyNameTimestamp, propertyName, StringComparison.Ordinal)) {
+            result = TracorDataProperty.CreateDateTimeValue(
+                TracorConstants.TracorDataPropertyNameTimestamp,
+                thatTracorData.Timestamp);
+            return true;
+        }
+        if (string.Equals(TracorConstants.TracorDataPropertyNameSource, propertyName, StringComparison.Ordinal)) {
+            var value = (thatTracorData.TracorIdentifier.Source is { Length: > 0 } source) ? source : string.Empty;
+            result = TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameSource,
+                    value);
+            return true;
+        }
+        if (string.Equals(TracorConstants.TracorDataPropertyNameScope, propertyName, StringComparison.Ordinal)) {
+            var value = (thatTracorData.TracorIdentifier.Scope is { Length: > 0 } scope) ? scope : string.Empty;
+            result = TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameScope,
+                    value);
+            return true;
+        }
+        if (string.Equals(TracorConstants.TracorDataPropertyNameMessage, propertyName, StringComparison.Ordinal)) {
+            var value = (thatTracorData.TracorIdentifier.Message is { Length: > 0 } message) ? message : string.Empty;
+            result = TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameMessage,
+                    value);
+            return true;
+        }
+
+        return thatTracorData.TryGetDataProperty(propertyName, out result);
+    }
+
     public static void ConvertPropertiesBase<TTracorData>(
         this ITracorData thatTracorData,
         List<TracorDataProperty> listProperty)
         where TTracorData : ITracorData {
-        listProperty.Add(TracorDataProperty.CreateDateTime("timestamp", thatTracorData.Timestamp));
-        if (thatTracorData.TracorIdentitfier.Source is { Length: > 0 } source) {
-            listProperty.Add(TracorDataProperty.CreateString("source", source));
+        listProperty.Add(
+            TracorDataProperty.CreateDateTimeValue(
+                TracorConstants.TracorDataPropertyNameTimestamp,
+                thatTracorData.Timestamp));
+        if (thatTracorData.TracorIdentifier.Source is { Length: > 0 } source) {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameSource,
+                    source));
         }
-        if (thatTracorData.TracorIdentitfier.Scope is { Length: > 0 } scope) {
-            listProperty.Add(TracorDataProperty.CreateString("scope", scope));
+        if (thatTracorData.TracorIdentifier.Scope is { Length: > 0 } scope) {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameScope,
+                    scope));
         }
-        if (thatTracorData.TracorIdentitfier.Message is { Length: > 0 } message) {
-            listProperty.Add(TracorDataProperty.CreateString("message", message));
+        if (thatTracorData.TracorIdentifier.Message is { Length: > 0 } message) {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameMessage,
+                    message));
         }
     }
 }

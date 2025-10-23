@@ -4,6 +4,8 @@
 /// Use GetApplicationStopping or FlushAsync to prevent loose log entries.
 /// </summary>
 public sealed class FileTracorOptions {
+    private TracorDataRecord? _Resource;
+
     /// <summary>
     /// (BaseDirectory or GetBaseDirectory) + Directory + FileName
     /// </summary>
@@ -37,7 +39,12 @@ public sealed class FileTracorOptions {
     /// </summary>
     public TimeSpan FlushPeriod { get; set; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>
+    /// None, brotli, gzip
+    /// </summary>
     public string? Compression { get; set; }
+
+    public HashSet<string> ListIgnoreProperty { get; } = [];
 
     /// <summary>
     /// If enabled periodical will checked if the old files should be deleted.
@@ -50,11 +57,17 @@ public sealed class FileTracorOptions {
     public TimeSpan CleanupPeriod { get; set; } = TimeSpan.FromDays(31);
 
     /// <summary>
-    /// Important allows to retrive the IHostApplicationLifetime.ApplicationStopping which is essential for periodical flush.
+    /// Important allows to retrieve the IHostApplicationLifetime.ApplicationStopping which is essential for periodical flush.
     /// So that at the end the buffer will be flushed.
     /// </summary>
     /// <example>
     /// fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
     /// </example>
-    public Func<IServiceProvider, CancellationToken>? GetApplicationStopping { get; set; }
+    public Func<IServiceProvider, CancellationToken>? OnGetApplicationStopping { get; set; }
+    
+    public TracorDataRecord? GetResource() => this._Resource;
+
+    public void SetResource(TracorDataRecord? value) {
+        this._Resource = value;
+    }
 }

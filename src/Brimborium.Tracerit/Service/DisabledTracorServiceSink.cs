@@ -25,6 +25,8 @@ internal sealed class DisabledTracorServiceSink : ITracorServiceSink {
 
     public bool IsPublicEnabled(string scope, LogLevel logLevel) => false;
 
+    public bool HasSubScope(string scope) => false;
+
     public void TracePrivate<T>(string scope, LogLevel level, string message, T value) { }
 
     public void TracePublic<T>(string scope, LogLevel level, string message, T value) { }

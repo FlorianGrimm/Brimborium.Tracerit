@@ -178,7 +178,7 @@ public class ReferenceCountPoolTests {
             this._IsStateReset = true;
         }
 
-        protected override bool IsStateReseted() => this._IsStateReset;
+        protected override bool IsStateReset() => this._IsStateReset;
 
         public void SetStateNotReset() => this._IsStateReset = false;
     }

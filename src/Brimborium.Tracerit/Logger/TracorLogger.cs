@@ -8,10 +8,10 @@ internal sealed class TracorLogger : ILogger {
     private readonly ITracorCollectivePublisher _Publisher;
     private readonly LogLevel? _MinimumLogLevel;
     private readonly IExternalScopeProvider? _ExternalScopeProvider;
-    private readonly TracorIdentitfier _Id;
+    private readonly TracorIdentifier _Id;
     private readonly bool _IsAllowed;
     private readonly LoggerTracorDataPool _Pool;
-    private readonly TracorIdentitfierCache _IdChildCache;
+    private readonly TracorIdentifierCache _IdChildCache;
 
     public TracorLogger(
         string name,
@@ -40,11 +40,11 @@ internal sealed class TracorLogger : ILogger {
         this._MinimumLogLevel = minimumLogLevel;
         this._ExternalScopeProvider = externalScopeProvider;
         if (name is { Length: > 0 }) {
-            this._Id = new TracorIdentitfier("Logger", name);
+            this._Id = new TracorIdentifier("Logger", name);
         } else {
-            this._Id = new TracorIdentitfier("Logger", "");
+            this._Id = new TracorIdentifier("Logger", "");
         }
-        this._IdChildCache = new TracorIdentitfierCache(this._Id);
+        this._IdChildCache = new TracorIdentifierCache(this._Id);
     }
 
     public bool IsEnabled(LogLevel logLevel) {
@@ -86,19 +86,19 @@ internal sealed class TracorLogger : ILogger {
                 activityTraceFlags = string.Empty;
             }
 
-            //string formatted = formatter(state, exception);
+            string formatted = formatter(state, exception);
             using (LoggerTracorData loggerTracorData = this._Pool.Rent()) {
                 ConvertProperties(
                     loggerTracorData,
-                    this._Id,
+                    this._IdChildCache.Child(eventId.ToString()),
                     activityTraceId,
                     activitySpanId,
                     activityTraceFlags,
                     logLevel,
                     eventId,
                     state,
+                    formatted,
                     exception);
-                loggerTracorData.TracorIdentitfier = this._IdChildCache.Child(eventId.ToString());
                 loggerTracorData.Timestamp = utcNow;
                 this._Publisher.OnTrace(true, loggerTracorData);
             }
@@ -121,38 +121,75 @@ internal sealed class TracorLogger : ILogger {
 
     private static void ConvertProperties(
         LoggerTracorData loggerTracorData,
-        TracorIdentitfier id,
+        TracorIdentifier tracorIdentifier,
         string activityTraceId,
         string activitySpanId,
         string activityTraceFlags,
         LogLevel logLevel,
         EventId eventId,
         object? state,
+        string formatted,
         Exception? exception) {
         // TODO: key from otel
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Source", id.Scope));
+        loggerTracorData.TracorIdentifier = new(tracorIdentifier.Source, tracorIdentifier.Scope, formatted);
+        loggerTracorData.Arguments.Add(
+            new KeyValuePair<string, object?>(
+                TracorConstants.TracorDataPropertyNameSource,
+                tracorIdentifier.Scope));
         if (activityTraceId is { Length: > 0 }) {
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceId", activityTraceId));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameActivityTraceId,
+                    activityTraceId));
         }
         if (activitySpanId is { Length: > 0 }) {
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.SpanId", activitySpanId));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameActivitySpanId,
+                    activitySpanId));
         }
         if (activityTraceFlags is { Length: > 0 }) {
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Activity.TraceFlags", activityTraceFlags));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameActivityTraceFlags,
+                    activityTraceFlags));
         }
-        loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("LogLevel", (LogLevel.Trace <= logLevel && logLevel <= LogLevel.None) ? _ObjLogLevel[(int)logLevel] : logLevel));
+        loggerTracorData.Arguments.Add(
+            new KeyValuePair<string, object?>(
+                TracorConstants.TracorDataPropertyNameLogLevel, (LogLevel.Trace <= logLevel && logLevel <= LogLevel.None) ? _ObjLogLevel[(int)logLevel] : logLevel));
         if (eventId.Id != 0) {
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Id", eventId.Id));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameEventId,
+                    eventId.Id));
         }
         if (eventId.Name is { Length: > 0 }) {
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Event.Name", eventId.Name));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameEventName,
+                    eventId.Name));
         }
+        //if (formatted is { Length: > 0 }) {
+        //    loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Message", formatted));
+        //}
         if (exception is { }) {
             var exceptionInfo = GetExceptionInfo(exception);
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("TypeName", exceptionInfo.TypeName));
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("Message", exceptionInfo.Message));
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("HResult", exceptionInfo.HResult.ToString()));
-            loggerTracorData.Arguments.Add(new KeyValuePair<string, object?>("VerboseMessage", exceptionInfo.VerboseMessage));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameExceptionTypeName,
+                    exceptionInfo.TypeName));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameExceptionMessage,
+                    exceptionInfo.Message));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameExceptionHResult,
+                    exceptionInfo.HResult.ToString()));
+            loggerTracorData.Arguments.Add(
+                new KeyValuePair<string, object?>(
+                    TracorConstants.TracorDataPropertyNameExceptionVerboseMessage,
+                    exceptionInfo.VerboseMessage));
         }
         if (state is IReadOnlyList<KeyValuePair<string, object?>> keyValuePairs) {
             loggerTracorData.Arguments.AddRange(keyValuePairs);

@@ -19,10 +19,10 @@ internal sealed partial class DisabledTracorValidator : ITracorValidator {
     public bool IsEnabled() => false;
 
     [Microsoft.Extensions.Logging.LoggerMessage(1, LogLevel.Debug, "RuntimeTracorValidator.OnTrace - Should not be called {callee}")]
-    partial void OnTraceLog(TracorIdentitfier callee);
+    partial void OnTraceLog(TracorIdentifier callee);
 
     public void OnTrace(bool isPublic, ITracorData tracorData) {
-        this.OnTraceLog(tracorData.TracorIdentitfier);
+        this.OnTraceLog(tracorData.TracorIdentifier);
     }
 
 }

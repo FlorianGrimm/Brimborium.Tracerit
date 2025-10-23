@@ -59,7 +59,7 @@ internal abstract class BaseTracorActivityListener
     protected readonly IServiceProvider _ServiceProvider;
     protected readonly IOptionsMonitor<TracorActivityListenerOptions> _Options;
     protected readonly ILogger _Logger;
-    protected ImmutableDictionary<ActivitySourceIdentifier, TracorIdentitfierCache> _DictTracorIdentitfierCacheByActivitySource = ImmutableDictionary<ActivitySourceIdentifier, TracorIdentitfierCache>.Empty;
+    protected ImmutableDictionary<ActivitySourceIdentifier, TracorIdentifierCache> _DictTracorIdentifierCacheByActivitySource = ImmutableDictionary<ActivitySourceIdentifier, TracorIdentifierCache>.Empty;
     protected IDisposable? _OptionsDispose;
 
     protected TracorActivityListenerOptions _LastOptions = new();

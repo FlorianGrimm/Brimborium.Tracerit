@@ -115,9 +115,27 @@ public sealed class ActivityTracorData
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
 
     public DateTime Timestamp { get; set; }
+
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        var value = this.GetValue();
+        var enumeratorTagObjects = value.EnumerateTagObjects();
+
+        if (enumeratorTagObjects.MoveNext()) {
+            ref readonly var tag = ref enumeratorTagObjects.Current;
+
+            if (string.Equals(tag.Key, propertyName, StringComparison.Ordinal)) {
+                result = TracorDataProperty.Create(propertyName, tag.Value);
+                return true;
+            }
+        }
+
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         var value = this.GetValue();
@@ -133,9 +151,9 @@ public sealed class ActivityTracorData
 
     protected override void ResetState() {
         this._Value = null;
-        this.TracorIdentitfier = default;
+        this.TracorIdentifier = default;
     }
 
-    protected override bool IsStateReseted()
+    protected override bool IsStateReset()
         => this._Value is null;
 }

@@ -4,11 +4,18 @@ namespace Brimborium.Tracerit.Filter;
 /// Extension methods for setting up logging services in an <see cref="ITracorScopedFilterBuilder" />.
 /// </summary>
 public static class TracorScopedFilterBuilderExtensions {
+    public static ITracorScopedFilterBuilder AddTracorScopedFilterBoth(
+        this ITracorScopedFilterBuilder builder) {
+        builder.AddTracorScopedFilterSource<PublicTracorScopedFilterSource>();
+        builder.AddTracorScopedFilterSource<PrivateTracorScopedFilterSource>();
+        return builder;
+    }
 
     public static ITracorScopedFilterBuilder AddTracorScopedFilterSource<T>(
         this ITracorScopedFilterBuilder builder)
         where T : class, ITracorScopedFilterSource {
         builder.Services.AddSingleton<ITracorScopedFilterSource, T>();
+        builder.Services.AddSingleton<ITracorScopedFilterSourceConfiguration<T>, TracorScopedFilterSourceConfiguration<T>>();
         return builder;
     }
 
@@ -40,11 +47,19 @@ public static class TracorScopedFilterBuilderExtensions {
         string tracorScopedFilterSection = "") {
         builder.Services.TryAddSingleton<ITracorScopedFilterConfigurationFactory, TracorScopedFilterSourceConfigurationFactory>();
         builder.Services.TryAddSingleton(typeof(ITracorScopedFilterSourceConfiguration<>), typeof(TracorScopedFilterSourceConfiguration<>));
-        
+
         string sectionPath = (string.IsNullOrEmpty(tracorScopedFilterSection)) ? "Logging" : tracorScopedFilterSection;
+
+        builder.Services.AddSingleton<IConfigureOptions<TracorScopedFilterOptions>>(
+            (IServiceProvider serviceProvider) => new TracorScopedFilterConfigureOptions(
+                serviceProvider.GetRequiredService<IConfiguration>().GetSection(sectionPath)));
+        builder.Services.AddSingleton<IOptionsChangeTokenSource<TracorScopedFilterOptions>>(
+            (IServiceProvider serviceProvider) => new ConfigurationChangeTokenSource<TracorScopedFilterOptions>(
+                serviceProvider.GetRequiredService<IConfiguration>().GetSection(sectionPath)));
         builder.Services.AddSingleton<TracorScopedFilterConfiguration>(
             (IServiceProvider serviceProvider) => new TracorScopedFilterConfiguration(
                 serviceProvider.GetRequiredService<IConfiguration>().GetSection(sectionPath)));
+
     }
 
     /// <summary>

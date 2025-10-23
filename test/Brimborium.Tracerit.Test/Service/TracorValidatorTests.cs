@@ -59,10 +59,10 @@ public class TracorValidatorTests {
                 data.TryGetPropertyValue<string>("Value", out var value) && value == "second")));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(new ValueTracorData<string>("first") { TracorIdentitfier = callee });
+        validatorPath.OnTrace(new ValueTracorData<string>("first") { TracorIdentifier = callee });
         var runningStates = validatorPath.GetListRunning();
 
         // Assert
@@ -83,10 +83,10 @@ public class TracorValidatorTests {
             data.TryGetPropertyValue<string>("Value", out var value) && value == "test"));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
+        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
         var finishedStates = validatorPath.GetListFinished();
 
         // Assert
@@ -108,10 +108,10 @@ public class TracorValidatorTests {
             setGlobalState: "TestProperty"));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentitfier = callee });
+        validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentifier = callee });
         var finishedState = validatorPath.GetFinished(state =>
             state.TryGetValue("TestProperty", out var prop) && prop is string str && str == "test value");
 
@@ -131,10 +131,10 @@ public class TracorValidatorTests {
 
         var expression = new MatchExpression();
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
+        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
         var finishedState = validatorPath.GetFinished(state =>
             state.TryGetValue("NonExistentKey", out var _));
 
@@ -174,8 +174,8 @@ public class TracorValidatorTests {
 
         var validatorPath1 = validator.Add(expression1);
         var validatorPath2 = validator.Add(expression2);
-        var callee = new TracorIdentitfier("Test", "Method");
-        var tracorData = new ValueTracorData<string>("test") { TracorIdentitfier = callee };
+        var callee = new TracorIdentifier("Test", "Method");
+        var tracorData = new ValueTracorData<string>("test") { TracorIdentifier = callee };
 
         // Act
         validator.OnTrace(true, tracorData);
@@ -196,12 +196,12 @@ public class TracorValidatorTests {
 
         var expression = new MatchExpression();
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
         var traceTask = Task.Run(() => {
             Thread.Sleep(100); // Small delay to simulate async processing
-            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
+            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
         });
 
         var finishedState = await validatorPath.GetFinishedAsync(null, TimeSpan.FromSeconds(1));
@@ -225,10 +225,10 @@ public class TracorValidatorTests {
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data => false))); // Never matches
 
         using (var validatorPath = validator.Add(expression)) {
-            var callee = new TracorIdentitfier("Test", "Method");
+            var callee = new TracorIdentifier("Test", "Method");
 
             // Act
-            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentitfier = callee });
+            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
 
             var runningStateTestLabel = validatorPath.GetRunning("TestLabel");
             var runningStateFirstMatch = validatorPath.GetRunning("FirstMatch");

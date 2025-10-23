@@ -7,7 +7,7 @@ public static partial class TracorServiceCollectionExtensions {
     /// <summary>
     /// Adds disabled(e.g runtime) or enabled (e.g. test-time) Tracor services to the service collection.
     /// </summary>
-    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="serviceBuilder">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
     /// <example>
     ///    builder.Services.AddTracor(
@@ -28,18 +28,18 @@ public static partial class TracorServiceCollectionExtensions {
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddTracor(
-            this IServiceCollection servicebuilder,
+            this IServiceCollection serviceBuilder,
             bool addEnabledServices,
             Action<TracorOptions>? configureTracor = default,
             Action<TracorDataConvertOptions>? configureConvert = default,
             string tracorScopedFilterSection = "") {
         if (addEnabledServices) {
-            return servicebuilder.AddEnabledTracor(
+            return serviceBuilder.AddEnabledTracor(
                 configureTracor,
                 configureConvert,
                 tracorScopedFilterSection);
         } else {
-            return servicebuilder.AddDisabledTracor(
+            return serviceBuilder.AddDisabledTracor(
                 configureTracor,
                 configureConvert,
                 tracorScopedFilterSection);
@@ -48,78 +48,78 @@ public static partial class TracorServiceCollectionExtensions {
 
     /// <summary>
     /// Adds a disabled Tracor services to the service collection. 
-    /// Disabled Tracor dows nothing - exists only so that the DI dont fail.
+    /// Disabled Tracor does nothing - exists only so that the DI don't fail.
     /// </summary>
-    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="serviceBuilder">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddDisabledTracor(
-        this IServiceCollection servicebuilder,
+        this IServiceCollection serviceBuilder,
         Action<TracorOptions>? configureTracor = default,
         Action<TracorDataConvertOptions>? configureConvert = default,
         string tracorScopedFilterSection = "") {
-        servicebuilder.AddSingleton<TracorEmergencyLogging>();
-        servicebuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
-        servicebuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
-        servicebuilder.AddSingleton<ITracorServiceSink, DisabledTracorServiceSink>();
-        servicebuilder.AddSingleton<ITracorDataConvertService, TracorDataConvertService>();
-        servicebuilder.AddSingleton<DisabledTracorValidator>();
-        servicebuilder.AddSingleton<ITracorValidator>(
+        serviceBuilder.AddSingleton<TracorEmergencyLogging>();
+        serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
+        serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
+        serviceBuilder.AddSingleton<ITracorServiceSink, DisabledTracorServiceSink>();
+        serviceBuilder.AddSingleton<ITracorDataConvertService, TracorDataConvertService>();
+        serviceBuilder.AddSingleton<DisabledTracorValidator>();
+        serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<DisabledTracorValidator>());
-        servicebuilder.AddSingleton(typeof(LazyCreatedLogger<>));
+        serviceBuilder.AddSingleton(typeof(LazyCreatedLogger<>));
 
-        servicebuilder.AddTracorScopedFilter((builder) => {
+        serviceBuilder.AddTracorScopedFilter((builder) => {
             builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
         });
 
-        var optionsBuilder = servicebuilder.AddOptions<TracorDataConvertOptions>();
+        var optionsBuilder = serviceBuilder.AddOptions<TracorDataConvertOptions>();
         if (configureConvert is { }) { optionsBuilder.Configure(configureConvert); }
 
-        return new TracorBuilder(servicebuilder);
+        return new TracorBuilder(serviceBuilder);
     }
 
     /// <summary>
     /// Adds the enabled Tracor services to the service collection with custom configuration.
     /// Enabled Tracor is designed for testing scenarios with full validation capabilities.
     /// </summary>
-    /// <param name="servicebuilder">The service collection to add services to.</param>
+    /// <param name="serviceBuilder">The service collection to add services to.</param>
     /// <param name="configureConvert">An action to configure the Tracor validator options.</param>
     /// <returns>The service collection for method chaining.</returns>
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddEnabledTracor(
-        this IServiceCollection servicebuilder,
+        this IServiceCollection serviceBuilder,
         Action<TracorOptions>? configureTracor = default,
         Action<TracorDataConvertOptions>? configureConvert = default,
         string tracorScopedFilterSection = "") {
-        servicebuilder.AddSingleton<TracorEmergencyLogging>();
-        servicebuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
-        servicebuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
-        servicebuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
-        servicebuilder.AddSingleton<ITracorServiceSink, TracorServiceSink>();
-        servicebuilder.AddTransient<ITracorCollectiveSink>(
+        serviceBuilder.AddSingleton<TracorEmergencyLogging>();
+        serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
+        serviceBuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
+        serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
+        serviceBuilder.AddSingleton<ITracorServiceSink, TracorServiceSink>();
+        serviceBuilder.AddTransient<ITracorCollectiveSink>(
             static (sp) => sp.GetRequiredService<TracorValidator>());
-        servicebuilder.AddSingleton<ITracorDataConvertService, TracorDataConvertService>();
-        servicebuilder.AddSingleton<TracorValidator>(TracorValidator.Create);
-        servicebuilder.AddSingleton<ITracorValidator>(
+        serviceBuilder.AddSingleton<ITracorDataConvertService, TracorDataConvertService>();
+        serviceBuilder.AddSingleton<TracorValidator>(TracorValidator.Create);
+        serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<TracorValidator>());
-        servicebuilder.AddSingleton(typeof(LazyCreatedLogger<>));
+        serviceBuilder.AddSingleton(typeof(LazyCreatedLogger<>));
 
-        servicebuilder.AddTracorScopedFilter((builder) => {
+        serviceBuilder.AddTracorScopedFilter((builder) => {
             builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
         });
 
         {
-            var optionsBuilder = servicebuilder.AddOptions<TracorOptions>();
+            var optionsBuilder = serviceBuilder.AddOptions<TracorOptions>();
             if (configureTracor is { }) { optionsBuilder.Configure(configureTracor); }
         }
         {
-            var optionsBuilder = servicebuilder.AddOptions<TracorDataConvertOptions>();
+            var optionsBuilder = serviceBuilder.AddOptions<TracorDataConvertOptions>();
             if (configureConvert is { }) { optionsBuilder.Configure(configureConvert); }
         }
 
-        return new TracorBuilder(servicebuilder);
+        return new TracorBuilder(serviceBuilder);
     }
 
     /// <summary>

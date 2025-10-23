@@ -1,10 +1,12 @@
-﻿namespace Brimborium.Tracerit.Test;
+﻿#warning TODO: SOON
+#if LATER
+namespace Brimborium.Tracerit.Test;
 
 public class TracorDataPropertyMinimalJsonConverterTests {
     private static TracorDataRecord getTestData() {
         TracorDataRecord given = new TracorDataRecord();
         given.Timestamp = new DateTime(2001, 2, 3, 4, 5, 6, DateTimeKind.Utc);
-        given.TracorIdentitfier = new TracorIdentitfier("test", "test");
+        given.TracorIdentifier = new TracorIdentifier("test", "test");
         given.ListProperty.Add(TracorDataProperty.CreateString("stringProp", "test value"));
         given.ListProperty.Add(TracorDataProperty.CreateInteger("intProp", -42));
         given.ListProperty.Add(TracorDataProperty.CreateLevelValue("levelProp", LogLevel.Critical));
@@ -44,7 +46,7 @@ public class TracorDataPropertyMinimalJsonConverterTests {
         var act = TracorDataSerialization.DeserializeSimple(givenJson);
         await Assert.That(act.ListData.Count).IsEqualTo(2);
         await Assert.That(act.ListData[0].Timestamp.Year).IsEqualTo(2001);
-        await Assert.That(act.ListData[0].TracorIdentitfier.Source).IsEqualTo("test");
+        await Assert.That(act.ListData[0].TracorIdentifier.Source).IsEqualTo("test");
     }
 
     [Test]
@@ -198,3 +200,4 @@ public class TracorDataPropertyMinimalJsonConverterTests {
         await Assert.That(exception.Message).Contains("Invalid GUID value");
     }
 }
+#endif

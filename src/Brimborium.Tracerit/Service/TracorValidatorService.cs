@@ -48,7 +48,7 @@ public sealed class TracorValidatorService : IDisposable {
 
     private void TimerLoop(object? state) {
         using (var tick = this._TracorDataRecordPool.Rent()) {
-            tick.TracorIdentitfier = new TracorIdentitfier("Timer", "Timer", "Tick");
+            tick.TracorIdentifier = new TracorIdentifier("Timer", "Timer", "Tick");
             tick.Timestamp = DateTime.UtcNow;
             this._TracorValidator.OnTrace(true, tick);
         }

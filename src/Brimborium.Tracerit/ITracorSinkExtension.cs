@@ -85,7 +85,7 @@ public readonly record struct OptionalTracorPublic {
 
     public bool Enabled => this._Enabled;
 
-    public void TracePrivate<T>(T value) {
+    public void TracePublic<T>(T value) {
         if (this._Enabled) {
             this._TracorSink.TracePublic<T>(this._Scope, this._Level, this._Message, value);
         }

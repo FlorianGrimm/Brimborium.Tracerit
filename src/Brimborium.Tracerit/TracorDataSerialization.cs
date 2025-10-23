@@ -193,8 +193,8 @@ public static class TracorDataSerialization {
     public static TracorDataRecord ParseTracorData(List<string> srcTracorData) {
         TracorDataRecord result = new(null);
         int state = 0;
-        string? tracorIdentitfierSource = null;
-        string? tracorIdentitfierScope = null;
+        string? tracorIdentifierSource = null;
+        string? tracorIdentifierScope = null;
 
         int idx = 1;
         for (; idx < srcTracorData.Count; idx++) {
@@ -221,10 +221,10 @@ public static class TracorDataSerialization {
                 // state 1 : after Operation
                 // state 2 : after Source
                 if (1 == state) {
-                    if (nameof(TracorIdentitfier.Source) == dstTracorDataProperty.Name) {
+                    if (nameof(TracorIdentifier.Source) == dstTracorDataProperty.Name) {
                         state = 2;
                         if (TracorDataProperty.TypeNameString == dstTracorDataProperty.TypeName) {
-                            tracorIdentitfierSource = dstTracorDataProperty.InnerTextValue;
+                            tracorIdentifierSource = dstTracorDataProperty.InnerTextValue;
                             continue;
                         }
                     }
@@ -233,10 +233,10 @@ public static class TracorDataSerialization {
                 // state 2 : after Source
                 // state 3 : after Scope
                 if (state is 1 or 2) {
-                    if (nameof(TracorIdentitfier.Scope) == dstTracorDataProperty.Name) {
+                    if (nameof(TracorIdentifier.Scope) == dstTracorDataProperty.Name) {
                         state = 3;
                         if (TracorDataProperty.TypeNameString == dstTracorDataProperty.TypeName) {
-                            tracorIdentitfierScope = dstTracorDataProperty.InnerTextValue;
+                            tracorIdentifierScope = dstTracorDataProperty.InnerTextValue;
                             continue;
                         }
                     }
@@ -249,9 +249,9 @@ public static class TracorDataSerialization {
             }
         }
 
-        result.TracorIdentitfier = new(
-            tracorIdentitfierSource ?? string.Empty,
-            tracorIdentitfierScope ?? string.Empty);
+        result.TracorIdentifier = new(
+            tracorIdentifierSource ?? string.Empty,
+            tracorIdentifierScope ?? string.Empty);
 
         return result;
     }

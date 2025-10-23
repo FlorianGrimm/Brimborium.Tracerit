@@ -43,17 +43,17 @@ public abstract class ReferenceCountObject
     protected abstract void ResetState();
 
     bool IReferenceCountObject.PrepareRent() {
-        if (!this.IsStateReseted()) { return false; }
+        if (!this.IsStateReset()) { return false; }
         if (0 != this._ReferenceCount) { return false; }
         this._ReferenceCount = 1;
         return true;
     }
-    protected abstract bool IsStateReseted();
+    protected abstract bool IsStateReset();
 
     long IReferenceCountObject.CanBeReturned() {
         var result = this._ReferenceCount;
         return result switch {
-            0 => this.IsStateReseted() switch {
+            0 => this.IsStateReset() switch {
                 true => this._ReferenceCount,
                 false => long.MinValue
             },
@@ -81,7 +81,7 @@ public abstract class ReferenceCountObject<T>
         this._Value = value;
     }
 
-    protected override bool IsStateReseted() {
+    protected override bool IsStateReset() {
         return this._Value is null;
     }
 

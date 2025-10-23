@@ -18,9 +18,9 @@ public partial class LoggerUtility {
     //    EventName = "Condition",
     //    Level = LogLevel.Debug,
     //    Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
-    //static partial void LogCondition(ILogger logger, TracorIdentitfier callee, bool result, string? fnConditionDisplay);
+    //static partial void LogCondition(ILogger logger, TracorIdentifier callee, bool result, string? fnConditionDisplay);
 
-    public void LogCondition(TracorIdentitfier callee, bool result, string? fnConditionDisplay) {
+    public void LogCondition(TracorIdentifier callee, bool result, string? fnConditionDisplay) {
         this._Logger.LogCondition(callee, result, fnConditionDisplay);
     }
 }

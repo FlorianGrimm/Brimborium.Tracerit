@@ -1,5 +1,8 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
+/// <summary>
+/// ITracorSink bound to baseScope
+/// </summary>
 public sealed class TracorSink : ITracorSink {
     private readonly string _BaseScope;
     private readonly ITracorServiceSink _TracorServiceSink;
@@ -19,16 +22,32 @@ public sealed class TracorSink : ITracorSink {
     public bool IsPrivateEnabled(string? scope, LogLevel level) {
         if (!this._TracorServiceSink.IsCurrentlyEnabled()) { return false; }
         var (fqScope, tsf) = this.GetScopeAndTracorScopedFilter(scope);
-        if (tsf is { }) { return tsf.IsEnabled(TracorConsts.SourceTracorPrivate, level); }
-        if (fqScope is { Length: > 0 }) { return this._TracorServiceSink.IsPrivateEnabled(fqScope, level); }
+        
+        // use current
+        if (tsf is { }) { return tsf.IsEnabled(TracorConstants.SourceTracorPrivate, level); }
+
+        if (fqScope is { Length: > 0 }) {
+            var subTracorScopedFilter = this._TracorServiceSink.GetTracorScopedFilterFactory().CreateTracorScopedFilter(fqScope);
+            return subTracorScopedFilter.IsEnabled(TracorConstants.SourceTracorPublic, level);
+        }
+
+        //if (fqScope is { Length: > 0 }) { return this._TracorServiceSink.IsPrivateEnabled(fqScope, level); }
         return false;
     }
 
     public bool IsPublicEnabled(string? scope, LogLevel level) {
         if (!this._TracorServiceSink.IsCurrentlyEnabled()) { return false; }
         var (fqScope, tsf) = this.GetScopeAndTracorScopedFilter(scope);
-        if (tsf is { }) { return tsf.IsEnabled(TracorConsts.SourceTracorPublic, level); }
-        if (fqScope is { Length: > 0 }) { return this._TracorServiceSink.IsPublicEnabled(fqScope, level); }
+        
+        // use current
+        if (tsf is { }) { return tsf.IsEnabled(TracorConstants.SourceTracorPublic, level); }
+
+        if (fqScope is { Length: > 0 }) {
+            var subTracorScopedFilter = this._TracorServiceSink.GetTracorScopedFilterFactory().CreateTracorScopedFilter(fqScope);
+            return subTracorScopedFilter.IsEnabled(TracorConstants.SourceTracorPublic, level);
+        }
+
+        //if (fqScope is { Length: > 0 }) { return this._TracorServiceSink.IsPublicEnabled(fqScope, level); }
         return false;
     }
 
@@ -54,11 +73,20 @@ public sealed class TracorSink : ITracorSink {
         if (scope is { Length: > 0 } && this._BaseScope is { Length: > 0 }) {
             string fqScope = $"{this._BaseScope}.{scope}";
 
-            return (fqScope: fqScope, tracorScopedFilter: null);
+            if (this._TracorScopedFilter.IncludingAllSubScope()) {
+                return (fqScope: fqScope, tracorScopedFilter: this._TracorScopedFilter);
+            } else {
+                return (fqScope: fqScope, tracorScopedFilter: null);
+            }
         }
         return (fqScope: this._BaseScope, tracorScopedFilter: this._TracorScopedFilter);
     }
 }
+
+/// <summary>
+/// ITracorSink bound to baseScope
+/// </summary>
+/// <typeparam name="TCategoryName">the source for the baseScope</typeparam>
 public sealed class TracorSink<TCategoryName> : ITracorSink<TCategoryName> {
     private readonly string _BaseScope;
     private readonly ITracorServiceSink _TracorServiceSink;
@@ -80,16 +108,32 @@ public sealed class TracorSink<TCategoryName> : ITracorSink<TCategoryName> {
     public bool IsPrivateEnabled(string? scope, LogLevel level) {
         if (!this._TracorServiceSink.IsCurrentlyEnabled()) { return false; }
         var (fqScope, tsf) = this.GetScopeAndTracorScopedFilter(scope);
-        if (tsf is { }) { return tsf.IsEnabled(TracorConsts.SourceTracorPrivate, level); }
-        if (fqScope is { Length: > 0 }) { return this._TracorServiceSink.IsPrivateEnabled(fqScope, level); }
+
+        // use current
+        if (tsf is { }) { return tsf.IsEnabled(TracorConstants.SourceTracorPrivate, level); }
+
+        // use the sub-scope
+        if (fqScope is { Length: > 0 }) {
+            var subTracorScopedFilter = this._TracorServiceSink.GetTracorScopedFilterFactory().CreateTracorScopedFilter(fqScope);
+            return subTracorScopedFilter.IsEnabled(TracorConstants.SourceTracorPublic, level);
+        }
+
         return false;
     }
 
     public bool IsPublicEnabled(string? scope, LogLevel level) {
         if (!this._TracorServiceSink.IsCurrentlyEnabled()) { return false; }
         var (fqScope, tsf) = this.GetScopeAndTracorScopedFilter(scope);
-        if (tsf is { }) { return tsf.IsEnabled(TracorConsts.SourceTracorPublic, level); }
-        if (fqScope is { Length: > 0 }) { return this._TracorServiceSink.IsPublicEnabled(fqScope, level); }
+
+        // use current
+        if (tsf is { }) { return tsf.IsEnabled(TracorConstants.SourceTracorPublic, level); }
+
+        // use the sub-scope
+        if (fqScope is { Length: > 0 }) {
+            var subTracorScopedFilter = this._TracorServiceSink.GetTracorScopedFilterFactory().CreateTracorScopedFilter(fqScope);
+            return subTracorScopedFilter.IsEnabled(TracorConstants.SourceTracorPublic, level);
+        }
+
         return false;
     }
 
@@ -114,8 +158,11 @@ public sealed class TracorSink<TCategoryName> : ITracorSink<TCategoryName> {
     private (string? fqScope, ITracorScopedFilter? tracorScopedFilter) GetScopeAndTracorScopedFilter(string? scope) {
         if (scope is { Length: > 0 } && this._BaseScope is { Length: > 0 }) {
             string fqScope = $"{this._BaseScope}.{scope}";
-
-            return (fqScope: fqScope, tracorScopedFilter: null);
+            if (this._TracorScopedFilter.IncludingAllSubScope()) {
+                return (fqScope: fqScope, tracorScopedFilter: this._TracorScopedFilter);
+            } else { 
+                return (fqScope: fqScope, tracorScopedFilter: null);
+            }
         }
         return (fqScope: this._BaseScope, tracorScopedFilter: this._TracorScopedFilter);
     }

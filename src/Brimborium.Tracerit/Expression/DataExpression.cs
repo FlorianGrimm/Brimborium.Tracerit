@@ -58,11 +58,11 @@ public sealed class DataExpression : ValidatorExpression {
         DataStepState state,
         int childIndex) {
 
-        if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
-            var currentTracorIdentitfier = currentData.TracorIdentitfier;
-            if (!MatchEqualityComparerTracorIdentitfier.Default.Equals(
-                    currentTracorIdentitfier,
-                    expectedtracorIdentitfier)) {
+        if (expectedData.TracorIdentifier is { } expectedTracorIdentifier) {
+            var currentTracorIdentifier = currentData.TracorIdentifier;
+            if (!MatchEqualityComparerTracorIdentifier.Default.Equals(
+                    currentTracorIdentifier,
+                    expectedTracorIdentifier)) {
                 return false;
             }
         }

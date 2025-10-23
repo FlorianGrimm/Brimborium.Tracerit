@@ -140,15 +140,15 @@ internal sealed class TesttimeTracorActivityListener
             return;
         }
 
-        if (!this._DictTracorIdentitfierCacheByActivitySource.TryGetValue(activitySourceIdentifier, out var tracorIdentitfierCache)) {
-            tracorIdentitfierCache = new(new("Activity", activitySourceIdentifier.Name));
-            this._DictTracorIdentitfierCacheByActivitySource = this._DictTracorIdentitfierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentitfierCache);
+        if (!this._DictTracorIdentifierCacheByActivitySource.TryGetValue(activitySourceIdentifier, out var tracorIdentifierCache)) {
+            tracorIdentifierCache = new(new("Activity", activitySourceIdentifier.Name));
+            this._DictTracorIdentifierCacheByActivitySource = this._DictTracorIdentifierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentifierCache);
         }
-        var tracorIdentitfier = tracorIdentitfierCache.Child("Start");
+        var tracorIdentifier = tracorIdentifierCache.Child("Start");
 
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            activityTracorData.TracorIdentitfier = tracorIdentitfier;
+            activityTracorData.TracorIdentifier = tracorIdentifier;
             activityTracorData.Timestamp = activity.StartTimeUtc;
             this._Validator.OnTrace(true, activityTracorData);
         }
@@ -172,15 +172,15 @@ internal sealed class TesttimeTracorActivityListener
             return;
         }
 
-        if (!this._DictTracorIdentitfierCacheByActivitySource.TryGetValue(activitySourceIdentifier, out var tracorIdentitfierCache)) {
-            tracorIdentitfierCache = new(new("Activity", activitySourceIdentifier.Name));
-            this._DictTracorIdentitfierCacheByActivitySource = this._DictTracorIdentitfierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentitfierCache);
+        if (!this._DictTracorIdentifierCacheByActivitySource.TryGetValue(activitySourceIdentifier, out var tracorIdentifierCache)) {
+            tracorIdentifierCache = new(new("Activity", activitySourceIdentifier.Name));
+            this._DictTracorIdentifierCacheByActivitySource = this._DictTracorIdentifierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentifierCache);
         }
 
-        var tracorIdentitfier = tracorIdentitfierCache.Child("Stop");        
+        var tracorIdentifier = tracorIdentifierCache.Child("Stop");
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
-            activityTracorData.TracorIdentitfier = tracorIdentitfier;
+            activityTracorData.TracorIdentifier = tracorIdentifier;
             activityTracorData.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
             this._Validator.OnTrace(true, activityTracorData);
         }

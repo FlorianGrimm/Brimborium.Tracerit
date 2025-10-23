@@ -7,7 +7,7 @@ public enum TracorDataPropertyTypeValue {
     Boolean,
     Enum,
     LevelValue,
-    Float,
+    Double,
     DateTime,
     DateTimeOffset,
     Uuid,

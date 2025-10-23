@@ -25,7 +25,7 @@ public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondit
     public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         var propertyValue = this._FnGetProperty(tracorData);
         var result = this._FnEquality(propertyValue, this._ExpectedValue);
-        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
+        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
         if (result) {
             if (!string.IsNullOrEmpty(this._SetGlobalState)) {
                 if (propertyValue is not null) {
@@ -36,7 +36,7 @@ public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondit
         return result;
     }
 
-    public static CalleeCondition operator /(TracorIdentitfier expected, EqualsTracorDataFuncCondition<TProperty> and) {
+    public static CalleeCondition operator /(TracorIdentifier expected, EqualsTracorDataFuncCondition<TProperty> and) {
         return new CalleeCondition(expected, and);
     }
 
@@ -62,7 +62,7 @@ public sealed class EqualPropertyNameCondition<TProperty> : IExpressionCondition
     public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData.TryGetPropertyValue<TProperty>(this._Property, out var propertyValue)) {
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
-            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, $"{this._Property} == {this._ExpectedValue}");
+            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._Property} == {this._ExpectedValue}");
             if (result) {
                 if (!string.IsNullOrEmpty(this._SetGlobalState)) {
                     if (propertyValue is not null) {
@@ -102,9 +102,9 @@ public sealed class EqualsTracorDataPropertyCondition<TValue, TProperty> : IExpr
             var propertyValue = this._FnGetProperty(value);
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
             if (this._FnGetPropertyDisplay is { }) {
-                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
+                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
             } else {
-                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentitfier, result, default);
+                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, default);
             }
             if (result) {
                 if (!string.IsNullOrEmpty(this._SetGlobalState)) {
@@ -118,7 +118,7 @@ public sealed class EqualsTracorDataPropertyCondition<TValue, TProperty> : IExpr
         return false;
     }
 
-    public static CalleeCondition operator /(TracorIdentitfier expected, EqualsTracorDataPropertyCondition<TValue, TProperty> and) {
+    public static CalleeCondition operator /(TracorIdentifier expected, EqualsTracorDataPropertyCondition<TValue, TProperty> and) {
         return new CalleeCondition(expected, and);
     }
 

@@ -36,13 +36,13 @@ public sealed class JsonDocumentTracorData
             return result;
         }
         if (value.RootElement.ValueKind == System.Text.Json.JsonValueKind.String) {
-            return ["Value"];
+            return [TracorConstants.TracorDataPropertyNameValue];
         }
         if (value.RootElement.ValueKind == System.Text.Json.JsonValueKind.False) {
-            return ["Value"];
+            return [TracorConstants.TracorDataPropertyNameValue];
         }
         if (value.RootElement.ValueKind == System.Text.Json.JsonValueKind.True) {
-            return ["Value"];
+            return [TracorConstants.TracorDataPropertyNameValue];
         }
         return [];
     }
@@ -86,9 +86,14 @@ public sealed class JsonDocumentTracorData
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
     
     public DateTime Timestamp { get; set; }
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         // TODO: if needed

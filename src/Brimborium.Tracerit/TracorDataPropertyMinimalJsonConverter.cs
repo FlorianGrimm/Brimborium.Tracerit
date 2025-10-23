@@ -36,7 +36,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
 
-            return TracorDataProperty.CreateString(propertyName, argValue ?? string.Empty);
+            return TracorDataProperty.CreateStringValue(propertyName, argValue ?? string.Empty);
         }
 
         // [ "<propertyName>", "int", "<value>"
@@ -46,7 +46,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
 
-            return TracorDataProperty.CreateInteger(propertyName, longValue);
+            return TracorDataProperty.CreateIntegerValue(propertyName, longValue);
         }
 
         // [ "<propertyName>", "lvl", "<value>"
@@ -83,14 +83,14 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
-            
+
             if (DateTime.TryParseExact(
                 s: argValue,
                 format: "O",
                 provider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
                 style: DateTimeStyles.AdjustToUniversal,
                 out var dtValue)) {
-                return TracorDataProperty.CreateDateTime(propertyName, dtValue);
+                return TracorDataProperty.CreateDateTimeValue(propertyName, dtValue);
             } else {
                 throw new JsonException();
             }
@@ -102,14 +102,14 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
-            
+
             if (DateTimeOffset.TryParseExact(
                 input: argValue,
                 format: "O",
                 formatProvider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
                 styles: DateTimeStyles.AssumeUniversal,
                 out var dtoValue)) {
-                return TracorDataProperty.CreateDateTimeOffset(propertyName, dtoValue);
+                return TracorDataProperty.CreateDateTimeOffsetValue(propertyName, dtoValue);
             } else {
                 throw new JsonException();
             }
@@ -127,18 +127,18 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             }
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
-            
+
             return TracorDataProperty.CreateBoolean(propertyName, boolValue);
         }
 
         // [ "<propertyName>", "flt", "<value>"
-        if (TracorDataProperty.TypeNameFloat == typeName) {
+        if (TracorDataProperty.TypeNameDouble == typeName) {
             if (reader.TokenType != JsonTokenType.Number) { throw new JsonException("Number expected"); }
             var floatValue = reader.GetDouble();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
-            
-            return TracorDataProperty.CreateFloat(propertyName, floatValue);
+
+            return TracorDataProperty.CreateDoubleValue(propertyName, floatValue);
         }
 
         // [ "<propertyName>", "uuid", "<value>"
@@ -147,9 +147,9 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
-            
+
             if (Guid.TryParse(argValue, out var guidValue)) {
-                return TracorDataProperty.CreateGuid(propertyName, guidValue);
+                return TracorDataProperty.CreateUuidValue(propertyName, guidValue);
             } else {
                 throw new JsonException($"Invalid GUID value: {argValue}");
             }
@@ -166,25 +166,44 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             case TracorDataPropertyTypeValue.Null:
                 break;
             case TracorDataPropertyTypeValue.String:
+                value.TryGetStringValue(out var stringValue);
+                writer.WriteStringValue(stringValue);
+                break;
             case TracorDataPropertyTypeValue.LevelValue:
             case TracorDataPropertyTypeValue.Enum:
+                value.TryGetEnumUntypedValue(out long longValue, out string? textValue);
+                if (textValue is { Length: > 0 }) {
+                    writer.WriteStringValue(textValue);
+                } else {
+                    writer.WriteStringValue(longValue.ToString());
+                }
+                break;
             case TracorDataPropertyTypeValue.DateTime:
+                value.TryGetDateTimeValue(out var dateTimeValue);
+                writer.WriteStringValue(dateTimeValue.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat));
+                break;
             case TracorDataPropertyTypeValue.DateTimeOffset:
-                writer.WriteStringValue(value.InnerTextValue);
+                value.TryGetDateTimeValue(out var dateTimeOffsetValue);
+                writer.WriteStringValue(dateTimeOffsetValue.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat));
                 break;
             case TracorDataPropertyTypeValue.Boolean:
-                writer.WriteBooleanValue(value.InnerLongValue != 0);
+                value.TryGetBooleanValue(out var boolValue);
+                writer.WriteBooleanValue(boolValue);
                 break;
             case TracorDataPropertyTypeValue.Integer:
-                writer.WriteNumberValue(value.InnerLongValue);
+                value.TryGetIntegerValue(out var integerValue);
+                writer.WriteNumberValue(integerValue);
                 break;
-            case TracorDataPropertyTypeValue.Float:
-                writer.WriteNumberValue(value.InnerFloatValue);
+            case TracorDataPropertyTypeValue.Double:
+                value.TryGetDoubleValue(out var floatValue);
+                writer.WriteNumberValue(floatValue);
                 break;
             case TracorDataPropertyTypeValue.Uuid:
-                writer.WriteStringValue(value.InnerTextValue);
+                value.TryGetUuidValue(out var uuidValue);
+                writer.WriteStringValue(uuidValue.ToString("d"));
                 break;
             case TracorDataPropertyTypeValue.Any:
+                writer.WriteStringValue(string.Empty);
                 break;
             default:
                 throw new NotSupportedException($"{value.TypeValue}");

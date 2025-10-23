@@ -19,6 +19,15 @@ public interface ITracorData {
     bool TryGetPropertyValue(string propertyName, out object? propertyValue);
 
     /// <summary>
+    /// Try to get TracorDataProperty named <paramref name="propertyName"/>.
+    /// </summary>
+    /// <param name="propertyName">The property name to search fpr.</param>
+    /// <param name="result">if return true - it contains the property</param>
+    /// <returns>true if found.</returns>
+    /// <remarks>it does not search in special properties</remarks>
+    bool TryGetDataProperty(string propertyName, out TracorDataProperty result);
+
+    /// <summary>
     /// Get the properties.
     /// </summary>
     /// <param name="propertyName">the property Name.</param>
@@ -33,7 +42,7 @@ public interface ITracorData {
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    TracorIdentitfier TracorIdentitfier { get; set; }
+    TracorIdentifier TracorIdentifier { get; set; }
 
     /// <summary>
     /// Convert to <paramref name="listProperty"/>.

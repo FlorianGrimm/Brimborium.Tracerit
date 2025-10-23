@@ -9,6 +9,7 @@ public sealed class NullTracorScopedFilter : ITracorScopedFilter {
 
     /// <inheritdoc />
     public bool IsEnabled(string sourceName, LogLevel logLevel) => false;
+    public bool IncludingAllSubScope() => true;
 }
 
 public class NullTracorScopedFilter<T> : ITracorScopedFilter<T> {
@@ -18,6 +19,8 @@ public class NullTracorScopedFilter<T> : ITracorScopedFilter<T> {
 
     /// <inheritdoc />
     public bool IsEnabled(string sourceName, LogLevel logLevel) => false;
+
+    public bool IncludingAllSubScope() => true;
 }
 
 /// <summary>

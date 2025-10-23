@@ -3,13 +3,14 @@ namespace Brimborium.Tracerit.Filter;
 internal sealed class TracorScopedFilter : ITracorScopedFilter {
     private readonly string _CategoryName;
 
-    public TracorScopedFilter(string categoryName, TracorScopedFilterCategotryInformation[] listCategotryInformation) {
+    public TracorScopedFilter(string categoryName, TracorScopedFilterCategoryInformation[] listCategoryInformation) {
         this._CategoryName = categoryName;
-        this.ListCategotryInformation = listCategotryInformation;
+        this.ListCategoryInformation = listCategoryInformation;
     }
 
-    public TracorScopedFilterCategotryInformation[] ListCategotryInformation;
+    public TracorScopedFilterCategoryInformation[] ListCategoryInformation;
     public TracorScopedFilterCategoryFiltered[]? ListFilteredTracors;
+
 
     public bool IsEnabled(string sourceName, LogLevel logLevel) {
         TracorScopedFilterCategoryFiltered[]? listFilteredTracors = this.ListFilteredTracors;
@@ -17,8 +18,8 @@ internal sealed class TracorScopedFilter : ITracorScopedFilter {
             return false;
         }
 
-        for (int idxFilteredTracors = 0; idxFilteredTracors < listFilteredTracors.Length; idxFilteredTracors++) {
-            ref readonly TracorScopedFilterCategoryFiltered tracorInfo = ref listFilteredTracors[idxFilteredTracors];
+        for (int indexFilteredTracors = 0; indexFilteredTracors < listFilteredTracors.Length; indexFilteredTracors++) {
+            ref readonly TracorScopedFilterCategoryFiltered tracorInfo = ref listFilteredTracors[indexFilteredTracors];
 
             var cmp = StringComparer.OrdinalIgnoreCase.Compare(tracorInfo.SourceName, sourceName);
             if (cmp < 0) {
@@ -31,11 +32,19 @@ internal sealed class TracorScopedFilter : ITracorScopedFilter {
         }
         return false;
     }
+
+    private bool _IncludingAllSubScope = false;
+
+    public bool IncludingAllSubScope() => this._IncludingAllSubScope;
+
+    public void SetIncludingAllSubScope(bool value) {
+        this._IncludingAllSubScope = value;
+    }
 }
 
 public class TracorScopedFilter<T> : ITracorScopedFilter<T> {
     [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-    private readonly ITracorScopedFilter _tracor;
+    private readonly ITracorScopedFilter _TracorScopedFilter;
 
     /// <summary>
     /// Creates a new <see cref="TracorScopedFilter{T}"/>.
@@ -44,13 +53,17 @@ public class TracorScopedFilter<T> : ITracorScopedFilter<T> {
     public TracorScopedFilter(ITracorScopedFilterFactory factory) {
         ArgumentNullException.ThrowIfNull(factory);
 
-        this._tracor = factory.CreateTracorScopedFilter(GetCategoryName());
+        this._TracorScopedFilter = factory.CreateTracorScopedFilter(GetCategoryName());
     }
 
     /// <inheritdoc />
     bool ITracorScopedFilter.IsEnabled(string sourceName, LogLevel logLevel) {
-        return this._tracor.IsEnabled(sourceName, logLevel);
+        return this._TracorScopedFilter.IsEnabled(sourceName, logLevel);
     }
+
+    /// <inheritdoc />
+    public bool IncludingAllSubScope() 
+        => this._TracorScopedFilter.IncludingAllSubScope();
 
     private static string GetCategoryName() => TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.');
 }

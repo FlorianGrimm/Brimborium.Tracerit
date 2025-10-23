@@ -2,12 +2,109 @@
 
 public class TracorDataPropertyTests {
     [Test]
+    public async Task CreateTests() {
+        var d = DateTime.Now;
+        {
+            string expectedValue = d.ToString("O");
+            {
+                var sut = TracorDataProperty.CreateStringValue("Test", expectedValue);
+                {
+                    bool success = sut.TryGetStringValue(out var actualValue);
+                    await Assert.That(success).IsTrue();
+                    await Assert.That(actualValue).IsEqualTo(expectedValue);
+                    await Assert.That(sut.Name).IsEqualTo("Test");
+                    await Assert.That(sut.TypeValue).IsEqualTo(TracorDataPropertyTypeValue.String);
+                }
+                {
+                    await Assert.That(sut.TryGetIntegerValue(out _)).IsFalse();
+                }
+            }
+            {
+                var sut = TracorDataProperty.Create("Test", expectedValue);
+                {
+                    bool success = sut.TryGetStringValue(out var actualValue);
+                    await Assert.That(success).IsTrue();
+                    await Assert.That(actualValue).IsEqualTo(expectedValue);
+                    await Assert.That(sut.Name).IsEqualTo("Test");
+                    await Assert.That(sut.TypeValue).IsEqualTo(TracorDataPropertyTypeValue.String);
+                }
+                {
+                    await Assert.That(sut.TryGetNullValue(out _)).IsFalse();
+                    // await Assert.That(sut.TryGetStringValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetIntegerValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetBooleanValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetEnumUntypedValue(out _, out _)).IsFalse();
+                    await Assert.That(sut.TryGetLevelValueValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetDoubleValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetDateTimeValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetDateTimeOffsetValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetUuidValue(out _)).IsFalse();
+                    await Assert.That(sut.TryGetAnyValue(out _)).IsFalse();
+                }
+            }
+        }
+        {
+            long expectedValue = d.Ticks;
+            {
+                var sut = TracorDataProperty.CreateIntegerValue("Test", expectedValue);
+                {
+                    bool success = sut.TryGetIntegerValue(out var actualValue);
+                    await Assert.That(success).IsTrue();
+                    await Assert.That(actualValue).IsEqualTo(expectedValue);
+                    await Assert.That(sut.Name).IsEqualTo("Test");
+                    await Assert.That(sut.TypeValue).IsEqualTo(TracorDataPropertyTypeValue.Integer);
+                }
+                {
+                    await Assert.That(sut.TryGetStringValue(out _)).IsFalse();
+                }
+            }
+            {
+                var sut = TracorDataProperty.Create("Test", expectedValue);
+                {
+                    bool success = sut.TryGetIntegerValue(out var actualValue);
+                    await Assert.That(success).IsTrue();
+                    await Assert.That(actualValue).IsEqualTo(expectedValue);
+                    await Assert.That(sut.Name).IsEqualTo("Test");
+                    await Assert.That(sut.TypeValue).IsEqualTo(TracorDataPropertyTypeValue.Integer);
+                }
+                {
+                    await Assert.That(sut.TryGetStringValue(out _)).IsFalse();
+                }
+            }
+        }
+
+        {
+            long expectedValue = d.Ticks;
+            Nullable<long> inputValue = d.Ticks;
+            {
+                var sut = TracorDataProperty.Create("Test", inputValue);
+                {
+                    bool success = sut.TryGetIntegerValue(out var actualValue);
+                    await Assert.That(success).IsTrue();
+                    await Assert.That(actualValue).IsEqualTo(expectedValue);
+                    await Assert.That(sut.Name).IsEqualTo("Test");
+                    await Assert.That(sut.TypeValue).IsEqualTo(TracorDataPropertyTypeValue.Integer);
+                }
+                {
+                    await Assert.That(sut.TryGetStringValue(out _)).IsFalse();
+                }
+            }
+        }
+        //{
+        //    var value = d.Ticks;
+        //    var sut=new TracorDataProperty();
+        //    sut.InnerLongValue = value;
+        //    await Assert.That(sut.InnerLongValue).IsEqualTo(value);
+        //}
+    }
+
+    [Test]
     [Arguments(TracorDataPropertyTypeValue.String, "abc", "def", true)]
     [Arguments(TracorDataPropertyTypeValue.String, "", "def", false)]
     [Arguments(TracorDataPropertyTypeValue.String, "abc", "", true)]
     public async Task CreateStringTest(TracorDataPropertyTypeValue typeValue, string argName, string argValue, bool successfull) {
         {
-            var act = TracorDataProperty.CreateString(argName, argValue);
+            var act = TracorDataProperty.CreateStringValue(argName, argValue);
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo(argValue);
 
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1L).IsEqualTo(-1L);
@@ -16,7 +113,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(DateTimeOffset.FromUnixTimeMilliseconds(0));
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
         /*
         var sb = new StringBuilder();
@@ -47,7 +144,7 @@ public class TracorDataPropertyTests {
     public async Task CreateIntegerTest(TracorDataPropertyTypeValue typeValue, string argName, int argValue, bool successfull) {
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.CreateInteger(argName, argValue);
+            var act = TracorDataProperty.CreateIntegerValue(argName, argValue);
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo("no");
 
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(argValue);
@@ -56,7 +153,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(DateTimeOffset.FromUnixTimeMilliseconds(0));
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
         /*
         {
@@ -86,7 +183,7 @@ public class TracorDataPropertyTests {
     public async Task CreateLevelValueTest(TracorDataPropertyTypeValue typeValue, string argName, LogLevel argValue, bool successfull) {
         {
             var act = TracorDataProperty.CreateLevelValue(argName, argValue);
-            
+
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo("no");
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(-1);
 
@@ -95,7 +192,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(DateTimeOffset.FromUnixTimeMilliseconds(0));
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
         /*
         var sb = new StringBuilder();
@@ -131,13 +228,13 @@ public class TracorDataPropertyTests {
     [Arguments(TracorDataPropertyTypeValue.DateTime, "", "2000-01-02T03:04:05.0000000Z", 946782245000000000, false)]
     public async Task CreateDateTimeTest(TracorDataPropertyTypeValue typeValue, string argName, string txtArgValue, long ns, bool successfull) {
         DateTime argValue = DateTime.ParseExact(
-            txtArgValue, 
-            "O", 
+            txtArgValue,
+            "O",
             System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
             System.Globalization.DateTimeStyles.AdjustToUniversal);
         var sb = new StringBuilder();
         {
-            var act = TracorDataProperty.CreateDateTime(argName, argValue);
+            var act = TracorDataProperty.CreateDateTimeValue(argName, argValue);
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo("no");
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(-1);
             await Assert.That(act.TryGetLevelValueValue(out var lvlValue) ? lvlValue : LogLevel.None).IsEqualTo(LogLevel.None);
@@ -146,7 +243,7 @@ public class TracorDataPropertyTests {
 
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(DateTimeOffset.FromUnixTimeMilliseconds(0));
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
         /*
         {
@@ -179,7 +276,7 @@ public class TracorDataPropertyTests {
         DateTimeOffset argValueUtc = new DateTimeOffset(new DateTime(argValue.Ticks), TimeSpan.Zero);
 
         {
-            var act = TracorDataProperty.CreateDateTimeOffset(argName, argValue);
+            var act = TracorDataProperty.CreateDateTimeOffsetValue(argName, argValue);
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo("no");
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(-1);
             await Assert.That(act.TryGetLevelValueValue(out var lvlValue) ? lvlValue : LogLevel.None).IsEqualTo(LogLevel.None);
@@ -188,7 +285,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtoValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(argValue);
 
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
 
         /*
@@ -228,7 +325,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(DateTimeOffset.FromUnixTimeMilliseconds(0));
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsEqualTo(argValue);
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
         /*
         {
@@ -253,22 +350,22 @@ public class TracorDataPropertyTests {
     }
 
     [Test]
-    [Arguments(TracorDataPropertyTypeValue.Float, "abc", 1.5d, true)]
-    [Arguments(TracorDataPropertyTypeValue.Float, "abc", 100.5d, true)]
-    [Arguments(TracorDataPropertyTypeValue.Float, "abc", -4.2, true)]
-    [Arguments(TracorDataPropertyTypeValue.Float, "", 0d, false)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 1.5d, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", 100.5d, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "abc", -4.2, true)]
+    [Arguments(TracorDataPropertyTypeValue.Double, "", 0d, false)]
     public async Task CreateFloatTest(TracorDataPropertyTypeValue typeValue, string argName, double argValue, bool successfull) {
         var sb = new StringBuilder();
         var textValue = argValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
         {
-            var act = TracorDataProperty.CreateFloat(argName, argValue);
+            var act = TracorDataProperty.CreateDoubleValue(argName, argValue);
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo("no");
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(-1);
             await Assert.That(act.TryGetLevelValueValue(out var lvlValue) ? lvlValue : LogLevel.None).IsEqualTo(LogLevel.None);
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
             await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue) ? dtValue : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(DateTimeOffset.FromUnixTimeMilliseconds(0));
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
-            await Assert.That(act.TryGetFloatValue(out var floatValue) ? floatValue : -1).IsEqualTo(argValue);
+            await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(argValue);
         }
         /*
         {

@@ -48,30 +48,36 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
 
     public bool IsPrivateEnabled(string scope, LogLevel logLevel) {
         if (this._Publisher.IsEnabled()) {
-            return true;
-        } else {
-            return false;
+            var tracorScopedFilter = this._TracorScopedFilterFactory.CreateTracorScopedFilter(scope);
+            if (tracorScopedFilter.IsEnabled(sourceName: TracorConstants.SourceTracorPrivate, logLevel: logLevel)) {
+                return true;
+            }
         }
+        return false;
     }
 
     public bool IsPublicEnabled(string scope, LogLevel logLevel) {
         if (this._Publisher.IsEnabled()) {
-            return true;
-        } else {
-            return false;
+            var tracorScopedFilter = this._TracorScopedFilterFactory.CreateTracorScopedFilter(scope);
+            if (tracorScopedFilter.IsEnabled(sourceName: TracorConstants.SourceTracorPublic, logLevel: logLevel)) {
+                return true;
+            }
         }
+        return false;
     }
 
     public void TracePrivate<T>(string scope, LogLevel level, string message, T value) {
         try {
-#warning message tracorData.TracorIdentitfier
-            TracorIdentitfier callee = new(TracorConsts.SourceTracorPrivate, scope, message);
+            TracorIdentifier callee = new(TracorConstants.SourceTracorPrivate, scope, message);
             ITracorData tracorData;
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
-                tracorData.TracorIdentitfier = callee;
+                tracorData.TracorIdentifier = callee;
             } else {
                 tracorData = this._TracorDataConvertService.ConvertPrivate(callee, value);
+                if (tracorData.TracorIdentifier.IsEmpty()) {
+                    tracorData.TracorIdentifier = callee;
+                }
             }
             tracorData.Timestamp = DateTime.UtcNow;
 
@@ -89,21 +95,21 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
             this._Logger.LogError(exception: error, message: "Trace Failed");
         }
     }
-     
+
     public void TracePublic<T>(string scope, LogLevel level, string message, T value) {
         try {
             ITracorData tracorData;
-#warning message
-           
-            TracorIdentitfier callee = new(TracorConsts.SourceTracorPublic, scope, message);
+
+            DateTime utcNow = DateTime.UtcNow;
+            TracorIdentifier callee = new(TracorConstants.SourceTracorPublic, scope, message);
 
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
-                tracorData.TracorIdentitfier = callee;
             } else {
                 tracorData = this._TracorDataConvertService.ConvertPublic(/*callee,*/ value);
             }
-            tracorData.Timestamp = DateTime.UtcNow;
+            tracorData.TracorIdentifier = callee;
+            tracorData.Timestamp = utcNow;
 
             if (value is IReferenceCountObject referenceCountObject) {
                 referenceCountObject.IncrementReferenceCount();

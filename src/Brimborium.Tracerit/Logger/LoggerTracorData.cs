@@ -13,7 +13,7 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
         this.Arguments.Clear();
     }
 
-    protected override bool IsStateReseted() => 0 == this.Arguments.Count && this.Arguments.Capacity <= 128;
+    protected override bool IsStateReset() => 0 == this.Arguments.Count && this.Arguments.Capacity <= 128;
 
     public List<KeyValuePair<string, object?>> Arguments => this._Arguments;
 
@@ -70,9 +70,21 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
 
     public DateTime Timestamp { get; set; }
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        foreach (var arg in this._Arguments) {
+            if (string.Equals(arg.Key, propertyName, StringComparison.Ordinal)) {
+                result = TracorDataProperty.Create(arg.Key, arg.Value);
+                return true;
+            }
+        }
+
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         foreach (var arg in this._Arguments) {

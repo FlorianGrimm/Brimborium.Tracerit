@@ -87,7 +87,7 @@ public class TracorTests {
         
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         bool tracorDataReceived = false;
         ITracorData? receivedData = null;
@@ -119,7 +119,7 @@ public class TracorTests {
         
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         var originalTracorData = new ValueTracorData<string>("direct trace data");
         ITracorData? receivedData = null;
@@ -200,9 +200,9 @@ public class TracorTests {
     /// Test helper expression that allows custom condition logic for testing.
     /// </summary>
     private class TestMatchExpression : ValidatorExpression {
-        private readonly Func<TracorIdentitfier, ITracorData, OnTraceStepCurrentContext, bool> _condition;
+        private readonly Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> _condition;
 
-        public TestMatchExpression(Func<TracorIdentitfier, ITracorData, OnTraceStepCurrentContext, bool> condition) 
+        public TestMatchExpression(Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> condition) 
             : base(null) {
             this._condition = condition;
         }
@@ -215,7 +215,7 @@ public class TracorTests {
                 return state.Result;
             }
 
-            if (this._condition(tracorData.TracorIdentitfier, tracorData, currentContext)) {
+            if (this._condition(tracorData.TracorIdentifier, tracorData, currentContext)) {
                 currentContext.SetStateSuccessfull(this, state);
                 return TracorValidatorOnTraceResult.Successfull;
             }

@@ -87,7 +87,7 @@ public partial class Program {
             .AddFileTracorCollectiveSinkDefault(
                configuration: builder.Configuration,
                configure: (fileTracorOptions) => {
-                   fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
+                   fileTracorOptions.OnGetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
                })
             .AddTracorActivityListener(tracorEnabled)
             .AddTracorInstrumentation<SampleInstrumentation>()

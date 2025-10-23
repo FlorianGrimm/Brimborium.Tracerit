@@ -17,7 +17,7 @@ public sealed class TracorDataRecord
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
 
     public DateTime Timestamp { get; set; }
 
@@ -62,6 +62,19 @@ public sealed class TracorDataRecord
         return false;
     }
 
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        var listProperty = ListProperty;
+        for (int index = 0; index < listProperty.Count; index++) {
+            if (string.Equals(listProperty[index].Name, propertyName, StringComparison.Ordinal)) { 
+                result = listProperty[index];
+                return true;
+            }
+        }
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
+
+
     /// <inheritdoc/>
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         listProperty.AddRange(this.ListProperty);
@@ -74,11 +87,11 @@ public sealed class TracorDataRecord
     /// <param name="expectedData">The expected trace data record.</param>
     /// <returns>True if the current data matches the expected data; otherwise, false.</returns>
     public static bool IsPartialEquals(ITracorData currentData, TracorDataRecord expectedData) {
-        if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
-            var currentTracorIdentitfier = currentData.TracorIdentitfier;
-            if (!MatchEqualityComparerTracorIdentitfier.Default.Equals(
-                    currentTracorIdentitfier,
-                    expectedtracorIdentitfier)) {
+        if (expectedData.TracorIdentifier is { } expectedTracorIdentifier) {
+            var currentTracorIdentifier = currentData.TracorIdentifier;
+            if (!MatchEqualityComparerTracorIdentifier.Default.Equals(
+                    currentTracorIdentifier,
+                    expectedTracorIdentifier)) {
                 return false;
             }
         }
@@ -106,7 +119,7 @@ public sealed class TracorDataRecord
         this.ListProperty.Clear();
     }
 
-    protected override bool IsStateReseted() {
+    protected override bool IsStateReset() {
         return this.ListProperty.Count == 0 && this.ListProperty.Capacity <= 128;
     }
 
@@ -117,7 +130,7 @@ public sealed class TracorDataRecord
         {
             result = new TracorDataRecord();
 
-            result.TracorIdentitfier = src.TracorIdentitfier;
+            result.TracorIdentifier = src.TracorIdentifier;
             result.Timestamp = src.Timestamp;
             src.ConvertProperties(result.ListProperty);
 
@@ -156,7 +169,7 @@ public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> 
 [JsonSerializable(typeof(TracorDataCollection))]
 [JsonSerializable(typeof(TracorDataRecord))]
 [JsonSerializable(typeof(TracorDataProperty))]
-[JsonSerializable(typeof(TracorIdentitfier))]
+[JsonSerializable(typeof(TracorIdentifier))]
 internal partial class TracorDataJsonSerializerContext : JsonSerializerContext {
 }
 */

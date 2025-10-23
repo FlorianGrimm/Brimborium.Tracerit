@@ -15,4 +15,5 @@ global using Microsoft.Extensions.Options;
 
 global using Brimborium.Tracerit;
 global using Brimborium.Tracerit.Diagnostics;
+global using Brimborium.Tracerit.Filter;
 global using Brimborium.Tracerit.FileSink;

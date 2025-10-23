@@ -15,9 +15,15 @@ public sealed class NullTypeData : ITracorData {
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
 
     public DateTime Timestamp { get; set; }
+
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
     }

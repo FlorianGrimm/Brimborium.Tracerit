@@ -1,4 +1,5 @@
 ﻿namespace Brimborium.Tracerit.DataAccessor;
+
 public sealed class BoundAccessorTracorDataTyped<TValue> : ITracorData<TValue> {
     private readonly ITracorDataAccessor<TValue> _TracorDataAccessor;
     private readonly TValue _Value;
@@ -8,7 +9,7 @@ public sealed class BoundAccessorTracorDataTyped<TValue> : ITracorData<TValue> {
         this._Value = value;
     }
 
-    public object? this[string propertyName] { 
+    public object? this[string propertyName] {
         get {
             if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
                 return propertyValue;
@@ -34,11 +35,24 @@ public sealed class BoundAccessorTracorDataTyped<TValue> : ITracorData<TValue> {
     /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
 
     public DateTime Timestamp { get; set; }
 
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        if (this._TracorDataAccessor.TryGetPropertyValueTyped(this._Value, propertyName, out var propertyValue)) {
+            result = TracorDataProperty.Create(propertyName, propertyValue);
+            return true;
+        }
+
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
+
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
-        // TODO: if needed
+        var tracorDataPropertyValue = TracorDataProperty.Create(
+            TracorConstants.TracorDataPropertyNameValue,
+            this._Value);
+        listProperty.Add(tracorDataPropertyValue);
     }
 }

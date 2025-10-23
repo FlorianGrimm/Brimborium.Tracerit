@@ -1,4 +1,5 @@
-﻿namespace Brimborium.Tracerit;
+﻿#if later
+namespace Brimborium.Tracerit;
 
 public sealed class TracorDataPropertyOtelCompatibleJsonConverter
     : System.Text.Json.Serialization.JsonConverter<TracorDataProperty> {
@@ -209,3 +210,4 @@ public sealed class TracorDataPropertyOtelCompatibleJsonConverter
         writer.WriteEndObject();
     }
 }
+#endif

@@ -40,7 +40,7 @@ public static class ITracorDataJsonSimpleConverterUtility {
         var typeTracorDataProperty = typeof(TracorDataProperty);
         var converterTracorDataProperty = (System.Text.Json.Serialization.JsonConverter<TracorDataProperty>)options.GetConverter(typeTracorDataProperty);
         TracorDataRecord result = new();
-        TracorIdentitfier tracorIdentitfier = new TracorIdentitfier();
+        TracorIdentifier tracorIdentifier = new TracorIdentifier();
         int state = 0;
         while (reader.TokenType != JsonTokenType.EndArray) {
             var tracorDataProperty = converterTracorDataProperty.Read(ref reader, typeTracorDataProperty, options);
@@ -61,7 +61,7 @@ public static class ITracorDataJsonSimpleConverterUtility {
                     if ("source" == tracorDataProperty.Name) {
                         state = 2;
                         if (tracorDataProperty.TryGetStringValue(out var sourceValue)) {
-                            tracorIdentitfier.Source = sourceValue ?? string.Empty;
+                            tracorIdentifier.Source = sourceValue ?? string.Empty;
                             continue;
                         } else {
                             result.ListProperty.Add(tracorDataProperty);
@@ -74,7 +74,7 @@ public static class ITracorDataJsonSimpleConverterUtility {
                     if ("scope" == tracorDataProperty.Name) {
                         state = 3;
                         if (tracorDataProperty.TryGetStringValue(out var scopeValue)) {
-                            tracorIdentitfier.Scope = scopeValue ?? string.Empty;
+                            tracorIdentifier.Scope = scopeValue ?? string.Empty;
                             continue;
                         } else {
                             result.ListProperty.Add(tracorDataProperty);
@@ -87,7 +87,7 @@ public static class ITracorDataJsonSimpleConverterUtility {
                     if ("message" == tracorDataProperty.Name) {
                         state = 4;
                         if (tracorDataProperty.TryGetStringValue(out var messageValue)) {
-                            tracorIdentitfier.Message = messageValue ?? string.Empty;
+                            tracorIdentifier.Message = messageValue ?? string.Empty;
                             continue;
                         } else {
                             result.ListProperty.Add(tracorDataProperty);
@@ -101,7 +101,7 @@ public static class ITracorDataJsonSimpleConverterUtility {
         }
 
         if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException(); }
-        result.TracorIdentitfier = tracorIdentitfier;
+        result.TracorIdentifier = tracorIdentifier;
         return result;
     }
 

@@ -10,6 +10,8 @@ public interface ITracorScopedFilter {
     bool IsEnabled(
         string sourceName,
         LogLevel logLevel);
+
+    bool IncludingAllSubScope();
 }
 
 public interface ITracorScopedFilter<out TCategoryName> : ITracorScopedFilter {
@@ -44,8 +46,12 @@ public interface ITracorScopedFilterSource {
     string GetSourceName();
 }
 
-public interface ITracorScopedFilterSourceConfiguration<T> {
+public interface ITracorScopedFilterSourceConfiguration {
     IConfiguration Configuration { get; }
+}
+
+public interface ITracorScopedFilterSourceConfiguration<out T>
+    : ITracorScopedFilterSourceConfiguration {
 }
 
 public interface ITracorScopedFilterConfigurationFactory {

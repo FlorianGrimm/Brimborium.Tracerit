@@ -2,27 +2,28 @@
 namespace Brimborium.Tracerit.Filter;
 
 /// <summary>
-/// inherited class must end with TracorScopedFilterSource
+/// SourceName
+/// inherited class must end with TracorScopedFilterSource or give the sourceName
 /// </summary>
 public class TracorScopedFilterSource : ITracorScopedFilterSource {
     public const string TypeNameSuffix = "TracorScopedFilterSource";
     public static string GetSourceNameFromType(Type type) {
-        string typename = type.Name;
-        if (typename.EndsWith(TypeNameSuffix)) {
+        string typeName = type.Name;
+        if (typeName.EndsWith(TypeNameSuffix)) {
             string name;
-            name = typename[..^TypeNameSuffix.Length];
+            name = typeName[..^TypeNameSuffix.Length];
             return name;
         }
 
         {
-            int pos = typename.IndexOf("Tracor");
+            int pos = typeName.IndexOf("Tracor");
             if (0 < pos) {
-                return typename[..pos];
+                return typeName[..pos];
             }
         }
 
         {
-            return typename;
+            return typeName;
         }
     }
 
@@ -39,4 +40,15 @@ public class TracorScopedFilterSource : ITracorScopedFilterSource {
     }
 
     public string GetSourceName() => this._SourceName;
+}
+
+public sealed class PublicTracorScopedFilterSource
+    : ITracorScopedFilterSource {
+    public string GetSourceName() => TracorConstants.SourceTracorPublic;
+}
+
+public sealed class PrivateTracorScopedFilterSource
+    : ITracorScopedFilterSource {
+
+    public string GetSourceName() => TracorConstants.SourceTracorPrivate;
 }

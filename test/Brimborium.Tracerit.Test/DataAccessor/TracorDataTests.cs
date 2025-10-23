@@ -4,7 +4,7 @@ namespace Brimborium.Tracerit.Test.DataAccessor;
 /// Unit tests for ITracorData implementations and related data accessor functionality.
 /// </summary>
 public class TracorDataTests {
-    
+
     [Test]
     public async Task ValueTracorData_ShouldProvideValueProperty() {
         // Arrange
@@ -12,8 +12,12 @@ public class TracorDataTests {
         var tracorData = new ValueTracorData<string>(testValue);
 
         // Act & Assert
-        await Assert.That(tracorData.GetListPropertyName()).Contains("Value");
-        await Assert.That(tracorData.TryGetPropertyValue("Value", out var propertyValue)).IsTrue();
+        await Assert.That(tracorData.GetListPropertyName()).Contains(
+            TracorConstants.TracorDataPropertyNameValue
+            );
+        await Assert.That(tracorData.TryGetPropertyValue(
+            TracorConstants.TracorDataPropertyNameValue,
+            out var propertyValue)).IsTrue();
         await Assert.That(propertyValue).IsEqualTo(testValue);
         await Assert.That(tracorData["Value"]).IsEqualTo(testValue);
     }
@@ -164,10 +168,14 @@ public class TracorDataTests {
         var tracorData = new ValueTracorData<int>(42);
 
         // Act & Assert
-        await Assert.That(tracorData.TryGetPropertyValue<int>("Value", out var intValue)).IsTrue();
+        await Assert.That(tracorData.TryGetPropertyValue<int>(
+            TracorConstants.TracorDataPropertyNameValue,
+            out var intValue)).IsTrue();
         await Assert.That(intValue).IsEqualTo(42);
 
-        await Assert.That(tracorData.TryGetPropertyValue<string>("Value", out var stringValue)).IsFalse();
+        await Assert.That(tracorData.TryGetPropertyValue<string>(
+            TracorConstants.TracorDataPropertyNameValue,
+            out var stringValue)).IsFalse();
         await Assert.That(stringValue).IsNull();
     }
 }

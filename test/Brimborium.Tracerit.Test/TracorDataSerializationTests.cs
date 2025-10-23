@@ -41,8 +41,8 @@ public class TracorDataSerializationTests {
         await Assert.That(tracorDataRecordCollection).IsNotNull();
         await Assert.That(tracorDataRecordCollection.ListData.Count).IsEqualTo(3);
 
-        await Assert.That(tracorDataRecordCollection.ListData.Select(tdr => tdr.TracorIdentitfier.Source ?? "").ToList()).IsEquivalentTo(["Activity", "Activity", "Activity"]);
-        await Assert.That(tracorDataRecordCollection.ListData.Select(tdr => tdr.TracorIdentitfier.Scope ?? "")).IsEquivalentTo(["sample.test1.Stop", "sample.test1.Stop", "sample.test1.Stop"]);
+        await Assert.That(tracorDataRecordCollection.ListData.Select(tdr => tdr.TracorIdentifier.Source ?? "").ToList()).IsEquivalentTo(["Activity", "Activity", "Activity"]);
+        await Assert.That(tracorDataRecordCollection.ListData.Select(tdr => tdr.TracorIdentifier.Scope ?? "")).IsEquivalentTo(["sample.test1.Stop", "sample.test1.Stop", "sample.test1.Stop"]);
         await Assert.That(tracorDataRecordCollection.ListData.Select(rec => (rec["operation"] as string) ?? "")).IsEquivalentTo(["test2", "test3", "test1"]);
 
         string jsonAct = TracorDataSerialization.ConvertToMinimizeStringJson(
@@ -61,7 +61,7 @@ public class TracorDataSerializationTests {
         TracorDataCollection tracorDataCollection = new();
         tracorDataCollection.ListData.Add(
             new TracorDataRecord() {
-                TracorIdentitfier = new("a", "b"),
+                TracorIdentifier = new("a", "b"),
                 ListProperty = {
                     TracorDataProperty.CreateString("c","d"),
                     TracorDataProperty.CreateInteger("e",6),

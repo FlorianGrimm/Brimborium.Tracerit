@@ -6,27 +6,27 @@
 /// <param name="Source">The source identifier, typically representing the component or module.</param>
 /// <param name="Scope">The string identifier of the caller or trace point.</param>
 /// <param name="TypeParameter">TypeParameter</param>
-public sealed record class TracorIdentitfierType(string Source, string Scope, Type TypeParameter);
+public sealed record class TracorIdentifierType(string Source, string Scope, Type TypeParameter);
 
 /// <summary>
-/// Provides case-insensitive equality comparison for TracorIdentitfierType instances.
+/// Provides case-insensitive equality comparison for TracorIdentifierType instances.
 /// Both Source and Callee properties must match exactly (case-insensitive) for equality.
 /// </summary>
-public sealed class EqualityComparerTracorIdentitfierType : EqualityComparer<TracorIdentitfierType> {
-    private static EqualityComparerTracorIdentitfierType? _Default;
+public sealed class EqualityComparerTracorIdentifierType : EqualityComparer<TracorIdentifierType> {
+    private static EqualityComparerTracorIdentifierType? _Default;
 
     /// <summary>
     /// Gets the default instance of the equality comparer.
     /// </summary>
-    public new static EqualityComparerTracorIdentitfierType Default => (_Default ??= new());
+    public new static EqualityComparerTracorIdentifierType Default => (_Default ??= new());
 
     /// <summary>
-    /// Determines whether two TracorIdentitfierType instances are equal using case-insensitive comparison.
+    /// Determines whether two TracorIdentifierType instances are equal using case-insensitive comparison.
     /// </summary>
-    /// <param name="x">The first TracorIdentitfierType to compare.</param>
-    /// <param name="y">The second TracorIdentitfierType to compare.</param>
+    /// <param name="x">The first TracorIdentifierType to compare.</param>
+    /// <param name="y">The second TracorIdentifierType to compare.</param>
     /// <returns>True if the instances are equal; otherwise, false.</returns>
-    public override bool Equals(TracorIdentitfierType? x, TracorIdentitfierType? y) {
+    public override bool Equals(TracorIdentifierType? x, TracorIdentifierType? y) {
         if (ReferenceEquals(x, y)) return true;
         if (x is null || y is null) { return false; }
         if (!string.Equals(x.Source, y.Source, StringComparison.OrdinalIgnoreCase)) {
@@ -39,36 +39,36 @@ public sealed class EqualityComparerTracorIdentitfierType : EqualityComparer<Tra
     }
 
     /// <summary>
-    /// Returns a hash code for the specified TracorIdentitfierType.
+    /// Returns a hash code for the specified TracorIdentifierType.
     /// </summary>
-    /// <param name="obj">The TracorIdentitfierType for which to get a hash code.</param>
+    /// <param name="obj">The TracorIdentifierType for which to get a hash code.</param>
     /// <returns>A hash code for the specified object.</returns>
-    public override int GetHashCode([DisallowNull] TracorIdentitfierType obj)
+    public override int GetHashCode([DisallowNull] TracorIdentifierType obj)
         => HashCode.Combine(obj.Source, obj.Scope);
 }
 
 
 /// <summary>
-/// Provides partial equality comparison for TracorIdentitfierType.
+/// Provides partial equality comparison for TracorIdentifierType.
 /// The current property is only compared if the expected property is not empty.
 /// The expected property is always compared case-insensitively.
 /// </summary>
-public sealed class MatchEqualityComparerTracorIdentitfierType : EqualityComparer<TracorIdentitfierType> {
-    private static MatchEqualityComparerTracorIdentitfierType? _Default;
+public sealed class MatchEqualityComparerTracorIdentifierType : EqualityComparer<TracorIdentifierType> {
+    private static MatchEqualityComparerTracorIdentifierType? _Default;
 
     /// <summary>
     /// Gets the default instance of the match equality comparer.
     /// </summary>
-    public new static MatchEqualityComparerTracorIdentitfierType Default => (_Default ??= new());
+    public new static MatchEqualityComparerTracorIdentifierType Default => (_Default ??= new());
 
     /// <summary>
-    /// Determines whether two TracorIdentitfierType instances are partial equal.
+    /// Determines whether two TracorIdentifierType instances are partial equal.
     /// The properties are only compare if the y ones are not empty.
     /// </summary>
-    /// <param name="x">The first (current) TracorIdentitfierType to compare.</param>
-    /// <param name="y">The second (expected / partial) TracorIdentitfierType to compare.</param>
+    /// <param name="x">The first (current) TracorIdentifierType to compare.</param>
+    /// <param name="y">The second (expected / partial) TracorIdentifierType to compare.</param>
     /// <returns>True if the instances match; otherwise, false.</returns>
-    public override bool Equals(TracorIdentitfierType? x, TracorIdentitfierType? y) {
+    public override bool Equals(TracorIdentifierType? x, TracorIdentifierType? y) {
         if (ReferenceEquals(x, y)) return true;
         if (x is null || y is null) { return false; }
         if (y.Source is { Length: > 0 } ySource) {
@@ -85,10 +85,10 @@ public sealed class MatchEqualityComparerTracorIdentitfierType : EqualityCompare
     }
 
     /// <summary>
-    /// Returns a hash code for the specified TracorIdentitfierType.
+    /// Returns a hash code for the specified TracorIdentifierType.
     /// </summary>
-    /// <param name="obj">The TracorIdentitfierType for which to get a hash code.</param>
+    /// <param name="obj">The TracorIdentifierType for which to get a hash code.</param>
     /// <returns>A hash code for the specified object.</returns>
-    public override int GetHashCode([DisallowNull] TracorIdentitfierType obj)
+    public override int GetHashCode([DisallowNull] TracorIdentifierType obj)
         => HashCode.Combine(obj.Source, obj.Scope);
 }
