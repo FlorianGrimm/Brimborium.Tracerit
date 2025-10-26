@@ -135,7 +135,7 @@ public static partial class TracorServiceCollectionExtensions {
         servicebuilder.AddSingleton<T>();
         servicebuilder.AddOptions<TracorActivityListenerOptions>()
             .Configure((options) => {
-                options.ListActivitySourceResolver.Add(new InstrumentationBaseResolver<T>());
+                options.GetListActivitySourceResolver().Add(new InstrumentationBaseResolver<T>());
             });
         return servicebuilder;
     }

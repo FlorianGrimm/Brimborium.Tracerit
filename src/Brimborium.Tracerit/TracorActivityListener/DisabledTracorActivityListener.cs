@@ -4,14 +4,14 @@ namespace Brimborium.Tracerit.TracorActivityListener;
 /// <summary>
 /// do nothing
 /// </summary>
-internal sealed class RuntimeTracorActivityListener
+internal sealed class DisabledTracorActivityListener
     : BaseTracorActivityListener
     , ITracorActivityListener {
 
-    public RuntimeTracorActivityListener(
+    public DisabledTracorActivityListener(
         IServiceProvider serviceProvider,
         IOptionsMonitor<TracorActivityListenerOptions> options,
-        ILogger<RuntimeTracorActivityListener> logger) : base(
+        ILogger<DisabledTracorActivityListener> logger) : base(
             serviceProvider,
             options,
             logger) {

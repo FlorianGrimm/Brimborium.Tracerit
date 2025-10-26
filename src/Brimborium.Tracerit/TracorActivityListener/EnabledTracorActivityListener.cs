@@ -1,10 +1,10 @@
 ﻿namespace Brimborium.Tracerit.TracorActivityListener;
 
-internal sealed class TesttimeTracorActivityListener
+internal sealed class EnabledTracorActivityListener
     : BaseTracorActivityListener
     , ITracorActivityListener
     , IDisposable {
-    internal static TesttimeTracorActivityListener Create(
+    internal static EnabledTracorActivityListener Create(
         IServiceProvider serviceProvider,
         IConfiguration? configuration
         ) {
@@ -13,37 +13,32 @@ internal sealed class TesttimeTracorActivityListener
         //    serviceProvider.GetRequiredService<IConfiguration>().GetSection("");
         //}
         var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
-        var tracorServiceSink = serviceProvider.GetRequiredService<ITracorServiceSink>();
-        var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
+        var tracorCollectiveSink = serviceProvider.GetRequiredService<ITracorCollectiveSink>();
         var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
-        var logger = serviceProvider.GetRequiredService<ILogger<TesttimeTracorActivityListener>>();
-        return new TesttimeTracorActivityListener(
+        var logger = serviceProvider.GetRequiredService<ILogger<EnabledTracorActivityListener>>();
+        return new EnabledTracorActivityListener(
             serviceProvider,
             activityTracorDataPool,
-            tracorServiceSink,
-            tracorValidator,
+            tracorCollectiveSink,
             options,
             logger);
     }
 
     private ActivityListener? _Listener;
     private readonly ActivityTracorDataPool _ActivityTracorDataPool;
-    private readonly ITracorServiceSink _Tracor;
-    private readonly ITracorValidator _Validator;
+    private readonly ITracorCollectiveSink _TracorCollectiveSink;
 
-    public TesttimeTracorActivityListener(
+    public EnabledTracorActivityListener(
         IServiceProvider serviceProvider,
         ActivityTracorDataPool activityTracorDataPool,
-        ITracorServiceSink tracor,
-        ITracorValidator validator,
+        ITracorCollectiveSink tracorCollectiveSink,
         IOptionsMonitor<TracorActivityListenerOptions> options,
-        ILogger<TesttimeTracorActivityListener> logger) : base(
+        ILogger<EnabledTracorActivityListener> logger) : base(
             serviceProvider,
             options,
             logger) {
         this._ActivityTracorDataPool = activityTracorDataPool;
-        this._Tracor = tracor;
-        this._Validator = validator;
+        this._TracorCollectiveSink = tracorCollectiveSink;
     }
 
     protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
@@ -130,8 +125,8 @@ internal sealed class TesttimeTracorActivityListener
 
         if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
 
-        if (!this._Tracor.IsGeneralEnabled()) { return; }
-        if (!this._Tracor.IsCurrentlyEnabled()) { return; }
+        if (!this._TracorCollectiveSink.IsGeneralEnabled()) { return; }
+        if (!this._TracorCollectiveSink.IsEnabled()) { return; }
 
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
         if (currentOptionState.AllowAllActivitySource) {
@@ -150,7 +145,7 @@ internal sealed class TesttimeTracorActivityListener
             activityTracorData.SetValue(activity);
             activityTracorData.TracorIdentifier = tracorIdentifier;
             activityTracorData.Timestamp = activity.StartTimeUtc;
-            this._Validator.OnTrace(true, activityTracorData);
+            this._TracorCollectiveSink.OnTrace(true, activityTracorData);
         }
     }
 
@@ -162,8 +157,8 @@ internal sealed class TesttimeTracorActivityListener
 
         if (!currentOptionState.ActivitySourceStopEventEnabled) { return; }
 
-        if (!this._Tracor.IsGeneralEnabled()) { return; }
-        if (!this._Tracor.IsCurrentlyEnabled()) { return; }
+        if (!this._TracorCollectiveSink.IsGeneralEnabled()) { return; }
+        if (!this._TracorCollectiveSink.IsEnabled()) { return; }
 
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
         if (currentOptionState.AllowAllActivitySource) {
@@ -182,7 +177,7 @@ internal sealed class TesttimeTracorActivityListener
             activityTracorData.SetValue(activity);
             activityTracorData.TracorIdentifier = tracorIdentifier;
             activityTracorData.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
-            this._Validator.OnTrace(true, activityTracorData);
+            this._TracorCollectiveSink.OnTrace(true, activityTracorData);
         }
     }
 
@@ -227,7 +222,7 @@ internal sealed class TesttimeTracorActivityListener
         }
     }
 
-    ~TesttimeTracorActivityListener() {
+    ~EnabledTracorActivityListener() {
         this.PrepareDispose(disposing: false);
     }
 

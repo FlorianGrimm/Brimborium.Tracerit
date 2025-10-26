@@ -48,7 +48,7 @@ internal abstract class BaseTracorActivityListener
                 }
             }
             static void addListActivitySourceByType(TracorActivityListenerOptions options, OptionState result) {
-                foreach (var resolver in options.ListActivitySourceResolver) {
+                foreach (var resolver in options.GetListActivitySourceResolver()) {
                     result.HashSetActivitySourceResolver.Add(resolver);
                 }
             }

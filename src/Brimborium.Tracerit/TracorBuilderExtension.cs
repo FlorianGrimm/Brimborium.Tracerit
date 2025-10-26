@@ -45,9 +45,9 @@ public static class TracorBuilderExtension {
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         if (addTestTimeServices) {
-            return tracorBuilder.AddTesttimeTracorActivityListener(configuration, configure);
+            return tracorBuilder.AddEnabledTracorActivityListener(configuration, configure);
         } else {
-            return tracorBuilder.AddRuntimeTracorActivityListener(configuration, configure);
+            return tracorBuilder.AddDisabledTracorActivityListener(configuration, configure);
         }
     }
 
@@ -57,7 +57,7 @@ public static class TracorBuilderExtension {
     /// <param name="tracorBuilder">The service collection to add services to.</param>
     /// <param name="configure">configure options</param>
     /// <returns>fluent this</returns>
-    public static ITracorBuilder AddRuntimeTracorActivityListener(
+    public static ITracorBuilder AddDisabledTracorActivityListener(
         this ITracorBuilder tracorBuilder,
         IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
@@ -65,9 +65,9 @@ public static class TracorBuilderExtension {
         // add runtime do nothing implementations
         tracorBuilder.Services.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
 
-        tracorBuilder.Services.AddSingleton<RuntimeTracorActivityListener>();
+        tracorBuilder.Services.AddSingleton<DisabledTracorActivityListener>();
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>(
-            (sp) => sp.GetRequiredService<RuntimeTracorActivityListener>());
+            (sp) => sp.GetRequiredService<DisabledTracorActivityListener>());
 
         // options configure
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>();
@@ -83,7 +83,7 @@ public static class TracorBuilderExtension {
     /// <param name="servicebuilder">The service collection to add services to.</param>
     /// <param name="configure">configure options</param>
     /// <returns>fluent this</returns>
-    public static ITracorBuilder AddTesttimeTracorActivityListener(
+    public static ITracorBuilder AddEnabledTracorActivityListener(
         this ITracorBuilder tracorBuilder,
         IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
@@ -91,13 +91,17 @@ public static class TracorBuilderExtension {
         tracorBuilder.Services.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
 
         var configurationSection = configuration;
-        tracorBuilder.Services.AddSingleton<TesttimeTracorActivityListener>(
-            (IServiceProvider serviceProvider) => TesttimeTracorActivityListener.Create(
+        tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>(
+            (IServiceProvider serviceProvider) => EnabledTracorActivityListener.Create(
                 serviceProvider, configuration));
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>(
-            (sp) => sp.GetRequiredService<TesttimeTracorActivityListener>());
+            (sp) => sp.GetRequiredService<EnabledTracorActivityListener>());
 
         // options configure
+        if (configuration is { }) {
+            tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>()
+                .Bind(configuration);
+        }
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>();
         if (configure is { }) {
             optionsBuilder.Configure(configure);

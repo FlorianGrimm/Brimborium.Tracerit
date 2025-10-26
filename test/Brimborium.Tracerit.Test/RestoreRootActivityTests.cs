@@ -21,7 +21,7 @@ public class RestoreRootActivityTests {
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
-        var testtimeTracorActivityListener = serviceProvider.GetRequiredService<TesttimeTracorActivityListener>();
+        var enabledTracorActivityListener = serviceProvider.GetRequiredService<EnabledTracorActivityListener>();
 
         var sampleTest1Instrumentation = serviceProvider.GetRequiredService<SampleTest1Instrumentation>();
 

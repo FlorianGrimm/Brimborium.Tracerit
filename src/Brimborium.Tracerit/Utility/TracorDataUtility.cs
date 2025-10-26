@@ -111,7 +111,7 @@ public static partial class TracorDataUtility {
         if (value is null) { longResult = 0; textResult = null; return false; }
 
         if (value.GetType().IsEnum) {
-            longResult = (long)value;
+            longResult = Convert.ToInt64(value);
             textResult = value.ToString();
             return true;
         }
@@ -493,9 +493,8 @@ public static partial class TracorDataUtility {
         if (Unsafe.SizeOf<TEnum>() != Unsafe.SizeOf<long>()) {
             return Unsafe.As<TEnum, long>(ref enumValue);
         }
-        return (long)(object)enumValue;
+        return Convert.ToInt64(enumValue);
     }
-
 
 
     private readonly static object[] _BoolValueBoxes = [(object)false, (object)true];
