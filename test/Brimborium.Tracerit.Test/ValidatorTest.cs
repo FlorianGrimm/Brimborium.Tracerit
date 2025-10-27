@@ -114,7 +114,7 @@ public class ValidatorTest {
         ITracorValidator tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var validatorPath = tracorValidator
         .Add(
-            new GroupByExpression<string>() {
+            new GroupByExpression() {
                 PropertyName = "Host"
             }
             .Add(
@@ -156,15 +156,15 @@ public class ValidatorTest {
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "abc" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "abc" == txtHost);
             await Assert.That(act).IsNotNull();
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "def" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "def" == txtHost);
             await Assert.That(act).IsNotNull();
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "ghi" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "ghi" == txtHost);
             await Assert.That(act).IsNull();
         }
     }
@@ -236,11 +236,11 @@ public class ValidatorTest {
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "def" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "def" == txtHost);
             await Assert.That(act).IsNotNull();
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "ghi" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "ghi" == txtHost);
             await Assert.That(act).IsNull();
         }
     }

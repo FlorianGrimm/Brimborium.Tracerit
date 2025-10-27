@@ -22,8 +22,8 @@ public partial struct TracorDataProperty {
             return CreateNull(argName);
         }
         
-        Type typeArgValue = argValueNotNull.GetType();
-
+        // Type typeArgValue = argValueNotNull.GetType();
+        // TracorDataPropertyTypeValue tracorDataPropertyTypeValue = TracorDataUtility.ConvertTypeToTracorDataPropertyTypeValue(argValueNotNull);
         {
             if (TracorDataUtility.TryCastObjectToStringValue(argValueNotNull, out var resultValue)) {
                 return CreateStringValue(argName, resultValue);
@@ -113,7 +113,7 @@ public partial struct TracorDataProperty {
 
     public static TracorDataProperty CreateLevelValue(string argName, LogLevel argValue) {
         var result = new TracorDataProperty(argName);
-        result.SetLevelValueValue(argValue);
+        result.SetLevelValue(argValue);
         return result;
     }
 

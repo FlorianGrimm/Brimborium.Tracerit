@@ -8,37 +8,33 @@ internal sealed class EnabledTracorActivityListener
         IServiceProvider serviceProvider,
         IConfiguration? configuration
         ) {
-        //TODO
-        //if (configuration is null) {
-        //    serviceProvider.GetRequiredService<IConfiguration>().GetSection("");
-        //}
         var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
-        var tracorCollectiveSink = serviceProvider.GetRequiredService<ITracorCollectiveSink>();
+        var sink = serviceProvider.GetRequiredService<ITracorCollectivePublisher>();
         var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
         var logger = serviceProvider.GetRequiredService<ILogger<EnabledTracorActivityListener>>();
         return new EnabledTracorActivityListener(
             serviceProvider,
             activityTracorDataPool,
-            tracorCollectiveSink,
+            sink,
             options,
             logger);
     }
 
     private ActivityListener? _Listener;
     private readonly ActivityTracorDataPool _ActivityTracorDataPool;
-    private readonly ITracorCollectiveSink _TracorCollectiveSink;
+    private readonly ITracorCollectiveSink _Sink;
 
     public EnabledTracorActivityListener(
         IServiceProvider serviceProvider,
         ActivityTracorDataPool activityTracorDataPool,
-        ITracorCollectiveSink tracorCollectiveSink,
+        ITracorCollectiveSink sink,
         IOptionsMonitor<TracorActivityListenerOptions> options,
         ILogger<EnabledTracorActivityListener> logger) : base(
             serviceProvider,
             options,
             logger) {
         this._ActivityTracorDataPool = activityTracorDataPool;
-        this._TracorCollectiveSink = tracorCollectiveSink;
+        this._Sink = sink;
     }
 
     protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
@@ -125,8 +121,8 @@ internal sealed class EnabledTracorActivityListener
 
         if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
 
-        if (!this._TracorCollectiveSink.IsGeneralEnabled()) { return; }
-        if (!this._TracorCollectiveSink.IsEnabled()) { return; }
+        if (!this._Sink.IsGeneralEnabled()) { return; }
+        if (!this._Sink.IsEnabled()) { return; }
 
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
         if (currentOptionState.AllowAllActivitySource) {
@@ -135,17 +131,12 @@ internal sealed class EnabledTracorActivityListener
             return;
         }
 
-        if (!this._DictTracorIdentifierCacheByActivitySource.TryGetValue(activitySourceIdentifier, out var tracorIdentifierCache)) {
-            tracorIdentifierCache = new(new("Activity", activitySourceIdentifier.Name));
-            this._DictTracorIdentifierCacheByActivitySource = this._DictTracorIdentifierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentifierCache);
-        }
-        var tracorIdentifier = tracorIdentifierCache.Child("Start");
-
+        TracorIdentifier tracorIdentifier = new("Activity", activitySourceIdentifier.Name, "Start");
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
             activityTracorData.TracorIdentifier = tracorIdentifier;
             activityTracorData.Timestamp = activity.StartTimeUtc;
-            this._TracorCollectiveSink.OnTrace(true, activityTracorData);
+            this._Sink.OnTrace(true, activityTracorData);
         }
     }
 
@@ -157,8 +148,8 @@ internal sealed class EnabledTracorActivityListener
 
         if (!currentOptionState.ActivitySourceStopEventEnabled) { return; }
 
-        if (!this._TracorCollectiveSink.IsGeneralEnabled()) { return; }
-        if (!this._TracorCollectiveSink.IsEnabled()) { return; }
+        if (!this._Sink.IsGeneralEnabled()) { return; }
+        if (!this._Sink.IsEnabled()) { return; }
 
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
         if (currentOptionState.AllowAllActivitySource) {
@@ -167,17 +158,12 @@ internal sealed class EnabledTracorActivityListener
             return;
         }
 
-        if (!this._DictTracorIdentifierCacheByActivitySource.TryGetValue(activitySourceIdentifier, out var tracorIdentifierCache)) {
-            tracorIdentifierCache = new(new("Activity", activitySourceIdentifier.Name));
-            this._DictTracorIdentifierCacheByActivitySource = this._DictTracorIdentifierCacheByActivitySource.Add(activitySourceIdentifier, tracorIdentifierCache);
-        }
-
-        var tracorIdentifier = tracorIdentifierCache.Child("Stop");
+        TracorIdentifier tracorIdentifier = new("Activity", activitySourceIdentifier.Name, "Stop");
         using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
             activityTracorData.SetValue(activity);
             activityTracorData.TracorIdentifier = tracorIdentifier;
             activityTracorData.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
-            this._TracorCollectiveSink.OnTrace(true, activityTracorData);
+            this._Sink.OnTrace(true, activityTracorData);
         }
     }
 

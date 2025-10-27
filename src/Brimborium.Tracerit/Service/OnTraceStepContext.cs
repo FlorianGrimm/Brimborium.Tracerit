@@ -100,21 +100,25 @@ public readonly struct OnTraceStepCurrentContext {
             this._LoggerUtility);
     }
 
-    public readonly void CreateFork(string propertyName, object propertyValue, IEqualityComparer equalityComparer) {
+    public readonly void CreateFork(string propertyName, TracorDataProperty propertyValue) {
         var copy = this._ExecutionState.Copy();
         this._ExecutionState.GlobalState[propertyName] = propertyValue;
-        this._ExecutionState.ForkState.SetItem(propertyName, propertyValue, equalityComparer);
+        this._ExecutionState.ForkState.SetItem(propertyName, propertyValue);
         this._Modifications.AddFork(this._ExecutionState, copy);
     }
 
-    public readonly OnTraceStepExecutionState? TryGetFork(string propertyName, object propertyValue) {
+    public readonly OnTraceStepExecutionState? TryGetFork(string propertyName, TracorDataProperty propertyValue) {
         TracorForkState forkState = new(this._ExecutionState.ForkState);
         forkState[propertyName] = propertyValue;
         return this._Modifications.TryGetFork(forkState);
     }
-    
-    public readonly void SetStateSuccessfull(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
-        state.Result = TracorValidatorOnTraceResult.Successfull;
+
+    public readonly OnTraceStepExecutionState? TryGetFork(string propertyName, TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare) {
+        return this._Modifications.TryGetFork(propertyName, tdpCurrent, fnCompare);
+    }
+
+    public readonly void SetStateSuccessful(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
+        state.Result = TracorValidatorOnTraceResult.Successful;
     }
 
     public readonly void SetStateFailed(IValidatorExpression validatorExpression, ValidatorExpressionState state) {

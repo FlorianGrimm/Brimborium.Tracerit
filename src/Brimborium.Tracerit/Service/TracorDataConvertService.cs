@@ -4,12 +4,11 @@ public class TracorDataConvertService : ITracorDataConvertService {
     public static TracorDataConvertService Create(IServiceProvider serviceProvider) {
         var options = serviceProvider.GetRequiredService<IOptions<TracorDataConvertOptions>>();
         var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
-        
+
         return new TracorDataConvertService(
-            activityTracorDataPool,
+            serviceProvider,
             options);
     }
-
 
     public ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateScopeNoSource { get; set; } = ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory>.Empty;
     public ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateNoScopeSource { get; set; } = ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory>.Empty;
@@ -17,23 +16,42 @@ public class TracorDataConvertService : ITracorDataConvertService {
     public ImmutableDictionary<Type, ITracorDataAccessorFactory> TracorDataAccessorByTypePublic { get; set; } = ImmutableDictionary<Type, ITracorDataAccessorFactory>.Empty;
     public ImmutableArray<ITracorDataAccessorFactory> ListTracorDataAccessorPublic { get; set; } = ImmutableArray<ITracorDataAccessorFactory>.Empty;
 
-
     public TracorDataConvertService(
-        ActivityTracorDataPool activityTracorDataPool
+        TracorDataRecordPool tracorDataRecordPool,
+        LoggerTracorDataPool loggerTracorDataPool
         ) {
+
         this.AddTracorDataAccessorByTypePublic(new ValueAccessorFactory<string>());
         this.AddTracorDataAccessorByTypePublic(new ValueAccessorFactory<int>());
         this.AddTracorDataAccessorByTypePublic(new ValueAccessorFactory<bool>());
         this.AddTracorDataAccessorByTypePublic(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
         this.AddTracorDataAccessorByTypePublic(new JsonDocumentTracorDataFactory());
-        this.AddTracorDataAccessorByTypePublic(new ActivityTracorDataFactory(activityTracorDataPool));
         this.AddTracorDataAccessorByTypePublic(new LoggerTracorDataFactory());
+
+        this.AddTracorDataAccessorByTypePublic(new ActivityTracorDataFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataStringValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataBoolValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataIntValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataLongValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataFloatValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataDoubleValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataDateTimeValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataDateTimeOffsetValueAccessorFactory(tracorDataRecordPool));
+        this.AddTracorDataAccessorByTypePublic(new TracorDataUuidValueAccessorFactory(tracorDataRecordPool));
     }
 
     public TracorDataConvertService(
-        ActivityTracorDataPool activityTracorDataPool,
+        IServiceProvider serviceProvider
+        ):this(
+            tracorDataRecordPool: serviceProvider.GetService<TracorDataRecordPool>() ?? new(0),
+            loggerTracorDataPool: serviceProvider.GetService<LoggerTracorDataPool>() ?? new(0)
+        ) {
+    }
+
+    public TracorDataConvertService(
+        IServiceProvider serviceProvider,
         Microsoft.Extensions.Options.IOptions<TracorDataConvertOptions> options
-        ) : this(activityTracorDataPool) {
+        ) : this(serviceProvider) {
         this.AddOptions(options.Value);
     }
 

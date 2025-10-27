@@ -39,15 +39,15 @@ public sealed class DataExpression : ValidatorExpression {
                     return TracorValidatorOnTraceResult.None;
                 } else {
                     state.DataIndex = count;
-                    currentContext.SetStateSuccessfull(this, state);
-                    return TracorValidatorOnTraceResult.Successfull;
+                    currentContext.SetStateSuccessful(this, state);
+                    return TracorValidatorOnTraceResult.Successful;
                 }
             } else {
                 return TracorValidatorOnTraceResult.None;
             }
         } else {
-            currentContext.SetStateSuccessfull(this, state);
-            return TracorValidatorOnTraceResult.Successfull;
+            currentContext.SetStateSuccessful(this, state);
+            return TracorValidatorOnTraceResult.Successful;
         }
     }
 

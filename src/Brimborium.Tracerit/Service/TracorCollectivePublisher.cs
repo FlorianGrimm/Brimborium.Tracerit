@@ -8,7 +8,7 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     // is treated as immutable - no need to Lock when reading
     private ITracorCollectiveSink[] _ListSubscribedSinks = [];
 
-    public TracorCollectivePublisher(        
+    public TracorCollectivePublisher(
         IEnumerable<ITracorCollectiveSink> listSinks,
         TracorEmergencyLogging tracorEmergencyLogging
         ) {
@@ -16,7 +16,7 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
         List<ITracorCollectiveSink> listSubscribedSinks = new(listSinks.Count());
         foreach (var sink in listSinks) {
             if (sink.IsGeneralEnabled()) {
-                if (tracorEmergencyLogging.IsEnabled) { 
+                if (tracorEmergencyLogging.IsEnabled) {
                     tracorEmergencyLogging.Log($"TracorCollectivePublisher add sink {sink.GetType().Name}");
                 }
                 listSubscribedSinks.Add(sink);
@@ -42,7 +42,7 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     internal void UnsubscribeCollectiveSink(ITracorCollectiveSink sink) {
         using (this._LockWrite.EnterScope()) {
             List<ITracorCollectiveSink> listSubscribedSinks = new(this._ListSubscribedSinks.Length);
-            listSubscribedSinks.AddRange(this._ListSubscribedSinks.Where(s => s != sink));            
+            listSubscribedSinks.AddRange(this._ListSubscribedSinks.Where(s => s != sink));
             this._ListSubscribedSinks = listSubscribedSinks.ToArray();
             System.Threading.Interlocked.MemoryBarrier();
         }

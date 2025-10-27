@@ -28,6 +28,9 @@ public sealed class AndCondition : IExpressionCondition {
     }
 
     public static AndCondition operator *(AndCondition left, IExpressionCondition right) {
+        if (right is AndCondition orConditionRight) {
+            return new AndCondition([left, .. orConditionRight.ExpressionConditions]);
+        }
         return new AndCondition([.. left.ExpressionConditions, right]);
     }
 }

@@ -1,37 +1,23 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
-public sealed class TracorForkState : Dictionary<string, object> {
-    private readonly Dictionary<string, IEqualityComparer> _DictEqualityComparer = [];
-
+public sealed class TracorForkState : Dictionary<string, TracorDataProperty> {
     public TracorForkState() {
     }
 
     public TracorForkState(TracorForkState src) {
         foreach (var kv in src) {
             this[kv.Key] = kv.Value;
-            if (src._DictEqualityComparer.TryGetValue(kv.Key, out var equalityComparer)) {
-                this._DictEqualityComparer[kv.Key] = equalityComparer;
-            }
         }
     }
 
-    public void SetItem(string propertyName, object propertyValue, IEqualityComparer equalityComparer) {
+    public void SetItem(string propertyName, TracorDataProperty propertyValue) {
         this[propertyName] = propertyValue;
-        this._DictEqualityComparer[propertyName] = equalityComparer;
     }
 
-    public bool IsPartalEqual(TracorForkState biggerState) {
+    public bool IsPartialEqual(TracorForkState biggerState) {
         foreach (var kv in this) {
             if (biggerState.TryGetValue(kv.Key, out var value)) {
-                if (ReferenceEquals(kv.Value, value)) {
-                    continue;
-                }
-                if (kv.Value is null || value is null) {
-                    return false;
-                }
-                var isEqual = this._DictEqualityComparer.TryGetValue(kv.Key, out var equalityComparer)
-                    ? equalityComparer.Equals(kv.Value, value)
-                    : kv.Value.Equals(value);
+                var isEqual = TracorDataPropertyValueEqualityComparer.Default.Equals(value, kv.Value);
                 if (!isEqual) {
                     return false;
                 }

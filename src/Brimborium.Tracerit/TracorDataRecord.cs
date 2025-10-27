@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Brimborium.Tracerit;
+﻿namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Represents a record of trace data, including properties and identifiers.

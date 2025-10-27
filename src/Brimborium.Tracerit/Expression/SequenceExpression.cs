@@ -53,22 +53,22 @@ public sealed class SequenceExpression : ValidatorExpression {
         if (childIndex < this._ListChild.Length) {
             var childContext = currentContext.GetChildContext(childIndex);
             var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
-            if (TracorValidatorOnTraceResult.Successfull == childResult) {
+            if (TracorValidatorOnTraceResult.Successful == childResult) {
                 childIndex++;
                 if (childIndex < this._ListChild.Length) {
                     state.ChildIndex = childIndex;
                     return TracorValidatorOnTraceResult.None;
                 } else {
                     state.ChildIndex = this._ListChild.Length;
-                    currentContext.SetStateSuccessfull(this, state);
-                    return TracorValidatorOnTraceResult.Successfull;
+                    currentContext.SetStateSuccessful(this, state);
+                    return TracorValidatorOnTraceResult.Successful;
                 }
             } else {
                 return TracorValidatorOnTraceResult.None;
             }
         } else {
-            currentContext.SetStateSuccessfull(this, state);
-            return TracorValidatorOnTraceResult.Successfull;
+            currentContext.SetStateSuccessful(this, state);
+            return TracorValidatorOnTraceResult.Successful;
         }
     }
 

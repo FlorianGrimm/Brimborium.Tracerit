@@ -66,7 +66,7 @@ public class Program {
     }
 
     public static ValidatorExpression Create() {
-        var result = new GroupByExpression<ITracorData>("");
+        var result = new GroupByExpression("");
         return result;
     }
 }

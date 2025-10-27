@@ -216,8 +216,8 @@ public class TracorTests {
             }
 
             if (this._condition(tracorData.TracorIdentifier, tracorData, currentContext)) {
-                currentContext.SetStateSuccessfull(this, state);
-                return TracorValidatorOnTraceResult.Successfull;
+                currentContext.SetStateSuccessful(this, state);
+                return TracorValidatorOnTraceResult.Successful;
             }
 
             return TracorValidatorOnTraceResult.None;

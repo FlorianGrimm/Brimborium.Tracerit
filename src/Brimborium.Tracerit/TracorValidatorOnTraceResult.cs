@@ -12,7 +12,7 @@ public enum TracorValidatorOnTraceResult {
     /// <summary>
     /// The validation was successful.
     /// </summary>
-    Successfull,
+    Successful,
 
     /// <summary>
     /// The validation failed.
@@ -22,5 +22,5 @@ public enum TracorValidatorOnTraceResult {
 
 public static class TracorValidatorOnTraceResultExtension {
     public static bool IsComplete(this TracorValidatorOnTraceResult that)
-        => that is TracorValidatorOnTraceResult.Successfull or TracorValidatorOnTraceResult.Failed;
+        => that is TracorValidatorOnTraceResult.Successful or TracorValidatorOnTraceResult.Failed;
 }

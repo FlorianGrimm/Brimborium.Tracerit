@@ -28,9 +28,9 @@ public sealed class OneOfExpression : ValidatorExpression {
         for (var idx = 0; idx < this._ListChild.Length; idx++) {
             var child = this._ListChild[idx];
             var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
-            if (TracorValidatorOnTraceResult.Successfull == childResult) {
-                currentContext.SetStateSuccessfull(this, state);
-                return TracorValidatorOnTraceResult.Successfull;
+            if (TracorValidatorOnTraceResult.Successful == childResult) {
+                currentContext.SetStateSuccessful(this, state);
+                return TracorValidatorOnTraceResult.Successful;
             }
         }
         return TracorValidatorOnTraceResult.None;

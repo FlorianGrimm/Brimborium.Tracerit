@@ -60,13 +60,13 @@ public sealed class FilterExpression : ValidatorExpression {
             for (var idx = 0; idx < this._ListChild.Length; idx++) {
                 var child = this._ListChild[idx];
                 var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
-                if (TracorValidatorOnTraceResult.Successfull == childResult) {
+                if (TracorValidatorOnTraceResult.Successful == childResult) {
                     state.ChildSuccessfull.Add(idx);
                 }
             }
             if (state.ChildSuccessfull.Count == this._ListChild.Length) {
-                currentContext.SetStateSuccessfull(this, state);
-                return TracorValidatorOnTraceResult.Successfull;
+                currentContext.SetStateSuccessful(this, state);
+                return TracorValidatorOnTraceResult.Successful;
             }
         }
         return TracorValidatorOnTraceResult.None;

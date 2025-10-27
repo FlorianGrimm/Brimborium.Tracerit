@@ -1,18 +1,33 @@
 ﻿namespace Brimborium.Tracerit.Expression;
 
-public sealed class GroupByExpression<T> : ValidatorExpression {
-    public GroupByExpression(string? label = default) : base(label) {
+public sealed class GroupByExpression : ValidatorExpression {
+    public GroupByExpression(
+        string? label = default,
+        string propertyName = "",
+        IValidatorExpression? expression = default,
+        IValidatorExpression? onStop = default
+        ) : base(label) {
+        this.PropertyName = propertyName;
+        this.Expression = expression;
+        this.OnStop = onStop;
     }
-
-    public EqualityComparer<T> EqualityComparer { get; set; } = EqualityComparer<T>.Default;
 
     public string PropertyName { get; set; } = string.Empty;
 
     public IValidatorExpression? Expression { get; set; }
+    public IValidatorExpression? OnStart { get; set; }
+    public IValidatorExpression? OnStop { get; set; }
 
-    public GroupByExpression<T> Add(IValidatorExpression expression) { 
-        this.Expression = expression;
-        return this;
+    public GroupByExpression Add(IValidatorExpression expression) {
+        if (this.Expression is null) {
+            this.Expression = expression;
+            return this;
+        }
+        if (this.OnStop is null) {
+            this.OnStop = expression;
+            return this;
+        }
+        throw new NotSupportedException();
     }
 
     public override TracorValidatorOnTraceResult OnTrace(
@@ -21,35 +36,27 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
         if (string.IsNullOrEmpty(this.PropertyName)) {
             return TracorValidatorOnTraceResult.None;
         }
-        if (!tracorData.TryGetPropertyValue(this.PropertyName, out var propertyValue)) {
+
+        if (!tracorData.TryGetDataProperty(propertyName: this.PropertyName, out var tracorDataProperty)) {
             return TracorValidatorOnTraceResult.None;
         }
-        if (propertyValue is null) {
-            return TracorValidatorOnTraceResult.None;
-        }
-        if (propertyValue is not T propertyValueTyped) {
-            return TracorValidatorOnTraceResult.None;
-        }
-        if (currentContext.ForkState.TryGetValue(this.PropertyName, out var globalStateValue)) {
-            if (globalStateValue is T globalStateValueTyped) {
-                var isEqual = this.EqualityComparer.Equals(globalStateValueTyped, propertyValueTyped);
-                if (isEqual) {
-                    // continue this is a bound fork
-                } else {
-                    return TracorValidatorOnTraceResult.None;
-                }
+
+        if (currentContext.ForkState.TryGetValue(this.PropertyName, out var forkStateValue)) {
+            var isEqual = TracorDataPropertyValueEqualityComparer.Default.Equals(forkStateValue, forkStateValue);
+            if (isEqual) {
+                // continue this is a bound fork
             } else {
                 return TracorValidatorOnTraceResult.None;
             }
         } else {
             {
-                // is their a fork that handels this?
-                var fork = currentContext.TryGetFork(this.PropertyName, propertyValueTyped);
+                // is their a fork that handles this?
+                var fork = currentContext.TryGetFork(this.PropertyName, forkStateValue);
                 if (fork is not null) {
                     return TracorValidatorOnTraceResult.None;
                 }
             }
-            currentContext.CreateFork(this.PropertyName, propertyValueTyped, this.EqualityComparer);
+            currentContext.CreateFork(this.PropertyName, forkStateValue);
             // continue
         }
         var state = currentContext.GetState<GroupByExpressionState>();
@@ -58,13 +65,21 @@ public sealed class GroupByExpression<T> : ValidatorExpression {
             if (childResult.IsComplete()) {
                 return currentContext.SetStateComplete(this, state, childResult);
             } else {
+                if (this.OnStop is { } endOf) {
+                    var endOfResult = endOf.OnTrace(tracorData, currentContext.GetChildContext(1));
+                    if (endOfResult.IsComplete()) {
+                        return currentContext.SetStateComplete(this, state, endOfResult);
+                    }
+                }
                 return TracorValidatorOnTraceResult.None;
             }
-        } else {
-            // the unbound groupby never terminates
-            // the bound groupby terminates
-            currentContext.SetStateSuccessfull(this, state);
-            return TracorValidatorOnTraceResult.Successfull;
+        }
+
+        {
+            // the unbound group by never terminates
+            // the bound group by terminates
+            currentContext.SetStateSuccessful(this, state);
+            return TracorValidatorOnTraceResult.Successful;
         }
     }
 

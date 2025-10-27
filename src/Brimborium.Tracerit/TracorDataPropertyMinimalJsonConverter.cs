@@ -169,7 +169,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
                 value.TryGetStringValue(out var stringValue);
                 writer.WriteStringValue(stringValue);
                 break;
-            case TracorDataPropertyTypeValue.LevelValue:
+            case TracorDataPropertyTypeValue.Level:
             case TracorDataPropertyTypeValue.Enum:
                 value.TryGetEnumUntypedValue(out long longValue, out string? textValue);
                 if (textValue is { Length: > 0 }) {

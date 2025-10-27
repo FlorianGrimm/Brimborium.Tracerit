@@ -2,7 +2,7 @@
 
 namespace Brimborium.Tracerit.Test.Expression;
 
-public class ReportExpressionTests {
+public class GroupByExpressionTests {
     [Test]
     public async Task ReportExpressionUsage() {
         var configurationBuilder = new ConfigurationBuilder();
@@ -30,18 +30,26 @@ public class ReportExpressionTests {
         using (var validatorPath = tracorValidator.Add(
             new RecordExpression(
                 reportExpressionResult,
-                new SequenceExpression(
-                    listChild: [
-                        Wrap(static(ActivityTracorData data)
-                            => data.TryGetTagValue<string>("operation", out var tagValue)
-                            && ("test2"==tagValue)).PredicateTracorData().AsMatch(),
-                        Wrap(static(ActivityTracorData data)
-                            => data.TryGetTagValue<string>("operation", out var tagValue)
-                            && ("test3"==tagValue)).PredicateTracorData().AsMatch(),
-                        Wrap(static(ActivityTracorData data)
-                            => data.TryGetTagValue<string>("operation", out var tagValue)
-                            && ("test1"==tagValue)).PredicateTracorData().AsMatch()
-                    ])))
+                new GroupByExpression(
+                    label: "group",
+                    expression:                     new SequenceExpression(
+                        listChild: [
+                            Wrap(static(ActivityTracorData data)
+                                => data.TryGetTagValue<string>("operation", out var tagValue)
+                                && ("test2"==tagValue)).PredicateTracorData().AsMatch(),
+                            Wrap(static(ActivityTracorData data)
+                                => data.TryGetTagValue<string>("operation", out var tagValue)
+                                && ("test3"==tagValue)).PredicateTracorData().AsMatch(),
+                            Wrap(static(ActivityTracorData data)
+                                => data.TryGetTagValue<string>("operation", out var tagValue)
+                                && ("test1"==tagValue)).PredicateTracorData().AsMatch()
+                        ]),
+                    onStop: Wrap(static (ITracorData data)
+                                => "stop"==data.TracorIdentifier.Message
+                                ).PredicateTracorData().AsMatch()
+                    )
+                    )
+                )
            ) {
             using (var rootActivity = sampleTestInstrumentation.StartRoot(name: "aaa")) {
                 var activity0 = rootActivity.Activity;

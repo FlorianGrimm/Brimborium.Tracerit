@@ -28,6 +28,10 @@ public sealed class OrCondition : IExpressionCondition {
     }
 
     public static OrCondition operator +(OrCondition left, IExpressionCondition right) {
+        if (right is OrCondition orConditionRight) {
+            return new OrCondition([left, .. orConditionRight.ExpressionConditions]);
+        }
+
         return new OrCondition([.. left.ExpressionConditions, right]);
     }
 }

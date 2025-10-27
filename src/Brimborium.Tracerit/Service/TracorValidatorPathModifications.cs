@@ -13,4 +13,7 @@ public sealed class TracorValidatorPathModifications {
 
     internal OnTraceStepExecutionState? TryGetFork(TracorForkState forkState)
         => this._TracorValidatorPath.TryGetFork(forkState);
+
+    internal OnTraceStepExecutionState? TryGetFork(string propertyName, TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare)
+        => this._TracorValidatorPath.TryGetFork(propertyName, tdpCurrent, fnCompare);
 }

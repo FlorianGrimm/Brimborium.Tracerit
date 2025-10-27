@@ -19,7 +19,7 @@ new pbr::GeneratedClrTypeInfo(
     }, new[]{ "Value" }, null, null, null),
 */
 
-public partial struct TracorDataProperty {
+public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     private string? _TypeName;
     private TracorDataPropertyTypeValue _TypeValue;
     private ValueBuffer _ValueBuffer;
@@ -73,8 +73,8 @@ public partial struct TracorDataProperty {
                         return boolValue;
                     case TracorDataPropertyTypeValue.Enum:
                         return _TextValue;
-                    case TracorDataPropertyTypeValue.LevelValue:
-                        TryGetLevelValueValue(out var logLevel);
+                    case TracorDataPropertyTypeValue.Level:
+                        TryGetLevelValue(out var logLevel);
                         return logLevel;
                     case TracorDataPropertyTypeValue.Double:
                         TryGetDoubleValue(out var doubleValue);
@@ -264,9 +264,8 @@ public partial struct TracorDataProperty {
         AnyValue = null;
     }
 
-
-    public readonly bool TryGetLevelValueValue(out LogLevel value) {
-        if (TracorDataPropertyTypeValue.LevelValue == TypeValue) {
+    public readonly bool TryGetLevelValue(out LogLevel value) {
+        if (TracorDataPropertyTypeValue.Level == TypeValue) {
             MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
 
             switch (longValue) {
@@ -284,8 +283,8 @@ public partial struct TracorDataProperty {
         return false;
     }
 
-    public void SetLevelValueValue(LogLevel value) {
-        TypeValue = TracorDataPropertyTypeValue.LevelValue;
+    public void SetLevelValue(LogLevel value) {
+        TypeValue = TracorDataPropertyTypeValue.Level;
         long longValue = (long)value;
         MemoryMarshal.Write(GetValueWriteSpan(), longValue);
         _TextValue = value switch {
@@ -437,9 +436,9 @@ public partial struct TracorDataProperty {
                 && ((string.Equals(otherTextEnumValue, thisEnumTextValue, StringComparison.OrdinalIgnoreCase))
                     || (otherEnumValue == thisEnumValue)),
 
-            TracorDataPropertyTypeValue.LevelValue
+            TracorDataPropertyTypeValue.Level
                 => TracorDataUtility.TryConvertObjectToLogLevelValue(currentPropertyValue, out var otherLogLevelValue)
-                    && TryGetLevelValueValue(out var thisLogLevelValue)
+                    && TryGetLevelValue(out var thisLogLevelValue)
                     && (thisLogLevelValue == otherLogLevelValue),
 
             TracorDataPropertyTypeValue.Double
@@ -487,7 +486,7 @@ public partial struct TracorDataProperty {
                     MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
                     return longValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
                 }
-            case TracorDataPropertyTypeValue.LevelValue: {
+            case TracorDataPropertyTypeValue.Level: {
                     if (_TextValue is { } textValue) {
                         return textValue;
                     }
@@ -517,11 +516,22 @@ public partial struct TracorDataProperty {
                 return null;
         }
     }
-}
 
-/*
-[JsonSourceGenerationOptions(WriteIndented = false)]
-[JsonSerializable(typeof(TracorDataProperty))]
-internal partial class SourceGenerationContext : JsonSerializerContext {
+    private static EqualityComparer<TracorDataProperty>? _TracorDataPropertyEqualityComparer;
+    public override bool Equals([NotNullWhen(true)] object? obj) {
+        if (ReferenceEquals(null, obj)) { return false; }
+        if (obj is not TracorDataProperty other) { return false; }
+        var ec = _TracorDataPropertyEqualityComparer ??= TracorDataPropertyEqualityComparer.Default;
+        return ec.Equals(this, other);
+    }
+
+    public bool Equals(TracorDataProperty other) {
+        var ec = _TracorDataPropertyEqualityComparer ??= TracorDataPropertyEqualityComparer.Default;
+        return ec.Equals(other);
+    }
+
+    public override int GetHashCode() {
+        var ec = _TracorDataPropertyEqualityComparer ??= TracorDataPropertyEqualityComparer.Default;
+        return base.GetHashCode();
+    }
 }
-*/

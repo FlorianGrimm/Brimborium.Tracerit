@@ -1,4 +1,4 @@
-﻿namespace Brimborium.Tracerit; 
+﻿namespace Brimborium.Tracerit;
 
 public static class TracorConstants {
     /// <summary>
@@ -19,20 +19,21 @@ public static class TracorConstants {
     public const string TracorDataPropertyNameEventId = "event.id";
     public const string TracorDataPropertyNameEventName = "event.name";
     public const string TracorDataPropertyNameActivityTraceId = "activity.traceId";
+    public const string TracorDataPropertyNameActivityParentTraceId = "activity.parentTraceId";
+    public const string TracorDataPropertyNameActivityParentTraceId2 = "activity.parentTraceId.2";
+    public const string TracorDataPropertyNameActivityParentTraceId3 = "activity.parentTraceId.3";
     public const string TracorDataPropertyNameActivitySpanId = "activity.spanId";
+    public const string TracorDataPropertyNameActivityParentSpanId = "activity.parentSpanId";
+    public const string TracorDataPropertyNameActivityParentSpanId2 = "activity.parentSpanId.2";
+    public const string TracorDataPropertyNameActivityParentSpanId3 = "activity.parentSpanId.3";
     public const string TracorDataPropertyNameActivityTraceFlags = "activity.traceFlags";
     public const string TracorDataPropertyNameLogLevel = "logLevel";
     public const string TracorDataPropertyNameExceptionTypeName = "exception.typeName";
     public const string TracorDataPropertyNameExceptionMessage = "exception.message";
     public const string TracorDataPropertyNameExceptionHResult = "exception.hResult";
     public const string TracorDataPropertyNameExceptionVerboseMessage = "exception.VerboseMessage";
-    //public const string TracorDataPropertyNameException = "exception.";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
-    //public const string TracorDataPropertyName = "";
+    public const string TracorDataPropertyNameOperationName = "activity.OperationName";
+    public const string TracorDataPropertyNameDisplayName = "activity.DisplayName";
+    public const string TracorDataPropertyNameStartTimeUtc = "activity.StartTimeUtc";
+    public const string TracorDataPropertyNameStopTimeUtc = "activity.StopTimeUtc";
 }

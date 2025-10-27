@@ -1,5 +1,5 @@
-﻿#warning TODO: SOON
-#if LATER
+﻿#if LATER
+#warning TODO: SOON
 namespace Brimborium.Tracerit.Test;
 
 public class TracorDataPropertyMinimalJsonConverterTests {

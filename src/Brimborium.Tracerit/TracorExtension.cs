@@ -46,6 +46,18 @@ public record struct WrapFunc<T1, T2, TResult>(
     Func<T1, T2, TResult> Value,
     [CallerArgumentExpression(nameof(Value))] string? ValueDisplay = null);
 
+/// <summary>
+/// Represents a wrapped function with two input parameters and caller expression information for debugging and display purposes.
+/// </summary>
+/// <typeparam name="T1">The first input type of the function.</typeparam>
+/// <typeparam name="T2">The second input type of the function.</typeparam>
+/// <typeparam name="TResult">The return type of the function.</typeparam>
+/// <param name="Value">The wrapped function.</param>
+/// <param name="ValueDisplay">The string representation of the function expression.</param>
+public record struct WrapFunc<T1, T2, T3, TResult>(
+    Func<T1, T2, T3, TResult> Value,
+    [CallerArgumentExpression(nameof(Value))] string? ValueDisplay = null);
+
 
 public static partial class TracorExtension {
     /// <summary>
@@ -77,7 +89,16 @@ public static partial class TracorExtension {
 }
 
 public static partial class TracorExtension {
-    public static PredicateTracorDataCondition Predicate(
+    public static PredicateCondition Predicate(
+        this WrapFunc<ITracorData, TracorForkState, TracorGlobalState, bool> fnCondition
+        ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
+
+    public static PredicateCondition Predicate(
+        Func<ITracorData, TracorForkState, TracorGlobalState, bool> fnCondition,
+        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        ) => new PredicateCondition(fnCondition, doNotPopulateThisValue);
+
+    public static PredicateTracorDataCondition PredicateTracorData(
         this WrapFunc<ITracorData, bool> fnCondition
     ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
@@ -92,9 +113,6 @@ public static partial class TracorExtension {
         this WrapFunc<TValue, bool> fnCondition
         ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
-    public static PredicateValueGlobalStateCondition<TValue> PredicateValue<TValue>(
-        this WrapFunc<TValue, TracorGlobalState, bool> fnCondition
-        ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
     public static PredicateTracorDataCondition Predicate(
         Func<ITracorData, bool> condition
@@ -110,12 +128,6 @@ public static partial class TracorExtension {
         Func<TValue, bool> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
         ) => new(fnCondition, doNotPopulateThisValue);
-
-    public static PredicateValueGlobalStateCondition<TValue> PredicateValue<TValue>(
-        Func<TValue, TracorGlobalState, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
-        ) => new(fnCondition, doNotPopulateThisValue);
-
 }
 
 public static partial class TracorExtension {

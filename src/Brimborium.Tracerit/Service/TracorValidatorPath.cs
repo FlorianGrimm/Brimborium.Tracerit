@@ -64,7 +64,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         foreach (var runningContextState in listRunningExecutionState) {
             var currentContext = new OnTraceStepCurrentContext(rootIdentifier, runningContextState, this._Modifications, this._LoggerUtility);
             var childResult = this._Step.OnTrace(tracorData, currentContext);
-            if (TracorValidatorOnTraceResult.Successfull == childResult) {
+            if (TracorValidatorOnTraceResult.Successful == childResult) {
                 this.HandleFinish(runningContextState);
             }
         }
@@ -115,8 +115,19 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
 
     internal OnTraceStepExecutionState? TryGetFork(TracorForkState forkState) {
         foreach (var runningState in this._ListRunningExecutionState) {
-            if (forkState.IsPartalEqual(runningState.ForkState)) {
+            if (forkState.IsPartialEqual(runningState.ForkState)) {
                 return runningState;
+            }
+        }
+        return null;
+    }
+
+    internal OnTraceStepExecutionState? TryGetFork(string propertyName, TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare) {
+        foreach (var runningState in this._ListRunningExecutionState) {
+            if (runningState.ForkState.TryGetValue(propertyName, out var value)) {
+                if (fnCompare(tdpCurrent, value)) { 
+                    return runningState;
+                }
             }
         }
         return null;

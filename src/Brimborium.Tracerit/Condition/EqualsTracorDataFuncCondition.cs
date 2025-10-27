@@ -27,9 +27,9 @@ public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondit
         var result = this._FnEquality(propertyValue, this._ExpectedValue);
         currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
         if (result) {
-            if (!string.IsNullOrEmpty(this._SetGlobalState)) {
+            if (this._SetGlobalState is { Length: > 0 } setGlobalState) {
                 if (propertyValue is not null) {
-                    currentContext.GlobalState[this._SetGlobalState] = propertyValue;
+                    currentContext.GlobalState[setGlobalState] = TracorDataProperty.Create(setGlobalState, propertyValue);
                 }
             }
         }
@@ -64,9 +64,9 @@ public sealed class EqualPropertyNameCondition<TProperty> : IExpressionCondition
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
             currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._Property} == {this._ExpectedValue}");
             if (result) {
-                if (!string.IsNullOrEmpty(this._SetGlobalState)) {
+                if (this._SetGlobalState is { Length: > 0 } setGlobalState) {
                     if (propertyValue is not null) {
-                        currentContext.GlobalState[this._SetGlobalState] = propertyValue;
+                        currentContext.GlobalState[setGlobalState] = TracorDataProperty.Create(setGlobalState, propertyValue);
                     }
                 }
             }
@@ -107,9 +107,9 @@ public sealed class EqualsTracorDataPropertyCondition<TValue, TProperty> : IExpr
                 currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, default);
             }
             if (result) {
-                if (!string.IsNullOrEmpty(this._SetGlobalState)) {
+                if (this._SetGlobalState is { Length: > 0 } setGlobalState) {
                     if (propertyValue is not null) {
-                        currentContext.GlobalState[this._SetGlobalState] = propertyValue;
+                        currentContext.GlobalState[setGlobalState] = TracorDataProperty.Create(setGlobalState, propertyValue);
                     }
                 }
             }

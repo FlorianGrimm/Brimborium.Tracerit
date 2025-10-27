@@ -52,7 +52,7 @@ public sealed class AlwaysCondition<TValue, TProperty> : IExpressionCondition {
             && tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var valueTyped)) {
             if (fnGetProperty(valueTyped) is { } propertyValue) {
-                currentContext.GlobalState[setGlobalState] = propertyValue;
+                currentContext.GlobalState[setGlobalState] = TracorDataProperty.Create(setGlobalState, propertyValue);
             }
         }
         return true;

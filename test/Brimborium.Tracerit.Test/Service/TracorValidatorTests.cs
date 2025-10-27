@@ -34,7 +34,7 @@ public class TracorValidatorTests {
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new MatchExpression();
-        var globalState = new TracorGlobalState().SetValue("TestKey", "TestValue");
+        var globalState = new TracorGlobalState().SetValue("TestKey", TracorDataProperty.CreateStringValue("TestKey", "TestValue"));
 
         // Act
         var validatorPath = validator.Add(expression, globalState);
@@ -113,11 +113,16 @@ public class TracorValidatorTests {
         // Act
         validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentifier = callee });
         var finishedState = validatorPath.GetFinished(state =>
-            state.TryGetValue("TestProperty", out var prop) && prop is string str && str == "test value");
+            state.TryGetValue("TestProperty", out var prop)
+                && prop.TryGetStringValue(out var str)
+                && str == "test value");
 
         // Assert
         await Assert.That(finishedState).IsNotNull();
-        await Assert.That(finishedState!.GetValue<string>("TestProperty")).IsEqualTo("test value");
+        var success = finishedState!.TryGetValue("TestProperty", out var act);
+        await Assert.That(success).IsTrue();
+        await Assert.That(act.TryGetStringValue(out _)).IsTrue();
+        await Assert.That(act.TryGetStringValue(out var result) ? result : "").IsEqualTo("test value");
     }
 
     [Test]
@@ -221,7 +226,7 @@ public class TracorValidatorTests {
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new SequenceExpression("TestLabel")
-            .Add(new MatchExpression(label: "FirstMatch",condition: new PredicateTracorDataCondition(data => true)))
+            .Add(new MatchExpression(label: "FirstMatch", condition: new PredicateTracorDataCondition(data => true)))
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data => false))); // Never matches
 
         using (var validatorPath = validator.Add(expression)) {

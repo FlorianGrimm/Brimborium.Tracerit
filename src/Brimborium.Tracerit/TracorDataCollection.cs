@@ -17,7 +17,7 @@ public sealed class TracorDataCollection {
     public List<ITracorData> ListData { get; } = [];
 }
 
-public sealed class TracorDataRecordCollection {
+public sealed class TracorDataRecordCollection :IDisposable {
     public TracorDataRecordCollection() {
     }
 
@@ -28,4 +28,11 @@ public sealed class TracorDataRecordCollection {
     /// Gets the list of <see cref="TracorDataRecord"/> items contained in this collection.
     /// </summary>
     public List<TracorDataRecord> ListData { get; } = [];
+
+    public void Dispose() {
+        foreach (var item in this.ListData) {
+            item.Dispose();
+        }
+        this.ListData.Clear();
+    }
 }
