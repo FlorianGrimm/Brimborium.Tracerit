@@ -22,11 +22,9 @@ public sealed class TracorDataPropertyValueEqualityComparer : EqualityComparer<T
                         && (a == b);
                 }
             case TracorDataPropertyTypeValue.Enum: {
-                    return x.TryGetEnumUntypedValue(out var aLongValue, out var aTextValue)
-                        && y.TryGetEnumUntypedValue(out var bLongValue, out var bTextValue)
-                        && ((aTextValue is { Length: > 0 } && bTextValue is { Length: > 0 } && string.Equals(aTextValue, bTextValue, StringComparison.Ordinal))
-                            || (aTextValue is not { Length: > 0 } && bTextValue is not { Length: > 0 } && (aLongValue == bLongValue))
-                            );
+                    return x.TryGetEnumValue(out var aTextValue)
+                        && y.TryGetEnumValue(out var bTextValue)
+                        && (aTextValue is { Length: > 0 } && bTextValue is { Length: > 0 } && string.Equals(aTextValue, bTextValue, StringComparison.Ordinal));
                 }
             case TracorDataPropertyTypeValue.Level: {
                     return x.TryGetLevelValue(out var a)
@@ -83,10 +81,9 @@ public sealed class TracorDataPropertyValueEqualityComparer : EqualityComparer<T
             case TracorDataPropertyTypeValue.Enum: {
                     return HashCode.Combine(
                         obj.TypeValue,
-                        obj.TryGetEnumUntypedValue(out var longValue, out var textValue)
-                            ? ((textValue is { Length: > 0 })
-                                ? textValue.GetHashCode()
-                                : longValue.GetHashCode())
+                        obj.TryGetEnumValue(out var textValue)
+                            && (textValue is { Length: > 0 })
+                            ? textValue.GetHashCode()
                             : 0);
                 }
             case TracorDataPropertyTypeValue.Level: {

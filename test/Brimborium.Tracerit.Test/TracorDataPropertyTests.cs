@@ -33,7 +33,7 @@ public class TracorDataPropertyTests {
                     // await Assert.That(sut.TryGetStringValue(out _)).IsFalse();
                     await Assert.That(sut.TryGetIntegerValue(out _)).IsFalse();
                     await Assert.That(sut.TryGetBooleanValue(out _)).IsFalse();
-                    await Assert.That(sut.TryGetEnumUntypedValue(out _, out _)).IsFalse();
+                    await Assert.That(sut.TryGetEnumValue(out _)).IsFalse();
                     await Assert.That(sut.TryGetLevelValue(out _)).IsFalse();
                     await Assert.That(sut.TryGetDoubleValue(out _)).IsFalse();
                     await Assert.That(sut.TryGetDateTimeValue(out _)).IsFalse();

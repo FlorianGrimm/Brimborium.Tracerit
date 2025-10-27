@@ -98,16 +98,7 @@ public partial struct TracorDataProperty {
 
     public static TracorDataProperty CreateEnumValue(string argName, object argValue) {
         var result = new TracorDataProperty(argName);
-        TracorDataUtility.TryConvertObjectToEnumValue(argValue, out var longResult, out var textResult);
-        result.SetEnumValue(longResult, textResult);
-        return result;
-    }
-    public static TracorDataProperty CreateEnum<T>(string argName, T argValue)
-        where T : struct, Enum {
-        var result = new TracorDataProperty(argName);
-        var longResult = TracorDataUtility.ConvertEnumToLong<T>(argValue);
-        var textResult = argValue.ToString();
-        result.SetEnumValue(longResult, textResult);
+        result.SetEnumValue(argValue.ToString()!);
         return result;
     }
 

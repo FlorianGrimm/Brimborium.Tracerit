@@ -14,11 +14,11 @@ namespace BenchmarkPropertyVsGC {
     /*
     [CPUUsageDiagnoser]
     */
-    /*
+    
     [Config(typeof(Config))]
     [Orderer(SummaryOrderPolicy.FastestToSlowest)]
     [MemoryDiagnoser]
-    */
+    
     public class Benchmarks {
         private class Config : ManualConfig {
             public Config() {

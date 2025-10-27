@@ -20,16 +20,12 @@ new pbr::GeneratedClrTypeInfo(
 */
 
 public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
-    private string? _TypeName;
     private TracorDataPropertyTypeValue _TypeValue;
-    private ValueBuffer _ValueBuffer;
-    private string? _TextValue;
 
     public TracorDataProperty(string name) {
         Name = name;
-        _TypeName = null;
         _TypeValue = TracorDataPropertyTypeValue.Null;
-        _TextValue = null;
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(
@@ -39,18 +35,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
        ) {
         Name = name;
         _TypeValue = typeValue;
-        _TypeName = null;
-        _TextValue = textValue;
-    }
-
-    public TracorDataProperty(
-        string name,
-        string typeName,
-        string textValue
-        ) {
-        Name = name;
-        (_TypeValue, _TypeName) = TracorDataUtility.TracorDataPropertyConvertStringToTypeName(typeName);
-        _TextValue = textValue;
+        InnerObjectValue = textValue;
     }
 
     [JsonPropertyName("name"), JsonInclude]
@@ -72,7 +57,8 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                         TryGetBooleanValue(out var boolValue);
                         return boolValue;
                     case TracorDataPropertyTypeValue.Enum:
-                        return _TextValue;
+                        TryGetEnumValue(out var enumValue);
+                        return enumValue;
                     case TracorDataPropertyTypeValue.Level:
                         TryGetLevelValue(out var logLevel);
                         return logLevel;
@@ -89,7 +75,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                         TryGetUuidValue(out var uuidValue);
                         return uuidValue;
                     case TracorDataPropertyTypeValue.Any:
-                        return AnyValue;
+                        return InnerObjectValue;
                     default:
                         break;
                 }
@@ -168,25 +154,19 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     }
     public object? InnerObjectValue { get; set; }
 
-
-
-    [JsonIgnore]
-    public object? AnyValue { get; set; }
-
     public readonly bool TryGetNullValue(out object? value) {
         value = null;
         return TracorDataPropertyTypeValue.Null == _TypeValue;
     }
 
-    public void SetAnyValue() {
+    public void SetNullValue() {
         TypeValue = TracorDataPropertyTypeValue.Null;
-        _TextValue = null;
-        AnyValue = null;
+        InnerObjectValue = null;
     }
 
     public readonly bool TryGetStringValue(out string value) {
         if (TracorDataPropertyTypeValue.String == TypeValue) {
-            value = _TextValue ?? string.Empty;
+            value = InnerObjectValue is string textValue ? textValue : string.Empty;
             return true;
         }
         value = string.Empty;
@@ -195,13 +175,13 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetStringValue(string value) {
         _TypeValue = TracorDataPropertyTypeValue.String;
-        _TextValue = value;
-        AnyValue = null;
+        InnerObjectValue = value;
     }
 
     public readonly bool TryGetIntegerValue(out long value) {
         if (TracorDataPropertyTypeValue.Integer == _TypeValue) {
-            if (MemoryMarshal.TryRead(GetValueReadSpan(), out value)) {
+            if (InnerObjectValue is long integerValue) {
+                value = integerValue;
                 return true;
             }
         }
@@ -211,16 +191,19 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetIntegerValue(long value) {
         TypeValue = TracorDataPropertyTypeValue.Integer;
-        MemoryMarshal.Write(GetValueWriteSpan(), value);
-        _TextValue = null;
-        AnyValue = null;
+        InnerObjectValue = value;
     }
 
     public readonly bool TryGetBooleanValue(out bool value) {
         if (TypeValue == TracorDataPropertyTypeValue.Boolean) {
-            MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
-            value = (longValue == 0 ? false : true);
-            return true;
+            if (InnerObjectValue is bool boolValue) {
+                value = boolValue;
+                return true;
+            }
+            if (InnerObjectValue is long longValue) {
+                value = (longValue == 0 ? false : true);
+                return true;
+            }
         }
         value = false;
         return false;
@@ -228,55 +211,39 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetBooleanValue(bool value) {
         TypeValue = TracorDataPropertyTypeValue.Boolean;
-        long longValue = value ? 1L : 0L;
-        MemoryMarshal.Write(GetValueWriteSpan(), longValue);
-        _TextValue = null;
-        AnyValue = null;
+        InnerObjectValue = value;
     }
 
-    public readonly bool TryGetEnumTypedValue<T>(out T value, out string? textValue) where T : struct, Enum {
+    public readonly bool TryGetEnumValue(out string textValue) {
         if (TypeValue == TracorDataPropertyTypeValue.Enum) {
-            MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
-            value = TracorDataUtility.ConvertLongToEnum<T>(longValue);
-            textValue = _TextValue;
-            return true;
+            if (InnerObjectValue is string stringValue) {
+                textValue = stringValue;
+                return true;
+            }
         }
-        value = default;
-        textValue = _TextValue;
+        textValue = string.Empty;
         return false;
     }
 
-    public readonly bool TryGetEnumUntypedValue(out long longValue, out string? textValue) {
-        if (TypeValue == TracorDataPropertyTypeValue.Enum) {
-            MemoryMarshal.TryRead(GetValueReadSpan(), out longValue);
-            textValue = _TextValue;
-            return true;
-        }
-        longValue = default;
-        textValue = _TextValue;
-        return false;
-    }
-
-    public void SetEnumValue(long longValue, string? txtValue) {
+    public void SetEnumValue(string txtValue) {
         TypeValue = TracorDataPropertyTypeValue.Enum;
-        MemoryMarshal.Write(GetValueWriteSpan(), longValue);
-        _TextValue = txtValue;
-        AnyValue = null;
+        InnerObjectValue = txtValue;
     }
 
     public readonly bool TryGetLevelValue(out LogLevel value) {
         if (TracorDataPropertyTypeValue.Level == TypeValue) {
-            MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
+            if (InnerObjectValue is string stringValue) {
 
-            switch (longValue) {
-                case (long)LogLevel.Trace: value = LogLevel.Trace; return true;
-                case (long)LogLevel.Debug: value = LogLevel.Debug; return true;
-                case (long)LogLevel.Information: value = LogLevel.Information; return true;
-                case (long)LogLevel.Warning: value = LogLevel.Warning; return true;
-                case (long)LogLevel.Error: value = LogLevel.Error; return true;
-                case (long)LogLevel.Critical: value = LogLevel.Critical; return true;
-                case (long)LogLevel.None: value = LogLevel.None; return true;
-                default: value = LogLevel.None; return false;
+                switch (stringValue) {
+                    case "trace": value = LogLevel.Trace; return true;
+                    case "debug": value = LogLevel.Debug; return true;
+                    case "information": value = LogLevel.Information; return true;
+                    case "warning": value = LogLevel.Warning; return true;
+                    case "error": value = LogLevel.Error; return true;
+                    case "critical": value = LogLevel.Critical; return true;
+                    case "none": value = LogLevel.None; return true;
+                    default: value = LogLevel.None; return false;
+                }
             }
         }
         value = 0;
@@ -285,9 +252,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetLevelValue(LogLevel value) {
         TypeValue = TracorDataPropertyTypeValue.Level;
-        long longValue = (long)value;
-        MemoryMarshal.Write(GetValueWriteSpan(), longValue);
-        _TextValue = value switch {
+        InnerObjectValue = value switch {
             LogLevel.Trace => "trace",
             LogLevel.Debug => "debug",
             LogLevel.Information => "information",
@@ -297,13 +262,14 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
             LogLevel.None => "none",
             _ => string.Empty
         };
-        AnyValue = null;
     }
 
     public readonly bool TryGetDoubleValue(out double value) {
         if (TypeValue == TracorDataPropertyTypeValue.Double) {
-            MemoryMarshal.TryRead(GetValueReadSpan(), out value);
-            return true;
+            if (InnerObjectValue is double doubleValue) {
+                value = doubleValue;
+                return true;
+            }
         }
         value = double.NaN;
         return false;
@@ -311,16 +277,19 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetDoubleValue(double value) {
         TypeValue = TracorDataPropertyTypeValue.Double;
-        MemoryMarshal.Write(GetValueWriteSpan(), value);
-        _TextValue = null;
-        AnyValue = null;
+        InnerObjectValue = value;
     }
 
     public readonly bool TryGetDateTimeValue(out DateTime value) {
         if (TypeValue == TracorDataPropertyTypeValue.DateTime) {
-            MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
-            value = TracorDataUtility.UnixTimeNanosecondsToDateTime(longValue);
-            return true;
+            if (InnerObjectValue is DateTime dateTimeValue) {
+                value = dateTimeValue;
+                return true;
+            }
+            if (InnerObjectValue is long longValue) {
+                value = TracorDataUtility.UnixTimeNanosecondsToDateTime(longValue);
+                return true;
+            }
         }
         value = new DateTime(0);
         return false;
@@ -328,24 +297,23 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetDateTimeValue(DateTime value) {
         TypeValue = TracorDataPropertyTypeValue.DateTime;
-        var longValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(value);
-        MemoryMarshal.Write(GetValueWriteSpan(), longValue);
-        _TextValue = null;
-        AnyValue = null;
+        // var longValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(value);
+        InnerObjectValue = value;
     }
 
     public readonly bool TryGetDateTimeOffsetValue(out DateTimeOffset value) {
         if (TypeValue == TracorDataPropertyTypeValue.DateTimeOffset) {
-            var readSpan = GetValueReadSpan();
-            MemoryMarshal.TryRead(readSpan, out long ticksValue);
-            MemoryMarshal.TryRead(readSpan[8..], out long offsetValue);
-            if (-240L <= offsetValue && offsetValue <= 240L) {
-                value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(ticksValue, (int)offsetValue);
+            if (InnerObjectValue is DateTimeOffset dateTimeOffsetValue) {
+                value = dateTimeOffsetValue;
+                return true;
             }
-
-            if (_TextValue is { Length: > 0 } textValue) {
+            if (InnerObjectValue is long ticksValue) {
+                value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(ticksValue, 0);
+                return true;
+            }
+            if (InnerObjectValue is string { Length: > 0 } stringValue) {
                 if (DateTimeOffset.TryParseExact(
-                    textValue,
+                    stringValue,
                     "o",
                     System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
                     System.Globalization.DateTimeStyles.None,
@@ -361,18 +329,16 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetDateTimeOffsetValue(DateTimeOffset value) {
         TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
-        var (ticksValue, offsetValue) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
-        var valueWriteSpan = GetValueWriteSpan();
-        MemoryMarshal.Write(valueWriteSpan, ticksValue);
-        MemoryMarshal.Write(valueWriteSpan[8..], offsetValue);
-        _TextValue = null;
-        AnyValue = null;
+        //var (ticksValue, offsetValue) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
+        InnerObjectValue = value;
     }
 
     public readonly bool TryGetUuidValue(out Guid value) {
         if (TypeValue == TracorDataPropertyTypeValue.Uuid) {
-            value = new Guid(GetValueReadSpan());
-            return true;
+            if (InnerObjectValue is Guid uuidValue) {
+                value = uuidValue;
+                return true;
+            }
         }
         value = Guid.Empty;
         return false;
@@ -380,21 +346,17 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetUuidValue(Guid value) {
         TypeValue = TracorDataPropertyTypeValue.Uuid;
-        var valueWriteSpan = GetValueWriteSpan();
-        value.TryWriteBytes(valueWriteSpan);
-        _TextValue = null;
-        AnyValue = null;
+        InnerObjectValue = value;
     }
 
     public readonly bool TryGetAnyValue(out object? value) {
-        value = this.AnyValue;
+        value = this.InnerObjectValue;
         return TracorDataPropertyTypeValue.Any == _TypeValue;
     }
 
     public void SetAnyValue(object? value) {
         TypeValue = TracorDataPropertyTypeValue.Any;
-        _TextValue = null;
-        AnyValue = value;
+        InnerObjectValue = null;
     }
     /*
     private const char _SeparationJsonChar = ':';
@@ -432,9 +394,8 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
             TracorDataPropertyTypeValue.Enum
                 => TracorDataUtility.TryConvertObjectToEnumValue(currentPropertyValue, out var otherEnumValue, out var otherTextEnumValue)
-                && TryGetEnumUntypedValue(out var thisEnumValue, out var thisEnumTextValue)
-                && ((string.Equals(otherTextEnumValue, thisEnumTextValue, StringComparison.OrdinalIgnoreCase))
-                    || (otherEnumValue == thisEnumValue)),
+                && TryGetEnumValue(out var thisEnumTextValue)
+                && string.Equals(otherTextEnumValue, thisEnumTextValue, StringComparison.OrdinalIgnoreCase),
 
             TracorDataPropertyTypeValue.Level
                 => TracorDataUtility.TryConvertObjectToLogLevelValue(currentPropertyValue, out var otherLogLevelValue)
@@ -467,31 +428,29 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
             case TracorDataPropertyTypeValue.Null:
                 return string.Empty;
 
-            case TracorDataPropertyTypeValue.String:
-                return _TextValue;
+            case TracorDataPropertyTypeValue.String: {
+                    return InnerObjectValue is string textValue ? textValue : string.Empty;
+                }
 
             case TracorDataPropertyTypeValue.Integer: {
-                    MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
+                    TryGetIntegerValue(out long longValue);
                     return longValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
                 }
             case TracorDataPropertyTypeValue.Boolean: {
-                    MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
-                    //TracorDataUtility.GetBoolString(longValue!=0)
-                    return (longValue == 0) ? "false" : "true";
+                    TryGetBooleanValue(out bool boolValue);
+                    return (boolValue) ? "true" : "false";
                 }
             case TracorDataPropertyTypeValue.Enum: {
-                    if (_TextValue is { } textValue) {
+                    if (InnerObjectValue is string textValue) {
                         return textValue;
                     }
-                    MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
-                    return longValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                    return string.Empty;
                 }
             case TracorDataPropertyTypeValue.Level: {
-                    if (_TextValue is { } textValue) {
+                    if (InnerObjectValue is string textValue) {
                         return textValue;
                     }
-                    MemoryMarshal.TryRead(GetValueReadSpan(), out long longValue);
-                    return longValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                    return string.Empty;
                 }
             case TracorDataPropertyTypeValue.Double: {
                     TryGetDoubleValue(out double floatValue);
@@ -510,7 +469,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                     return uuidValue.ToString("d");
                 }
             case TracorDataPropertyTypeValue.Any: {
-                    return AnyValue?.ToString();
+                    return InnerObjectValue?.ToString();
                 }
             default:
                 return null;

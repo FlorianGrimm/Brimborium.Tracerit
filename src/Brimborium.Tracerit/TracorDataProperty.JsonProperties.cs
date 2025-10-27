@@ -20,11 +20,10 @@ public partial struct TracorDataProperty {
 
     [JsonIgnore]
     public string TypeName {
-        readonly get => TracorDataUtility.TracorDataPropertyConvertTypeValueToString(_TypeValue, _TypeName);
+        readonly get => TracorDataUtility.TracorDataPropertyConvertTypeValueToString(_TypeValue, null);
         set {
             var (typeValue, typeName) = TracorDataUtility.TracorDataPropertyConvertStringToTypeName(value);
             _TypeValue = typeValue;
-            _TypeName = typeName;
         }
     }
 
@@ -36,7 +35,6 @@ public partial struct TracorDataProperty {
         }
         set {
             _TypeValue = value;
-            _TypeName = null;
         }
     }
 

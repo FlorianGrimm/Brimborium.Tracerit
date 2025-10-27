@@ -1,6 +1,7 @@
 ﻿namespace Brimborium.Tracerit.Utility;
 
 public static partial class TracorDataUtility {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryCastObjectToStringValue(object? value, out string resultValue) {
         bool success;
         (success, resultValue) = (value) switch {
@@ -10,6 +11,7 @@ public static partial class TracorDataUtility {
         return success;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryConvertObjectToStringValue(object? value, out string resultValue) {
         bool success;
         (success, resultValue) = (value) switch {
@@ -21,6 +23,7 @@ public static partial class TracorDataUtility {
         return success;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryCastObjectToInteger(object? value, out long result) {
         bool matched;
         (matched, result) = value switch {
