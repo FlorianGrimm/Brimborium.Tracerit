@@ -20,7 +20,11 @@ public partial class LoggerUtility {
     //    Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
     //static partial void LogCondition(ILogger logger, TracorIdentifier callee, bool result, string? fnConditionDisplay);
 
-    public void LogCondition(TracorIdentifier callee, bool result, string? fnConditionDisplay) {
-        this._Logger.LogCondition(callee, result, fnConditionDisplay);
+    public void LogConditionBool(TracorIdentifier callee, bool result, string? fnConditionDisplay) {
+        this._Logger.LogConditionBool(callee, result, fnConditionDisplay);
+    }
+
+    public void LogConditionOTR(TracorIdentifier callee, TracorValidatorOnTraceResult result, string? fnConditionDisplay) {
+        this._Logger.LogConditionOTR(callee, result, fnConditionDisplay);
     }
 }

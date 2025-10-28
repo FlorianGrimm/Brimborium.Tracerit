@@ -54,8 +54,8 @@ public sealed class MatchExpression : ValidatorExpression {
             return state.Result;
         }
         if (!state.Matched) {
-            var matched = this.Condition.DoesMatch(tracorData, currentContext);
-            if (matched) {
+            var conditionResult = this.Condition.DoesMatch(tracorData, currentContext);
+            if (TracorValidatorOnTraceResult.Successful == conditionResult) {
                 state.Matched = true;
                 if (0 == this._ListChild.Length) {
                     currentContext.SetStateSuccessful(this, state);
@@ -63,7 +63,10 @@ public sealed class MatchExpression : ValidatorExpression {
                 } else {
                     return TracorValidatorOnTraceResult.None;
                 }
-            } else {
+            } else if (TracorValidatorOnTraceResult.Failed == conditionResult) {
+                currentContext.SetStateFailed(this, state);
+                return TracorValidatorOnTraceResult.Failed;
+            } else { 
                 return TracorValidatorOnTraceResult.None;
             }
         }
@@ -82,6 +85,9 @@ public sealed class MatchExpression : ValidatorExpression {
                         currentContext.SetStateSuccessful(this, state);
                         return TracorValidatorOnTraceResult.Successful;
                     }
+                } else if (TracorValidatorOnTraceResult.Failed == childResult) {
+                    currentContext.SetStateFailed(this, state);
+                    return TracorValidatorOnTraceResult.Failed;
                 } else {
                     return TracorValidatorOnTraceResult.None;
                 }

@@ -19,7 +19,7 @@ public sealed class AlwaysCondition : IExpressionCondition {
     /// <param name="tracorData">The trace data to evaluate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>Always returns true.</returns>
-    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) => true;
+    public TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) => TracorValidatorOnTraceResult.Successful;
 }
 
 /// <summary>
@@ -44,7 +44,7 @@ public sealed class AlwaysCondition<TValue, TProperty> : IExpressionCondition {
         this._SetGlobalState = setGlobalState;
     }
 
-    public bool DoesMatch(
+    public TracorValidatorOnTraceResult DoesMatch(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         if (this._FnGetProperty is { } fnGetProperty
@@ -55,6 +55,6 @@ public sealed class AlwaysCondition<TValue, TProperty> : IExpressionCondition {
                 currentContext.GlobalState[setGlobalState] = TracorDataProperty.Create(setGlobalState, propertyValue);
             }
         }
-        return true;
+        return TracorValidatorOnTraceResult.None;
     }
 }

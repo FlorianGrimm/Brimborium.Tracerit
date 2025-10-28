@@ -1,27 +1,43 @@
 ﻿namespace Brimborium.Tracerit.Condition;
 
 public sealed class PredicateValueCondition<TValue> : IExpressionCondition<TValue> {
-    private readonly Func<TValue, bool> _FnCondition;
+    private readonly Func<TValue, bool>? _FnConditionBool;
+    private readonly Func<TValue, TracorValidatorOnTraceResult>? _FnConditionOTR;
     private readonly string? _FnConditionDisplay;
 
     public PredicateValueCondition(
-        Func<TValue, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        Func<TValue, bool> fnConditionBool,
+        [CallerArgumentExpression(nameof(fnConditionBool))] string? doNotPopulateThisValue = null
         ) {
-        this._FnCondition = fnCondition;
+        this._FnConditionBool = fnConditionBool;
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
 
-    public bool DoesMatch(
-        ITracorData tracorData, 
+    public PredicateValueCondition(
+       Func<TValue, TracorValidatorOnTraceResult> fnConditionOTR,
+       [CallerArgumentExpression(nameof(fnConditionOTR))] string? doNotPopulateThisValue = null
+       ) {
+        this._FnConditionOTR = fnConditionOTR;
+        this._FnConditionDisplay = doNotPopulateThisValue;
+    }
+
+    public TracorValidatorOnTraceResult DoesMatch(
+        ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
-            bool result = this._FnCondition(value);
-            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
-            return result;
+            if (this._FnConditionBool is { } fnConditionBool) {
+                bool result = fnConditionBool(value);
+                currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
+                return result ? TracorValidatorOnTraceResult.Successful : TracorValidatorOnTraceResult.None;
+            }
+            if (this._FnConditionOTR is { } fnConditionOTR) {
+                TracorValidatorOnTraceResult result = fnConditionOTR(value);
+                currentContext.LoggerUtility.LogConditionOTR(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
+                return result;
+            }
         }
-        return false;
+        return TracorValidatorOnTraceResult.None;
     }
 
     public static OrCondition operator +(PredicateValueCondition<TValue> left, IExpressionCondition right) {

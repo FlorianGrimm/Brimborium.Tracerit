@@ -56,15 +56,16 @@ public sealed class FilterExpression : ValidatorExpression {
             return state.Result;
         }
 
-        if (this.Condition.DoesMatch(tracorData, currentContext)) {
+        var conditionResult = this.Condition.DoesMatch(tracorData, currentContext);
+        if (TracorValidatorOnTraceResult.Successful == conditionResult) {
             for (var idx = 0; idx < this._ListChild.Length; idx++) {
                 var child = this._ListChild[idx];
                 var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
                 if (TracorValidatorOnTraceResult.Successful == childResult) {
-                    state.ChildSuccessfull.Add(idx);
+                    state.ChildSuccessful.Add(idx);
                 }
             }
-            if (state.ChildSuccessfull.Count == this._ListChild.Length) {
+            if (state.ChildSuccessful.Count == this._ListChild.Length) {
                 currentContext.SetStateSuccessful(this, state);
                 return TracorValidatorOnTraceResult.Successful;
             }
@@ -79,7 +80,7 @@ public sealed class FilterExpression : ValidatorExpression {
         /// <summary>
         /// Gets or sets the set of child expression indices that have been successfully matched.
         /// </summary>
-        public HashSet<int> ChildSuccessfull = new();
+        public HashSet<int> ChildSuccessful = new();
     }
 }
 

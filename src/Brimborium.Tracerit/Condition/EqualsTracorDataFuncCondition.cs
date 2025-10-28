@@ -20,10 +20,10 @@ public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondit
         this._SetGlobalState = setGlobalState;
         this._FnGetPropertyDisplay = doNotPopulateThisValue;
     }
-    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         var propertyValue = this._FnGetProperty(tracorData);
         var result = this._FnEquality(propertyValue, this._ExpectedValue);
-        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
+        currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
         if (result) {
             if (this._SetGlobalState is { Length: > 0 } setGlobalState) {
                 if (propertyValue is not null) {
@@ -31,7 +31,7 @@ public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondit
                 }
             }
         }
-        return result;
+        return result ? TracorValidatorOnTraceResult.Successful : TracorValidatorOnTraceResult.None;
     }
 
     public static CalleeCondition operator /(TracorIdentifier expected, EqualsTracorDataFuncCondition<TProperty> and) {
@@ -57,10 +57,10 @@ public sealed class EqualPropertyNameCondition<TProperty> : IExpressionCondition
         this._FnEquality = fnEquality ?? EqualityComparer<TProperty>.Default.Equals;
         this._SetGlobalState = setGlobalState;
     }
-    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData.TryGetPropertyValue<TProperty>(this._Property, out var propertyValue)) {
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
-            currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._Property} == {this._ExpectedValue}");
+            currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, $"{this._Property} == {this._ExpectedValue}");
             if (result) {
                 if (this._SetGlobalState is { Length: > 0 } setGlobalState) {
                     if (propertyValue is not null) {
@@ -68,9 +68,9 @@ public sealed class EqualPropertyNameCondition<TProperty> : IExpressionCondition
                     }
                 }
             }
-            return result;
+            return result ? TracorValidatorOnTraceResult.Successful : TracorValidatorOnTraceResult.None;
         }
-        return false;
+        return TracorValidatorOnTraceResult.None;
     }
 }
 
@@ -94,15 +94,15 @@ public sealed class EqualsTracorDataPropertyCondition<TValue, TProperty> : IExpr
         this._SetGlobalState = setGlobalState;
         this._FnGetPropertyDisplay = doNotPopulateThisValue;
     }
-    public bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
             var propertyValue = this._FnGetProperty(value);
             var result = this._FnEquality(propertyValue, this._ExpectedValue);
             if (this._FnGetPropertyDisplay is { }) {
-                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
+                currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, $"{this._FnGetPropertyDisplay} == {this._ExpectedValue}");
             } else {
-                currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, default);
+                currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, default);
             }
             if (result) {
                 if (this._SetGlobalState is { Length: > 0 } setGlobalState) {
@@ -111,9 +111,9 @@ public sealed class EqualsTracorDataPropertyCondition<TValue, TProperty> : IExpr
                     }
                 }
             }
-            return result;
+            return result ? TracorValidatorOnTraceResult.Successful : TracorValidatorOnTraceResult.None;
         }
-        return false;
+        return TracorValidatorOnTraceResult.None;
     }
 
     public static CalleeCondition operator /(TracorIdentifier expected, EqualsTracorDataPropertyCondition<TValue, TProperty> and) {

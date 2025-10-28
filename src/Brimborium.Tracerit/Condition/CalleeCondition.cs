@@ -11,23 +11,25 @@ public sealed class CalleeCondition : IExpressionCondition {
         this._And = and;
     }
 
-    public bool DoesMatch(
+    public TracorValidatorOnTraceResult DoesMatch(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         //bool resultCallee = this._Expected.Equals(callee);
         bool resultCallee = MatchEqualityComparerTracorIdentifier.Default.Equals(
             tracorData.TracorIdentifier, 
             this._Expected);
-        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, resultCallee, tracorData.TracorIdentifier.ToString());
+        currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, resultCallee, tracorData.TracorIdentifier.ToString());
         if (resultCallee) {
-            if (this._And is { } and) {
+            if (!(this._And is { } and)) {
+                return TracorValidatorOnTraceResult.Successful;
+            } 
+            
+            {
                 var resultCondition = and.DoesMatch(tracorData, currentContext);
                 return resultCondition;
-            } else {
-                return true;
             }
         } else {
-            return false;
+            return TracorValidatorOnTraceResult.None;
         }
     }
 }

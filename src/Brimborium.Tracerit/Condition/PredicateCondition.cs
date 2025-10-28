@@ -1,24 +1,42 @@
 ﻿namespace Brimborium.Tracerit.Condition;
 
 public sealed class PredicateCondition : IExpressionCondition {
-    private readonly Func<ITracorData, TracorForkState, TracorGlobalState, bool> _FnCondition;
+    private readonly Func<ITracorData, TracorForkState, TracorGlobalState, bool>? _FnConditionBool;
+    private readonly Func<ITracorData, TracorForkState, TracorGlobalState, TracorValidatorOnTraceResult>? _FnConditionOTR;
+    
     private readonly string? _FnConditionDisplay;
 
     public PredicateCondition(
-        Func<ITracorData, TracorForkState, TracorGlobalState, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        Func<ITracorData, TracorForkState, TracorGlobalState, bool> fnConditionBool,
+        [CallerArgumentExpression(nameof(fnConditionBool))] string? doNotPopulateThisValue = null
         ) {
-        this._FnCondition = fnCondition;
+        this._FnConditionBool = fnConditionBool;
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
 
-    public bool DoesMatch(
+
+    public PredicateCondition(
+        Func<ITracorData, TracorForkState, TracorGlobalState, TracorValidatorOnTraceResult> fnConditionOTR,
+        [CallerArgumentExpression(nameof(fnConditionOTR))] string? doNotPopulateThisValue = null
+        ) {
+        this._FnConditionOTR = fnConditionOTR;
+        this._FnConditionDisplay = doNotPopulateThisValue;
+    }
+
+    public TracorValidatorOnTraceResult DoesMatch(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
-        
-        bool result = this._FnCondition(tracorData, currentContext.ForkState, currentContext.GlobalState);
-        currentContext.LoggerUtility.LogCondition(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
-        return result;
+        if (this._FnConditionBool is { } fnConditionBool) {
+            bool result = fnConditionBool(tracorData, currentContext.ForkState, currentContext.GlobalState);
+            currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
+            return result ? TracorValidatorOnTraceResult.Successful : TracorValidatorOnTraceResult.None;
+        }
+        if (this._FnConditionOTR is { } fnConditionOTR) {
+            TracorValidatorOnTraceResult result = fnConditionOTR(tracorData, currentContext.ForkState, currentContext.GlobalState);
+            currentContext.LoggerUtility.LogConditionOTR(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
+            return result;
+        }
+        return TracorValidatorOnTraceResult.Failed;
     }
 
     public static OrCondition operator +(PredicateCondition left, IExpressionCondition right) {

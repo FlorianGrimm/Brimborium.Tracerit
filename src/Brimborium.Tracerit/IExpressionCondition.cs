@@ -10,7 +10,7 @@ public interface IExpressionCondition {
     /// <param name="tracorData">The trace data to evaluate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>True if the trace data matches the condition; otherwise, false.</returns>
-    bool DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext);
+    TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext);
 }
 
 /// <summary>

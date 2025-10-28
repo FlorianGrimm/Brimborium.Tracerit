@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Brimborium.Tracerit;
+﻿namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Represents a wrapped value for use in Tracor expressions and conditions.
@@ -94,17 +92,35 @@ public static partial class TracorExtension {
         ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
 
     public static PredicateCondition Predicate(
+        this WrapFunc<ITracorData, TracorForkState, TracorGlobalState, TracorValidatorOnTraceResult> fnCondition
+        ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
+    
+    public static PredicateCondition Predicate(
         Func<ITracorData, TracorForkState, TracorGlobalState, bool> fnCondition,
+        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        ) => new PredicateCondition(fnCondition, doNotPopulateThisValue);
+
+    public static PredicateCondition Predicate(
+        Func<ITracorData, TracorForkState, TracorGlobalState, TracorValidatorOnTraceResult> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
         ) => new PredicateCondition(fnCondition, doNotPopulateThisValue);
 
     public static PredicateTracorDataCondition PredicateTracorData(
         this WrapFunc<ITracorData, bool> fnCondition
-    ) => new(fnCondition.Value, fnCondition.ValueDisplay);
+        ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
+    public static PredicateTracorDataCondition PredicateTracorData(
+        this WrapFunc<ITracorData, TracorValidatorOnTraceResult> fnCondition
+        ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
     public static PredicateTracorDataCondition<TTracorData> PredicateTracorData<TTracorData>(
         this WrapFunc<TTracorData, bool> fnCondition
+        )
+        where TTracorData : ITracorData
+        => new(fnCondition.Value, fnCondition.ValueDisplay);
+
+    public static PredicateTracorDataCondition<TTracorData> PredicateTracorData<TTracorData>(
+        this WrapFunc<TTracorData, TracorValidatorOnTraceResult> fnCondition
         )
         where TTracorData : ITracorData
         => new(fnCondition.Value, fnCondition.ValueDisplay);
@@ -113,9 +129,16 @@ public static partial class TracorExtension {
         this WrapFunc<TValue, bool> fnCondition
         ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
+    public static PredicateValueCondition<TValue> PredicateValue<TValue>(
+        this WrapFunc<TValue, TracorValidatorOnTraceResult> fnCondition
+        ) => new(fnCondition.Value, fnCondition.ValueDisplay);
 
     public static PredicateTracorDataCondition Predicate(
         Func<ITracorData, bool> condition
+        ) => new(condition);
+
+    public static PredicateTracorDataCondition Predicate(
+        Func<ITracorData, TracorValidatorOnTraceResult> condition
         ) => new(condition);
 
     public static PredicateTracorDataCondition<TTracorData> PredicateTracorData<TTracorData>(
@@ -124,8 +147,19 @@ public static partial class TracorExtension {
         ) where TTracorData : ITracorData
         => new(fnCondition, doNotPopulateThisValue);
 
+    public static PredicateTracorDataCondition<TTracorData> PredicateTracorData<TTracorData>(
+        Func<TTracorData, TracorValidatorOnTraceResult> fnCondition,
+        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        ) where TTracorData : ITracorData
+        => new(fnCondition, doNotPopulateThisValue);
+
     public static PredicateValueCondition<TValue> PredicateValue<TValue>(
         Func<TValue, bool> fnCondition,
+        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        ) => new(fnCondition, doNotPopulateThisValue);
+
+    public static PredicateValueCondition<TValue> PredicateValue<TValue>(
+        Func<TValue, TracorValidatorOnTraceResult> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
         ) => new(fnCondition, doNotPopulateThisValue);
 }
