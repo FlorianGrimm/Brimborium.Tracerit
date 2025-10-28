@@ -1,5 +1,6 @@
 ﻿namespace Brimborium.Tracerit.DataAccessor;
 
+// TODO: remove after adjust tests
 public static class ValueTracorData {
     public static ValueTracorData<TValue> Create<TValue>(TValue value) => new ValueTracorData<TValue>(value);
 }

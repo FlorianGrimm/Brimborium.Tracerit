@@ -4,7 +4,9 @@ namespace Brimborium.Tracerit.DataAccessor;
 
 public abstract class TracorDataValueAccessorFactory<TValue>
     : ITracorDataAccessorFactory<TValue> {
+#pragma warning disable IDE1006 // Naming Styles
     protected readonly TracorDataRecordPool Pool;
+#pragma warning restore IDE1006 // Naming Styles
 
     protected TracorDataValueAccessorFactory(
         TracorDataRecordPool tracorDataRecordPool
@@ -141,7 +143,6 @@ public sealed class TracorDataDateTimeOffsetValueAccessorFactory :
         return false;
     }
 }
-
 
 public sealed class TracorDataUuidValueAccessorFactory :
     TracorDataValueAccessorFactory<Guid> {

@@ -68,6 +68,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
 
     public void TracePrivate<T>(string scope, LogLevel level, string message, T value) {
         try {
+            var timestamp = DateTime.UtcNow;
             TracorIdentifier callee = new(TracorConstants.SourceTracorPrivate, scope, message);
             ITracorData tracorData;
             if (value is ITracorData valueTracorData) {
@@ -79,7 +80,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
                     tracorData.TracorIdentifier = callee;
                 }
             }
-            tracorData.Timestamp = DateTime.UtcNow;
+            tracorData.Timestamp = timestamp;
 
             if (value is IReferenceCountObject referenceCountObject) {
                 referenceCountObject.IncrementReferenceCount();
@@ -100,16 +101,20 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
         try {
             ITracorData tracorData;
 
-            DateTime utcNow = DateTime.UtcNow;
+            DateTime timestamp = DateTime.UtcNow;
             TracorIdentifier callee = new(TracorConstants.SourceTracorPublic, scope, message);
 
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
+                if (tracorData is TracorDataRecord tracorDataRecord) { 
+                    TracorDataUtility.SetActivityIfNeeded(tracorDataRecord.ListProperty);
+                }
+
             } else {
                 tracorData = this._TracorDataConvertService.ConvertPublic(/*callee,*/ value);
             }
             tracorData.TracorIdentifier = callee;
-            tracorData.Timestamp = utcNow;
+            tracorData.Timestamp = timestamp;
 
             if (value is IReferenceCountObject referenceCountObject) {
                 referenceCountObject.IncrementReferenceCount();

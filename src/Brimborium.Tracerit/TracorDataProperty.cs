@@ -28,14 +28,49 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         InnerObjectValue = null;
     }
 
-    public TracorDataProperty(
-       string name,
-       TracorDataPropertyTypeValue typeValue,
-       string textValue
-       ) {
-        Name = name;
+    public TracorDataProperty(string name, string textValue, TracorDataPropertyTypeValue typeValue = TracorDataPropertyTypeValue.String) {
+        if (typeValue is not TracorDataPropertyTypeValue.String or TracorDataPropertyTypeValue.Enum) {
+            throw new ArgumentException("must be string or Enum", nameof(typeValue));
+        }
         _TypeValue = typeValue;
+        Name = name;
         InnerObjectValue = textValue;
+    }
+
+    public TracorDataProperty(string name, long longValue) {
+        _TypeValue = TracorDataPropertyTypeValue.Integer;
+        Name = name;
+        LongValue = longValue;
+    }
+
+    public TracorDataProperty(string name, bool boolValue) {
+        Name = name;
+        SetBooleanValue(boolValue);
+    }
+
+    public TracorDataProperty(string name, LogLevel levelValue) {
+        Name = name;
+        SetLevelValue(levelValue);
+    }
+
+    public TracorDataProperty(string name, double doubleValue) {
+        Name = name;
+        SetDoubleValue(doubleValue);
+    }
+
+    public TracorDataProperty(string name, DateTime dateTimeValue) {
+        Name = name;
+        SetDateTimeValue(dateTimeValue);
+    }
+
+    public TracorDataProperty(string name, DateTimeOffset dateTimeOffsetValue) {
+        Name = name;
+        SetDateTimeOffsetValue(dateTimeOffsetValue);
+    }
+
+    public TracorDataProperty(string name, Guid uuidValue) {
+        Name = name;
+        SetUuidValue(uuidValue);
     }
 
     [JsonPropertyName("name"), JsonInclude]
@@ -84,86 +119,83 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         }
         set {
             InnerObjectValue = value;
-#warning TODO
-            /*
-            if (value is null) {
-                TypeValue = TracorDataPropertyTypeValue.Null;
+
+            if (value is not { } argValueNotNull) {
+                SetNullValue();
                 return;
             }
-            if (value is string stringValue) {
-                TypeValue = TracorDataPropertyTypeValue.String;
-                InnerTextValue = stringValue;
-                return;
-            }
-            if (value is int intValue) {
-                TypeValue = TracorDataPropertyTypeValue.Integer;
-                InnerLongValue = intValue;
-                return;
-            }
-            if (value is LogLevel logLevelValue) {
-                TypeValue = TracorDataPropertyTypeValue.LevelValue;
-                InnerTextValue = logLevelValue.ToString();
-                InnerLongValue = (long)logLevelValue;
-                return;
-            }
-            if (value is DateTime dtValue) {
-                TypeValue = TracorDataPropertyTypeValue.DateTime;
-                InnerLongValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(dtValue);
-                return;
-            }
-            if (value is DateTimeOffset dtoValue) {
-                var dto = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(dtoValue);
-                TypeValue = TracorDataPropertyTypeValue.DateTime;
-                InnerLongValue = dto.longVaule;
-                InnerFloatValue = dto.floatValue;
-                return;
-            }
-            if (value is long longValue) {
-                TypeValue = TracorDataPropertyTypeValue.DateTime;
-                InnerLongValue = longValue;
-                return;
-            }
-            if (value is double doubleValue) {
-                TypeValue = TracorDataPropertyTypeValue.Float;
-                InnerFloatValue = doubleValue;
-                return;
-            }
-            if (value is float floatValue) {
-                TypeValue = TracorDataPropertyTypeValue.Float;
-                InnerFloatValue = floatValue;
-                return;
-            }
-            if (value is Guid guidValue) {
-                TypeValue = TracorDataPropertyTypeValue.Uuid;
-                InnerUuidValue = guidValue;
-                return;
-            }
-            if (value.GetType().IsEnum) {
-                TypeValue = TracorDataPropertyTypeValue.Enum;
-                InnerTextValue = value.ToString() ?? string.Empty;
-                InnerFloatValue = (long)value;
-                return;
+
+            {
+                if (TracorDataUtility.TryCastObjectToStringValue(argValueNotNull, out var resultValue)) {
+                    SetStringValue(resultValue);
+                    return;
+                }
             }
             {
-                TypeValue = TracorDataPropertyTypeValue.Any;
-                AnyValue = value;
+                if (TracorDataUtility.TryCastObjectToInteger(argValueNotNull, out var resultValue)) {
+                    SetIntegerValue(resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToDoubleValue(argValueNotNull, out var resultValue)) {
+                    SetDoubleValue( resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToLogLevelValue(argValueNotNull, out var resultValue)) {
+                    SetLevelValue(resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToDateTimeValue(argValueNotNull, out var resultValue)) {
+                    SetDateTimeValue( resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToDateTimeOffsetValue(argValueNotNull, out var resultValue)) {
+                    SetDateTimeOffsetValue( resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToUuidValue(argValueNotNull, out var resultValue)) {
+                    SetUuidValue(resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToEnumValue(argValueNotNull, out var enumValue)) {
+                    SetEnumValue(enumValue);
+                    return;
+                }
+            }
+            {
+                SetAnyValue(argValueNotNull);
                 return;
             }
-            */
         }
     }
     public object? InnerObjectValue { get; set; }
+    public long LongValue { get; set; }
+    public double DoubleValue { get; set; }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetNullValue(out object? value) {
         value = null;
         return TracorDataPropertyTypeValue.Null == _TypeValue;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetNullValue() {
         TypeValue = TracorDataPropertyTypeValue.Null;
         InnerObjectValue = null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetStringValue(out string value) {
         if (TracorDataPropertyTypeValue.String == TypeValue) {
             value = InnerObjectValue is string textValue ? textValue : string.Empty;
@@ -173,47 +205,45 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetStringValue(string value) {
         _TypeValue = TracorDataPropertyTypeValue.String;
         InnerObjectValue = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetIntegerValue(out long value) {
         if (TracorDataPropertyTypeValue.Integer == _TypeValue) {
-            if (InnerObjectValue is long integerValue) {
-                value = integerValue;
-                return true;
-            }
+            value = LongValue;
+            return true;
         }
         value = 0L;
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetIntegerValue(long value) {
         TypeValue = TracorDataPropertyTypeValue.Integer;
-        InnerObjectValue = value;
+        LongValue = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetBooleanValue(out bool value) {
         if (TypeValue == TracorDataPropertyTypeValue.Boolean) {
-            if (InnerObjectValue is bool boolValue) {
-                value = boolValue;
-                return true;
-            }
-            if (InnerObjectValue is long longValue) {
-                value = (longValue == 0 ? false : true);
-                return true;
-            }
+            value = (LongValue == 0 ? false : true);
+            return true;
         }
         value = false;
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetBooleanValue(bool value) {
         TypeValue = TracorDataPropertyTypeValue.Boolean;
-        InnerObjectValue = value;
+        LongValue = value ? 1L : 0L;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetEnumValue(out string textValue) {
         if (TypeValue == TracorDataPropertyTypeValue.Enum) {
             if (InnerObjectValue is string stringValue) {
@@ -225,11 +255,13 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetEnumValue(string txtValue) {
         TypeValue = TracorDataPropertyTypeValue.Enum;
         InnerObjectValue = txtValue;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetLevelValue(out LogLevel value) {
         if (TracorDataPropertyTypeValue.Level == TypeValue) {
             if (InnerObjectValue is string stringValue) {
@@ -250,6 +282,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetLevelValue(LogLevel value) {
         TypeValue = TracorDataPropertyTypeValue.Level;
         InnerObjectValue = value switch {
@@ -264,22 +297,23 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetDoubleValue(out double value) {
         if (TypeValue == TracorDataPropertyTypeValue.Double) {
-            if (InnerObjectValue is double doubleValue) {
-                value = doubleValue;
-                return true;
-            }
+            value = DoubleValue;
+            return true;
         }
         value = double.NaN;
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetDoubleValue(double value) {
         TypeValue = TracorDataPropertyTypeValue.Double;
-        InnerObjectValue = value;
+        DoubleValue = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetDateTimeValue(out DateTime value) {
         if (TypeValue == TracorDataPropertyTypeValue.DateTime) {
             if (InnerObjectValue is DateTime dateTimeValue) {
@@ -295,44 +329,47 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetDateTimeValue(DateTime value) {
         TypeValue = TracorDataPropertyTypeValue.DateTime;
-        // var longValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(value);
+        LongValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(value);
         InnerObjectValue = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetDateTimeOffsetValue(out DateTimeOffset value) {
         if (TypeValue == TracorDataPropertyTypeValue.DateTimeOffset) {
             if (InnerObjectValue is DateTimeOffset dateTimeOffsetValue) {
                 value = dateTimeOffsetValue;
                 return true;
             }
-            if (InnerObjectValue is long ticksValue) {
-                value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(ticksValue, 0);
-                return true;
-            }
             if (InnerObjectValue is string { Length: > 0 } stringValue) {
                 if (DateTimeOffset.TryParseExact(
                     stringValue,
                     "o",
-                    System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                    TracorConstants.TracorCulture.DateTimeFormat,
                     System.Globalization.DateTimeStyles.None,
                     out var result)) {
                     value = result;
                     return true;
                 }
             }
+            value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(LongValue, 0);
+            return true;
         }
         value = new DateTimeOffset(new DateTime(0, DateTimeKind.Utc), TimeSpan.Zero);
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetDateTimeOffsetValue(DateTimeOffset value) {
         TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
-        //var (ticksValue, offsetValue) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
+        var (ticksValue, _) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
+        LongValue = ticksValue;
         InnerObjectValue = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetUuidValue(out Guid value) {
         if (TypeValue == TracorDataPropertyTypeValue.Uuid) {
             if (InnerObjectValue is Guid uuidValue) {
@@ -344,11 +381,13 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetUuidValue(Guid value) {
         TypeValue = TracorDataPropertyTypeValue.Uuid;
         InnerObjectValue = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetAnyValue(out object? value) {
         value = this.InnerObjectValue;
         return TracorDataPropertyTypeValue.Any == _TypeValue;
@@ -356,7 +395,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public void SetAnyValue(object? value) {
         TypeValue = TracorDataPropertyTypeValue.Any;
-        InnerObjectValue = null;
+        InnerObjectValue = value;
     }
     /*
     private const char _SeparationJsonChar = ':';
@@ -393,7 +432,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                 && (otherBooleanValue == thisBooleanValue),
 
             TracorDataPropertyTypeValue.Enum
-                => TracorDataUtility.TryConvertObjectToEnumValue(currentPropertyValue, out var otherEnumValue, out var otherTextEnumValue)
+                => TracorDataUtility.TryConvertObjectToEnumValue(currentPropertyValue, out var otherTextEnumValue)
                 && TryGetEnumValue(out var thisEnumTextValue)
                 && string.Equals(otherTextEnumValue, thisEnumTextValue, StringComparison.OrdinalIgnoreCase),
 
@@ -434,7 +473,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
             case TracorDataPropertyTypeValue.Integer: {
                     TryGetIntegerValue(out long longValue);
-                    return longValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                    return longValue.ToString(TracorConstants.TracorCulture.NumberFormat);
                 }
             case TracorDataPropertyTypeValue.Boolean: {
                     TryGetBooleanValue(out bool boolValue);
@@ -454,15 +493,15 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                 }
             case TracorDataPropertyTypeValue.Double: {
                     TryGetDoubleValue(out double floatValue);
-                    return floatValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                    return floatValue.ToString(TracorConstants.TracorCulture.NumberFormat);
                 }
             case TracorDataPropertyTypeValue.DateTime: {
                     TryGetDateTimeValue(out var dtValue);
-                    return dtValue.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat);
+                    return dtValue.ToString("o", TracorConstants.TracorCulture.DateTimeFormat);
                 }
             case TracorDataPropertyTypeValue.DateTimeOffset: {
                     TryGetDateTimeOffsetValue(out var dtoValue);
-                    return dtoValue.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat);
+                    return dtoValue.ToString("o", TracorConstants.TracorCulture.DateTimeFormat);
                 }
             case TracorDataPropertyTypeValue.Uuid: {
                     TryGetUuidValue(out var uuidValue);
@@ -476,21 +515,27 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         }
     }
 
-    private static EqualityComparer<TracorDataProperty>? _TracorDataPropertyEqualityComparer;
-    public override bool Equals([NotNullWhen(true)] object? obj) {
-        if (ReferenceEquals(null, obj)) { return false; }
+    public override readonly bool Equals([NotNullWhen(true)] object? obj) {
+        if (obj is null) { return false; }
         if (obj is not TracorDataProperty other) { return false; }
-        var ec = _TracorDataPropertyEqualityComparer ??= TracorDataPropertyEqualityComparer.Default;
-        return ec.Equals(this, other);
+        return TracorDataPropertyEqualityComparer.EqualsRef(in this, in other);
     }
 
-    public bool Equals(TracorDataProperty other) {
-        var ec = _TracorDataPropertyEqualityComparer ??= TracorDataPropertyEqualityComparer.Default;
-        return ec.Equals(other);
+    public readonly bool Equals(TracorDataProperty other) {
+        return TracorDataPropertyEqualityComparer.EqualsRef(in this, in other);
     }
 
-    public override int GetHashCode() {
-        var ec = _TracorDataPropertyEqualityComparer ??= TracorDataPropertyEqualityComparer.Default;
-        return base.GetHashCode();
+    public readonly override int GetHashCode() {
+        return TracorDataPropertyEqualityComparer.GetHashCodeRef(in this);
     }
+
+    public static bool operator ==(TracorDataProperty a, TracorDataProperty b ) {
+        return TracorDataPropertyEqualityComparer.EqualsRef(in a, in b);
+    }
+
+    public static bool operator !=(TracorDataProperty a, TracorDataProperty b) {
+        return !TracorDataPropertyEqualityComparer.EqualsRef(in a, in b);
+    }
+
+
 }

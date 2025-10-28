@@ -34,7 +34,7 @@ public sealed class TracorDataPropertyOtelCompatibleJsonConverter
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException(); }
             if (reader.TokenType != JsonTokenType.EndObject) { throw new JsonException(); }
-            if (long.TryParse(argValue, System.Globalization.CultureInfo.InvariantCulture, out var intValue)) {
+            if (long.TryParse(argValue, TracorConstants.TracorCulture, out var intValue)) {
                 return TracorDataProperty.CreateInteger(propertyName, intValue);
             } else {
                 throw new JsonException($"Invalid integer value: {argValue}");
@@ -89,7 +89,7 @@ public sealed class TracorDataPropertyOtelCompatibleJsonConverter
             if (DateTime.TryParseExact(
                 s: textValue,
                 format: "O",
-                provider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                provider: TracorConstants.TracorCulture.DateTimeFormat,
                 style: DateTimeStyles.None,
                 out var dtValue)) {
                 return TracorDataProperty.CreateDateTime(propertyName, dtValue);
@@ -114,7 +114,7 @@ public sealed class TracorDataPropertyOtelCompatibleJsonConverter
             if (DateTimeOffset.TryParseExact(
                 input: textValue,
                 format: "O",
-                formatProvider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                formatProvider: TracorConstants.TracorCulture.DateTimeFormat,
                 styles: DateTimeStyles.AssumeUniversal,
                 out var dtoValue)) {
                 return TracorDataProperty.CreateDateTimeOffset(propertyName, dtoValue);

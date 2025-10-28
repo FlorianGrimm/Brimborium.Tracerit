@@ -1,7 +1,10 @@
 ﻿namespace Brimborium.Tracerit;
 
 public sealed class TracorDataPropertyEqualityComparer : EqualityComparer<TracorDataProperty> {
-    public override bool Equals(TracorDataProperty x, TracorDataProperty y) {
+    public override bool Equals(TracorDataProperty x, TracorDataProperty y) 
+        => EqualsRef(in x, in y);
+
+    public static bool EqualsRef(ref readonly TracorDataProperty x, ref readonly TracorDataProperty y) {
         if (!(x.TypeValue == y.TypeValue)) { return false; }
         if (!(string.Equals(x.Name, y.Name, StringComparison.Ordinal))) { return false; }
 
@@ -60,8 +63,10 @@ public sealed class TracorDataPropertyEqualityComparer : EqualityComparer<Tracor
         }
     }
 
-    public override int GetHashCode([DisallowNull] TracorDataProperty obj) {
+    public override int GetHashCode([DisallowNull] TracorDataProperty obj)
+        => GetHashCodeRef(in obj);
 
+    public static int GetHashCodeRef(ref readonly TracorDataProperty obj) {
         switch (obj.TypeValue) {
             case TracorDataPropertyTypeValue.Null:
                 return HashCode.Combine(

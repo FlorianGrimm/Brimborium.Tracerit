@@ -137,3 +137,7 @@ public interface ITracorDataAccessor<T> {
     /// </summary>
     void ConvertProperties(T value, List<TracorDataProperty> listProperty);
 }
+
+public interface ITracorDataSelfAccessor {
+    void ConvertProperties(List<TracorDataProperty> listProperty);
+}

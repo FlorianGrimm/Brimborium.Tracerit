@@ -50,14 +50,14 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
 
         foreach (var arg in this._Arguments) {
             if (!isSourceFound) {
-                if ("Source" == arg.Key) {
+                if (TracorConstants.TracorDataPropertyNameSource == arg.Key) {
                     isSourceFound = true;
                     sourceMatched = string.Equals(sourceValue, arg.Value as string, StringComparison.Ordinal);
                     if (isEventNameFound) { break; }
                 }
             }
             if (!isEventNameFound) {
-                if ("Event.Name" == arg.Key) {
+                if (TracorConstants.TracorDataPropertyNameEventName == arg.Key) {
                     isEventNameFound = true;
                     eventNameMatched = string.Equals(eventNameValue, arg.Value as string, StringComparison.Ordinal);
                     if (isSourceFound) { break; }

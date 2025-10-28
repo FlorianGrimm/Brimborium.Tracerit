@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Brimborium.Tracerit.Condition;
+﻿namespace Brimborium.Tracerit.Condition;
 
 public sealed class EqualsTracorDataFuncCondition<TProperty> : IExpressionCondition {
     private readonly Func<ITracorData, TProperty> _FnGetProperty;

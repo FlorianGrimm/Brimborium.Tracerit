@@ -174,7 +174,7 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
     }
 
     public string GetLogFilePath(DateTime utcNow) {
-        var timestamp = utcNow.ToString("yyyy-MM-dd-HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat);
+        var timestamp = utcNow.ToString("yyyy-MM-dd-HH-mm-ss", TracorConstants.TracorCulture.DateTimeFormat);
         if (this._FileName is { Length: > 0 } fileName) {
             return fileName
                 .Replace("{ApplicationName}", this._ApplicationName)

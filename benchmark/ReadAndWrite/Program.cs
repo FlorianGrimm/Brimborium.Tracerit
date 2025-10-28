@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#pragma warning disable CA2211 // Non-constant fields should not be visible
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace ReadAndWrite;
@@ -130,7 +131,7 @@ public class WriterService : BackgroundService {
                     }
                     this._Logger.WriterInnerSum(sum);
                     await this._FileTracorCollectiveSink.FlushAsync();
-                    await Task.Delay(Program.TimeSpanPeriod);
+                    await Task.Delay(Program.TimeSpanPeriod, CancellationToken.None);
                 }
             }
         } finally {
@@ -171,13 +172,13 @@ public class ReaderService : BackgroundService {
                     if (fileFQN is { Length: > 0 }) {
                         logfile = fileFQN; break;
                     } else {
-                        await Task.Delay(10);
+                        await Task.Delay(10, CancellationToken.None);
                         continue;
                     }
                 }
 
-                await Task.Delay(1000);
-                await Task.Delay(Program.TimeSpanPeriod);
+                await Task.Delay(1000, CancellationToken.None);
+                await Task.Delay(Program.TimeSpanPeriod, CancellationToken.None);
 
                 var tracorDataRecordPool = new TracorDataRecordPool(0);
                 var jsonSerializerOptions = new JsonSerializerOptions()

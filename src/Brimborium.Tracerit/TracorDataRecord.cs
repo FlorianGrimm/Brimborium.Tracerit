@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿#pragma warning disable IDE0017
+
+namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Represents a record of trace data, including properties and identifiers.
@@ -61,7 +63,7 @@ public sealed class TracorDataRecord
     }
 
     public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
-        var listProperty = ListProperty;
+        var listProperty = this.ListProperty;
         for (int index = 0; index < listProperty.Count; index++) {
             if (string.Equals(listProperty[index].Name, propertyName, StringComparison.Ordinal)) { 
                 result = listProperty[index];
@@ -156,7 +158,9 @@ public sealed class TracorDataRecordAccessorFactory : ITracorDataAccessorFactory
     }
 }
 public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> {
+#pragma warning disable IDE0060 // Remove unused parameter
     public static TracorDataRecordPool Create(IServiceProvider provider) => new(0);
+#pragma warning restore IDE0060 // Remove unused parameter
 
     public TracorDataRecordPool(int capacity) : base(capacity) { }
 

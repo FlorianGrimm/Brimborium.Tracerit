@@ -87,7 +87,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             if (DateTime.TryParseExact(
                 s: argValue,
                 format: "O",
-                provider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                provider: TracorConstants.TracorCulture.DateTimeFormat,
                 style: DateTimeStyles.AdjustToUniversal,
                 out var dtValue)) {
                 return TracorDataProperty.CreateDateTimeValue(propertyName, dtValue);
@@ -106,7 +106,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             if (DateTimeOffset.TryParseExact(
                 input: argValue,
                 format: "O",
-                formatProvider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                formatProvider: TracorConstants.TracorCulture.DateTimeFormat,
                 styles: DateTimeStyles.AssumeUniversal,
                 out var dtoValue)) {
                 return TracorDataProperty.CreateDateTimeOffsetValue(propertyName, dtoValue);
@@ -180,11 +180,11 @@ public sealed class TracorDataPropertyMinimalJsonConverter
                 break;
             case TracorDataPropertyTypeValue.DateTime:
                 value.TryGetDateTimeValue(out var dateTimeValue);
-                writer.WriteStringValue(dateTimeValue.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat));
+                writer.WriteStringValue(dateTimeValue.ToString("o", TracorConstants.TracorCulture.DateTimeFormat));
                 break;
             case TracorDataPropertyTypeValue.DateTimeOffset:
                 value.TryGetDateTimeValue(out var dateTimeOffsetValue);
-                writer.WriteStringValue(dateTimeOffsetValue.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat));
+                writer.WriteStringValue(dateTimeOffsetValue.ToString("o", TracorConstants.TracorCulture.DateTimeFormat));
                 break;
             case TracorDataPropertyTypeValue.Boolean:
                 value.TryGetBooleanValue(out var boolValue);

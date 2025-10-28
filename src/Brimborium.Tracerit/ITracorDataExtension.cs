@@ -27,10 +27,8 @@ public static class ITracorDataExtension {
 
     public static bool IsEqualEnum(this ITracorData data, string propertyName, string expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToEnumValue(currentValue, out var thisLongValue, out var thisTextValue))
-            && (string.Equals(thisTextValue, expected, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(thisLongValue.ToString(), expected, StringComparison.OrdinalIgnoreCase))
-        ;
+            && (TracorDataUtility.TryConvertObjectToEnumValue(currentValue, out var thisTextValue))
+            && string.Equals(thisTextValue, expected, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsEqualLevelValue(this ITracorData data, string propertyName, LogLevel expected)
         => data.TryGetPropertyValue(propertyName, out var currentValue)
@@ -87,13 +85,11 @@ public static class ITracorDataExtension {
 
     public static bool TryGetPropertyValueEnum(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out string value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
-            && TracorDataUtility.TryConvertObjectToEnumValue(propertyValue, out var longValue, out var textValue)) {
+            && TracorDataUtility.TryConvertObjectToEnumValue(propertyValue, out var textValue)) {
             if (textValue is { Length: > 0 }) {
                 value = textValue;
-            } else {
-                value = longValue.ToString();
+                return true;
             }
-            return true;
         }
         value = default;
         return false;

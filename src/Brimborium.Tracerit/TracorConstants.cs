@@ -36,4 +36,7 @@ public static class TracorConstants {
     public const string TracorDataPropertyNameDisplayName = "activity.DisplayName";
     public const string TracorDataPropertyNameStartTimeUtc = "activity.StartTimeUtc";
     public const string TracorDataPropertyNameStopTimeUtc = "activity.StopTimeUtc";
+
+    private static CultureInfo? _TracorCulture;
+    public static CultureInfo TracorCulture => _TracorCulture ??= System.Globalization.CultureInfo.InvariantCulture;
 }

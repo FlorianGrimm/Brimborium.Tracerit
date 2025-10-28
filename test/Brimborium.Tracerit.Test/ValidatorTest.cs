@@ -11,8 +11,8 @@ public class ValidatorTest {
         });
         serviceBuilder.AddEnabledTracor(
             configureConvert: options => {
-                options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
-                options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>());
+                options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor(), new(0)));
+                options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>(new(0)));
             });
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
@@ -54,8 +54,8 @@ public class ValidatorTest {
         });
         serviceBuilder.AddEnabledTracor(
             configureConvert: options => {
-            options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
-            options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>());
+            options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor(), new(0)));
+            options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>(new(0)));
         });
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 

@@ -64,10 +64,10 @@ public static class TracorDataSerialization {
         var compression = FileTracorCollectiveSink.GetCompressionFromFileName(logfile);
         if (compression is { } compressionValue) {
             var fileStream = System.IO.File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (FileTracorCollectiveCompression.Gzip == compression) {
+            if (FileTracorCollectiveCompression.Gzip == compressionValue) {
                 return new GZipStream(fileStream, new ZLibCompressionOptions() { }, leaveOpen: false);
             }
-            if (FileTracorCollectiveCompression.Brotli == compression) {
+            if (FileTracorCollectiveCompression.Brotli == compressionValue) {
                 return new BrotliStream(fileStream, new BrotliCompressionOptions() { }, leaveOpen: false);
             }
             return fileStream;
@@ -282,7 +282,7 @@ public static class TracorDataSerialization {
                             );
                             return true;
                         } else if (TracorDataProperty.TypeNameInteger.AsSpan().SequenceEqual(typeName)) {
-                            if (int.TryParse(textValue, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var intValue)) {
+                            if (int.TryParse(textValue, TracorConstants.TracorCulture.NumberFormat, out var intValue)) {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.Integer,
@@ -323,7 +323,7 @@ public static class TracorDataSerialization {
                                     InnerFloatValue = 0
                                 };
                                 return true;
-                            } else if (DateTime.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtValue)) {
+                            } else if (DateTime.TryParseExact(textValue, "O", TracorConstants.TracorCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtValue)) {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.DateTime,
@@ -343,7 +343,7 @@ public static class TracorDataSerialization {
                                     InnerLongValue = ns
                                 };
                                 return true;
-                            } else if (DateTimeOffset.TryParseExact(textValue, "O", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtoValue)) {
+                            } else if (DateTimeOffset.TryParseExact(textValue, "O", TracorConstants.TracorCulture.DateTimeFormat, System.Globalization.DateTimeStyles.None, out var dtoValue)) {
                                 var dto = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(dtoValue);
                                 result = new TracorDataProperty(
                                     name: argNameString,
@@ -367,7 +367,7 @@ public static class TracorDataSerialization {
                             };
                             return true;
                         } else if (TracorDataProperty.TypeNameInteger.AsSpan().SequenceEqual(typeName)) {
-                            if (long.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var longValue)) {
+                            if (long.TryParse(textValueString, TracorConstants.TracorCulture.NumberFormat, out var longValue)) {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.Integer,
@@ -378,7 +378,7 @@ public static class TracorDataSerialization {
                                 return true;
                             }
                         } else if (TracorDataProperty.TypeNameFloat.AsSpan().SequenceEqual(typeName)) {
-                            if (double.TryParse(textValueString, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out var floatValue)) {
+                            if (double.TryParse(textValueString, TracorConstants.TracorCulture.NumberFormat, out var floatValue)) {
                                 result = new TracorDataProperty(
                                     name: argNameString,
                                     typeValue: TracorDataPropertyTypeValue.Float,

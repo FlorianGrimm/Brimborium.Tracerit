@@ -1,4 +1,5 @@
 ﻿#pragma warning disable IDE0009 // Member access should be qualified.
+#pragma warning disable IDE0079
 
 using System.Diagnostics.Tracing;
 
@@ -22,8 +23,6 @@ public partial struct TracorDataProperty {
             return CreateNull(argName);
         }
         
-        // Type typeArgValue = argValueNotNull.GetType();
-        // TracorDataPropertyTypeValue tracorDataPropertyTypeValue = TracorDataUtility.ConvertTypeToTracorDataPropertyTypeValue(argValueNotNull);
         {
             if (TracorDataUtility.TryCastObjectToStringValue(argValueNotNull, out var resultValue)) {
                 return CreateStringValue(argName, resultValue);

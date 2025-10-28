@@ -3,7 +3,7 @@ namespace Brimborium.Tracerit.Test.DataAccessor;
 /// <summary>
 /// Unit tests for ITracorData implementations and related data accessor functionality.
 /// </summary>
-public class TracorDataTests {
+public class ValueTracorDataTests {
 
     [Test]
     public async Task ValueTracorData_ShouldProvideValueProperty() {
@@ -92,33 +92,15 @@ public class TracorDataTests {
     }
 
     [Test]
-    public async Task BoundAccessorTracorDataTyped_ShouldUseUnderlyingAccessor() {
-        // Arrange
-        var uri = new Uri("https://example.com/test");
-        var accessor = new SystemUriTracorDataAccessor();
-        var tracorData = new BoundAccessorTracorDataTyped<Uri>(accessor, uri);
-
-        // Act & Assert
-        await Assert.That(tracorData.TryGetOriginalValue(out var originalValue)).IsTrue();
-        await Assert.That(originalValue).IsEqualTo(uri);
-
-        await Assert.That(tracorData.TryGetPropertyValue("Host", out var hostValue)).IsTrue();
-        await Assert.That(hostValue).IsEqualTo("example.com");
-
-        await Assert.That(tracorData["PathAndQuery"]).IsEqualTo("/test");
-    }
-
-    [Test]
     public async Task TracorDataAccessorFactory_ShouldCreateTracorDataForCorrectType() {
         // Arrange
         var uri = new Uri("https://example.com");
         var accessor = new SystemUriTracorDataAccessor();
-        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor);
+        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor, new(0));
 
         // Act & Assert
         await Assert.That(factory.TryGetData(uri, out var tracorData)).IsTrue();
         await Assert.That(tracorData).IsNotNull();
-        await Assert.That(tracorData).IsTypeOf<BoundAccessorTracorDataTyped<Uri>>();
 
         await Assert.That(factory.TryGetDataTyped(uri, out var typedTracorData)).IsTrue();
         await Assert.That(typedTracorData).IsNotNull();
@@ -128,7 +110,7 @@ public class TracorDataTests {
     public async Task TracorDataAccessorFactory_ShouldReturnFalseForIncorrectType() {
         // Arrange
         var accessor = new SystemUriTracorDataAccessor();
-        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor);
+        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor, new(0));
 
         // Act & Assert
         await Assert.That(factory.TryGetData("not a uri", out var tracorData)).IsFalse();
@@ -138,7 +120,7 @@ public class TracorDataTests {
     [Test]
     public async Task ValueAccessorFactory_ShouldCreateValueTracorData() {
         // Arrange
-        var factory = new ValueAccessorFactory<string>();
+        var factory = new ValueAccessorFactory<string>(new(0));
         var testValue = "test string";
 
         // Act & Assert

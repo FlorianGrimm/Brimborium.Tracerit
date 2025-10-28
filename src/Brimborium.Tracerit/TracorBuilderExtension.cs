@@ -35,16 +35,16 @@ public static class TracorBuilderExtension {
     /// Add ITracorActivityListener for runtime or testtime.
     /// </summary>
     /// <param name="tracorBuilder">The service collection to add services to.</param>
-    /// <param name="addTestTimeServices">true - testtime; false - runtime</param>
+    /// <param name="enabled">true - testtime; false - runtime</param>
     /// <param name="configure">configure options</param>
     /// <returns>fluent this</returns>
     public static ITracorBuilder AddTracorActivityListener(
         this ITracorBuilder tracorBuilder,
-        bool addTestTimeServices,
+        bool enabled,
         IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
-        if (addTestTimeServices) {
+        if (enabled) {
             return tracorBuilder.AddEnabledTracorActivityListener(configuration, configure);
         } else {
             return tracorBuilder.AddDisabledTracorActivityListener(configuration, configure);
@@ -138,19 +138,14 @@ public static class TracorBuilderExtension {
         this ITracorBuilder tracorBuilder) {
         //tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
         tracorBuilder.Services.AddSingleton<FileTracorCollectiveSink>();
-        tracorBuilder.Services.Add(
-            ServiceDescriptor.Singleton<ITracorCollectiveSink>(
-                static (IServiceProvider sp) => sp.GetRequiredService<FileTracorCollectiveSink>()));
-        tracorBuilder.Services.Add(ServiceDescriptor.Transient(
-            typeof(ITracorSink<>), typeof(TracorSink<>)));
         return tracorBuilder;
     }
 
     /// <summary>
-    /// Add a file persitence for tracor
+    /// Add a file persistence for tracor
     /// </summary>
     /// <param name="tracorBuilder">that</param>
-    /// <param name="configuration">optional: the configurationroot:Tracor:SinkFile will be used</param>
+    /// <param name="configuration">optional: the configuration root:Tracor:SinkFile will be used</param>
     /// <param name="configure">optional: additional configuration - allows to set GetApplicationStopping</param>
     /// <returns></returns>
     /// <example>

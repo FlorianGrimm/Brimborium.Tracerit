@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit.Utility;
+﻿using System.Runtime.InteropServices;
+
+namespace Brimborium.Tracerit.Utility;
 
 public static partial class TracorDataUtility {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -54,7 +56,7 @@ public static partial class TracorDataUtility {
             double doubleValue => (true, (long)doubleValue),
             float floatValue => (true, (long)floatValue),
             decimal decimalValue => (true, (long)decimalValue),
-            string textValue => (long.TryParse(textValue, System.Globalization.CultureInfo.InvariantCulture, out var intValue))
+            string textValue => (long.TryParse(textValue, TracorConstants.TracorCulture, out var intValue))
                 ? (true, intValue)
                 : (false, 0L),
             _ => (false, 0L)
@@ -98,46 +100,33 @@ public static partial class TracorDataUtility {
         return false;
     }
 
-    public static bool TryCastObjectToEnumValue(object? value, out long longResult, out string? textResult) {
-        if (value is null) { longResult = 0; textResult = null; return false; }
+    public static bool TryCastObjectToEnumValue(object? value, out string textResult) {
+        if (value is null) { textResult = string.Empty; return false; }
 
-        if (value.GetType().IsEnum) {
-            longResult = (long)value;
-            textResult = value.ToString();
-            return true;
+        if (value.GetType().IsEnum
+            && value.ToString() is { } textValue) {
+            textResult = textValue; return true;
         }
 
-        { longResult = 0; textResult = null; return false; }
+        {
+            textResult = string.Empty; return false;
+        }
     }
 
-    public static bool TryConvertObjectToEnumValue(object? value, out long longResult, out string? textResult) {
-        if (value is null) { longResult = 0; textResult = null; return false; }
+    public static bool TryConvertObjectToEnumValue(object? value, out string? textResult) {
+        if (value is null) { textResult = null; return false; }
 
         if (value.GetType().IsEnum) {
-            longResult = Convert.ToInt64(value);
             textResult = value.ToString();
             return true;
         }
 
         if (value is string txtValue) {
-            longResult = 0;
             textResult = txtValue;
             return true;
         }
 
-        if (value is long longValue) {
-            longResult = longValue;
-            textResult = value.ToString();
-            return true;
-        }
-
-        if (value is int intValue) {
-            longResult = intValue;
-            textResult = value.ToString();
-            return true;
-        }
-
-        { longResult = 0; textResult = null; return false; }
+        { textResult = null; return false; }
     }
 
     public static bool TryCastObjectToLogLevelValue(object? value, out LogLevel result) {
@@ -259,12 +248,12 @@ public static partial class TracorDataUtility {
             string textValue => DateTime.TryParseExact(
                     s: textValue,
                     format: "O",
-                    provider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                    provider: TracorConstants.TracorCulture.DateTimeFormat,
                     style: DateTimeStyles.AdjustToUniversal,
                     out var dtValue)
                 ? (true, dtValue)
                 : (false, new DateTime(0, DateTimeKind.Utc)),
-            _ => (false, result = new DateTime(0, DateTimeKind.Utc))
+            _ => (false, new DateTime(0, DateTimeKind.Utc))
         };
         return matched;
     }
@@ -290,7 +279,7 @@ public static partial class TracorDataUtility {
             string textValue => (DateTimeOffset.TryParseExact(
                 input: textValue,
                 format: "O",
-                formatProvider: System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+                formatProvider: TracorConstants.TracorCulture.DateTimeFormat,
                 styles: DateTimeStyles.AssumeUniversal,
                 out var dtoValue))
                 ? (true, dtoValue)
@@ -575,6 +564,60 @@ public static partial class TracorDataUtility {
         return duration.Ticks * NanosecondsPerTicks;
     }
 #endif
+
+    public static void SetActivity(List<TracorDataProperty> listProperty) {
+        if (Activity.Current is { } activity) {
+            SetActivity(listProperty, activity);
+        }
+    }
+
+    public static void SetActivityIfNeeded(List<TracorDataProperty> listProperty) {
+        if (Activity.Current is { } activity) {
+            bool found = false;
+            {
+                var listSpan = CollectionsMarshal.AsSpan(listProperty);
+                for (int index = 0; index < listProperty.Count; index++) {
+                    ref TracorDataProperty property = ref listSpan[index];
+                    if (string.Equals(
+                        TracorConstants.TracorDataPropertyNameActivitySpanId,
+                        property.Name,
+                        StringComparison.OrdinalIgnoreCase)) {
+                        found = true; break;
+                    }
+                }
+            }
+            if (!found) {
+                SetActivity(listProperty, activity);
+            }
+        }
+    }
+
+    public static void SetActivity(List<TracorDataProperty> listProperty, Activity activity) {
+        listProperty.Add(
+            TracorDataProperty.CreateStringValue(
+                TracorConstants.TracorDataPropertyNameActivitySpanId,
+                activity.Id ?? string.Empty));
+
+        listProperty.Add(
+            TracorDataProperty.CreateStringValue(
+                TracorConstants.TracorDataPropertyNameActivityTraceId,
+                activity.TraceId.ToString()));
+
+        if (activity.ParentId is { Length: > 0 } parentId) {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameActivityParentTraceId,
+                    parentId ?? string.Empty));
+        }
+
+        var parentSpanId = activity.ParentSpanId;
+        if ("0000000000000000" != parentSpanId.ToHexString()) {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameActivityParentSpanId,
+                    parentSpanId.ToHexString()));
+        }
+    }
 }
 
 

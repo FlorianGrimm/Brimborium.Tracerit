@@ -4,6 +4,33 @@ namespace Brimborium.Tracerit.DataAccessor;
 
 public sealed class LoggerTracorDataFactory
     : ITracorDataAccessorFactory<LoggerTracorData> {
+    private readonly TracorDataRecordPool? _TracorDataRecordPool;
+    
+    public LoggerTracorDataFactory() {
+    }
+
+    public LoggerTracorDataFactory(TracorDataRecordPool tracorDataRecordPool) {
+        this._TracorDataRecordPool = tracorDataRecordPool;
+    }
+
+    public bool TryGetData(object value, [MaybeNullWhen(false)] out ITracorData tracorData) {
+        if (value is LoggerTracorData loggerTracorData) {
+            tracorData = loggerTracorData;
+            return true;
+        }
+        tracorData = null;
+        return false;
+    }
+
+    public bool TryGetDataTyped(LoggerTracorData value, [MaybeNullWhen(false)] out ITracorData tracorData) {
+        tracorData = value;
+        return true;
+    }
+}
+
+#if false
+public sealed class LoggerTracorDataFactory
+    : ITracorDataAccessorFactory<LoggerTracorData> {
     private readonly LoggerTracorDataPool? _LoggerTracorDataPool;
 
     public LoggerTracorDataFactory() {
@@ -27,3 +54,4 @@ public sealed class LoggerTracorDataFactory
         return true;
     }
 }
+#endif

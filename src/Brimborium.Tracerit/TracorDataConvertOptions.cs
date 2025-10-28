@@ -47,7 +47,7 @@ public sealed class TracorDataConvertOptions {
     /// <exception cref="ArgumentException">if <typeparamref name="T"/> does not matched <paramref name="tracorDataAccessorFactory"/> TypeParameter.</exception>
     public TracorDataConvertOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentifierType tracorIdentifierType, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
         if (!typeof(T).Equals(tracorIdentifierType.TypeParameter)) {
-            throw new ArgumentException(nameof(tracorIdentifierType));
+            throw new ArgumentException("Mismatch T and TypeParameter", nameof(tracorIdentifierType));
         }
         this.TracorDataAccessorByTypePrivate.Add(new(tracorIdentifierType, tracorDataAccessorFactory));
         return this;

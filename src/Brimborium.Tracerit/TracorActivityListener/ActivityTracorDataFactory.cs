@@ -17,7 +17,7 @@ public sealed class ActivityTracorDataFactory
         if (value is Activity activity) {
             // tracorData = new ActivityTracorData(activity);
             var result = this._TracorDataRecordPool.Rent();
-            this.SetActivityProperties(activity, result);
+            SetActivityProperties(activity, result.ListProperty);
             tracorData = result;
             return true;
         }
@@ -27,58 +27,37 @@ public sealed class ActivityTracorDataFactory
 
     public bool TryGetDataTyped(Activity value, [MaybeNullWhen(false)] out ITracorData tracorData) {
         var result = this._TracorDataRecordPool.Rent();
-        this.SetActivityProperties(value, result);
+        SetActivityProperties(value, result.ListProperty);
         tracorData = result;
         return true;
     }
 
+#pragma warning disable IDE1006 // Naming Styles
     private const string PrefixTag = "tag.";
+#pragma warning restore IDE1006 // Naming Styles
 
-    private void SetActivityProperties(Activity activity, TracorDataRecord target) {
+    private static void SetActivityProperties(Activity activity, List<TracorDataProperty> listProperty) {
         {
-            target.ListProperty.Add(
-                TracorDataProperty.CreateStringValue(
-                    TracorConstants.TracorDataPropertyNameActivitySpanId,
-                    activity.Id ?? string.Empty));
+            TracorDataUtility.SetActivity(listProperty);
 
-            target.ListProperty.Add(
-                TracorDataProperty.CreateStringValue(
-                    TracorConstants.TracorDataPropertyNameActivityTraceId,
-                    activity.TraceId.ToString()));
-
-            if (activity.ParentId is { Length: > 0 } parentId) { 
-                target.ListProperty.Add(
-                TracorDataProperty.CreateStringValue(
-                    TracorConstants.TracorDataPropertyNameActivityParentTraceId,
-                    parentId ?? string.Empty));
-            }
-
-            var parentSpanId = activity.ParentSpanId;
-            if ("0000000000000000" != parentSpanId.ToHexString()) {
-                target.ListProperty.Add(
-                TracorDataProperty.CreateStringValue(
-                    TracorConstants.TracorDataPropertyNameActivityParentSpanId,
-                    parentSpanId.ToHexString()));
-            }
-
-            target.ListProperty.Add(
+            listProperty.Add(
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameOperationName,
                     activity.OperationName));
 
             if (!ReferenceEquals(activity.OperationName, activity.DisplayName)) {
-                target.ListProperty.Add(
+                listProperty.Add(
                     TracorDataProperty.CreateStringValue(
                         TracorConstants.TracorDataPropertyNameDisplayName,
                         activity.DisplayName));
             }
 
-            target.ListProperty.Add(
+            listProperty.Add(
                 TracorDataProperty.CreateDateTimeValue(
                     TracorConstants.TracorDataPropertyNameStartTimeUtc,
                     activity.StartTimeUtc));
 
-            target.ListProperty.Add(
+            listProperty.Add(
                 TracorDataProperty.CreateDateTimeValue(
                     TracorConstants.TracorDataPropertyNameStopTimeUtc,
                     activity.StartTimeUtc.Add(activity.Duration)));
@@ -89,7 +68,7 @@ public sealed class ActivityTracorDataFactory
             if (enumeratorTagObjects.MoveNext()) {
                 ref readonly var tag = ref enumeratorTagObjects.Current;
                 if (tag.Value is { } tagValue) {
-                    target.ListProperty.Add(TracorDataProperty.Create(PrefixTag + tag.Key, tagValue));
+                    listProperty.Add(TracorDataProperty.Create(PrefixTag + tag.Key, tagValue));
                 }
             }
         }

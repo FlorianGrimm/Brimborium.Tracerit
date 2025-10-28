@@ -21,7 +21,7 @@ public class TracorDataUtilityTests {
         }
         {
             var dto = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(0, 0);
-            await Assert.That(dto.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat)).IsEqualTo("1970-01-01T00:00:00.0000000+00:00");
+            await Assert.That(dto.ToString("o", TracorConstants.TracorCulture.DateTimeFormat)).IsEqualTo("1970-01-01T00:00:00.0000000+00:00");
         }
         {
             var dto = new DateTimeOffset(1970, 1, 1, 2, 0, 0, TimeSpan.FromHours(2));
@@ -32,7 +32,7 @@ public class TracorDataUtilityTests {
 
         {
             var dto = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(0, 120);
-            await Assert.That(dto.ToString("o", System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat)).IsEqualTo("1970-01-01T02:00:00.0000000+02:00");
+            await Assert.That(dto.ToString("o", TracorConstants.TracorCulture.DateTimeFormat)).IsEqualTo("1970-01-01T02:00:00.0000000+02:00");
         }
     }
 }

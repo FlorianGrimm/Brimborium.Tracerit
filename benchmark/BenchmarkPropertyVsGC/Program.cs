@@ -3,8 +3,14 @@
 namespace BenchmarkPropertyVsGC {
     internal class Program {
         static void Main(string[] args) {
-            //(new Benchmarks()).UsingTracorDataProperty();
-            var _ = BenchmarkRunner.Run(typeof(Program).Assembly);
+#if true
+            Benchmarks benchmarks = new();
+            benchmarks.Setup();
+            benchmarks.TracorActivityAndLogger();
+            benchmarks.TracorActivityAndTracor();
+#else
+            _ = BenchmarkRunner.Run(typeof(Program).Assembly);
+#endif
         }
     }
 }
@@ -48,4 +54,22 @@ MemoryDiagnoser
 | UsingTracorDataProperty | Server           | False | True   | 1,651.5 ms |  55.66 ms |  81.58 ms | 133000.0000 |   7000.0000 | 1000.0000 |   2.69 GB |
 | UsingGC                 | Server           | False | True   | 2,635.9 ms | 144.70 ms | 216.57 ms | 350000.0000 | 100000.0000 |         - |   7.53 GB |
 | UsingGC                 | ServerForce      | True  | True   | 2,687.7 ms | 124.63 ms | 186.54 ms | 349000.0000 | 102000.0000 |         - |   7.53 GB | 
+ 
+ 
+| Method                  | Mean       | Error    | StdDev   |
+|------------------------ |-----------:|---------:|---------:|
+| UsingGC                 | 1,386.4 ms | 27.39 ms | 54.70 ms |
+| UsingTracorDataProperty |   628.1 ms | 12.41 ms | 16.99 ms |
+
+
+| Method                  | Job              | Force | Server | Mean       | Error     | StdDev    | Gen0        | Gen1        | Allocated  |
+|------------------------ |----------------- |------ |------- |-----------:|----------:|----------:|------------:|------------:|-----------:|
+| UsingTracorDataProperty | Workstation      | True  | False  |   630.7 ms |   8.11 ms |  12.14 ms |  38000.0000 |   1000.0000 |  466.29 MB |
+| UsingTracorDataProperty | WorkstationForce | False | False  |   633.1 ms |   5.76 ms |   8.44 ms |  38000.0000 |           - |  466.29 MB |
+| UsingTracorDataProperty | ServerForce      | True  | True   |   743.8 ms |  18.97 ms |  28.39 ms |  21000.0000 |   1000.0000 |  466.29 MB |
+| UsingTracorDataProperty | Server           | False | True   |   751.4 ms |  15.19 ms |  22.26 ms |  23000.0000 |           - |  466.29 MB |
+| UsingGC                 | WorkstationForce | False | False  | 1,274.7 ms |  25.84 ms |  38.67 ms | 644000.0000 | 342000.0000 | 7711.41 MB |
+| UsingGC                 | Workstation      | True  | False  | 1,326.3 ms |  27.20 ms |  40.71 ms | 644000.0000 | 342000.0000 | 7711.41 MB |
+| UsingGC                 | ServerForce      | True  | True   | 2,341.1 ms | 123.21 ms | 184.41 ms | 350000.0000 | 104000.0000 | 7711.41 MB |
+| UsingGC                 | Server           | False | True   | 2,529.2 ms |  55.75 ms |  81.72 ms | 350000.0000 | 102000.0000 | 7711.41 MB |
  */

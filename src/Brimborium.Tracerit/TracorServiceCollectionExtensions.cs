@@ -63,11 +63,13 @@ public static partial class TracorServiceCollectionExtensions {
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
         serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         serviceBuilder.AddSingleton<ITracorServiceSink, DisabledTracorServiceSink>();
-        serviceBuilder.AddSingleton<ITracorDataConvertService, TracorDataConvertService>();
+        serviceBuilder.AddSingleton<ITracorDataConvertService>(TracorDataConvertService.Create);
         serviceBuilder.AddSingleton<DisabledTracorValidator>();
         serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<DisabledTracorValidator>());
         serviceBuilder.AddSingleton(typeof(LazyCreatedLogger<>));
+        serviceBuilder.Add(ServiceDescriptor.Transient(
+            typeof(ITracorSink<>), typeof(TracorSink<>)));
 
         serviceBuilder.AddTracorScopedFilter((builder) => {
             builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
@@ -100,11 +102,13 @@ public static partial class TracorServiceCollectionExtensions {
         serviceBuilder.AddSingleton<ITracorServiceSink, TracorServiceSink>();
         serviceBuilder.AddTransient<ITracorCollectiveSink>(
             static (sp) => sp.GetRequiredService<TracorValidator>());
-        serviceBuilder.AddSingleton<ITracorDataConvertService, TracorDataConvertService>();
+        serviceBuilder.AddSingleton<ITracorDataConvertService>(TracorDataConvertService.Create);
         serviceBuilder.AddSingleton<TracorValidator>(TracorValidator.Create);
         serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<TracorValidator>());
         serviceBuilder.AddSingleton(typeof(LazyCreatedLogger<>));
+        serviceBuilder.Add(ServiceDescriptor.Transient(
+            typeof(ITracorSink<>), typeof(TracorSink<>)));
 
         serviceBuilder.AddTracorScopedFilter((builder) => {
             builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);

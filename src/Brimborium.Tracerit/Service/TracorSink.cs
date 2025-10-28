@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit.Service;
+﻿#pragma warning disable IDE0037
+
+namespace Brimborium.Tracerit.Service;
 
 /// <summary>
 /// ITracorSink bound to baseScope
