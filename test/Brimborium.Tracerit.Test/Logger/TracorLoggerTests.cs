@@ -32,9 +32,9 @@ public class TracorLoggerTests {
         using (var validateLog = tracorValidator.Add(
             new CalleeCondition(
                 TracorIdentifier.Create("Brimborium_Tracerit_Logger.TracorLoggerTests.456"),
-                Wrap((LoggerTracorData tracorData) =>
+                Wrap((ITracorData tracorData) =>
                     tracorData.TryGetPropertyValue<int>("abc", out var abc) && (123 == abc)
-                ).PredicateTracorData()
+                ).Predicate()
                 ).AsMatch()
             )) {
             logger.LogInformation(new EventId(456), "Test {abc}", 123);
@@ -42,11 +42,11 @@ public class TracorLoggerTests {
         }
 
         using (var validateLog = tracorValidator.Add(
-                Wrap((LoggerTracorData tracorData) =>
+                Wrap((ITracorData tracorData) =>
                     tracorData.TryGetPropertyValue<string>("source", out var source) && ("Brimborium_Tracerit_Logger.TracorLoggerTests" == source)
                     && tracorData.TryGetPropertyValue<int>("event.id", out var eventId) && (456 == eventId)
                     && tracorData.TryGetPropertyValue<int>("abc", out var abc) && (123 == abc)
-                ).PredicateTracorData().AsMatch()
+                ).Predicate().AsMatch()
             )) {
             logger.LogInformation(new EventId(456), "Test {abc}", 123);
             await Assert.That(validateLog.GetFinished(null)).IsNotNull();

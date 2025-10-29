@@ -4,6 +4,8 @@
 /// Represents the global state for a tracor validation, storing key-value pairs that can be accessed and modified during validation.
 /// </summary>
 public sealed class TracorGlobalState : Dictionary<string, TracorDataProperty> {
+    public readonly Lock Lock = new Lock();
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorGlobalState"/> class.
     /// </summary>
@@ -24,8 +26,16 @@ public sealed class TracorGlobalState : Dictionary<string, TracorDataProperty> {
     /// <param name="key">The key to associate with the value.</param>
     /// <param name="value">The value to set.</param>
     /// <returns>This <see cref="TracorGlobalState"/> instance for method chaining.</returns>
-    public TracorGlobalState SetValue(string key, TracorDataProperty value) {
-        this[key] = value;
+    public TracorGlobalState SetValue(TracorDataProperty value) {
+        this[value.Name] = value;
         return this;
+    }
+
+    public TracorDataProperty GetValue(string name) {
+        if (this.TryGetValue(name, out var value)) {
+            return value;
+        } else {
+            return new TracorDataProperty(name);
+        }
     }
 }

@@ -1,5 +1,5 @@
-﻿#pragma warning disable IDE0009 // Member access should be qualified.
-#pragma warning disable IDE0079
+﻿#pragma warning disable IDE0079
+#pragma warning disable IDE0009
 
 using System.Diagnostics.Tracing;
 
@@ -30,7 +30,7 @@ public partial struct TracorDataProperty {
         }
         {
             if (TracorDataUtility.TryCastObjectToInteger(argValueNotNull, out var resultValue)) {
-                return CreateIntegerValue(argName, resultValue, argValueNotNull);
+                return CreateIntegerValue(argName, resultValue);
             }
         }
         {
@@ -83,7 +83,7 @@ public partial struct TracorDataProperty {
         return result;
     }
 
-    public static TracorDataProperty CreateIntegerValue(string argName, long argValue, object? objectArgValue = default) {
+    public static TracorDataProperty CreateIntegerValue(string argName, long argValue) {
         var result = new TracorDataProperty(argName);
         result.SetIntegerValue(argValue);
         return result;

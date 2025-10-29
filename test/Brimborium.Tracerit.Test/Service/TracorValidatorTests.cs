@@ -34,7 +34,7 @@ public class TracorValidatorTests {
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new MatchExpression();
-        var globalState = new TracorGlobalState().SetValue("TestKey", TracorDataProperty.CreateStringValue("TestKey", "TestValue"));
+        var globalState = new TracorGlobalState().SetValue(TracorDataProperty.CreateStringValue("TestKey", "TestValue"));
 
         // Act
         var validatorPath = validator.Add(expression, globalState);
@@ -113,13 +113,13 @@ public class TracorValidatorTests {
         // Act
         validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentifier = callee });
         var finishedState = validatorPath.GetFinished(state =>
-            state.TryGetValue("TestProperty", out var prop)
+            state.GlobalState.TryGetValue("TestProperty", out var prop)
                 && prop.TryGetStringValue(out var str)
                 && str == "test value");
 
         // Assert
         await Assert.That(finishedState).IsNotNull();
-        var success = finishedState!.TryGetValue("TestProperty", out var act);
+        var success = finishedState!.GlobalState.TryGetValue("TestProperty", out var act);
         await Assert.That(success).IsTrue();
         await Assert.That(act.TryGetStringValue(out _)).IsTrue();
         await Assert.That(act.TryGetStringValue(out var result) ? result : "").IsEqualTo("test value");
@@ -141,7 +141,7 @@ public class TracorValidatorTests {
         // Act
         validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
         var finishedState = validatorPath.GetFinished(state =>
-            state.TryGetValue("NonExistentKey", out var _));
+            state.GlobalState.TryGetValue("NonExistentKey", out var _));
 
         // Assert
         await Assert.That(finishedState).IsNull();
@@ -217,7 +217,7 @@ public class TracorValidatorTests {
     }
 
     [Test]
-    public async Task TracorValidatorPath_GetRunngingAsync_ShouldReturnRunningState() {
+    public async Task TracorValidatorPath_GetRunningAsync_ShouldReturnRunningState() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();

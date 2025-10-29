@@ -24,7 +24,7 @@ public interface ITracorValidatorPath : IDisposable {
     bool EnableFinished { get; set; }
 
     IDisposable AddFinishCallback(
-       Action<ITracorValidatorPath, OnTraceStepExecutionState> callback
+       Action<ITracorValidatorPath, TracorFinishState> callback
        );
 
     /// <summary>
@@ -38,7 +38,7 @@ public interface ITracorValidatorPath : IDisposable {
     /// </summary>
     /// <param name="predicate">Optional predicate to filter the finished states.</param>
     /// <returns>A finished validation state if found; otherwise, null.</returns>
-    TracorGlobalState? GetFinished(Predicate<TracorGlobalState>? predicate = default);
+    TracorFinishState? GetFinished(Predicate<TracorFinishState>? predicate = default);
 
     /// <summary>
     /// Asynchronously gets a finished validation state that matches the specified predicate.
@@ -46,19 +46,19 @@ public interface ITracorValidatorPath : IDisposable {
     /// <param name="predicate">Optional predicate to filter the finished states.</param>
     /// <param name="timeSpan">The maximum time to wait for a finished state.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a finished validation state if found; otherwise, null.</returns>
-    Task<TracorGlobalState?> GetFinishedAsync(Predicate<TracorGlobalState>? predicate = default, TimeSpan timeSpan = default);
+    Task<TracorFinishState?> GetFinishedAsync(Predicate<TracorFinishState>? predicate = default, TimeSpan timeSpan = default);
 
     /// <summary>
     /// Gets a list of all currently running validation states.
     /// </summary>
     /// <returns>A list of running validation states.</returns>
-    List<TracorGlobalState> GetListRunning();
+    List<TracorRunningState> GetListRunning();
 
     /// <summary>
     /// Gets a list of all finished validation states.
     /// </summary>
     /// <returns>A list of finished validation states.</returns>
-    List<TracorGlobalState> GetListFinished();
+    List<TracorFinishState> GetListFinished();
 
     /// <summary>
     /// Asynchronously gets a running validation state that matches the specified success state.
@@ -66,12 +66,12 @@ public interface ITracorValidatorPath : IDisposable {
     /// <param name="searchSuccessState">The success state to search for.</param>
     /// <param name="timeout">The maximum time to wait for the running state.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a running validation state if found; otherwise, null.</returns>
-    Task<TracorGlobalState?> GetRunningAsync(string searchSuccessState, TimeSpan timeout = default);
+    Task<TracorRunningState?> GetRunningAsync(string searchSuccessState, TimeSpan timeout = default);
 
     /// <summary>
     /// Gets a running validation state that matches the specified success state.
     /// </summary>
     /// <param name="searchSuccessState">The success state to search for.</param>
     /// <returns>A running validation state if found; otherwise, null.</returns>
-    TracorGlobalState? GetRunning(string searchSuccessState);
+    TracorRunningState? GetRunning(string searchSuccessState);
 }

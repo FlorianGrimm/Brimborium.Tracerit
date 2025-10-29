@@ -1,6 +1,5 @@
 ﻿#pragma warning disable IDE0009 // Member access should be qualified.
 
-using System.Runtime.InteropServices;
 
 namespace Brimborium.Tracerit;
 
@@ -19,6 +18,7 @@ new pbr::GeneratedClrTypeInfo(
     }, new[]{ "Value" }, null, null, null),
 */
 
+[DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     private TracorDataPropertyTypeValue _TypeValue;
 
@@ -537,5 +537,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return !TracorDataPropertyEqualityComparer.EqualsRef(in a, in b);
     }
 
-
+    internal string GetDebuggerDisplay() {
+        return $"{this.Name} {this.TypeName} {this.LongValue} {this.DoubleValue} {this.InnerObjectValue}";
+    }
 }

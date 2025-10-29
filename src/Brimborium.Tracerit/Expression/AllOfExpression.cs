@@ -40,14 +40,14 @@ public sealed class AllOfExpression : ValidatorExpression {
             return state.Result;
         }
         for (var idx = 0; idx < this._ListChild.Length; idx++) {
-            if (state.ChildSuccessfull.Contains(idx)) {
+            if (state.ChildSuccessful.Contains(idx)) {
                 // skip
             } else {
                 var child = this._ListChild[idx];
                 var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
                 if (TracorValidatorOnTraceResult.Successful == childResult) {
-                    state.ChildSuccessfull.Add(idx);
-                    if (state.ChildSuccessfull.Count == this._ListChild.Length) {
+                    state.ChildSuccessful.Add(idx);
+                    if (state.ChildSuccessful.Count == this._ListChild.Length) {
                         currentContext.SetStateSuccessful(this, state);
                         return TracorValidatorOnTraceResult.Successful;
                     }
@@ -58,6 +58,23 @@ public sealed class AllOfExpression : ValidatorExpression {
     }
 
     internal sealed class OneOfExpressionState : ValidatorExpressionState {
-        public HashSet<int> ChildSuccessfull = new();
+        public HashSet<int> ChildSuccessful;
+
+        public OneOfExpressionState() {
+            this.ChildSuccessful = new();
+        }
+
+        private OneOfExpressionState(
+            TracorValidatorOnTraceResult result, 
+            HashSet<int> childSuccessful) {
+            this.Result = result;
+            this.ChildSuccessful = childSuccessful;
+        }
+
+        protected internal override ValidatorExpressionState Copy() {
+            return new OneOfExpressionState(
+                this.Result,
+                this.ChildSuccessful.ToHashSet());
+        }
     }
 }

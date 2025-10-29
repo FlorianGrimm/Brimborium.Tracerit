@@ -46,6 +46,11 @@ public class InstrumentationBase : IInstrumentation, IDisposable {
 
     public ActivitySource GetActivitySource() => this._ActivitySource ?? throw new ObjectDisposedException(this.GetType().Name ?? nameof(InstrumentationBase));
 
+    public TracorIdentifier GetTracorIdentifier() {
+        return new TracorIdentifier("Activity", this.GetActivitySource().Name);
+    }
+
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
     public void Dispose() {
         if (this._IsShared) {
             //
@@ -55,4 +60,5 @@ public class InstrumentationBase : IInstrumentation, IDisposable {
             }
         }
     }
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
 }

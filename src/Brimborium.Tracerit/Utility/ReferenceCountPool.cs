@@ -32,6 +32,7 @@ public abstract class ReferenceCountObject
         Interlocked.Increment(ref this._ReferenceCount);
     }
 
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
     public void Dispose() {
         var result = Interlocked.Decrement(ref this._ReferenceCount);
         if (0 == result) {
@@ -39,6 +40,7 @@ public abstract class ReferenceCountObject
             this._Owner?.Return(this);
         }
     }
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
 
     protected abstract void ResetState();
 

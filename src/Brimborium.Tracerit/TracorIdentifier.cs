@@ -26,19 +26,26 @@ public record struct TracorIdentifier(string Source = "", string Scope = "", str
     /// </summary>
     /// <param name="child">The child callee identifier to append.</param>
     /// <returns>A new <see cref="TracorIdentifier"/> representing the child path.</returns>
-    public TracorIdentifier Child(string child)
+    public readonly TracorIdentifier Child(string child)
         => new(this.Source, $"{this.Scope}.{child}", string.Empty);
 
-    public void ConvertProperties(List<TracorDataProperty> listTracorDataProperties) {
-        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue("Source", this.Source));
-        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue("Scope", this.Scope));
-        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue("Message", this.Message));
+    public readonly void ConvertProperties(List<TracorDataProperty> listTracorDataProperties) {
+        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameSource, this.Source));
+        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameScope, this.Scope));
+        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameMessage, this.Message));
     }
 
-    public bool IsEmpty() 
+    public readonly bool IsEmpty() 
         => string.IsNullOrEmpty(this.Source) 
         && string.IsNullOrEmpty(this.Scope) 
         && string.IsNullOrEmpty(this.Message);
+
+    public readonly bool DoesMatch(in TracorIdentifier match) {
+        return string.IsNullOrEmpty(match.Source) ? true : string.Equals(this.Source, match.Source, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrEmpty(match.Scope) ? true : string.Equals(this.Scope, match.Scope, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrEmpty(match.Message) ? true : string.Equals(this.Message, match.Message, StringComparison.OrdinalIgnoreCase)
+            ;
+    }
 
     /// <summary>
     /// Creates a <see cref="CalleeCondition"/> by combining this identifier with an expression condition.

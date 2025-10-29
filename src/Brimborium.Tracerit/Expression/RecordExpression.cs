@@ -25,7 +25,18 @@ public sealed class RecordExpression : ValidatorExpression {
         return childResult;
     }
 
-    internal sealed class ReportExpressionState : ValidatorExpressionState { }
+    internal sealed class ReportExpressionState : ValidatorExpressionState {
+        public ReportExpressionState() {
+        }
+
+        private ReportExpressionState(
+            TracorValidatorOnTraceResult result
+            ) : base(result) {
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new ReportExpressionState(this.Result);
+    }
 }
 
 public sealed class RecordExpressionResult : IDisposable {

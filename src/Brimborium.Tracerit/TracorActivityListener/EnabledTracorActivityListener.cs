@@ -1,39 +1,42 @@
-﻿namespace Brimborium.Tracerit.TracorActivityListener;
+﻿#pragma warning disable IDE0018 // Inline variable declaration
+
+using System.Reflection.Metadata.Ecma335;
+
+namespace Brimborium.Tracerit.TracorActivityListener;
 
 internal sealed class EnabledTracorActivityListener
     : BaseTracorActivityListener
     , ITracorActivityListener
     , IDisposable {
     internal static EnabledTracorActivityListener Create(
-        IServiceProvider serviceProvider,
-        IConfiguration? configuration
+        IServiceProvider serviceProvider
         ) {
-        var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
+        var tracorDataRecordPool = serviceProvider.GetRequiredService<TracorDataRecordPool>();
         var sink = serviceProvider.GetRequiredService<ITracorCollectivePublisher>();
         var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
         var logger = serviceProvider.GetRequiredService<ILogger<EnabledTracorActivityListener>>();
         return new EnabledTracorActivityListener(
             serviceProvider,
-            activityTracorDataPool,
+            tracorDataRecordPool,
             sink,
             options,
             logger);
     }
 
     private ActivityListener? _Listener;
-    private readonly ActivityTracorDataPool _ActivityTracorDataPool;
+    private readonly TracorDataRecordPool _TracorDataRecordPool;
     private readonly ITracorCollectiveSink _Sink;
 
     public EnabledTracorActivityListener(
         IServiceProvider serviceProvider,
-        ActivityTracorDataPool activityTracorDataPool,
+        TracorDataRecordPool tracorDataRecordPool,
         ITracorCollectiveSink sink,
         IOptionsMonitor<TracorActivityListenerOptions> options,
         ILogger<EnabledTracorActivityListener> logger) : base(
             serviceProvider,
             options,
             logger) {
-        this._ActivityTracorDataPool = activityTracorDataPool;
+        this._TracorDataRecordPool = tracorDataRecordPool;
         this._Sink = sink;
     }
 
@@ -107,13 +110,13 @@ internal sealed class EnabledTracorActivityListener
             return true;
         }
         if (activitySourceIdentifier.Version is { Length: > 0 }
-            && currentOptionState.HashSetActivitySourceIdenifier.Contains(activitySourceIdentifier)) {
+            && currentOptionState.HashSetActivitySourceIdentifier.Contains(activitySourceIdentifier)) {
             return true;
         }
         return false;
     }
-    private void OnActivityStarted(Activity activity) {
 
+    private void OnActivityStarted(Activity activity) {
         if (this._Listener is null || this.IsDisposed) { return; }
 
         // no locking needed since this._OptionState does not mutate
@@ -131,12 +134,12 @@ internal sealed class EnabledTracorActivityListener
             return;
         }
 
-        TracorIdentifier tracorIdentifier = new("Activity", activitySourceIdentifier.Name, "Start");
-        using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
-            activityTracorData.SetValue(activity);
-            activityTracorData.TracorIdentifier = tracorIdentifier;
-            activityTracorData.Timestamp = activity.StartTimeUtc;
-            this._Sink.OnTrace(true, activityTracorData);
+        TracorIdentifier tracorIdentifier = new(TracorConstants.SourceActivity, activitySourceIdentifier.Name, "Start");
+        using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
+            this.CopyListProperty(activity, tracorDataRecord.ListProperty);
+            tracorDataRecord.TracorIdentifier = tracorIdentifier;
+            tracorDataRecord.Timestamp = activity.StartTimeUtc;
+            this._Sink.OnTrace(true, tracorDataRecord);
         }
     }
 
@@ -158,14 +161,67 @@ internal sealed class EnabledTracorActivityListener
             return;
         }
 
-        TracorIdentifier tracorIdentifier = new("Activity", activitySourceIdentifier.Name, "Stop");
-        using (var activityTracorData = this._ActivityTracorDataPool.Rent()) {
-            activityTracorData.SetValue(activity);
-            activityTracorData.TracorIdentifier = tracorIdentifier;
-            activityTracorData.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
-            this._Sink.OnTrace(true, activityTracorData);
+        TracorIdentifier tracorIdentifier = new(TracorConstants.SourceActivity, activitySourceIdentifier.Name, "Stop");
+        using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
+            this.CopyListProperty(activity, tracorDataRecord.ListProperty);
+            tracorDataRecord.TracorIdentifier = tracorIdentifier;
+            tracorDataRecord.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
+            this._Sink.OnTrace(true, tracorDataRecord);
         }
     }
+
+    private const string _PrefixTag = "tag.";
+    private void CopyListProperty(Activity activity, List<TracorDataProperty> listProperty) {
+        {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameActivitySpanId,
+                    activity.Id ?? string.Empty));
+
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameActivityTraceId,
+                    activity.TraceId.ToString()));
+
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameOperationName,
+                    activity.OperationName));
+
+            if (!ReferenceEquals(activity.OperationName, activity.DisplayName)) {
+                listProperty.Add(
+                    TracorDataProperty.CreateStringValue(
+                        TracorConstants.TracorDataPropertyNameDisplayName,
+                        activity.DisplayName));
+            }
+
+            listProperty.Add(
+                TracorDataProperty.CreateDateTimeValue(
+                    TracorConstants.TracorDataPropertyNameStartTimeUtc,
+                    activity.StartTimeUtc));
+
+            listProperty.Add(
+                TracorDataProperty.CreateDateTimeValue(
+                    TracorConstants.TracorDataPropertyNameStopTimeUtc,
+                    activity.StartTimeUtc.Add(activity.Duration)));
+        }
+        {
+            var enumeratorTagObjects = activity.EnumerateTagObjects();
+
+            while (enumeratorTagObjects.MoveNext()) {
+                ref readonly var tag = ref enumeratorTagObjects.Current;
+                if (tag.Value is { } tagValue) {
+                    var tdp = TracorDataProperty.Create(_PrefixTag + tag.Key, tagValue);
+                    if (tdp.TypeValue is TracorDataPropertyTypeValue.Null or TracorDataPropertyTypeValue.Any) {
+                        
+                    } else {
+                        listProperty.Add(tdp);
+                    }
+                }
+            }
+        }
+    }
+
 
     private void OnExceptionRecorder(Activity activity, Exception exception, ref TagList tags) { }
 
@@ -213,7 +269,7 @@ internal sealed class EnabledTracorActivityListener
     }
 
     public List<ActivitySourceIdentifier> GetListActivitySourceIdentifier() {
-        return this._OptionState.HashSetActivitySourceIdenifier.ToList();
+        return this._OptionState.HashSetActivitySourceIdentifier.ToList();
     }
 
     // ITracorActivityListener

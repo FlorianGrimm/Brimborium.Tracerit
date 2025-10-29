@@ -32,10 +32,10 @@ public static class TracorBuilderExtension {
     }
 
     /// <summary>
-    /// Add ITracorActivityListener for runtime or testtime.
+    /// Add ITracorActivityListener for disabled/runtime or enabled/test-time.
     /// </summary>
     /// <param name="tracorBuilder">The service collection to add services to.</param>
-    /// <param name="enabled">true - testtime; false - runtime</param>
+    /// <param name="enabled">true - enabled/test-time; false - disabled/runtime</param>
     /// <param name="configure">configure options</param>
     /// <returns>fluent this</returns>
     public static ITracorBuilder AddTracorActivityListener(
@@ -59,12 +59,13 @@ public static class TracorBuilderExtension {
     /// <returns>fluent this</returns>
     public static ITracorBuilder AddDisabledTracorActivityListener(
         this ITracorBuilder tracorBuilder,
+#pragma warning disable IDE0060 // Remove unused parameter
         IConfiguration? configuration = null,
+#pragma warning restore IDE0060 // Remove unused parameter
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         // add runtime do nothing implementations
-        tracorBuilder.Services.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
-
+        tracorBuilder.Services.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         tracorBuilder.Services.AddSingleton<DisabledTracorActivityListener>();
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>(
             (sp) => sp.GetRequiredService<DisabledTracorActivityListener>());
@@ -78,7 +79,7 @@ public static class TracorBuilderExtension {
     }
 
     /// <summary>
-    /// Add ITracorActivityListener for testtime.
+    /// Add ITracorActivityListener for disabled/test-time.
     /// </summary>
     /// <param name="servicebuilder">The service collection to add services to.</param>
     /// <param name="configure">configure options</param>
@@ -88,14 +89,11 @@ public static class TracorBuilderExtension {
         IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
-        tracorBuilder.Services.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
+        tracorBuilder.Services.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
 
         var configurationSection = configuration;
-        tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>(
-            (IServiceProvider serviceProvider) => EnabledTracorActivityListener.Create(
-                serviceProvider, configuration));
-        tracorBuilder.Services.AddSingleton<ITracorActivityListener>(
-            (sp) => sp.GetRequiredService<EnabledTracorActivityListener>());
+        tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>(EnabledTracorActivityListener.Create);
+        tracorBuilder.Services.AddSingleton<ITracorActivityListener>((sp) => sp.GetRequiredService<EnabledTracorActivityListener>());
 
         // options configure
         if (configuration is { }) {

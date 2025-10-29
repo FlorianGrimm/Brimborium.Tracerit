@@ -37,5 +37,15 @@ public sealed class OneOfExpression : ValidatorExpression {
     }
 
     internal sealed class OneOfExpressionState : ValidatorExpressionState {
+        public OneOfExpressionState() {
+        }
+
+        private OneOfExpressionState(
+            TracorValidatorOnTraceResult result
+            ) :base(result) {
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new OneOfExpressionState(this.Result);
     }
 }

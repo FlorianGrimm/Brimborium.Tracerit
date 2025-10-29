@@ -97,7 +97,6 @@ public static partial class TracorServiceCollectionExtensions {
         string tracorScopedFilterSection = "") {
         serviceBuilder.AddSingleton<TracorEmergencyLogging>();
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
-        serviceBuilder.AddSingleton<ActivityTracorDataPool>(ActivityTracorDataPool.Create);
         serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         serviceBuilder.AddSingleton<ITracorServiceSink, TracorServiceSink>();
         serviceBuilder.AddTransient<ITracorCollectiveSink>(

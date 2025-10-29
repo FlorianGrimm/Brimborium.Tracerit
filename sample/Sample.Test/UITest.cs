@@ -14,7 +14,7 @@ public class UITest : AppPageTest {
                     loggerTracorData.IncrementReferenceCount();
                     loggerTracorDatas.Add(loggerTracorData);
                     return true;
-                }).PredicateTracorData(),
+                }).Predicate(),
                 [
                     new SequenceExpression()
                     + Wrap(static (LoggerTracorData loggerTracorData) => {

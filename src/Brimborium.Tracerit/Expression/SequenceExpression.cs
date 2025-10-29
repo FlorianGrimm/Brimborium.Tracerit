@@ -74,7 +74,23 @@ public sealed class SequenceExpression : ValidatorExpression {
 
     internal sealed class SequenceStepState : ValidatorExpressionState {
         public int ChildIndex = 0;
+
+        public SequenceStepState() {
+        }
+
+        private SequenceStepState(
+            TracorValidatorOnTraceResult result,
+            int childIndex
+            ) :base(result) {
+            this.ChildIndex = childIndex;
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new SequenceStepState(
+                this.Result,
+                this.ChildIndex);
     }
+
 
     public static SequenceExpression operator +(SequenceExpression left, IValidatorExpression right) {
         return new(left.Label, left.ListChild.Add(right));

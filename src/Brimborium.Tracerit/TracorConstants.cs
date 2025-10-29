@@ -11,6 +11,13 @@ public static class TracorConstants {
     /// </summary>
     public const string SourceTracorPublic = "TracorPublic";
 
+    /// <summary>
+    /// Activity
+    /// </summary>
+    public const string SourceActivity = "Activity";
+    public const string MessageActivityStart = "Start";
+    public const string MessageActivityStop = "Stop";
+
     public const string TracorDataPropertyNameTimestamp = "timestamp";
     public const string TracorDataPropertyNameSource = "source";
     public const string TracorDataPropertyNameScope = "scope";

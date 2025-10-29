@@ -80,7 +80,23 @@ public sealed class FilterExpression : ValidatorExpression {
         /// <summary>
         /// Gets or sets the set of child expression indices that have been successfully matched.
         /// </summary>
-        public HashSet<int> ChildSuccessful = new();
+        public HashSet<int> ChildSuccessful;
+
+        public FilterExpressionState() {
+            this.ChildSuccessful = new();
+        }
+
+        private FilterExpressionState(
+            TracorValidatorOnTraceResult result,
+            HashSet<int> childSuccessful) {
+            this.Result = result;
+            this.ChildSuccessful = childSuccessful;
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new FilterExpressionState(
+                this.Result,
+                this.ChildSuccessful.ToHashSet());
     }
 }
 

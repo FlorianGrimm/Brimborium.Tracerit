@@ -1,7 +1,7 @@
 ﻿namespace Brimborium.Tracerit.Expression;
 
-public sealed class GroupByActivityExpression : ValidatorExpression {
-    public GroupByActivityExpression(
+public sealed class GroupByRootActivityExpression : ValidatorExpression {
+    public GroupByRootActivityExpression(
         string? label = default,
         IValidatorExpression? onStart = default,
         IValidatorExpression? onItem = default,
@@ -19,7 +19,7 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
     public IValidatorExpression? OnItem { get; set; }
     public IValidatorExpression? OnStop { get; set; }
 
-    public GroupByActivityExpression Add(IValidatorExpression expression) {
+    public GroupByRootActivityExpression Add(IValidatorExpression expression) {
         if (this.OnStart is null) {
             this.OnStart = expression;
             return this;
@@ -41,9 +41,9 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
     public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
-        var state = currentContext.GetState<GroupByActivityExpressionState>();
+        var state = currentContext.GetState<GroupByRootActivityExpressionState>();
         if (state.Result.IsComplete()) {
-            return TracorValidatorOnTraceResult.None;
+            return state.Result;
         }
         var currentContext_Identifier = currentContext.Identifier.ToString();
 
@@ -60,10 +60,12 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
             && (spanId is { Length: > 0 })
             )) {
             return TracorValidatorOnTraceResult.None;
-        } else if (state.TraceId is null) {
+        }
+
+        if (state.TraceId is null) {
             if (tracorData.TracorIdentifier.DoesMatch(_TidMessageActivityStart)) {
 
-                var tpdFork = TracorDataProperty.CreateStringValue(currentContext_Identifier, spanId);
+                var tpdFork = TracorDataProperty.CreateStringValue(currentContext_Identifier, traceId);
                 if (currentContext.TryGetFork(tpdFork) is not null) {
                     return TracorValidatorOnTraceResult.None;
                 }
@@ -80,18 +82,16 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
                 state.Scope = tracorData.TracorIdentifier.Scope;
                 return TracorValidatorOnTraceResult.None;
             }
-            return TracorValidatorOnTraceResult.None;
-        } else {
+        }
+
+        {
             bool isCurrentTrace = string.Equals(traceId, state.TraceId, StringComparison.Ordinal);
             if (isCurrentTrace) {
-                if (string.Equals(spanId, state.SpanId, StringComparison.Ordinal)) {
-                    isCurrentTrace = true;
-                } else {
-                    isCurrentTrace = false;
-                }
-            }
-            if (isCurrentTrace) {
-                if (!tracorData.TracorIdentifier.DoesMatch(_TidMessageActivityStop)) {
+                bool isCurrentTraceSpan = isCurrentTrace
+                    && string.Equals(spanId, state.SpanId, StringComparison.Ordinal);
+                bool isStop = tracorData.TracorIdentifier.DoesMatch(
+                    new TracorIdentifier(TracorConstants.SourceActivity, state.Scope ?? string.Empty, TracorConstants.MessageActivityStop));
+                if (!(isCurrentTraceSpan && isStop)) {
                     if (this.OnItem is { } onItem) {
                         var traceResult = onItem.OnTrace(tracorData, currentContext.GetChildContext(1));
                         if (traceResult.IsComplete()) {
@@ -100,66 +100,23 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
                         }
                     }
                     return TracorValidatorOnTraceResult.None;
-                } else {
-                    TracorValidatorOnTraceResult traceResult;
-                    if (this.OnStop is { } onStop) {
-                        traceResult = onStop.OnTrace(tracorData, currentContext.GetChildContext(2));
-                    } else {
-                        traceResult = TracorValidatorOnTraceResult.Successful;
-                    }
-                    currentContext.SetStateComplete(this, state, traceResult);
-                    return traceResult;
-                }
-            }
-        }
-        return TracorValidatorOnTraceResult.None;
-
-#if false
-        if (string.Equals(TracorConstants.SourceActivity, tracorData.TracorIdentifier.Source, StringComparison.Ordinal)) {
-            if (string.Equals(TracorConstants.MessageActivityStart, tracorData.TracorIdentifier.Message, StringComparison.Ordinal)) {
-                OnTraceStepExecutionState? fork = TryGetFork(currentContext, nameScopeTrace, tdpTraceId);
-                if (fork is not null) {
-                    return TracorValidatorOnTraceResult.None;
-                }
-                if (this.OnStart is { } onStart) {
-                    var childResult = onStart.OnTrace(tracorData, currentContext.GetChildContext(0));
-                    if (TracorValidatorOnTraceResult.Failed == childResult) {
-                        return TracorValidatorOnTraceResult.None;
-                    }
-                }
-                currentContext.CreateFork(nameScopeTrace, tdpTraceId);
-                return TracorValidatorOnTraceResult.None;
-
-            } else if (string.Equals(TracorConstants.MessageActivityStop, tracorData.TracorIdentifier.Message, StringComparison.Ordinal)) {
-                if (IsCurrentFork(nameScopeTrace, ref tdpTraceId, currentContext)) {
-                    TracorValidatorOnTraceResult traceResult;
-                    if (this.OnStop is { } onStop) {
-                        traceResult = onStop.OnTrace(tracorData, currentContext.GetChildContext(2));
-                    } else {
-                        traceResult = TracorValidatorOnTraceResult.Successful;
-                    }
-                    currentContext.SetStateComplete(this, state, traceResult);
-                    return traceResult;
                 }
 
-                return TracorValidatorOnTraceResult.None;
-            }
-        }
-
-        {
-            if (IsCurrentFork(nameScopeTrace, ref tdpTraceId, currentContext)) {
-                //
-                if (this.OnItem is { } onItem) {
-                    var traceResult = onItem.OnTrace(tracorData, currentContext.GetChildContext(1));
-                    if (traceResult.IsComplete()) {
+                if (isStop && isCurrentTraceSpan) {
+                    {
+                        TracorValidatorOnTraceResult traceResult;
+                        if (this.OnStop is { } onStop) {
+                            traceResult = onStop.OnTrace(tracorData, currentContext.GetChildContext(2));
+                        } else {
+                            traceResult = TracorValidatorOnTraceResult.Successful;
+                        }
                         currentContext.SetStateComplete(this, state, traceResult);
                         return traceResult;
                     }
                 }
             }
-            return TracorValidatorOnTraceResult.None;
         }
-#endif
+        return TracorValidatorOnTraceResult.None;
     }
 
     internal static bool IsCurrentFork(
@@ -176,30 +133,15 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
         return false;
     }
 
-    private static OnTraceStepExecutionState? TryGetFork(
-        OnTraceStepCurrentContext currentContext,
-        TracorDataProperty tdpTraceId) {
-        return currentContext.TryGetFork(
-            tdpTraceId,
-            static (tdpTraceId, tdpCurrent) => {
-                if (tdpTraceId.TryGetStringValue(out var traceIdValue)
-                    && tdpCurrent.TryGetStringValue(out var currentValue)) {
-                    if (string.Equals(traceIdValue, currentValue, StringComparison.Ordinal)) {
-                        return true;
-                    }
-                }
-                return false;
-            });
-    }
-    internal sealed class GroupByActivityExpressionState : ValidatorExpressionState {
+    internal sealed class GroupByRootActivityExpressionState : ValidatorExpressionState {
         public string? TraceId;
         public string? SpanId;
         public string? Scope;
 
-        public GroupByActivityExpressionState() {
+        public GroupByRootActivityExpressionState() {
         }
 
-        private GroupByActivityExpressionState(
+        private GroupByRootActivityExpressionState(
                 TracorValidatorOnTraceResult result,
                 string? traceId,
                 string? spanId,
@@ -211,7 +153,7 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
         }
 
         protected internal override ValidatorExpressionState Copy()
-            => new GroupByActivityExpressionState(
+            => new GroupByRootActivityExpressionState(
                 this.Result,
                 this.TraceId,
                 this.SpanId,

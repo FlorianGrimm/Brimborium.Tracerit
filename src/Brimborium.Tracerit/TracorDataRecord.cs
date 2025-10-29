@@ -1,10 +1,12 @@
 ﻿#pragma warning disable IDE0017
 
+
 namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Represents a record of trace data, including properties and identifiers.
 /// </summary>
+[DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public sealed class TracorDataRecord
     : ReferenceCountObject
     , ITracorData {
@@ -136,6 +138,10 @@ public sealed class TracorDataRecord
 
             return result;
         }
+    }
+
+    internal string GetDebuggerDisplay() {
+        return $"{this.TracorIdentifier} {this.ListProperty.FirstOrDefault().GetDebuggerDisplay()} {this.Timestamp:o}";
     }
 }
 

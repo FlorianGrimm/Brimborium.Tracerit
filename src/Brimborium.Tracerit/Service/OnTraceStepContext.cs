@@ -100,35 +100,37 @@ public readonly struct OnTraceStepCurrentContext {
             this._LoggerUtility);
     }
 
-    public readonly void CreateFork(string propertyName, TracorDataProperty propertyValue) {
+    public readonly void CreateFork(TracorDataProperty propertyValue) {
         var copy = this._ExecutionState.Copy();
-        this._ExecutionState.GlobalState[propertyName] = propertyValue;
-        this._ExecutionState.ForkState.SetItem(propertyName, propertyValue);
+        this._ExecutionState.ForkState.SetValue(propertyValue);
         this._Modifications.AddFork(this._ExecutionState, copy);
     }
 
-    public readonly OnTraceStepExecutionState? TryGetFork(string propertyName, TracorDataProperty propertyValue) {
+    public readonly OnTraceStepExecutionState? TryGetFork(in TracorDataProperty propertyValue) {
         TracorForkState forkState = new(this._ExecutionState.ForkState);
-        forkState[propertyName] = propertyValue;
+        forkState[propertyValue.Name] = propertyValue;
         return this._Modifications.TryGetFork(forkState);
     }
 
-    public readonly OnTraceStepExecutionState? TryGetFork(string propertyName, TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare) {
-        return this._Modifications.TryGetFork(propertyName, tdpCurrent, fnCompare);
+    public readonly OnTraceStepExecutionState? TryGetFork(in TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare) {
+        return this._Modifications.TryGetFork(tdpCurrent, fnCompare);
     }
 
     public readonly void SetStateSuccessful(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
+        this._LoggerUtility.LogSetStateComplete(validatorExpression.Label, TracorValidatorOnTraceResult.Successful);
         state.Result = TracorValidatorOnTraceResult.Successful;
     }
 
     public readonly void SetStateFailed(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
+        this._LoggerUtility.LogSetStateComplete(validatorExpression.Label, TracorValidatorOnTraceResult.Failed);
         state.Result = TracorValidatorOnTraceResult.Failed;
     }
 
     public readonly TracorValidatorOnTraceResult SetStateComplete(
-        IValidatorExpression validatorExpression, 
-        ValidatorExpressionState state, 
+        IValidatorExpression validatorExpression,
+        ValidatorExpressionState state,
         TracorValidatorOnTraceResult result) {
+        this._LoggerUtility.LogSetStateComplete(validatorExpression.Label, TracorValidatorOnTraceResult.Successful);
         state.Result = result;
         return result;
     }

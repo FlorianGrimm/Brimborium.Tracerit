@@ -1,14 +1,12 @@
-using Brimborium.Tracerit.Utility;
-
 namespace Brimborium.Tracerit.Test.Service;
 
 /// <summary>
-/// Unit tests for ITracor implementations including RuntimeTracor and TesttimeTracor.
+/// Unit tests for ITracor implementations including TracorServiceSink and DisabledTracorServiceSink.
 /// </summary>
 public class TracorTests {
     
     [Test]
-    public async Task RuntimeTracor_ShouldAlwaysReturnFalseForEnabled() {
+    public async Task TracorServiceSink_ShouldAlwaysReturnFalseForEnabled() {
         // Arrange
         var tracor = new DisabledTracorServiceSink();
 
@@ -18,7 +16,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task RuntimeTracor_ShouldNotDisposeDisposableValues() {
+    public async Task TracorServiceSink_ShouldNotDisposeDisposableValues() {
         // Arrange
         var tracor = new DisabledTracorServiceSink();
         var disposableValue = new TestDisposable();
@@ -31,7 +29,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task RuntimeTracor_ShouldNotThrowForNonDisposableValues() {
+    public async Task TracorServiceSink_ShouldNotThrowForNonDisposableValues() {
         // Arrange
         var tracor = new DisabledTracorServiceSink();
         
@@ -44,7 +42,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TesttimeTracor_ShouldReturnTrueForGeneralEnabled() {
+    public async Task DisabledTracorServiceSink_ShouldReturnTrueForGeneralEnabled() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
@@ -57,7 +55,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TesttimeTracor_ShouldProcessTraceData() {
+    public async Task DisabledTracorServiceSink_ShouldProcessTraceData() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
@@ -78,7 +76,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TesttimeTracor_ShouldConvertValuesToTracorData() {
+    public async Task DisabledTracorServiceSink_ShouldConvertValuesToTracorData() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
@@ -110,7 +108,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TesttimeTracor_ShouldHandleITracorDataDirectly() {
+    public async Task DisabledTracorServiceSink_ShouldHandleITracorDataDirectly() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
@@ -137,7 +135,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TesttimeTracor_ShouldHandleReferenceCountObjects() {
+    public async Task DisabledTracorServiceSink_ShouldHandleReferenceCountObjects() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
@@ -200,11 +198,11 @@ public class TracorTests {
     /// Test helper expression that allows custom condition logic for testing.
     /// </summary>
     private class TestMatchExpression : ValidatorExpression {
-        private readonly Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> _condition;
+        private readonly Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> _Condition;
 
         public TestMatchExpression(Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> condition) 
             : base(null) {
-            this._condition = condition;
+            this._Condition = condition;
         }
 
         public override TracorValidatorOnTraceResult OnTrace(
@@ -215,7 +213,7 @@ public class TracorTests {
                 return state.Result;
             }
 
-            if (this._condition(tracorData.TracorIdentifier, tracorData, currentContext)) {
+            if (this._Condition(tracorData.TracorIdentifier, tracorData, currentContext)) {
                 currentContext.SetStateSuccessful(this, state);
                 return TracorValidatorOnTraceResult.Successful;
             }
@@ -224,6 +222,8 @@ public class TracorTests {
         }
 
         private class TestMatchState : ValidatorExpressionState {
+            protected internal override ValidatorExpressionState Copy()
+                => new TestMatchState();
         }
     }
 }

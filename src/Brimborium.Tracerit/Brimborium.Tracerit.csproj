@@ -6,6 +6,20 @@
     <RootNamespace>Brimborium.Tracerit</RootNamespace>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Expression\GroupByActivityExpression.cs" />
+    <Compile Remove="Expression\GroupByExpression.cs" />
+    <Compile Remove="TracorActivityListener\ActivityTracorData.cs" />
+    <Compile Remove="TracorActivityListener\ActivityTracorDataFactory.cs" />
+    <Compile Remove="TracorActivityListener\ActivityTracorDataPool.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Expression\GroupByActivityExpression.cs" />
+    <None Include="Expression\GroupByExpression.cs" />
+    <None Include="TracorActivityListener\ActivityTracorData.cs" />
+    <None Include="TracorActivityListener\ActivityTracorDataFactory.cs" />
+    <None Include="TracorActivityListener\ActivityTracorDataPool.cs" />
+  </ItemGroup>
   <!--
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ItemGroup>

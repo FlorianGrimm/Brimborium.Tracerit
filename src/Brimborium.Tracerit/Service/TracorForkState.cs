@@ -1,6 +1,7 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
 public sealed class TracorForkState : Dictionary<string, TracorDataProperty> {
+    public readonly Lock Lock = new Lock();
     public TracorForkState() {
     }
 
@@ -10,8 +11,17 @@ public sealed class TracorForkState : Dictionary<string, TracorDataProperty> {
         }
     }
 
-    public void SetItem(string propertyName, TracorDataProperty propertyValue) {
-        this[propertyName] = propertyValue;
+    public TracorForkState SetValue(TracorDataProperty propertyValue) {
+        this[propertyValue.Name] = propertyValue;
+        return this;
+    }
+
+    public TracorDataProperty GetValue(string name) {
+        if (this.TryGetValue(name, out var value)) {
+            return value;
+        } else {
+            return new TracorDataProperty(name);
+        }
     }
 
     public bool IsPartialEqual(TracorForkState biggerState) {

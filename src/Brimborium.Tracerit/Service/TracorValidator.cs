@@ -3,25 +3,25 @@
 public sealed class TracorValidator : ITracorValidator {
 
     public static TracorValidator Create(IServiceProvider serviceProvider) {
-        var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
+        var tracorDataRecordPool = serviceProvider.GetRequiredService<TracorDataRecordPool>();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         return new TracorValidator(
-            activityTracorDataPool,
+            tracorDataRecordPool,
             loggerFactory);
     }
 
     private ImmutableArray<ITracorValidatorPath> _ListValidatorPath = ImmutableArray<ITracorValidatorPath>.Empty;
     private readonly Lock _LockListTracorStepPath = new();
     private readonly ILoggerFactory _LoggerFactory;
-    private readonly ActivityTracorDataPool _ActivityTracorDataPool;
+    private readonly TracorDataRecordPool _TracorDataRecordPool;
     private ILogger? _LoggerCondition;
     private LoggerUtility? _LoggerUtility;
 
 
     public TracorValidator(
-        ActivityTracorDataPool activityTracorDataPool,
+        TracorDataRecordPool tracorDataRecordPool,
         ILoggerFactory loggerFactory) {
-        this._ActivityTracorDataPool = activityTracorDataPool;
+        this._TracorDataRecordPool = tracorDataRecordPool;
         this._LoggerFactory = loggerFactory;
     }
 

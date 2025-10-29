@@ -33,7 +33,7 @@ public class RestoreRootActivityTests {
                 reportExpressionResult,
                 new SequenceExpression(
                     listChild: [
-                        Wrap(static(ITracorData data) => data.IsEqualString("operation", "test3")).PredicateTracorData().AsMatch()
+                        Wrap(static(ITracorData data) => data.IsEqualString("operation", "test3")).Predicate().AsMatch()
                         ])))
             ) {
             using (var rootActivity = sampleTest1Instrumentation.StartRoot(name:"aaa")) {

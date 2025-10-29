@@ -49,7 +49,7 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     }
 
     internal class RemoveSubscribedSink : IDisposable {
-        private TracorCollectivePublisher _TracorCollectivePublisher;
+        private readonly TracorCollectivePublisher _TracorCollectivePublisher;
         private ITracorCollectiveSink? _Sink;
 
         public RemoveSubscribedSink(TracorCollectivePublisher tracorCollectivePublisher, ITracorCollectiveSink sink) {
@@ -63,6 +63,7 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
             }
         }
     }
+
     public bool IsGeneralEnabled() => true;
 
     public bool IsEnabled() => (0 < this._ListSubscribedSinks.Length);

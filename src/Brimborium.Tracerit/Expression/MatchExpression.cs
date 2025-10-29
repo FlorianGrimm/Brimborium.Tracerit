@@ -111,5 +111,20 @@ public sealed class MatchExpression : ValidatorExpression {
         /// Gets or sets the index of the current child expression being processed.
         /// </summary>
         public int ChildIndex;
+
+        public MatchStepState() {
+        }
+
+        private MatchStepState(
+            TracorValidatorOnTraceResult result,
+            bool matched,
+            int childIndex
+            ) : base(result) {
+            this.Matched = matched;
+            this.ChildIndex = childIndex;
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new MatchStepState(this.Result, this.Matched, this.ChildIndex);
     }
 }

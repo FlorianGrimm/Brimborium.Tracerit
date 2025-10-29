@@ -10,12 +10,12 @@ internal abstract class BaseTracorActivityListener
         public required bool ActivitySourceStopEventEnabled;
         public required bool AllowAllActivitySource;
         public readonly HashSet<string> HashSetActivitySourceName;
-        public readonly HashSet<ActivitySourceIdentifier> HashSetActivitySourceIdenifier;
+        public readonly HashSet<ActivitySourceIdentifier> HashSetActivitySourceIdentifier;
         public readonly HashSet<IActivitySourceResolver> HashSetActivitySourceResolver = new();
 
         public OptionState() {
             this.HashSetActivitySourceName = new HashSet<string>(StringComparer.Ordinal);
-            this.HashSetActivitySourceIdenifier = new HashSet<ActivitySourceIdentifier>();
+            this.HashSetActivitySourceIdentifier = new HashSet<ActivitySourceIdentifier>();
         }
         public static OptionState Create(TracorActivityListenerOptions options1, TracorActivityListenerOptions options2) {
             var result = new OptionState() {
@@ -26,8 +26,8 @@ internal abstract class BaseTracorActivityListener
 
             addListActivitySourceName(options1, result);
             addListActivitySourceName(options2, result);
-            addListActivitySourceIdenifier(options1, result);
-            addListActivitySourceIdenifier(options2, result);
+            addListActivitySourceIdentifier(options1, result);
+            addListActivitySourceIdentifier(options2, result);
             addListActivitySourceByType(options1, result);
             addListActivitySourceByType(options2, result);
 
@@ -38,12 +38,12 @@ internal abstract class BaseTracorActivityListener
                     result.HashSetActivitySourceName.Add(activitySourceName);
                 }
             }
-            static void addListActivitySourceIdenifier(TracorActivityListenerOptions options, OptionState result) {
+            static void addListActivitySourceIdentifier(TracorActivityListenerOptions options, OptionState result) {
                 foreach (var instrumentation in options.ListActivitySourceIdenifier) {
                     if (instrumentation.Version is { Length: 0 }) {
                         result.HashSetActivitySourceName.Add(instrumentation.Name);
                     } else {
-                        result.HashSetActivitySourceIdenifier.Add(instrumentation);
+                        result.HashSetActivitySourceIdentifier.Add(instrumentation);
                     }
                 }
             }
@@ -93,7 +93,7 @@ internal abstract class BaseTracorActivityListener
         foreach (var activitySourceResolver in value.HashSetActivitySourceResolver) {
             if (activitySourceResolver.Resolve(this._ServiceProvider) is ActivitySource activitySource) {
                 value.HashSetActivitySourceName.Add(activitySource.Name);
-                value.HashSetActivitySourceIdenifier.Add(new ActivitySourceIdentifier(activitySource.Name, activitySource.Version));
+                value.HashSetActivitySourceIdentifier.Add(new ActivitySourceIdentifier(activitySource.Name, activitySource.Version));
                 continue;
             }
         }
@@ -115,7 +115,7 @@ internal abstract class BaseTracorActivityListener
             if (disposing) {
                 this._IsDisposed = Environment.StackTrace;
             } else {
-                this._IsDisposed = "finallizer";
+                this._IsDisposed = "finalizer";
             }
             this.Dispose(disposing);
         }

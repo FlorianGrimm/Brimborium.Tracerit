@@ -27,4 +27,8 @@ public partial class LoggerUtility {
     public void LogConditionOTR(TracorIdentifier callee, TracorValidatorOnTraceResult result, string? fnConditionDisplay) {
         this._Logger.LogConditionOTR(callee, result, fnConditionDisplay);
     }
+
+    public void LogSetStateComplete(string? validatorExpression, TracorValidatorOnTraceResult traceResult) {
+        this._Logger.LogSetStateComplete(validatorExpression, traceResult);
+    }
 }

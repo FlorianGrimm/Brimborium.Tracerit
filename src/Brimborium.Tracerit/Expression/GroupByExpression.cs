@@ -51,12 +51,12 @@ public sealed class GroupByExpression : ValidatorExpression {
         } else {
             {
                 // is their a fork that handles this?
-                var fork = currentContext.TryGetFork(this.PropertyName, forkStateValue);
+                var fork = currentContext.TryGetFork(forkStateValue);
                 if (fork is not null) {
                     return TracorValidatorOnTraceResult.None;
                 }
             }
-            currentContext.CreateFork(this.PropertyName, forkStateValue);
+            currentContext.CreateFork(forkStateValue);
             // continue
         }
         var state = currentContext.GetState<GroupByExpressionState>();
@@ -83,5 +83,16 @@ public sealed class GroupByExpression : ValidatorExpression {
         }
     }
 
-    internal sealed class GroupByExpressionState : ValidatorExpressionState { }
+    internal sealed class GroupByExpressionState : ValidatorExpressionState {
+        public GroupByExpressionState() {
+        }
+
+        private GroupByExpressionState(
+                TracorValidatorOnTraceResult result
+            ) : base(result) {
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new GroupByExpressionState(this.Result);
+    }
 }

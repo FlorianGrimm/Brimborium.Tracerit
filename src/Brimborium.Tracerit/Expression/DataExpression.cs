@@ -84,7 +84,22 @@ public sealed class DataExpression : ValidatorExpression {
         // no diff found
         return true;
     }
-}
-internal sealed class DataStepState : ValidatorExpressionState {
-    public int DataIndex = 0;
+
+    internal sealed class DataStepState : ValidatorExpressionState {
+        public int DataIndex = 0;
+        public DataStepState() {
+        }
+
+        private DataStepState(
+            TracorValidatorOnTraceResult result,
+            int dataIndex
+            ) : base(result) {
+            this.DataIndex = dataIndex;
+        }
+        protected internal override ValidatorExpressionState Copy()
+            => new DataStepState(
+                this.Result,
+                this.DataIndex
+                );
+    }
 }

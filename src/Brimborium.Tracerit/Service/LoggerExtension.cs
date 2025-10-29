@@ -21,4 +21,9 @@ public static partial class LoggerExtension {
     public static partial void OnShouldListenToReturns(
         this ILogger logger,
         ActivitySourceIdentifier activitySourceIdentifier, bool result);
+
+    [LoggerMessage(LogLevel.Debug, "{validatorExpression} returns {traceResult}")]
+    public static partial void LogSetStateComplete(
+        this ILogger logger, 
+        string? validatorExpression, TracorValidatorOnTraceResult traceResult);
 }

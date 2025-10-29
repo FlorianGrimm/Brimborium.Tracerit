@@ -1,4 +1,5 @@
-﻿#pragma warning disable IDE0130 // Namespace does not match folder structure
+﻿#pragma warning disable IDE0057 // Use range operator
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 
 namespace Brimborium.Tracerit.DataAccessor;
 
@@ -13,13 +14,13 @@ public sealed class ActivityTracorData
         this._Value = activity;
     }
 
-    private const string PrefixTag = "tag.";
+    private const string _PrefixTag = "tag.";
     public List<string> GetListPropertyName() {
         var value = this.GetValue();
         List<string> result = new();
         foreach (ref readonly var tag in value.EnumerateTagObjects()) {
             //result.Add(tag.Key);
-            result.Add($"{PrefixTag}{tag.Key}");
+            result.Add($"{_PrefixTag}{tag.Key}");
         }
 
         return result;
@@ -60,8 +61,8 @@ public sealed class ActivityTracorData
             return true;
         }
 
-        if (propertyName.StartsWith(PrefixTag)) {
-            var tagName = propertyName.Substring(PrefixTag.Length);
+        if (propertyName.StartsWith(_PrefixTag)) {
+            var tagName = propertyName.Substring(_PrefixTag.Length);
 
             foreach (ref readonly var tag in value.EnumerateTagObjects()) {
                 if (tagName == tag.Key) {
@@ -92,8 +93,8 @@ public sealed class ActivityTracorData
 
         var value = this.GetValue();
 
-        if (tagName.StartsWith(PrefixTag)) {
-            tagName = tagName.Substring(PrefixTag.Length);
+        if (tagName.StartsWith(_PrefixTag)) {
+            tagName = tagName.Substring(_PrefixTag.Length);
         }
         foreach (ref readonly var tag in value.EnumerateTagObjects()) {
             if (tag.Key == tagName) {
@@ -113,8 +114,8 @@ public sealed class ActivityTracorData
     /// <returns><see langword="true"/> if the first tag of the supplied Activity matches the user provide tag name.</returns>
     public bool TryGetTagValue(string tagName, out object? tagValue) {
         var value = this.GetValue();
-        if (tagName.StartsWith(PrefixTag)) {
-            tagName = tagName.Substring(PrefixTag.Length);
+        if (tagName.StartsWith(_PrefixTag)) {
+            tagName = tagName.Substring(_PrefixTag.Length);
         }
 
         var enumeratorTagObjects = value.EnumerateTagObjects();
@@ -134,8 +135,8 @@ public sealed class ActivityTracorData
 
     public bool TryGetTagValue<T>(string tagName, [MaybeNullWhen(false)] out T tagValue) {
         var value = this.GetValue();
-        if (tagName.StartsWith(PrefixTag)) {
-            tagName = tagName.Substring(PrefixTag.Length);
+        if (tagName.StartsWith(_PrefixTag)) {
+            tagName = tagName.Substring(_PrefixTag.Length);
         }
 
         var enumeratorTagObjects = value.EnumerateTagObjects();
@@ -201,8 +202,8 @@ public sealed class ActivityTracorData
             return true;
         }
 
-        if (propertyName.StartsWith(PrefixTag)) {
-            var tagName = propertyName.Substring(PrefixTag.Length);
+        if (propertyName.StartsWith(_PrefixTag)) {
+            var tagName = propertyName.Substring(_PrefixTag.Length);
 
             var enumeratorTagObjects = value.EnumerateTagObjects();
 
@@ -263,7 +264,7 @@ public sealed class ActivityTracorData
             if (enumeratorTagObjects.MoveNext()) {
                 ref readonly var tag = ref enumeratorTagObjects.Current;
                 if (tag.Value is { } tagValue) {
-                    listProperty.Add(TracorDataProperty.Create(PrefixTag + tag.Key, tagValue));
+                    listProperty.Add(TracorDataProperty.Create(_PrefixTag + tag.Key, tagValue));
                 }
             }
         }
