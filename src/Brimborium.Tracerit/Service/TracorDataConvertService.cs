@@ -348,6 +348,10 @@ public class TracorDataConvertService : ITracorDataConvertService {
            string name,
            object? value,
            List<TracorDataProperty> listProperty) {
+        if (value is null) { return; }
+        if (this.GetTracorConvertObjectToListProperty(value.GetType()) is { } converter) {
+            converter.ConvertObjectToListProperty(isPublic, levelWatchDog, name, value, listProperty);
+        }
     }
 
     public void ConvertValueToListProperty<T>(

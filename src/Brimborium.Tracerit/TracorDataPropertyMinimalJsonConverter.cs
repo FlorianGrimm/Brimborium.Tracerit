@@ -171,11 +171,10 @@ public sealed class TracorDataPropertyMinimalJsonConverter
                 break;
             case TracorDataPropertyTypeValue.Level:
             case TracorDataPropertyTypeValue.Enum:
-                value.TryGetEnumValue(out string? textValue);
-                if (textValue is { Length: > 0 }) {
-                    writer.WriteStringValue(textValue);
+                if (value.InnerObjectValue is string levelValue) {
+                    writer.WriteStringValue(levelValue);
                 } else {
-                    writer.WriteStringValue("");
+                    writer.WriteStringValue(string.Empty);
                 }
                 break;
             case TracorDataPropertyTypeValue.DateTime:
