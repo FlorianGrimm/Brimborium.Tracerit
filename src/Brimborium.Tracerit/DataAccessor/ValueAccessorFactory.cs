@@ -31,15 +31,20 @@ public static class ValueAccessorFactoryUtility {
         List<TracorDataProperty> listProperty
         /* TODO: ITracorDataConvertService? tracorDataConvertService*/
         ) {
-        Type type = typeof(TValue);
-        foreach (var propertyInfo in type.GetProperties()) {
-            if (propertyInfo.CanRead) {
-                var propertyValue = propertyInfo.GetValue(value);
-                if (propertyValue is null) { continue; }
-                //if (tracorDataConvertService is { }) {
-                //    tracorDataConvertService.ConvertPublic(propertyValue)
-                //}
-                listProperty.Add(TracorDataProperty.Create(propertyInfo.Name, propertyValue));
+        var tdp=TracorDataProperty.Create("value", value);
+        if (tdp.TypeValue != TracorDataPropertyTypeValue.Any) {
+            listProperty.Add(tdp);
+        } else {
+            Type type = typeof(TValue);
+            foreach (var propertyInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+                if (propertyInfo.CanRead) {
+                    var propertyValue = propertyInfo.GetValue(value);
+                    if (propertyValue is null) { continue; }
+                    //if (tracorDataConvertService is { }) {
+                    //    tracorDataConvertService.ConvertPublic(propertyValue)
+                    //}
+                    listProperty.Add(TracorDataProperty.Create(propertyInfo.Name, propertyValue));
+                }
             }
         }
     }

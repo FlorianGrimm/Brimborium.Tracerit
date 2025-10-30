@@ -19,7 +19,6 @@ public class ValueTracorDataTests {
             TracorConstants.TracorDataPropertyNameValue,
             out var propertyValue)).IsTrue();
         await Assert.That(propertyValue).IsEqualTo(testValue);
-        await Assert.That(tracorData["Value"]).IsEqualTo(testValue);
     }
 
     [Test]
@@ -41,7 +40,6 @@ public class ValueTracorDataTests {
         // Act & Assert
         await Assert.That(tracorData.TryGetPropertyValue("UnknownProperty", out var propertyValue)).IsFalse();
         await Assert.That(propertyValue).IsNull();
-        await Assert.That(tracorData["UnknownProperty"]).IsNull();
     }
 
     [Test]
@@ -54,7 +52,7 @@ public class ValueTracorDataTests {
         var propertyNames = accessor.GetListPropertyNameTyped(uri);
 
         // Assert
-        await Assert.That(propertyNames).Contains("Value");
+        await Assert.That(propertyNames).Contains("value");
         await Assert.That(propertyNames).Contains("ToString");
         await Assert.That(propertyNames).Contains("Host");
         await Assert.That(propertyNames).Contains("PathAndQuery");
@@ -67,7 +65,7 @@ public class ValueTracorDataTests {
         var accessor = new SystemUriTracorDataAccessor();
 
         // Act & Assert
-        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "Value", out var valueProperty)).IsTrue();
+        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "value", out var valueProperty)).IsTrue();
         await Assert.That(valueProperty).IsEqualTo(uri);
 
         await Assert.That(accessor.TryGetPropertyValueTyped(uri, "Host", out var hostProperty)).IsTrue();
@@ -126,7 +124,6 @@ public class ValueTracorDataTests {
         // Act & Assert
         await Assert.That(factory.TryGetData(testValue, out var tracorData)).IsTrue();
         await Assert.That(tracorData).IsNotNull();
-        await Assert.That(tracorData).IsTypeOf<ValueTracorData<string>>();
 
         await Assert.That(factory.TryGetDataTyped(testValue, out var typedTracorData)).IsTrue();
         await Assert.That(typedTracorData).IsNotNull();
@@ -141,7 +138,6 @@ public class ValueTracorDataTests {
         await Assert.That(nullData.GetListPropertyName()).IsEmpty();
         await Assert.That(nullData.TryGetPropertyValue("AnyProperty", out var propertyValue)).IsFalse();
         await Assert.That(propertyValue).IsNull();
-        await Assert.That(nullData["AnyProperty"]).IsNull();
     }
 
     [Test]
@@ -150,14 +146,12 @@ public class ValueTracorDataTests {
         var tracorData = new ValueTracorData<int>(42);
 
         // Act & Assert
-        await Assert.That(tracorData.TryGetPropertyValue<int>(
+        await Assert.That(tracorData.IsEqualInteger(
             TracorConstants.TracorDataPropertyNameValue,
-            out var intValue)).IsTrue();
-        await Assert.That(intValue).IsEqualTo(42);
+            42)).IsTrue();
 
-        await Assert.That(tracorData.TryGetPropertyValue<string>(
+        await Assert.That(tracorData.IsEqualString(
             TracorConstants.TracorDataPropertyNameValue,
-            out var stringValue)).IsFalse();
-        await Assert.That(stringValue).IsNull();
+            "42")).IsFalse();
     }
 }

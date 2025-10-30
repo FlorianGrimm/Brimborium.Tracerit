@@ -12,16 +12,6 @@ public sealed class ValueTracorData<TValue> : ITracorData<TValue> {
         this._Value = value;
     }
 
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
-                return propertyValue;
-            } else {
-                return null;
-            }
-        }
-    }
-
     public List<string> GetListPropertyName() {
         return [TracorConstants.TracorDataPropertyNameValue];
     }

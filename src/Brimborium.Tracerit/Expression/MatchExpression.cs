@@ -58,14 +58,12 @@ public sealed class MatchExpression : ValidatorExpression {
             if (TracorValidatorOnTraceResult.Successful == conditionResult) {
                 state.Matched = true;
                 if (0 == this._ListChild.Length) {
-                    currentContext.SetStateSuccessful(this, state);
-                    return TracorValidatorOnTraceResult.Successful;
+                    return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                 } else {
                     return TracorValidatorOnTraceResult.None;
                 }
             } else if (TracorValidatorOnTraceResult.Failed == conditionResult) {
-                currentContext.SetStateFailed(this, state);
-                return TracorValidatorOnTraceResult.Failed;
+                return currentContext.SetStateFailed(this, state, tracorData.Timestamp);
             } else { 
                 return TracorValidatorOnTraceResult.None;
             }
@@ -82,18 +80,15 @@ public sealed class MatchExpression : ValidatorExpression {
                         return TracorValidatorOnTraceResult.None;
                     } else {
                         state.ChildIndex = this._ListChild.Length;
-                        currentContext.SetStateSuccessful(this, state);
-                        return TracorValidatorOnTraceResult.Successful;
+                        return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                     }
                 } else if (TracorValidatorOnTraceResult.Failed == childResult) {
-                    currentContext.SetStateFailed(this, state);
-                    return TracorValidatorOnTraceResult.Failed;
+                    return currentContext.SetStateFailed(this, state, tracorData.Timestamp);
                 } else {
                     return TracorValidatorOnTraceResult.None;
                 }
             } else {
-                currentContext.SetStateSuccessful(this, state);
-                return TracorValidatorOnTraceResult.Successful;
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
         }
     }

@@ -40,7 +40,7 @@ public sealed class TracorValidator : ITracorValidator {
         return default;
     }
 
-    public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState) {
+    public ITracorValidatorPath Add(IValidatorExpression step, List<TracorDataProperty>? globalState = default) {
         if (this._LoggerCondition is null || this._LoggerUtility is null) {
             this._LoggerCondition ??= this._LoggerFactory.CreateLogger(typeof(AlwaysCondition).Namespace!);
             this._LoggerUtility ??= new LoggerUtility(this._LoggerCondition);

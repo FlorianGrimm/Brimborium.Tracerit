@@ -1,5 +1,5 @@
-﻿
-namespace Brimborium.Tracerit.DataAccessor;
+﻿namespace Brimborium.Tracerit.DataAccessor;
+
 public sealed class JsonDocumentTracorData
     : ReferenceCountObject<System.Text.Json.JsonDocument>
     , ITracorData<System.Text.Json.JsonDocument> {
@@ -9,16 +9,6 @@ public sealed class JsonDocumentTracorData
 
     public JsonDocumentTracorData(System.Text.Json.JsonDocument value) : base(default) {
         this._Value = value;
-    }
-
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
-                return propertyValue;
-            } else {
-                return null;
-            }
-        }
     }
 
     public List<string> GetListPropertyName() {

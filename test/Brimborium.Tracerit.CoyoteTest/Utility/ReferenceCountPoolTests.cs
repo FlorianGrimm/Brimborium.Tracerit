@@ -119,16 +119,6 @@ public sealed class LoggerTracorDataForTest : ReferenceCountObject, ITracorData 
 
     public List<KeyValuePair<string, object?>> Arguments => this._Arguments;
 
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
-                return propertyValue;
-            } else {
-                return null;
-            }
-        }
-    }
-
     public List<string> GetListPropertyName() {
         return this._Arguments.Select(i => i.Key).ToList();
     }

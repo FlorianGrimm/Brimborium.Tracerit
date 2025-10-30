@@ -6,8 +6,6 @@ public class TracorDataConvertService : ITracorDataConvertService {
 
     public static TracorDataConvertService Create(IServiceProvider serviceProvider) {
         var options = serviceProvider.GetRequiredService<IOptions<TracorDataConvertOptions>>();
-        //var activityTracorDataPool = serviceProvider.GetRequiredService<ActivityTracorDataPool>();
-
         return new TracorDataConvertService(
             serviceProvider,
             options);
@@ -18,6 +16,9 @@ public class TracorDataConvertService : ITracorDataConvertService {
     public ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory> TracorDataAccessorByTypePrivateScopeSource { get; set; } = ImmutableDictionary<TracorIdentifierType, ITracorDataAccessorFactory>.Empty;
     public ImmutableDictionary<Type, ITracorDataAccessorFactory> TracorDataAccessorByTypePublic { get; set; } = ImmutableDictionary<Type, ITracorDataAccessorFactory>.Empty;
     public ImmutableArray<ITracorDataAccessorFactory> ListTracorDataAccessorPublic { get; set; } = ImmutableArray<ITracorDataAccessorFactory>.Empty;
+
+    public ImmutableDictionary<Type, ITracorConvertObjectToListProperty> TracorConvertToListPropertyByType { get; set; } = ImmutableDictionary<Type, ITracorConvertObjectToListProperty>.Empty;
+    private ImmutableDictionary<Type, ITracorConvertObjectToListProperty?> _CacheTracorConvertSelfToListProperty = ImmutableDictionary<Type, ITracorConvertObjectToListProperty?>.Empty;
 
     public TracorDataConvertService(
         TracorDataRecordPool tracorDataRecordPool,
@@ -55,6 +56,7 @@ public class TracorDataConvertService : ITracorDataConvertService {
         Microsoft.Extensions.Options.IOptions<TracorDataConvertOptions> options
         ) : this(serviceProvider) {
         this.AddOptions(options.Value);
+        this.AddTracorConvertToListProperty(serviceProvider.GetServices<ITracorConvertObjectToListProperty>());
     }
 
     internal void AddOptions(TracorDataConvertOptions value) {
@@ -73,6 +75,28 @@ public class TracorDataConvertService : ITracorDataConvertService {
             this.ListTracorDataAccessorPublic = this.ListTracorDataAccessorPublic
                 .AddRange(value.ListTracorDataAccessor);
         }
+        if (value.ListTracorConvertToListProperty is { Count: > 0 } listTracorConvertToListProperty) {
+            this.AddTracorConvertToListProperty(listTracorConvertToListProperty);
+        }
+    }
+
+    public void AddTracorConvertToListProperty(IEnumerable<ITracorConvertObjectToListProperty> listTracorConvertToListProperty) {
+        if (!listTracorConvertToListProperty.Any()) { return; }
+
+        var builder = this.TracorConvertToListPropertyByType.ToBuilder();
+        foreach (var tracorConvertToListProperty in listTracorConvertToListProperty) {
+            var valueType = tracorConvertToListProperty
+                .GetType()
+                .GetInterfaces()
+                .FirstOrDefault(typeInterface => typeInterface.IsGenericType
+                        && typeInterface.GetGenericTypeDefinition() == typeof(ITracorConvertValueToListProperty<>))
+                ?.GetGenericArguments()
+                .First();
+            if (valueType is { }) {
+                builder[valueType] = tracorConvertToListProperty;
+            }
+        }
+        this.TracorConvertToListPropertyByType = builder.ToImmutable();
     }
 
     public TracorDataConvertService AddTracorDataAccessorByTypePrivate(TracorIdentifierType tracorIdentifierType, ITracorDataAccessorFactory tracorDataAccessorFactory) {
@@ -255,5 +279,103 @@ public class TracorDataConvertService : ITracorDataConvertService {
             ValueAccessorFactoryUtility.Convert<T>(value!, tracorData.ListProperty);
             return tracorData;
         }
+    }
+
+    public ITracorConvertObjectToListProperty? GetTracorConvertObjectToListProperty(Type typeValue) {
+        {
+            if (this.TracorConvertToListPropertyByType.TryGetValue(
+                typeValue,
+                out var result)
+                ) {
+                return result;
+            }
+        }
+        {
+            if (this._CacheTracorConvertSelfToListProperty.TryGetValue(typeValue, out var result)) {
+                return result;
+            }
+            bool isITracorConvertSelfToListProperty = typeValue.IsAssignableTo(typeof(ITracorConvertSelfToListProperty));
+            if (isITracorConvertSelfToListProperty) {
+                var resultT = (ITracorConvertObjectToListProperty)
+                    typeof(TracorConvertSelfToListPropertyAdapter<>)
+                    .MakeGenericType(typeValue)
+                    .GetConstructor(Type.EmptyTypes)!
+                    .Invoke(null);
+                this._CacheTracorConvertSelfToListProperty = this._CacheTracorConvertSelfToListProperty.SetItem(typeValue, resultT);
+                this.TracorConvertToListPropertyByType = this.TracorConvertToListPropertyByType.SetItem(typeValue, resultT);
+                return resultT;
+            } else {
+                this._CacheTracorConvertSelfToListProperty = this._CacheTracorConvertSelfToListProperty.SetItem(typeValue, null);
+            }
+        }
+        return null;
+    }
+
+    public ITracorConvertValueToListProperty<T>? GetConverterValueListProperty<T>() {
+        {
+            if (this.TracorConvertToListPropertyByType.TryGetValue(
+                typeof(T),
+                out var result)
+                && (result is ITracorConvertValueToListProperty<T> resultT)) {
+                return resultT;
+            }
+        }
+        {
+            if (this._CacheTracorConvertSelfToListProperty.TryGetValue(typeof(T), out var result)) {
+                if (result is null) { return null; /* normally */ }
+                return result as ITracorConvertValueToListProperty<T>; /* might happen - race */
+            }
+            bool isITracorConvertSelfToListProperty = typeof(T).IsAssignableTo(typeof(ITracorConvertSelfToListProperty));
+            if (isITracorConvertSelfToListProperty) {
+                var resultT = (ITracorConvertValueToListProperty<T>)
+                    typeof(TracorConvertSelfToListPropertyAdapter<>)
+                    .MakeGenericType(typeof(T))
+                    .GetConstructor(Type.EmptyTypes)!
+                    .Invoke(null);
+                this._CacheTracorConvertSelfToListProperty = this._CacheTracorConvertSelfToListProperty.SetItem(typeof(T), resultT);
+                this.TracorConvertToListPropertyByType = this.TracorConvertToListPropertyByType.SetItem(typeof(T), resultT);
+                return resultT;
+            } else {
+                this._CacheTracorConvertSelfToListProperty = this._CacheTracorConvertSelfToListProperty.SetItem(typeof(T), null);
+            }
+        }
+        return null;
+    }
+
+    public void ConvertObjectToListProperty(
+           bool isPublic,
+           int levelWatchDog,
+           string name,
+           object? value,
+           List<TracorDataProperty> listProperty) {
+    }
+
+    public void ConvertValueToListProperty<T>(
+        bool isPublic,
+        int levelWatchDog,
+        string name,
+        T value,
+        List<TracorDataProperty> listProperty) {
+        if (this.GetConverterValueListProperty<T>() is { } converter) {
+            converter.ConvertValueToListProperty(isPublic, levelWatchDog, name, value, listProperty);
+        }
+    }
+}
+internal sealed class TracorConvertSelfToListPropertyAdapter<T>
+    : ITracorConvertValueToListProperty<T>
+    where T : ITracorConvertSelfToListProperty {
+    public TracorConvertSelfToListPropertyAdapter() { }
+
+    public Type GetValueType() => typeof(T);
+
+    public void ConvertObjectToListProperty(bool isPublic, int levelWatchDog, string name, object? value, List<TracorDataProperty> listProperty) {
+        if (value is null) { return; }
+        if (value is T valueT) {
+            valueT.ConvertSelfToListProperty(isPublic, levelWatchDog, name, listProperty);
+        }
+    }
+
+    public void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, T value, List<TracorDataProperty> listProperty) {
+        value.ConvertSelfToListProperty(isPublic, levelWatchDog, name, listProperty);
     }
 }

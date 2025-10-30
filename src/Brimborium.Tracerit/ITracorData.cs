@@ -28,13 +28,6 @@ public interface ITracorData {
     bool TryGetDataProperty(string propertyName, out TracorDataProperty result);
 
     /// <summary>
-    /// Get the properties.
-    /// </summary>
-    /// <param name="propertyName">the property Name.</param>
-    /// <returns>the property value or null.</returns>
-    object? this[string propertyName] { get; }
-
-    /// <summary>
     /// Gets or sets the timestamp
     /// </summary>
     DateTime Timestamp { get; set; }

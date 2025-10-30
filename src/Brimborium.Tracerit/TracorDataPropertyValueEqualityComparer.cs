@@ -2,6 +2,9 @@
 
 public sealed class TracorDataPropertyValueEqualityComparer : EqualityComparer<TracorDataProperty> {
     public override bool Equals(TracorDataProperty x, TracorDataProperty y) {
+        return EqualsRef(in x, in y);
+    }
+    public static bool EqualsRef(in TracorDataProperty x, in TracorDataProperty y) {
         if (!(x.TypeValue == y.TypeValue)) { return false; }
         switch (x.TypeValue) {
             case TracorDataPropertyTypeValue.Null:

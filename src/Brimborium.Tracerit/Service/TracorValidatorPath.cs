@@ -13,7 +13,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
 
     public TracorValidatorPath(
         IValidatorExpression step,
-        TracorGlobalState? globalState,
+        List<TracorDataProperty>? globalState,
         IDisposable onDispose,
         LoggerUtility loggerUtility) {
         this._Step = step;
@@ -45,7 +45,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
 
         public void Execute(ITracorValidatorPath tracorValidatorPath, TracorFinishState finishState) {
             if (this.IsDisposed) { return; }
-            
+
             if (this._Callback is not { } callback) { return; }
             callback(tracorValidatorPath, finishState);
         }
@@ -55,7 +55,7 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
             this._Callback = null;
         }
     }
-    
+
     public IValidatorExpression Step => this._Step;
 
     private ValidatorStepIdentifier? _RootIdentifier;
@@ -115,19 +115,35 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
         }
     }
 
-    internal OnTraceStepExecutionState? TryGetFork(in TracorForkState forkState) {
+    internal OnTraceStepExecutionState? TryGetFork(in Dictionary<string, TracorDataProperty> forkState) {
         foreach (var runningState in this._ListRunningExecutionState) {
-            if (forkState.IsPartialEqual(runningState.ForkState)) {
+            if (IsPartialEqual(forkState, runningState.DictForkState)) {
                 return runningState;
             }
         }
         return null;
     }
 
+    public static bool IsPartialEqual(
+        Dictionary<string, TracorDataProperty> searchFor,
+        ImmutableDictionary<string, TracorDataProperty> biggerForkState) {
+        foreach (var kv in searchFor) {
+            if (biggerForkState.TryGetValue(kv.Key, out var value)) {
+                var isEqual = TracorDataPropertyValueEqualityComparer.EqualsRef(value, kv.Value);
+                if (!isEqual) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
     internal OnTraceStepExecutionState? TryGetFork(in TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare) {
         foreach (var runningState in this._ListRunningExecutionState) {
-            if (runningState.ForkState.TryGetValue(tdpCurrent.Name, out var value)) {
-                if (fnCompare(tdpCurrent, value)) { 
+            if (runningState.DictForkState.TryGetValue(tdpCurrent.Name, out var value)) {
+                if (fnCompare(tdpCurrent, value)) {
                     return runningState;
                 }
             }
@@ -138,15 +154,13 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
     public TracorRunningState? GetRunning(string searchSuccessState) {
         using (this._Lock.EnterScope()) {
             foreach (var state in this._ListRunningExecutionState) {
-#warning GetRunning
-                //if (state.GlobalState is { } globalState) {
-                return state.GetTracorRunningState();
-
-                //if (state.DictStateByStep.ContainsKey(new ValidatorStepIdentifier( searchSuccessState))) {
-                //    return globalState;
-                //}
-                //}
-            } 
+                foreach (var reportState in state.ListReportState) {
+                    if (string.IsNullOrEmpty(searchSuccessState)
+                        || string.Equals(searchSuccessState, reportState.Label, StringComparison.OrdinalIgnoreCase)) {
+                        return state.GetTracorRunningState();
+                    }
+                }
+            }
         }
         return null;
     }
@@ -191,13 +205,15 @@ internal sealed class TracorValidatorPath : ITracorValidatorPath {
 
 
     public TracorFinishState? GetFinished(Predicate<TracorFinishState>? predicate = default) {
-        for (var index = 0; index < this._ListFinishState.Count; index++) {
-            var finishState = this._ListFinishState[index];
-            if (predicate is null || predicate(finishState)) {
-                return finishState;
+        using (this._Lock.EnterScope()) {
+            for (var index = 0; index < this._ListFinishState.Count; index++) {
+                var finishState = this._ListFinishState[index];
+                if (predicate is null || predicate(finishState)) {
+                    return finishState;
+                }
             }
+            return default;
         }
-        return default;
     }
 
     public async Task<TracorFinishState?> GetFinishedAsync(Predicate<TracorFinishState>? predicate, TimeSpan timeout = default) {

@@ -34,7 +34,8 @@ public class TracorValidatorTests {
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new MatchExpression();
-        var globalState = new TracorGlobalState().SetValue(TracorDataProperty.CreateStringValue("TestKey", "TestValue"));
+        List<TracorDataProperty> globalState = new();
+        globalState.Add(TracorDataProperty.CreateStringValue("TestKey", "TestValue"));
 
         // Act
         var validatorPath = validator.Add(expression, globalState);
@@ -54,9 +55,9 @@ public class TracorValidatorTests {
 
         var expression = new SequenceExpression()
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "first")))
+                data.IsEqualString("Value", "first"))))
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "second")));
+                data.IsEqualString("Value", "second"))));
 
         var validatorPath = validator.Add(expression);
         var callee = new TracorIdentifier("Test", "Method");
@@ -79,19 +80,21 @@ public class TracorValidatorTests {
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var expression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "test"));
+        var expression = new MatchExpression(
+            condition: new PredicateTracorDataCondition(
+                data => data.IsEqualString("value", "test")));
 
-        var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentifier("Test", "Method");
+        using (var validatorPath = validator.Add(expression)) {
+            var callee = new TracorIdentifier("Test", "Method");
 
-        // Act
-        validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
-        var finishedStates = validatorPath.GetListFinished();
+            // Act
+            validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
+            var finishedStates = validatorPath.GetListFinished();
 
-        // Assert
-        await Assert.That(finishedStates).HasCount().EqualTo(1);
-        await Assert.That(validatorPath.GetListRunning()).IsEmpty();
+            // Assert
+            await Assert.That(finishedStates).HasCount().EqualTo(1);
+            await Assert.That(validatorPath.GetListRunning()).IsEmpty();
+        }
     }
 
     [Test]
@@ -103,26 +106,28 @@ public class TracorValidatorTests {
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var expression = new MatchExpression(condition: new AlwaysCondition<string, string>(
+        var expression = new MatchExpression(
+            condition: new AlwaysCondition<string, string>(
             fnGetProperty: value => value,
             setGlobalState: "TestProperty"));
 
-        var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentifier("Test", "Method");
+        using (var validatorPath = validator.Add(expression)) {
+            var callee = new TracorIdentifier("Test", "Method");
 
-        // Act
-        validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentifier = callee });
-        var finishedState = validatorPath.GetFinished(state =>
-            state.GlobalState.TryGetValue("TestProperty", out var prop)
-                && prop.TryGetStringValue(out var str)
-                && str == "test value");
+            // Act
+            validatorPath.OnTrace(new ValueTracorData<string>("test value") { TracorIdentifier = callee });
+            var finishedState = validatorPath.GetFinished(
+                state => state.DictGlobalState.TryGetValue("TestProperty", out var prop)
+                    && prop.TryGetStringValue(out var str)
+                    && str == "test value");
 
-        // Assert
-        await Assert.That(finishedState).IsNotNull();
-        var success = finishedState!.GlobalState.TryGetValue("TestProperty", out var act);
-        await Assert.That(success).IsTrue();
-        await Assert.That(act.TryGetStringValue(out _)).IsTrue();
-        await Assert.That(act.TryGetStringValue(out var result) ? result : "").IsEqualTo("test value");
+            // Assert
+            await Assert.That(finishedState).IsNotNull();
+            var success = finishedState!.DictGlobalState.TryGetValue("TestProperty", out var act);
+            await Assert.That(success).IsTrue();
+            await Assert.That(act.TryGetStringValue(out _)).IsTrue();
+            await Assert.That(act.TryGetStringValue(out var result) ? result : "").IsEqualTo("test value");
+        }
     }
 
     [Test]
@@ -141,7 +146,7 @@ public class TracorValidatorTests {
         // Act
         validatorPath.OnTrace(new ValueTracorData<string>("test") { TracorIdentifier = callee });
         var finishedState = validatorPath.GetFinished(state =>
-            state.GlobalState.TryGetValue("NonExistentKey", out var _));
+            state.DictGlobalState.TryGetValue("NonExistentKey", out var _));
 
         // Assert
         await Assert.That(finishedState).IsNull();

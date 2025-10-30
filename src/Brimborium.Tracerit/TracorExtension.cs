@@ -118,7 +118,7 @@ public static partial class TracorExtension {
     public static PredicateCondition Predicate(
         this WrapFunc<ITracorData, TracorGlobalState, TracorValidatorOnTraceResult> fnCondition
         ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
-    
+
     public static PredicateCondition Predicate(
         Func<ITracorData, TracorGlobalState, bool> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
@@ -192,51 +192,6 @@ public static partial class TracorExtension {
 
 public static partial class TracorExtension {
 
-    public static EqualsTracorDataFuncCondition<TProperty> EqualsTracorDataFunc<TProperty>(
-        WrapFunc<ITracorData, TProperty> fnGetProperty,
-        TProperty expectedValue,
-        Func<TProperty, TProperty, bool>? fnEquality = default,
-        string? setGlobalState = default
-        )
-        => new(fnGetProperty.Value, expectedValue, fnEquality, setGlobalState, fnGetProperty.ValueDisplay);
-
-    public static EqualsTracorDataFuncCondition<TProperty> EqualsTracorDataFunc<TProperty>(
-        Func<ITracorData, TProperty> fnGetProperty,
-        TProperty expectedValue,
-        Func<TProperty, TProperty, bool>? fnEquality = default,
-        string? setGlobalState = default,
-        [CallerArgumentExpression(nameof(fnGetProperty))] string? doNotPopulateThisValue = null
-        )
-        => new(fnGetProperty, expectedValue, fnEquality, setGlobalState, doNotPopulateThisValue);
-
-    public static EqualPropertyNameCondition<TProperty> EqualPropertyName<TProperty>(
-        string property,
-        TProperty expectedValue,
-        Func<TProperty, TProperty, bool>? fnEquality = default,
-        string? setGlobalState = default
-        )
-        => new(property, expectedValue, fnEquality, setGlobalState);
-
-    public static EqualsTracorDataPropertyCondition<TValue, TProperty> EqualsValue<TValue, TProperty>(
-        this WrapFunc<TValue, TProperty> fnGetProperty,
-        TProperty expectedValue,
-        Func<TProperty, TProperty, bool>? fnEquality = default,
-        string? setGlobalState = default)
-        => new(
-            fnGetProperty.Value, expectedValue, fnEquality, setGlobalState, fnGetProperty.ValueDisplay);
-
-    public static EqualsTracorDataPropertyCondition<TValue, TProperty> EqualsValue<TValue, TProperty>(
-        Func<TValue, TProperty> fnGetProperty,
-        TProperty expectedValue,
-        Func<TProperty, TProperty, bool>? fnEquality = default,
-        string? setGlobalState = default,
-        [CallerArgumentExpression(nameof(fnGetProperty))] string? doNotPopulateThisValue = null
-        ) => new(
-            fnGetProperty, expectedValue, fnEquality, setGlobalState, doNotPopulateThisValue);
-}
-
-public static partial class TracorExtension {
-
     public static IValidatorExpression Match<TValue>(
         IExpressionCondition<TValue> expressionCondition,
         string? label = default,
@@ -270,5 +225,15 @@ public static partial class TracorExtension {
         string? label = default,
         params IValidatorExpression[] listChild) {
         return new(label, condition, listChild);
+    }
+}
+
+public static partial class TracorExtension {
+
+    public static Dictionary<string, TracorDataProperty> SetValue(
+        this Dictionary<string, TracorDataProperty> that,
+        TracorDataProperty property) {
+        that[property.Name] = property;
+        return that;
     }
 }

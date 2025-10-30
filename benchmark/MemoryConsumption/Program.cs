@@ -66,7 +66,7 @@ public class Program {
     }
 
     public static ValidatorExpression Create() {
-        var result = new GroupByExpression("");
+        var result = new GroupByRootActivityExpression("");
         return result;
     }
 }

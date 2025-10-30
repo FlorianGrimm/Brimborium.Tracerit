@@ -11,7 +11,7 @@ internal sealed partial class DisabledTracorValidator : ITracorValidator {
 
     public ITracorValidatorPath? GetExisting(IValidatorExpression step) => default;
 
-    public ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default) {
+    public ITracorValidatorPath Add(IValidatorExpression step, List<TracorDataProperty>? globalState = default) {
         return new DisabledTracorValidatorPath(step);
     }
     public bool IsGeneralEnabled() => false;

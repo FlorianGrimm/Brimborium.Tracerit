@@ -60,15 +60,13 @@ public sealed class SequenceExpression : ValidatorExpression {
                     return TracorValidatorOnTraceResult.None;
                 } else {
                     state.ChildIndex = this._ListChild.Length;
-                    currentContext.SetStateSuccessful(this, state);
-                    return TracorValidatorOnTraceResult.Successful;
+                    return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                 }
             } else {
                 return TracorValidatorOnTraceResult.None;
             }
         } else {
-            currentContext.SetStateSuccessful(this, state);
-            return TracorValidatorOnTraceResult.Successful;
+            return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
         }
     }
 
@@ -81,7 +79,7 @@ public sealed class SequenceExpression : ValidatorExpression {
         private SequenceStepState(
             TracorValidatorOnTraceResult result,
             int childIndex
-            ) :base(result) {
+            ) : base(result) {
             this.ChildIndex = childIndex;
         }
 

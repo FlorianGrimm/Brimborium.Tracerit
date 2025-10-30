@@ -66,8 +66,7 @@ public sealed class FilterExpression : ValidatorExpression {
                 }
             }
             if (state.ChildSuccessful.Count == this._ListChild.Length) {
-                currentContext.SetStateSuccessful(this, state);
-                return TracorValidatorOnTraceResult.Successful;
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
         }
         return TracorValidatorOnTraceResult.None;
@@ -152,12 +151,12 @@ public sealed class FilterExpression<T> : ValidatorExpression {
 
 #endif
 
-public static class FilterExpressionExtension{
+public static class FilterExpressionExtension {
     public static FilterExpression FilterExpression(
         this IExpressionCondition condition,
         string? label = default,
         params IValidatorExpression[] listChild
-        ) 
+        )
         => new(label, condition, listChild);
 
 #if false

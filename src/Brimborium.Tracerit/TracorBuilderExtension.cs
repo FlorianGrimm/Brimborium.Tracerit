@@ -134,7 +134,12 @@ public static class TracorBuilderExtension {
 
     internal static ITracorBuilder AddFileTracorCollectiveSinkServices(
         this ITracorBuilder tracorBuilder) {
-        //tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
+        foreach (var serviceDescriptor in tracorBuilder.Services) {
+            if (typeof(FileTracorCollectiveSink).Equals(serviceDescriptor.ServiceType)) {
+                return tracorBuilder;
+            }
+        } 
+        tracorBuilder.Services.Add(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
         tracorBuilder.Services.AddSingleton<FileTracorCollectiveSink>();
         return tracorBuilder;
     }

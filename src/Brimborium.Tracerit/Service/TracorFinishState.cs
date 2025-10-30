@@ -1,12 +1,12 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
 public record class TracorRunningState(
-    TracorForkState ForkState,
-    TracorGlobalState GlobalState
+    ImmutableArray<TracorReportStateItem> ListReportState,
+    ImmutableDictionary<string, TracorDataProperty> DictGlobalState
     );
 
 public record class TracorFinishState(
     TracorValidatorOnTraceResult Result,
-    TracorForkState ForkState,
-    TracorGlobalState GlobalState
+    ImmutableArray<TracorReportStateItem> ListReportState,
+    ImmutableDictionary<string, TracorDataProperty> DictGlobalState
     );

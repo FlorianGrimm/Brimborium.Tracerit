@@ -95,7 +95,7 @@ public sealed class GroupByRootActivityExpression : ValidatorExpression {
                     if (this.OnItem is { } onItem) {
                         var traceResult = onItem.OnTrace(tracorData, currentContext.GetChildContext(1));
                         if (traceResult.IsComplete()) {
-                            currentContext.SetStateComplete(this, state, traceResult);
+                            currentContext.SetStateComplete(this, state, traceResult, tracorData.Timestamp);
                             return traceResult;
                         }
                     }
@@ -110,7 +110,7 @@ public sealed class GroupByRootActivityExpression : ValidatorExpression {
                         } else {
                             traceResult = TracorValidatorOnTraceResult.Successful;
                         }
-                        currentContext.SetStateComplete(this, state, traceResult);
+                        currentContext.SetStateComplete(this, state, traceResult, tracorData.Timestamp);
                         return traceResult;
                     }
                 }
@@ -124,7 +124,7 @@ public sealed class GroupByRootActivityExpression : ValidatorExpression {
         ref readonly TracorDataProperty tdpTraceId,
         OnTraceStepCurrentContext currentContext) {
         if (tdpTraceId.TryGetStringValue(out var traceIdValue)
-            && currentContext.ForkState.TryGetValue(nameScopeTrace, out var tdpCurrent)
+            && currentContext.DictForkState.TryGetValue(nameScopeTrace, out var tdpCurrent)
             && tdpCurrent.TryGetStringValue(out var currentValue)) {
             if (string.Equals(traceIdValue, currentValue, StringComparison.Ordinal)) {
                 return true;

@@ -618,6 +618,29 @@ public static partial class TracorDataUtility {
                     parentSpanId.ToHexString()));
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ConvertObjectToListProperty(
+        bool isPublic,
+        int levelWatchDog,
+        string key, 
+        object? value, 
+        List<TracorDataProperty> targetListProperty, 
+        ITracorDataConvertService tracorDataConvertService) {
+        if (value is null){ return; }
+        var tracorDataProperty = TracorDataProperty.Create(key, value);
+        if (TracorDataPropertyTypeValue.Any != tracorDataProperty.TypeValue) {
+            targetListProperty.Add(tracorDataProperty);
+        } else {
+            tracorDataConvertService.ConvertObjectToListProperty(
+                isPublic: isPublic,
+                levelWatchDog: levelWatchDog,
+                name: key,
+                value: value,
+                listProperty: targetListProperty);
+        }
+
+    }
 }
 
 

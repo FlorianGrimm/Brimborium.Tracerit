@@ -29,8 +29,7 @@ public sealed class OneOfExpression : ValidatorExpression {
             var child = this._ListChild[idx];
             var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
             if (TracorValidatorOnTraceResult.Successful == childResult) {
-                currentContext.SetStateSuccessful(this, state);
-                return TracorValidatorOnTraceResult.Successful;
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
         }
         return TracorValidatorOnTraceResult.None;
@@ -42,7 +41,7 @@ public sealed class OneOfExpression : ValidatorExpression {
 
         private OneOfExpressionState(
             TracorValidatorOnTraceResult result
-            ) :base(result) {
+            ) : base(result) {
         }
 
         protected internal override ValidatorExpressionState Copy()

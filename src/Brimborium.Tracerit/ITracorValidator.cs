@@ -12,7 +12,7 @@ public interface ITracorValidator : ITracorCollectiveSink {
     /// <param name="step">The validator expression to add.</param>
     /// <param name="globalState">Optional global state to initialize the validation with.</param>
     /// <returns>A validation path that can be used to track the validation progress.</returns>
-    ITracorValidatorPath Add(IValidatorExpression step, TracorGlobalState? globalState = default);
+    ITracorValidatorPath Add(IValidatorExpression step, List<TracorDataProperty>? globalState = default);
 }
 
 /// <summary>

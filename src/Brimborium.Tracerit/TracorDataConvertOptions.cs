@@ -24,6 +24,8 @@ public sealed class TracorDataConvertOptions {
     /// </summary>
     public List<ITracorDataAccessorFactory> ListTracorDataAccessor { get; } = new();
 
+    public List<ITracorConvertObjectToListProperty> ListTracorConvertToListProperty { get; } = new();
+    
     /// <summary>
     /// Adds a strongly-typed data accessor factory for the specified type.
     /// </summary>

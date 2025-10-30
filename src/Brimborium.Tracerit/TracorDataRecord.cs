@@ -10,6 +10,8 @@ namespace Brimborium.Tracerit;
 public sealed class TracorDataRecord
     : ReferenceCountObject
     , ITracorData {
+    private readonly List<TracorDataProperty> _ListProperty = new(64);
+
     public TracorDataRecord() : base(null) { }
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
@@ -26,23 +28,12 @@ public sealed class TracorDataRecord
     /// <summary>
     /// Gets the list of properties associated with this trace data record.
     /// </summary>
-    public List<TracorDataProperty> ListProperty { get; } = new(64);
-
-    /// <summary>
-    /// Gets the value of a property by name.
-    /// </summary>
-    /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <returns>The value of the property if found; otherwise, null.</returns>
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var result)) {
-                return result;
-            } else {
-                return null;
-            }
+    public List<TracorDataProperty> ListProperty {
+        get=> this._ListProperty; 
+        set {
+            this._ListProperty.AddRange(value);
         }
     }
-
     /// <inheritdoc/>
     public List<string> GetListPropertyName() {
         List<string> result = new(this.ListProperty.Count);
@@ -54,9 +45,10 @@ public sealed class TracorDataRecord
 
     /// <inheritdoc/>
     public bool TryGetPropertyValue(string propertyName, out object? propertyValue) {
-        foreach (var property in this.ListProperty) {
-            if (propertyName == property.Name) {
-                propertyValue = property.Value;
+        var listProperty = this.ListProperty;
+        for (int index = 0; index < listProperty.Count; index++) {
+            if (string.Equals(listProperty[index].Name, propertyName, StringComparison.Ordinal)) {
+                propertyValue = listProperty[index].Value;
                 return true;
             }
         }

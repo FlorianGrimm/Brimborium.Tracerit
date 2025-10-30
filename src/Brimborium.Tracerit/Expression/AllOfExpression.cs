@@ -48,7 +48,7 @@ public sealed class AllOfExpression : ValidatorExpression {
                 if (TracorValidatorOnTraceResult.Successful == childResult) {
                     state.ChildSuccessful.Add(idx);
                     if (state.ChildSuccessful.Count == this._ListChild.Length) {
-                        currentContext.SetStateSuccessful(this, state);
+                        currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                         return TracorValidatorOnTraceResult.Successful;
                     }
                 }

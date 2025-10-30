@@ -1,60 +1,62 @@
-﻿using System.Xml.Xsl;
-
-namespace Brimborium.Tracerit;
+﻿namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Provides extension methods for <see cref="ITracorData"/> to enhance functionality with strongly-typed operations.
 /// </summary>
 public static class ITracorDataExtension {
-    public static bool IsEqualNull(this ITracorData data, string propertyName)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && currentValue is null;
+    public static bool IsEqualNull(this ITracorData tracorData, string propertyName)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp)
+            && TracorDataPropertyTypeValue.Null == tdp.TypeValue);
 
-    public static bool IsEqualString(this ITracorData data, string propertyName, string expected, StringComparison comparisonType = StringComparison.Ordinal)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToStringValue(currentValue, out var value))
-            && (string.Equals(value, expected, comparisonType));
+    public static bool IsEqualString(this ITracorData tracorData, string propertyName, string expected, StringComparison comparisonType = StringComparison.Ordinal)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetStringValue(out var currentValue))
+        && (string.Equals(currentValue, expected, comparisonType));
 
-    public static bool IsEqualInteger(this ITracorData data, string propertyName, long expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToIntegerValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualInteger(this ITracorData tracorData, string propertyName, long expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetIntegerValue(out var currentValue))
+        && (currentValue == expected);
 
-    public static bool IsEqualBoolean(this ITracorData data, string propertyName, bool expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToBooleanValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualBoolean(this ITracorData tracorData, string propertyName, bool expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetBooleanValue(out var currentValue))
+        && (currentValue == expected);
 
-    public static bool IsEqualEnum(this ITracorData data, string propertyName, string expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToEnumValue(currentValue, out var thisTextValue))
-            && string.Equals(thisTextValue, expected, StringComparison.OrdinalIgnoreCase);
+    public static bool IsEqualEnum(this ITracorData tracorData, string propertyName, string expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetEnumValue(out var currentValue))
+        && string.Equals(currentValue, expected, StringComparison.OrdinalIgnoreCase);
 
-    public static bool IsEqualLevelValue(this ITracorData data, string propertyName, LogLevel expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToLogLevelValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualLevelValue(this ITracorData tracorData, string propertyName, LogLevel expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetLevelValue(out var currentValue))
+        && (currentValue == expected);
 
-    public static bool IsEqualDouble(this ITracorData data, string propertyName, double expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToDoubleValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualDouble(this ITracorData tracorData, string propertyName, double expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetDoubleValue(out var currentValue))
+        && (currentValue == expected);
 
-    public static bool IsEqualDateTime(this ITracorData data, string propertyName, DateTime expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToDateTimeValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualDateTime(this ITracorData tracorData, string propertyName, DateTime expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetDateTimeValue(out var currentValue))
+        && (currentValue == expected);
 
-    public static bool IsEqualDateTimeOffset(this ITracorData data, string propertyName, DateTimeOffset expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToDateTimeOffsetValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualDateTimeOffset(this ITracorData tracorData, string propertyName, DateTimeOffset expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetDateTimeOffsetValue(out var currentValue))
+        && (currentValue == expected);
 
-    public static bool IsEqualUuid(this ITracorData data, string propertyName, Guid expected)
-        => data.TryGetPropertyValue(propertyName, out var currentValue)
-            && (TracorDataUtility.TryConvertObjectToUuidValue(currentValue, out var value))
-            && (value == expected);
+    public static bool IsEqualUuid(this ITracorData tracorData, string propertyName, Guid expected)
+        => (tracorData.TryGetDataProperty(propertyName, out var tdp))
+        && (tdp.TryGetUuidValue(out var currentValue))
+        && (currentValue == expected);
 
+    public static bool TryGetPropertyValueNull(this ITracorData tracorData, string propertyName) {
+        return (tracorData.TryGetDataProperty(propertyName, out var tdp)
+            && TracorDataPropertyTypeValue.Null == tdp.TypeValue);
+    }
 
     public static bool TryGetPropertyValueString(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out string value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
@@ -148,6 +150,7 @@ public static class ITracorDataExtension {
     /// <param name="propertyName">The name of the property to retrieve.</param>
     /// <param name="value">When this method returns, contains the strongly-typed property value if found and can be cast to the specified type; otherwise, the default value.</param>
     /// <returns>True if the property was found and can be cast to the specified type; otherwise, false.</returns>
+    [Obsolete]
     public static bool TryGetPropertyValue<T>(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out T value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)) {
             if (propertyValue is T propertyValueTyped) {

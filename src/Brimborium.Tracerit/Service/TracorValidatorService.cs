@@ -54,11 +54,11 @@ public sealed class TracorValidatorService : IDisposable {
         }
     }
 
-    public ITracorValidatorPath AddValidator(IValidatorExpression step, TracorGlobalState? globalState = default) {
+    public ITracorValidatorPath AddValidator(IValidatorExpression step, List<TracorDataProperty>? globalStateValue = default) {
         if (this._TracorValidator.GetExisting(step) is { } result) {
             return result;
         }
-        result = this._TracorValidator.Add(step, globalState);
+        result = this._TracorValidator.Add(step, globalStateValue);
         this._ListValidatorPath = this._ListValidatorPath.Add(result);
         result.AddFinishCallback((validator, state) => {
             //TODO: handle

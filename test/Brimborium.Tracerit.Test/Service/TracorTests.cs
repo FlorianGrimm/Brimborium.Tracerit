@@ -4,9 +4,9 @@ namespace Brimborium.Tracerit.Test.Service;
 /// Unit tests for ITracor implementations including TracorServiceSink and DisabledTracorServiceSink.
 /// </summary>
 public class TracorTests {
-    
+
     [Test]
-    public async Task TracorServiceSink_ShouldAlwaysReturnFalseForEnabled() {
+    public async Task DisabledTracorServiceSink_ShouldAlwaysReturnFalseForEnabled() {
         // Arrange
         var tracor = new DisabledTracorServiceSink();
 
@@ -16,7 +16,7 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TracorServiceSink_ShouldNotDisposeDisposableValues() {
+    public async Task DisabledTracorServiceSink_ShouldNotDisposeDisposableValues() {
         // Arrange
         var tracor = new DisabledTracorServiceSink();
         var disposableValue = new TestDisposable();
@@ -29,10 +29,10 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task TracorServiceSink_ShouldNotThrowForNonDisposableValues() {
+    public async Task DisabledTracorServiceSink_ShouldNotThrowForNonDisposableValues() {
         // Arrange
         var tracor = new DisabledTracorServiceSink();
-        
+
         // Act & Assert - Should not throw
         tracor.TracePublic("test", LogLevel.Information, "test", "test string");
         tracor.TracePublic("test", LogLevel.Information, "test", 42);
@@ -42,47 +42,13 @@ public class TracorTests {
     }
 
     [Test]
-    public async Task DisabledTracorServiceSink_ShouldReturnTrueForGeneralEnabled() {
+    public async Task DisabledTracorServiceSink_ShouldNotConvertValuesToTracorData() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddDisabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
 
-        // Act & Assert
-        await Assert.That(tracor.IsGeneralEnabled()).IsTrue();
-    }
-
-    [Test]
-    public async Task DisabledTracorServiceSink_ShouldProcessTraceData() {
-        // Arrange
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
-        var serviceProvider = serviceCollection.BuildServiceProvider();
-        
-        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
-        var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-
-        // Create a simple validation path
-        var validatorPath = validator.Add(new MatchExpression());
-
-        // Act
-        tracor.TracePublic("test", LogLevel.Information, "test", "test value");
-
-        // Assert - Should not throw and validator should be processing
-        await Assert.That(tracor.IsCurrentlyEnabled()).IsTrue();
-    }
-
-    [Test]
-    public async Task DisabledTracorServiceSink_ShouldConvertValuesToTracorData() {
-        // Arrange
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
-        var serviceProvider = serviceCollection.BuildServiceProvider();
-        
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
         var callee = new TracorIdentifier("Test", "Method");
@@ -91,47 +57,22 @@ public class TracorTests {
         ITracorData? receivedData = null;
 
         // Create a custom validator to capture the trace data
-        var validatorPath = validator.Add(new TestMatchExpression((c, data, ctx) => {
-            tracorDataReceived = true;
-            receivedData = data;
-            return true;
-        }));
+        var validatorPath = validator.Add(
+            new MatchExpression(
+                "Test",
+                Predicate((data, state) => { 
+                    tracorDataReceived = true;
+                    receivedData = data;
+                    return true;
+                })));
 
         // Act
         tracor.TracePublic("test", LogLevel.Information, "test", "test value");
 
         // Assert
-        await Assert.That(tracorDataReceived).IsTrue();
-        await Assert.That(receivedData).IsNotNull();
-        await Assert.That(receivedData!.TryGetPropertyValue("Value", out var value)).IsTrue();
-        await Assert.That(value).IsEqualTo("test value");
-    }
-
-    [Test]
-    public async Task DisabledTracorServiceSink_ShouldHandleITracorDataDirectly() {
-        // Arrange
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
-        var serviceProvider = serviceCollection.BuildServiceProvider();
-        
-        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
-        var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-        var callee = new TracorIdentifier("Test", "Method");
-
-        var originalTracorData = new ValueTracorData<string>("direct trace data");
-        ITracorData? receivedData = null;
-
-        var validatorPath = validator.Add(new TestMatchExpression((c, data, ctx) => {
-            receivedData = data;
-            return true;
-        }));
-
-        // Act
-        tracor.TracePublic("test", LogLevel.Information, "test", originalTracorData);
-
-        // Assert
-        await Assert.That(receivedData).IsEqualTo(originalTracorData);
+        await Assert.That(tracor.IsGeneralEnabled()).IsFalse();
+        await Assert.That(tracorDataReceived).IsFalse();
+        await Assert.That(receivedData).IsNull();
     }
 
     [Test]
@@ -139,20 +80,64 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddDisabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        
+
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var refCountObject = new TestReferenceCountObject();
-        var validatorPath = validator.Add(new MatchExpression());
+        TracorDataRecordPool pool = new(0);
+        using (var refCountObject = pool.Rent()) {
+            var validatorPath = validator.Add(new MatchExpression());
 
-        // Act
-        tracor.TracePublic("test", LogLevel.Information, "test", refCountObject);
+            await Assert.That(((IReferenceCountObject)refCountObject).CanBeReturned()).IsEqualTo(1);
 
-        // Assert
-        await Assert.That(refCountObject.ReferenceCount).IsGreaterThan(0);
+            // Act
+            tracor.TracePublic("test", LogLevel.Information, "test", refCountObject);
+
+            // Assert
+            await Assert.That(((IReferenceCountObject)refCountObject).CanBeReturned()).IsEqualTo(1);
+        }
+    }
+
+    [Test]
+    public async Task EnabledTracorServiceSink_ShouldHandleReferenceCountObjects() {
+        // Arrange
+        var configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>() { { "a", "a" } });
+
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddSingleton<IConfiguration>(configurationBuilder.Build());
+        serviceCollection.AddLogging();
+        serviceCollection.AddEnabledTracor();
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
+        var validator = serviceProvider.GetRequiredService<ITracorValidator>();
+        TracorDataRecordPool pool = new(0);
+        TracorDataRecord tracorDataRecord;
+        using (var data = pool.Rent()) {
+            tracorDataRecord = data;
+            data.ListProperty.Add(new TracorDataProperty("a", "a"));
+            await Assert.That(((IReferenceCountObject)data).CanBeReturned()).IsEqualTo(1);
+            long innerCanBeReturned = 0;
+            var validatorPath = validator.Add(
+                Predicate((data) => {
+                    innerCanBeReturned = ((IReferenceCountObject)data).CanBeReturned();
+                    return true;
+                }).AsMatch()
+                );
+
+            // Act
+            tracor.TracePublic("test", LogLevel.Information, "test", data);
+
+            // Assert
+            await Assert.That(innerCanBeReturned).IsEqualTo(2);
+            await Assert.That(((IReferenceCountObject)data).CanBeReturned()).IsEqualTo(1);
+        }
+        await Assert.That(
+                ((IReferenceCountObject)tracorDataRecord).CanBeReturned()
+            ).IsLessThanOrEqualTo(0);
     }
 
     /// <summary>
@@ -167,46 +152,18 @@ public class TracorTests {
     }
 
     /// <summary>
-    /// Test helper class for testing reference counting behavior.
-    /// </summary>
-    private class TestReferenceCountObject : IReferenceCountObject {
-        public int ReferenceCount { get; private set; }
-
-        public void IncrementReferenceCount() {
-            this.ReferenceCount++;
-        }
-
-        public void DecrementReferenceCount() {
-            this.ReferenceCount--;
-        }
-
-        public bool PrepareRent() {
-            throw new NotImplementedException();
-        }
-
-        public long CanBeReturned() {
-            throw new NotImplementedException();
-        }
-
-        public void Dispose() {
-            throw new NotImplementedException();
-        }
-
-    }
-
-    /// <summary>
     /// Test helper expression that allows custom condition logic for testing.
     /// </summary>
     private class TestMatchExpression : ValidatorExpression {
         private readonly Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> _Condition;
 
-        public TestMatchExpression(Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> condition) 
+        public TestMatchExpression(Func<TracorIdentifier, ITracorData, OnTraceStepCurrentContext, bool> condition)
             : base(null) {
             this._Condition = condition;
         }
 
         public override TracorValidatorOnTraceResult OnTrace(
-            ITracorData tracorData, 
+            ITracorData tracorData,
             OnTraceStepCurrentContext currentContext) {
             var state = currentContext.GetState<TestMatchState>();
             if (state.Result.IsComplete()) {
@@ -214,8 +171,7 @@ public class TracorTests {
             }
 
             if (this._Condition(tracorData.TracorIdentifier, tracorData, currentContext)) {
-                currentContext.SetStateSuccessful(this, state);
-                return TracorValidatorOnTraceResult.Successful;
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
 
             return TracorValidatorOnTraceResult.None;

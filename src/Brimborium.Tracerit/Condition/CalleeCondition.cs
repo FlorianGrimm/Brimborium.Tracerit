@@ -14,7 +14,7 @@ public sealed class CalleeCondition : IExpressionCondition {
     public TracorValidatorOnTraceResult DoesMatch(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
-        //bool resultCallee = this._Expected.Equals(callee);
+        
         bool resultCallee = MatchEqualityComparerTracorIdentifier.Default.Equals(
             tracorData.TracorIdentifier, 
             this._Expected);

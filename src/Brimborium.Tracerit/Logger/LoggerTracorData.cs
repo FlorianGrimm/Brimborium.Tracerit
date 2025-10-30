@@ -19,16 +19,6 @@ public sealed class LoggerTracorData : ReferenceCountObject, ITracorData {
 
     public int Index { get; set; }
 
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
-                return propertyValue;
-            } else {
-                return null;
-            }
-        }
-    }
-
     public List<string> GetListPropertyName() {
         return this._Arguments.Select(i => i.Key).ToList();
     }

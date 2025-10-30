@@ -190,21 +190,22 @@ public class TracorDataPropertyTests {
 
 
     [Test]
-    [Arguments("abc", "2000-01-02T03:04:05.0000000+02:00", 946782245000000000)]
-    [Arguments("", "2000-01-02T03:04:05.0000000+02:00", 946782245000000000)]
+    [Arguments("abc", "2000-01-02T03:04:05.0000000+02:00", 946775045000000000)]
+    [Arguments("", "2000-01-02T03:04:05.0000000+02:00", 946775045000000000)]
     public async Task CreateDateTimeOffsetTest(string argName, string txtArgValue, long ns) {
         DateTimeOffset argValue = DateTimeOffset.ParseExact(txtArgValue, "O", null);
-        DateTimeOffset argValueUtc = new DateTimeOffset(new DateTime(argValue.Ticks), TimeSpan.Zero);
+        DateTimeOffset argValueUtc = new DateTimeOffset(new DateTime(argValue.UtcTicks), TimeSpan.Zero);
 
+        await Assert.That(argValue.UtcTicks).IsEqualTo(argValueUtc.UtcTicks);
         {
             var act = TracorDataProperty.CreateDateTimeOffsetValue(argName, argValue);
             await Assert.That(act.TryGetStringValue(out var txtValue) ? txtValue : "no").IsEqualTo("no");
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(-1);
             await Assert.That(act.TryGetLevelValue(out var lvlValue) ? lvlValue : LogLevel.None).IsEqualTo(LogLevel.None);
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
-
-            await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue1) ? dtoValue1 : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(argValue);
-            await Assert.That(act.TryGetDateTimeOffsetValue(out var dtoValue2) ? dtoValue2 : DateTimeOffset.FromUnixTimeMilliseconds(0)).IsEqualTo(argValueUtc);
+            
+            await Assert.That((act.TryGetDateTimeOffsetValue(out var dtoValue1) ? dtoValue1 : DateTimeOffset.FromUnixTimeMilliseconds(0)).UtcTicks).IsEqualTo(argValue.UtcTicks);
+            await Assert.That((act.TryGetDateTimeOffsetValue(out var dtoValue2) ? dtoValue2 : DateTimeOffset.FromUnixTimeMilliseconds(0)).UtcTicks).IsEqualTo(argValueUtc.UtcTicks);
 
             await Assert.That(act.TryGetBooleanValue(out var boolValue) ? boolValue : default(bool?)).IsNull();
             await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
@@ -231,7 +232,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetDoubleValue(out var floatValue) ? floatValue : -1).IsEqualTo(-1);
         }
         {
-            await Assert.That((result: TracorDataUtility.TryCastObjectToBoolean(textValue, out var boolValue), boolValue: boolValue))
+            await Assert.That((result: TracorDataUtility.TryConvertObjectToBooleanValue(textValue, out var boolValue), boolValue: boolValue))
                 .IsEquivalentTo((result: true, boolValue: argValue));
         }
     }

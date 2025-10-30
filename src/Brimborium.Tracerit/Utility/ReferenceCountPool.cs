@@ -28,6 +28,8 @@ public abstract class ReferenceCountObject
         this._Owner = owner;
     }
 
+    protected long GetReferenceCount() => this._ReferenceCount;
+
     public void IncrementReferenceCount() {
         Interlocked.Increment(ref this._ReferenceCount);
     }
@@ -46,7 +48,7 @@ public abstract class ReferenceCountObject
 
     bool IReferenceCountObject.PrepareRent() {
         if (!this.IsStateReset()) { return false; }
-        if (0 != this._ReferenceCount) { return false; }
+        if (0 < this._ReferenceCount) { return false; }
         this._ReferenceCount = 1;
         return true;
     }
@@ -56,8 +58,8 @@ public abstract class ReferenceCountObject
         var result = this._ReferenceCount;
         return result switch {
             0 => this.IsStateReset() switch {
-                true => this._ReferenceCount,
-                false => long.MinValue
+                true => 0,
+                false => long.MaxValue
             },
             _ => result
         };
@@ -99,26 +101,26 @@ public abstract class ReferenceCountPool<T>
 
     public readonly int Capacity;
     private readonly T?[] _Pool;
-    private long rentIndex;
-    private long returnIndex;
+    private long _RentIndex;
+    private long _ReturnIndex;
 
     public ReferenceCountPool(int capacity = 0) {
         this.Capacity = 0 < capacity ? capacity : DefaultMaxPoolSize;
         this._Pool = new T?[this.Capacity];
     }
 
-    public int Count => (int)(Volatile.Read(ref this.returnIndex) - Volatile.Read(ref this.rentIndex));
+    public int Count => (int)(Volatile.Read(ref this._ReturnIndex) - Volatile.Read(ref this._RentIndex));
 
     public T Rent() {
         while (true) {
-            var rentSnapshot = Volatile.Read(ref this.rentIndex);
-            var returnSnapshot = Volatile.Read(ref this.returnIndex);
+            var rentSnapshot = Volatile.Read(ref this._RentIndex);
+            var returnSnapshot = Volatile.Read(ref this._ReturnIndex);
 
             if (rentSnapshot >= returnSnapshot) {
                 break; // buffer is empty
             }
 
-            if (Interlocked.CompareExchange(ref this.rentIndex, rentSnapshot + 1, rentSnapshot) == rentSnapshot) {
+            if (Interlocked.CompareExchange(ref this._RentIndex, rentSnapshot + 1, rentSnapshot) == rentSnapshot) {
                 {
                     var result = Interlocked.Exchange(ref this._Pool[rentSnapshot % this._Pool.Length], null);
                     if (result is { }) {
@@ -151,18 +153,20 @@ public abstract class ReferenceCountPool<T>
         }
 
         if (0 != valueT.CanBeReturned()) {
+            // 0 < valueT.CanBeReturned() -> buggy?
+            // 0 > valueT.CanBeReturned() -> not ready
             return;
         }
 
         while (true) {
-            var rentSnapshot = Volatile.Read(ref this.rentIndex);
-            var returnSnapshot = Volatile.Read(ref this.returnIndex);
+            var rentSnapshot = Volatile.Read(ref this._RentIndex);
+            var returnSnapshot = Volatile.Read(ref this._ReturnIndex);
 
             if (returnSnapshot - rentSnapshot >= this.Capacity) {
                 return; // buffer is full
             }
 
-            if (Interlocked.CompareExchange(ref this.returnIndex, returnSnapshot + 1, returnSnapshot) == returnSnapshot) {
+            if (Interlocked.CompareExchange(ref this._ReturnIndex, returnSnapshot + 1, returnSnapshot) == returnSnapshot) {
                 this._Pool[returnSnapshot % this._Pool.Length] = valueT;
                 return;
             }

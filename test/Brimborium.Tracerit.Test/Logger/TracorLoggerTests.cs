@@ -32,21 +32,19 @@ public class TracorLoggerTests {
         using (var validateLog = tracorValidator.Add(
             new CalleeCondition(
                 TracorIdentifier.Create("Brimborium_Tracerit_Logger.TracorLoggerTests.456"),
-                Wrap((ITracorData tracorData) =>
-                    tracorData.TryGetPropertyValue<int>("abc", out var abc) && (123 == abc)
-                ).Predicate()
-                ).AsMatch()
+                Predicate((tracorData) => tracorData.IsEqualInteger("abc", 123)))
+            .AsMatch()
             )) {
             logger.LogInformation(new EventId(456), "Test {abc}", 123);
             await Assert.That(validateLog.GetFinished(null)).IsNotNull();
         }
 
         using (var validateLog = tracorValidator.Add(
-                Wrap((ITracorData tracorData) =>
-                    tracorData.TryGetPropertyValue<string>("source", out var source) && ("Brimborium_Tracerit_Logger.TracorLoggerTests" == source)
-                    && tracorData.TryGetPropertyValue<int>("event.id", out var eventId) && (456 == eventId)
-                    && tracorData.TryGetPropertyValue<int>("abc", out var abc) && (123 == abc)
-                ).Predicate().AsMatch()
+                Predicate((ITracorData tracorData) =>
+                    string.Equals(tracorData.TracorIdentifier.Scope, "Brimborium_Tracerit_Logger.TracorLoggerTests.456", StringComparison.Ordinal)
+                    && tracorData.IsEqualInteger(TracorConstants.TracorDataPropertyNameEventId, 456)
+                    && tracorData.IsEqualInteger("abc", 123)
+                ).AsMatch()
             )) {
             logger.LogInformation(new EventId(456), "Test {abc}", 123);
             await Assert.That(validateLog.GetFinished(null)).IsNotNull();
