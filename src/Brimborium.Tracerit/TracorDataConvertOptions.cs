@@ -10,6 +10,11 @@ public sealed class TracorDataConvertOptions {
     public TracorDataConvertOptions() { }
 
     /// <summary>
+    /// Allow dynamic converting using Reflection.
+    /// </summary>
+    public bool AllowReflection { get; set; }
+
+    /// <summary>
     /// Gets a dictionary of data accessor factories indexed by TracorIdentifierType.
     /// </summary>
     public List<KeyValuePair<TracorIdentifierType, ITracorDataAccessorFactory>> TracorDataAccessorByTypePrivate { get; } = new();

@@ -3,6 +3,34 @@
 namespace Brimborium.Tracerit.Utility;
 
 public static partial class TracorDataUtility {
+    private static HashSet<Type>? _BasicTypes;
+    public static bool IsBasicType(Type type) {
+        var basicTypes = _BasicTypes ??= [
+            typeof(bool),
+            typeof(byte),
+            typeof(DateOnly),
+            typeof(DateTime),
+            typeof(DateTimeOffset),
+            typeof(decimal),
+            typeof(double),
+            typeof(float),
+            typeof(Guid),
+            typeof(int),
+            typeof(LogLevel),
+            typeof(long),
+            typeof(sbyte),
+            typeof(short),
+            typeof(string),
+            typeof(TimeSpan),
+            typeof(uint),
+            typeof(ulong),
+            typeof(ushort),
+            ];
+        if (basicTypes.Contains(type)) { return true; }
+        if (type.IsEnum) { return true; }
+        return false;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryCastObjectToStringValue(object? value, out string resultValue) {
         bool success;
@@ -289,6 +317,31 @@ public static partial class TracorDataUtility {
         return matched;
     }
 
+    public static bool TryCastObjectToDurationValue(object? value, out TimeSpan resultValue) {
+        bool success;
+        (success, resultValue) = (value) switch {
+            TimeSpan v => (true, v),
+            string textValue => (
+                TimeSpan.TryParse(
+                    input: textValue,
+                    formatProvider: TracorConstants.TracorCulture,
+                    out var timeSpan)
+                ? (true, timeSpan)
+                : (false, TimeSpan.Zero)),
+            _ => (false, TimeSpan.Zero)
+        };
+        return success;
+    }
+
+    public static bool TryConvertObjectToDurationValue(object? value, out TimeSpan resultValue) {
+        bool success;
+        (success, resultValue) = (value) switch {
+            TimeSpan v => (true, v),
+            _ => (false, TimeSpan.Zero)
+        };
+        return success;
+    }
+
     public static bool TryCastObjectToUuidValue(object? value, out Guid resultValue) {
         bool success;
         (success, resultValue) = (value) switch {
@@ -311,149 +364,6 @@ public static partial class TracorDataUtility {
     }
 
 #if false
-    //
-
-    public static bool TryConvertObjectToIntValue(object? value, out long resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToIntValue(value);
-        return success;
-    }
-
-    public static (bool success, long resultValue) TryConvertToIntValue(object? value)
-        => (value) switch {
-            byte v => (true, (long)v),
-            sbyte v => (true, (long)v),
-            short v => (true, (long)v),
-            ushort v => (true, (long)v),
-            int v => (true, (long)v),
-            uint v => (true, (long)v),
-            long v => (true, v),
-            ulong v => (true, (long)v),
-            _ => (false, 0L)
-        };
-
-    public static bool TryConvertToFloatValue(object? value, out double resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToFloatValue(value);
-        return success;
-    }
-
-    public static (bool success, double resultValue) TryConvertToFloatValue(object? value)
-        => (value) switch {
-            float v => (true, (double)v),
-            double v => (true, (double)v),
-            decimal v => (true, (double)v),
-            _ => (false, 0L)
-        };
-
-    public static bool TryConvertToLevelValue(object? value, out LogLevel resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToLevelValue(value);
-        return success;
-    }
-
-    public static (bool success, LogLevel resultValue) TryConvertToLevelValue(object? value)
-        => (value) switch {
-            0 => (true, LogLevel.Trace),
-            1 => (true, LogLevel.Debug),
-            2 => (true, LogLevel.Information),
-            3 => (true, LogLevel.Warning),
-            4 => (true, LogLevel.Error),
-            5 => (true, LogLevel.Critical),
-
-            LogLevel.Trace => (true, LogLevel.Trace),
-            LogLevel.Debug => (true, LogLevel.Debug),
-            LogLevel.Information => (true, LogLevel.Information),
-            LogLevel.Warning => (true, LogLevel.Warning),
-            LogLevel.Error => (true, LogLevel.Error),
-            LogLevel.Critical => (true, LogLevel.Critical),
-
-            "Trace" => (true, LogLevel.Trace),
-            "Debug" => (true, LogLevel.Debug),
-            "Information" => (true, LogLevel.Information),
-            "Warning" => (true, LogLevel.Warning),
-            "Error" => (true, LogLevel.Error),
-            "Critical" => (true, LogLevel.Critical),
-
-            "trace" => (true, LogLevel.Trace),
-            "debug" => (true, LogLevel.Debug),
-            "information" => (true, LogLevel.Information),
-            "warning" => (true, LogLevel.Warning),
-            "error" => (true, LogLevel.Error),
-            "critical" => (true, LogLevel.Critical),
-
-            _ => (false, LogLevel.None)
-        };
-
-    public static bool TryConvertToBoolValue(object? value, out bool resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToBoolValue(value);
-        return success;
-    }
-
-    public static (bool success, bool resultValue) TryConvertToBoolValue(object? value)
-        => (value) switch {
-            false => (true, false),
-            true => (true, true),
-            _ => (false, false)
-        };
-
-    public static bool TryConvertToDateTimeValue(object? value, out DateTime resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToDateTimeValue(value);
-        return success;
-    }
-
-    public static (bool success, DateTime resultValue) TryConvertToDateTimeValue(object? value)
-        => (value) switch {
-            DateTime v => (true, (DateTime)v),
-            DateOnly v => (true, v.ToDateTime(new TimeOnly())),
-            _ => (false, new DateTime(0))
-        };
-
-    public static bool TryConvertToDateTimeOffsetValue(object? value, out DateTimeOffset resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToDateTimeOffsetValue(value);
-        return success;
-    }
-
-    public static (bool success, DateTimeOffset resultValue) TryConvertToDateTimeOffsetValue(object? value)
-        => (value) switch {
-            DateTimeOffset v => (true, v),
-            _ => (false, new DateTimeOffset(0, TimeSpan.Zero))
-        };
-
-    public static bool TryConvertToEnumValue<T>(object? value, out T resultValue) where T : struct, Enum {
-        if (value is T valueT) {
-            resultValue = valueT;
-            return true;
-        }
-        resultValue = default;
-        return false;
-    }
-    public static bool TryConvertToEnumValue(object? value, out string resultValue) {
-        if (value is { } && value.GetType().IsEnum) {
-            resultValue = value.ToString() ?? string.Empty;
-            return true;
-        }
-        resultValue = string.Empty;
-        return false;
-    }
-
-
-    public static bool TryConvertToUuidValue(object? value, out Guid resultValue) {
-        bool success;
-        (success, resultValue) = TryConvertToUuidValue(value);
-        return success;
-    }
-
-    public static (bool success, Guid resultValue) TryConvertToUuidValue(object? value)
-        => (value) switch {
-            Guid v => (true, v),
-            _ => (false, Guid.Empty)
-        };
-#endif
-
     public static TEnum ConvertLongToEnum<TEnum>(long longValue)
         where TEnum : struct, Enum {
         if (Unsafe.SizeOf<TEnum>() != Unsafe.SizeOf<byte>()) {
@@ -487,7 +397,7 @@ public static partial class TracorDataUtility {
         }
         return Convert.ToInt64(enumValue);
     }
-
+#endif
 
     private readonly static object[] _BoolValueBoxes = [(object)false, (object)true];
 
@@ -559,6 +469,14 @@ public static partial class TracorDataUtility {
             tsOffset);
     }
 
+    public static long TimeSpanToDurationNanoseconds(TimeSpan value) { 
+        return value.Ticks * _NanosecondsPerTicks;
+    }
+
+    public static TimeSpan DurationNanosecondsToTimeSpan(long value) {
+        return TimeSpan.FromTicks(value / _NanosecondsPerTicks);
+    }
+
 #if false
     public static long ToNanoseconds(TimeSpan duration) {
         return duration.Ticks * NanosecondsPerTicks;
@@ -623,11 +541,11 @@ public static partial class TracorDataUtility {
     public static void ConvertObjectToListProperty(
         bool isPublic,
         int levelWatchDog,
-        string key, 
-        object? value, 
-        List<TracorDataProperty> targetListProperty, 
+        string key,
+        object? value,
+        List<TracorDataProperty> targetListProperty,
         ITracorDataConvertService tracorDataConvertService) {
-        if (value is null){ return; }
+        if (value is null) { return; }
         var tracorDataProperty = TracorDataProperty.Create(key, value);
         if (TracorDataPropertyTypeValue.Any != tracorDataProperty.TypeValue) {
             targetListProperty.Add(tracorDataProperty);
@@ -639,8 +557,36 @@ public static partial class TracorDataUtility {
                 value: value,
                 listProperty: targetListProperty);
         }
-
     }
+
+    public static LogLevel ConvertStringToLogLevel(string value) 
+        => (value) switch {
+            "Trace" => LogLevel.Trace,
+            "Debug" => LogLevel.Debug,
+            "Information" => LogLevel.Information,
+            "Warning" => LogLevel.Warning,
+            "Error" => LogLevel.Error,
+            "Critical" => LogLevel.Critical,
+            "trace" => LogLevel.Trace,
+            "debug" => LogLevel.Debug,
+            "information" => LogLevel.Information,
+            "warning" => LogLevel.Warning,
+            "error" => LogLevel.Error,
+            "critical" => LogLevel.Critical,
+            _ => LogLevel.None
+        };
+
+    public static string ConvertLogLevelToString(LogLevel value)
+        => value switch {
+            LogLevel.Trace => "trace",
+            LogLevel.Debug => "debug",
+            LogLevel.Information => "information",
+            LogLevel.Warning => "warning",
+            LogLevel.Error => "error",
+            LogLevel.Critical => "critical",
+            LogLevel.None => "none",
+            _ => string.Empty
+        };
 }
 
 
@@ -685,34 +631,34 @@ public static partial class TracorDataUtility {
 
     public static (TracorDataPropertyTypeValue value, string? name) TracorDataPropertyConvertStringToTypeName(string? name) {
         return name switch {
-            TracorDataProperty.TypeNameNull => (TracorDataPropertyTypeValue.Null, null),
-            TracorDataProperty.TypeNameString => (TracorDataPropertyTypeValue.String, null),
-            TracorDataProperty.TypeNameInteger => (TracorDataPropertyTypeValue.Integer, null),
-            TracorDataProperty.TypeNameLevelValue => (TracorDataPropertyTypeValue.Level, null),
-            TracorDataProperty.TypeNameDateTime => (TracorDataPropertyTypeValue.DateTime, null),
-            TracorDataProperty.TypeNameDateTimeOffset => (TracorDataPropertyTypeValue.DateTimeOffset, null),
-            TracorDataProperty.TypeNameBoolean => (TracorDataPropertyTypeValue.Boolean, null),
-            TracorDataProperty.TypeNameDouble => (TracorDataPropertyTypeValue.Double, null),
-            TracorDataProperty.TypeNameAny => (TracorDataPropertyTypeValue.Any, null),
-            TracorDataProperty.TypeNameEnum => (TracorDataPropertyTypeValue.Enum, null),
-            TracorDataProperty.TypeNameUuid => (TracorDataPropertyTypeValue.Uuid, null),
+            TracorConstants.TypeNameNull => (TracorDataPropertyTypeValue.Null, null),
+            TracorConstants.TypeNameString => (TracorDataPropertyTypeValue.String, null),
+            TracorConstants.TypeNameInteger => (TracorDataPropertyTypeValue.Integer, null),
+            TracorConstants.TypeNameLevelValue => (TracorDataPropertyTypeValue.Level, null),
+            TracorConstants.TypeNameDateTime => (TracorDataPropertyTypeValue.DateTime, null),
+            TracorConstants.TypeNameDateTimeOffset => (TracorDataPropertyTypeValue.DateTimeOffset, null),
+            TracorConstants.TypeNameBoolean => (TracorDataPropertyTypeValue.Boolean, null),
+            TracorConstants.TypeNameDouble => (TracorDataPropertyTypeValue.Double, null),
+            TracorConstants.TypeNameAny => (TracorDataPropertyTypeValue.Any, null),
+            TracorConstants.TypeNameEnum => (TracorDataPropertyTypeValue.Enum, null),
+            TracorConstants.TypeNameUuid => (TracorDataPropertyTypeValue.Uuid, null),
             _ => (TracorDataPropertyTypeValue.Any, name)
         };
     }
     public static string TracorDataPropertyConvertTypeValueToString(TracorDataPropertyTypeValue value, string? name) {
         return value switch {
-            TracorDataPropertyTypeValue.Null => TracorDataProperty.TypeNameNull,
-            TracorDataPropertyTypeValue.String => TracorDataProperty.TypeNameString,
-            TracorDataPropertyTypeValue.Integer => TracorDataProperty.TypeNameInteger,
-            TracorDataPropertyTypeValue.Level => TracorDataProperty.TypeNameLevelValue,
-            TracorDataPropertyTypeValue.DateTime => TracorDataProperty.TypeNameDateTime,
-            TracorDataPropertyTypeValue.DateTimeOffset => TracorDataProperty.TypeNameDateTimeOffset,
-            TracorDataPropertyTypeValue.Boolean => TracorDataProperty.TypeNameBoolean,
-            TracorDataPropertyTypeValue.Double => TracorDataProperty.TypeNameDouble,
-            TracorDataPropertyTypeValue.Any => TracorDataProperty.TypeNameAny,
-            TracorDataPropertyTypeValue.Enum => TracorDataProperty.TypeNameEnum,
-            TracorDataPropertyTypeValue.Uuid => TracorDataProperty.TypeNameUuid,
-            _ => name ?? TracorDataProperty.TypeNameAny
+            TracorDataPropertyTypeValue.Null => TracorConstants.TypeNameNull,
+            TracorDataPropertyTypeValue.String => TracorConstants.TypeNameString,
+            TracorDataPropertyTypeValue.Integer => TracorConstants.TypeNameInteger,
+            TracorDataPropertyTypeValue.Level => TracorConstants.TypeNameLevelValue,
+            TracorDataPropertyTypeValue.DateTime => TracorConstants.TypeNameDateTime,
+            TracorDataPropertyTypeValue.DateTimeOffset => TracorConstants.TypeNameDateTimeOffset,
+            TracorDataPropertyTypeValue.Boolean => TracorConstants.TypeNameBoolean,
+            TracorDataPropertyTypeValue.Double => TracorConstants.TypeNameDouble,
+            TracorDataPropertyTypeValue.Any => TracorConstants.TypeNameAny,
+            TracorDataPropertyTypeValue.Enum => TracorConstants.TypeNameEnum,
+            TracorDataPropertyTypeValue.Uuid => TracorConstants.TypeNameUuid,
+            _ => name ?? TracorConstants.TypeNameAny
         };
     }
 

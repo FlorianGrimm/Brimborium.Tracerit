@@ -21,7 +21,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         if (!reader.Read()) { throw new JsonException("Content expected"); }
 
         // [ "<propertyName>", "null", "<value>"
-        if (TracorDataProperty.TypeNameNull == typeName) {
+        if (TracorConstants.TypeNameNull == typeName) {
             if (reader.TokenType != JsonTokenType.Null) { throw new JsonException(); }
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
@@ -30,7 +30,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "str", "<value>"
-        if (TracorDataProperty.TypeNameString == typeName) {
+        if (TracorConstants.TypeNameString == typeName) {
             if (reader.TokenType != JsonTokenType.String) { throw new JsonException($"String expected, but {reader.TokenType} found."); }
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -40,7 +40,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "int", "<value>"
-        if (TracorDataProperty.TypeNameInteger == typeName) {
+        if (TracorConstants.TypeNameInteger == typeName) {
             if (reader.TokenType != JsonTokenType.Number) { throw new JsonException("Number expected"); }
             var longValue = reader.GetInt64();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -50,7 +50,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "lvl", "<value>"
-        if (TracorDataProperty.TypeNameLevelValue == typeName) {
+        if (TracorConstants.TypeNameLevelValue == typeName) {
             if (reader.TokenType != JsonTokenType.String) { throw new JsonException($"String expected, but {reader.TokenType} found."); }
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -64,7 +64,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "enum", "<value>"
-        if (TracorDataProperty.TypeNameEnum == typeName) {
+        if (TracorConstants.TypeNameEnum == typeName) {
             if (reader.TokenType != JsonTokenType.String) { throw new JsonException($"String expected, but {reader.TokenType} found."); }
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -78,7 +78,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "dt", "<value>"
-        if (TracorDataProperty.TypeNameDateTime == typeName) {
+        if (TracorConstants.TypeNameDateTime == typeName) {
             if (reader.TokenType != JsonTokenType.String) { throw new JsonException($"String expected, but {reader.TokenType} found."); }
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -97,7 +97,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "dt", "<value>"
-        if (TracorDataProperty.TypeNameDateTimeOffset == typeName) {
+        if (TracorConstants.TypeNameDateTimeOffset == typeName) {
             if (reader.TokenType != JsonTokenType.String) { throw new JsonException($"String expected, but {reader.TokenType} found."); }
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -116,7 +116,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "bool", "<value>"
-        if (TracorDataProperty.TypeNameBoolean == typeName) {
+        if (TracorConstants.TypeNameBoolean == typeName) {
             bool boolValue;
             if (reader.TokenType is JsonTokenType.False or JsonTokenType.True) {
                 boolValue = reader.GetBoolean();
@@ -132,7 +132,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "flt", "<value>"
-        if (TracorDataProperty.TypeNameDouble == typeName) {
+        if (TracorConstants.TypeNameDouble == typeName) {
             if (reader.TokenType != JsonTokenType.Number) { throw new JsonException("Number expected"); }
             var floatValue = reader.GetDouble();
             if (!reader.Read()) { throw new JsonException("Content expected"); }
@@ -142,7 +142,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
         }
 
         // [ "<propertyName>", "uuid", "<value>"
-        if (TracorDataProperty.TypeNameUuid == typeName) {
+        if (TracorConstants.TypeNameUuid == typeName) {
             if (reader.TokenType != JsonTokenType.String) { throw new JsonException($"String expected, but {reader.TokenType} found."); }
             var argValue = reader.GetString();
             if (!reader.Read()) { throw new JsonException("Content expected"); }

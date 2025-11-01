@@ -46,4 +46,18 @@ public static class TracorConstants {
 
     private static CultureInfo? _TracorCulture;
     public static CultureInfo TracorCulture => _TracorCulture ??= System.Globalization.CultureInfo.InvariantCulture;
+
+    public const string TypeNameNull = "null";
+    public const string TypeNameString = "str";
+    public const string TypeNameInteger = "int";
+    public const string TypeNameBoolean = "bool";
+    public const string TypeNameEnum = "enum";
+    public const string TypeNameLevelValue = "lvl";
+    public const string TypeNameDouble = "dbl";
+    public const string TypeNameDateTime = "dt";
+    public const string TypeNameDateTimeOffset = "dto";
+    public const string TypeNameDuration = "dur";
+    public const string TypeNameUuid = "uuid";
+    public const string TypeNameAny = "any";
+
 }

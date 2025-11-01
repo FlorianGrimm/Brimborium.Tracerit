@@ -1,8 +1,9 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
-public class TracorDataConvertService : ITracorDataConvertService {
+public sealed class TracorDataConvertService : ITracorDataConvertService {
     private readonly TracorDataRecordPool _TracorDataRecordPool;
     private readonly LoggerTracorDataPool _LoggerTracorDataPool;
+    private bool _AllowReflection;
 
     public static TracorDataConvertService Create(IServiceProvider serviceProvider) {
         var options = serviceProvider.GetRequiredService<IOptions<TracorDataConvertOptions>>();
@@ -60,6 +61,7 @@ public class TracorDataConvertService : ITracorDataConvertService {
     }
 
     internal void AddOptions(TracorDataConvertOptions value) {
+        this._AllowReflection = value.AllowReflection;
         if (0 < value.TracorDataAccessorByTypePrivate.Count) {
             foreach (var (tracorIdentifierType, tracorDataAccessorFactory) in value.TracorDataAccessorByTypePrivate) {
                 this.AddTracorDataAccessorByTypePrivate(tracorIdentifierType, tracorDataAccessorFactory);
@@ -85,13 +87,14 @@ public class TracorDataConvertService : ITracorDataConvertService {
 
         var builder = this.TracorConvertToListPropertyByType.ToBuilder();
         foreach (var tracorConvertToListProperty in listTracorConvertToListProperty) {
-            var valueType = tracorConvertToListProperty
-                .GetType()
-                .GetInterfaces()
-                .FirstOrDefault(typeInterface => typeInterface.IsGenericType
-                        && typeInterface.GetGenericTypeDefinition() == typeof(ITracorConvertValueToListProperty<>))
-                ?.GetGenericArguments()
-                .First();
+            //var valueType = tracorConvertToListProperty
+            //    .GetType()
+            //    .GetInterfaces()
+            //    .FirstOrDefault(typeInterface => typeInterface.IsGenericType
+            //            && typeInterface.GetGenericTypeDefinition() == typeof(ITracorConvertValueToListProperty<>))
+            //    ?.GetGenericArguments()
+            //    .First();
+            var valueType = tracorConvertToListProperty.GetValueType();
             if (valueType is { }) {
                 builder[valueType] = tracorConvertToListProperty;
             }
@@ -118,8 +121,6 @@ public class TracorDataConvertService : ITracorDataConvertService {
         }
         return this;
     }
-
-
 
     public TracorDataConvertService AddTracorDataAccessorByTypePublic<T>(ITracorDataAccessorFactory<T> factory) {
         this.TracorDataAccessorByTypePublic = this.TracorDataAccessorByTypePublic.SetItem(typeof(T), factory);
@@ -213,10 +214,18 @@ public class TracorDataConvertService : ITracorDataConvertService {
 
         {
             var tracorDataProperty = TracorDataProperty.Create("value", value);
-            if (TracorDataPropertyTypeValue.Any == tracorDataProperty.TypeValue) {
+            if (TracorDataPropertyTypeValue.Any != tracorDataProperty.TypeValue) {
                 var tracorData = this._TracorDataRecordPool.Rent();
                 tracorData.ListProperty.Add(tracorDataProperty);
                 TracorDataUtility.SetActivity(tracorData.ListProperty);
+                return tracorData;
+            }
+        }
+        {
+            if (this.GetConverterValueListProperty<T>() is { } converter) {
+                var tracorData = this._TracorDataRecordPool.Rent();
+                TracorDataUtility.SetActivity(tracorData.ListProperty);
+                converter.ConvertValueToListProperty(false, 1, string.Empty, value, tracorData.ListProperty);
                 return tracorData;
             }
         }
@@ -266,7 +275,7 @@ public class TracorDataConvertService : ITracorDataConvertService {
         }
         {
             var tracorDataProperty = TracorDataProperty.Create("value", value);
-            if (TracorDataPropertyTypeValue.Any == tracorDataProperty.TypeValue) {
+            if (TracorDataPropertyTypeValue.Any != tracorDataProperty.TypeValue) {
                 var tracorData = this._TracorDataRecordPool.Rent();
                 tracorData.ListProperty.Add(tracorDataProperty);
                 TracorDataUtility.SetActivity(tracorData.ListProperty);
@@ -274,9 +283,19 @@ public class TracorDataConvertService : ITracorDataConvertService {
             }
         }
         {
+            if (this.GetConverterValueListProperty<T>() is { } converter) {
+                var tracorData = this._TracorDataRecordPool.Rent();
+                TracorDataUtility.SetActivity(tracorData.ListProperty);
+                converter.ConvertValueToListProperty(true, 1, string.Empty, value, tracorData.ListProperty);
+                return tracorData;
+            }
+        }
+        {
             var tracorData = this._TracorDataRecordPool.Rent();
             TracorDataUtility.SetActivity(tracorData.ListProperty);
-            ValueAccessorFactoryUtility.Convert<T>(value!, tracorData.ListProperty);
+            if (this._AllowReflection) {
+                ValueAccessorFactoryUtility.Convert<T>(value!, tracorData.ListProperty);
+            }
             return tracorData;
         }
     }
@@ -365,6 +384,7 @@ public class TracorDataConvertService : ITracorDataConvertService {
         }
     }
 }
+
 internal sealed class TracorConvertSelfToListPropertyAdapter<T>
     : ITracorConvertValueToListProperty<T>
     where T : ITracorConvertSelfToListProperty {

@@ -49,6 +49,9 @@ public class Program {
             // By default, all incoming requests will be authorized according to the default policy.
             options.FallbackPolicy = options.DefaultPolicy;
         });
+        builder.Services.AddSingleton<UIEndpoints>();
+        builder.Services.AddOptions<AppConfig>().BindConfiguration("");
+        builder.Services.AddSingleton<LogFileService>();
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
@@ -64,9 +67,10 @@ public class Program {
         //    app.UseHttpsRedirection();
         //}
 
-        app.UseAuthorization();
-        app.UseAuthentication();
+        //app.UseAuthorization();
+        //app.UseAuthentication();
         app.UseAngularFileService();
+        app.Services.GetRequiredService<UIEndpoints>().MapUiEndpoints(app);
 
         if (startupActions.ConfigureWebApplication is { } configureWebApplication) { configureWebApplication(app); }
 

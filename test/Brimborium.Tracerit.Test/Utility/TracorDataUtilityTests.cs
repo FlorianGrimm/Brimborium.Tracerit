@@ -78,4 +78,10 @@ public class TracorDataUtilityTests {
             await Assert.That(result).IsTrue();
         }
     }
+
+    [Test]
+    public async Task TimeSpanTest() {
+        await Assert.That(TracorDataUtility.TimeSpanToDurationNanoseconds(TimeSpan.FromSeconds(1))).IsEqualTo(1_000_000);
+        await Assert.That(TracorDataUtility.DurationNanosecondsToTimeSpan(1_000_000)).IsEqualTo(TimeSpan.FromSeconds(1));
+    }
 }

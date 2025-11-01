@@ -45,32 +45,48 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
 
     public TracorDataProperty(string name, bool boolValue) {
         Name = name;
-        SetBooleanValue(boolValue);
+        TypeValue = TracorDataPropertyTypeValue.Boolean;
+        LongValue = boolValue ? 1L : 0L;
     }
 
     public TracorDataProperty(string name, LogLevel levelValue) {
         Name = name;
-        SetLevelValue(levelValue);
+        TypeValue = TracorDataPropertyTypeValue.Level;
+        InnerObjectValue = TracorDataUtility.ConvertLogLevelToString(levelValue);
     }
 
     public TracorDataProperty(string name, double doubleValue) {
         Name = name;
-        SetDoubleValue(doubleValue);
+        TypeValue = TracorDataPropertyTypeValue.Double;
+        DoubleValue = doubleValue;
     }
 
     public TracorDataProperty(string name, DateTime dateTimeValue) {
         Name = name;
-        SetDateTimeValue(dateTimeValue);
+        TypeValue = TracorDataPropertyTypeValue.DateTime;
+        LongValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(dateTimeValue);
+        InnerObjectValue = dateTimeValue;
     }
 
     public TracorDataProperty(string name, DateTimeOffset dateTimeOffsetValue) {
         Name = name;
-        SetDateTimeOffsetValue(dateTimeOffsetValue);
+        TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
+        var (ticksValue, _) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(dateTimeOffsetValue);
+        LongValue = ticksValue;
+        InnerObjectValue = dateTimeOffsetValue;
+    }
+
+    public TracorDataProperty(string name, TimeSpan timeSpanValue) {
+        Name = name;
+        TypeValue = TracorDataPropertyTypeValue.Duration;
+        LongValue = TracorDataUtility.TimeSpanToDurationNanoseconds(timeSpanValue);
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(string name, Guid uuidValue) {
         Name = name;
-        SetUuidValue(uuidValue);
+        TypeValue = TracorDataPropertyTypeValue.Uuid;
+        InnerObjectValue = uuidValue;
     }
 
     [JsonPropertyName("name"), JsonInclude]
@@ -106,6 +122,9 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                     case TracorDataPropertyTypeValue.DateTimeOffset:
                         TryGetDateTimeOffsetValue(out var dtoValue);
                         return dtoValue;
+                    case TracorDataPropertyTypeValue.Duration:
+                        TryGetDurationValue(out var durationValue);
+                        return durationValue;
                     case TracorDataPropertyTypeValue.Uuid:
                         TryGetUuidValue(out var uuidValue);
                         return uuidValue;
@@ -118,8 +137,6 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
             return InnerObjectValue;
         }
         set {
-            InnerObjectValue = value;
-
             if (value is not { } argValueNotNull) {
                 SetNullValue();
                 return;
@@ -138,8 +155,20 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                 }
             }
             {
+                if (TracorDataUtility.TryCastObjectToUuidValue(argValueNotNull, out var resultValue)) {
+                    SetUuidValue(resultValue);
+                    return;
+                }
+            }
+            {
+                if (TracorDataUtility.TryCastObjectToEnumValue(argValueNotNull, out var enumValue)) {
+                    SetEnumValue(enumValue);
+                    return;
+                }
+            }
+            {
                 if (TracorDataUtility.TryCastObjectToDoubleValue(argValueNotNull, out var resultValue)) {
-                    SetDoubleValue( resultValue);
+                    SetDoubleValue(resultValue);
                     return;
                 }
             }
@@ -151,25 +180,19 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
             }
             {
                 if (TracorDataUtility.TryCastObjectToDateTimeValue(argValueNotNull, out var resultValue)) {
-                    SetDateTimeValue( resultValue);
+                    SetDateTimeValue(resultValue);
                     return;
                 }
             }
             {
                 if (TracorDataUtility.TryCastObjectToDateTimeOffsetValue(argValueNotNull, out var resultValue)) {
-                    SetDateTimeOffsetValue( resultValue);
+                    SetDateTimeOffsetValue(resultValue);
                     return;
                 }
             }
             {
-                if (TracorDataUtility.TryCastObjectToUuidValue(argValueNotNull, out var resultValue)) {
-                    SetUuidValue(resultValue);
-                    return;
-                }
-            }
-            {
-                if (TracorDataUtility.TryCastObjectToEnumValue(argValueNotNull, out var enumValue)) {
-                    SetEnumValue(enumValue);
+                if (TracorDataUtility.TryCastObjectToDurationValue(argValueNotNull, out var resultValue)) {
+                    SetDurationValue(resultValue);
                     return;
                 }
             }
@@ -285,16 +308,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetLevelValue(LogLevel value) {
         TypeValue = TracorDataPropertyTypeValue.Level;
-        InnerObjectValue = value switch {
-            LogLevel.Trace => "trace",
-            LogLevel.Debug => "debug",
-            LogLevel.Information => "information",
-            LogLevel.Warning => "warning",
-            LogLevel.Error => "error",
-            LogLevel.Critical => "critical",
-            LogLevel.None => "none",
-            _ => string.Empty
-        };
+        InnerObjectValue = TracorDataUtility.ConvertLogLevelToString(value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -362,11 +376,30 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly bool TryGetDurationValue(out TimeSpan value) {
+        if (TracorDataPropertyTypeValue.Duration == _TypeValue) { 
+            value = TracorDataUtility.DurationNanosecondsToTimeSpan(LongValue);
+            return true;
+        }
+        value = TimeSpan.Zero;
+        return false;
+    }
+
+    
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetDateTimeOffsetValue(DateTimeOffset value) {
         TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
         var (ticksValue, _) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
         LongValue = ticksValue;
         InnerObjectValue = value;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetDurationValue(TimeSpan value) {
+        TypeValue = TracorDataPropertyTypeValue.Duration;
+        LongValue = TracorDataUtility.TimeSpanToDurationNanoseconds(value);
+        InnerObjectValue = null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -529,7 +562,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return TracorDataPropertyEqualityComparer.GetHashCodeRef(in this);
     }
 
-    public static bool operator ==(TracorDataProperty a, TracorDataProperty b ) {
+    public static bool operator ==(TracorDataProperty a, TracorDataProperty b) {
         return TracorDataPropertyEqualityComparer.EqualsRef(in a, in b);
     }
 
@@ -537,7 +570,7 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         return !TracorDataPropertyEqualityComparer.EqualsRef(in a, in b);
     }
 
-    internal string GetDebuggerDisplay() {
+    internal readonly string GetDebuggerDisplay() {
         return $"{this.Name} {this.TypeName} {this.LongValue} {this.DoubleValue} {this.InnerObjectValue}";
     }
 }

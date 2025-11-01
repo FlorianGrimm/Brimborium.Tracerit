@@ -10,6 +10,7 @@ public enum TracorDataPropertyTypeValue {
     Double,
     DateTime,
     DateTimeOffset,
+    Duration,
     Uuid,
     Any
 }
