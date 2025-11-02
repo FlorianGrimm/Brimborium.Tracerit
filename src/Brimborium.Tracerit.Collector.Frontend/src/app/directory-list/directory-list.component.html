@@ -1,1 +1,20 @@
-<p>directory-list works!</p>
+    <div tuiAppearance="floating" >
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Creation Time UTC</th>
+                    <th>Length</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for(directoryInfo of directoryList$ | async; track directoryInfo.name){
+                <tr>
+                    <td>{{directoryInfo.name}}</td>
+                    <td>{{directoryInfo.creationTimeUtc}}</td>
+                    <td>{{directoryInfo.length}}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>

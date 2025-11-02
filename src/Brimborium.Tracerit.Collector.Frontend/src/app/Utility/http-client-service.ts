@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { LogFileInformationList, LogFileInformationListSchema } from '../Api';
-import { map } from 'rxjs';
+import { LogFileInformationList, parseDirectoryBrowse, DirectoryBrowseResponse } from '../Api';
+import { map, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -14,17 +14,24 @@ export class HttpClientService {
       "/api/DirectoryList",
       {
         observe: 'response',
-        responseType: 'text'
-      }).pipe(
-        map((response) => {
-          const result =LogFileInformationListSchema.safeParse(response);
-          if (result.success){
-            return result.data;
+        responseType: 'json',
+        cache: 'no-store'
+      }
+    ).pipe(
+      map(
+        (response) => {
+          // const result = ResponseDirectoryBrowseSchema.safeParse(response.body);
+          // return result ;
+          if (200 === response.status) {
+            const result = parseDirectoryBrowse(response.body);
+            return result;
           } else {
-            return [];
+            const result: DirectoryBrowseResponse = ({ mode: "error", error: `${response.status} ${response.statusText}` });
+            return result;
           }
-        })
-      );
+        }
+      )
+    );
   }
 
   public getFile(name: string) {

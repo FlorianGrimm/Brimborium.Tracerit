@@ -1,14 +1,15 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { DataService } from '../Utility/data-service';
 import { HttpClientService } from '../Utility/http-client-service';
-import { LogFileInformationList } from '../Api';
+import { AsyncPipe } from '@angular/common';
+import type { LogFileInformationList, LogFileInformation } from '../Api';
 
 @Component({
   selector: 'app-directory-list',
-  imports: [],
+  imports: [AsyncPipe],
   templateUrl: './directory-list.component.html',
-  styleUrl: './directory-list.component.scss'
+  styleUrl: './directory-list.component.less'
 })
 export class DirectoryListComponent implements OnInit, OnDestroy {
   subscription = new Subscription();
@@ -16,6 +17,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   httpClientSerive = inject(HttpClientService);
 
   directoryList$ = new BehaviorSubject<LogFileInformationList>([]);
+  error$ = new BehaviorSubject<undefined | string>(undefined);
 
   constructor() {
   }
@@ -28,9 +30,20 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  load() {    
+  load() {
     this.httpClientSerive.getDirectoryList().subscribe({
-      next: (value) => this.directoryList$.next(value),
+      next: (value) => {
+
+        console.log("value", value);
+        if ('success' === value.mode) {
+          this.directoryList$.next(value.files);
+          this.error$.next(undefined);
+        } else if ("error" === value.mode) {
+          this.directoryList$.next([]);
+          this.error$.next(value.error);
+        }
+
+      },
       complete: () => console.log('complete'),
       error: (error) => console.error(error)
     });

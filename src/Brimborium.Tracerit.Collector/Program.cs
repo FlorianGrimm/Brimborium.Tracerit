@@ -33,9 +33,7 @@ public class Program {
 
         builder.Services.AddAngularFileService()
             .Configure(options => {
-                options.AngularPathPrefix.Add("home");
-                options.AngularPathPrefix.Add("page1");
-                options.AngularPathPrefix.Add("page2");
+                options.AngularPathPrefix.Add("tracorit");
             });
 
         // Add services to the container.

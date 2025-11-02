@@ -13,7 +13,7 @@ public static class AngularFileServiceExtension {
 
     public static WebApplication UseAngularFileService(this WebApplication app) {
         var angularFileService = app.Services.GetRequiredService<AngularFileService>();
-        angularFileService.Initialze();
+        angularFileService.Initialize();
         ((IEndpointRouteBuilder)app).DataSources.Add(angularFileService);
         app.Use(angularFileService.Execute);
         app.UseStaticFiles();

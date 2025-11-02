@@ -1,3 +1,42 @@
-
-
-<router-outlet />
+<tui-root>
+    <!-- Ignore this part, it is only here to position drawer inside the example block -->
+    <div class="custom-portal">
+        <ng-container #viewContainer />
+    </div>
+    <header tuiNavigationHeader>
+        <span tuiNavigationLogo>
+            <tui-icon icon="@tui.home" />
+            <span tuiFade>Tracorit</span>
+        </span>        
+    </header>
+    <div [style.display]="'flex'">
+        <aside [style.height.rem]="27" [tuiNavigationAside]="expanded()">
+            <header>
+                <button iconStart="@tui.home" tuiAsideItem type="button" routerLink="/tracorit/log">
+                    <span tuiFade>Log</span>
+                </button>
+            </header>
+            <button iconStart="@tui.file-stack" tuiAsideItem type="button"  routerLink="/tracorit/directory-list">
+                Directoryx
+                @if(expanded()){
+                <ng-container>
+                    <tui-badge appearance="accent">12</tui-badge>
+                </ng-container>
+                }
+            </button>
+            <hr />
+            <button iconStart="@tui.plus" tuiAsideItem type="button">
+                Add
+            </button>
+            <footer>
+                <button tuiAsideItem type="button" [iconStart]="expanded() ? '@tui.chevron-left' : '@tui.chevron-right'"
+                    (click)="handleToggle()">
+                    {{ expanded() ? 'Collapse' : 'Expand' }}
+                </button>
+            </footer>
+        </aside>
+        <main tuiNavigationMain>
+            <router-outlet />
+        </main>
+    </div>
+</tui-root>
