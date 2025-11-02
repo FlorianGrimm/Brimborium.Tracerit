@@ -12,7 +12,7 @@ import { Router } from '@angular/router';
   selector: 'app-directory-list',
   imports: [AsyncPipe, FileSizePipe],
   templateUrl: './directory-list.component.html',
-  styleUrl: './directory-list.component.less'
+  styleUrl: './directory-list.component.scss'
 })
 export class DirectoryListComponent implements OnInit, OnDestroy {
   subscription = new Subscription();

@@ -1,4 +1,3 @@
-import { provideEventPlugins } from "@taiga-ui/event-plugins";
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
@@ -9,7 +8,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
         provideZoneChangeDetection({ eventCoalescing: true }), 
         provideRouter(routes),
-        provideHttpClient(withFetch()),
-        provideEventPlugins()
+        provideHttpClient(withFetch())
     ]
 };

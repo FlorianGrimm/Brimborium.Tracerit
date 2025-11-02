@@ -5,13 +5,12 @@ import { HttpClientService } from '../Utility/http-client-service';
 import { LogLine, PropertyHeader } from '../Api';
 import { AsyncPipe } from '@angular/common';
 import { getVisualHeader } from '../Utility/propertyHeaderUtility';
-import { TuiScrollbar } from '@taiga-ui/core';
 
 @Component({
   selector: 'app-log-view',
-  imports: [AsyncPipe, TuiScrollbar],
+  imports: [AsyncPipe],
   templateUrl: './log-view.component.html',
-  styleUrl: './log-view.component.less',
+  styleUrl: './log-view.component.scss',
 })
 export class LogViewComponent {
   subscription = new Subscription();

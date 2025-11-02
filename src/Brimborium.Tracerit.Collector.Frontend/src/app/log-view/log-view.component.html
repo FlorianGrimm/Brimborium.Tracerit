@@ -6,11 +6,10 @@
     } @else {
     @let currentLogLine = currentLogLine$ | async;
     @let listCurrentHeader = listCurrentHeader$ | async;
-    <tui-scrollbar class="box">
-        <table>
+        <table class="table-tracerit">
             <thead>
                 <tr>
-                    <th>Id</th>
+                    <th class="sticky">Id</th>
                     @for(header of listCurrentHeader; track header.id){
                     <td>{{ header.name }}</td>
                     }
@@ -20,7 +19,7 @@
                 @if(listLogLine$ | async; as listLogLine) {
                 @for(logLine of listLogLine; track logLine.id){
                 <tr (click)="setCurrentLogLine(logLine.id)" [class.selected]="currentLogLine === logLine.id">
-                    <td>{{ logLine.id }}</td>
+                    <td class="sticky" >{{ logLine.id }}</td>
                     @for(header of listCurrentHeader; track header.id){
                     <td>{{ header.id }}</td>
                     }
@@ -35,6 +34,5 @@
                 }
             </tbody>
         </table>
-    </tui-scrollbar>
     }
 </div>
