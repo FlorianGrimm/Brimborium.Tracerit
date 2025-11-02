@@ -1,1 +1,40 @@
-<p>log-view works!</p>
+<div>
+    @if (error$|async; as error) {
+    <div>
+        {{error}}
+    </div>
+    } @else {
+    @let currentLogLine = currentLogLine$ | async;
+    @let listCurrentHeader = listCurrentHeader$ | async;
+    <tui-scrollbar class="box">
+        <table>
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    @for(header of listCurrentHeader; track header.id){
+                    <td>{{ header.name }}</td>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if(listLogLine$ | async; as listLogLine) {
+                @for(logLine of listLogLine; track logLine.id){
+                <tr (click)="setCurrentLogLine(logLine.id)" [class.selected]="currentLogLine === logLine.id">
+                    <td>{{ logLine.id }}</td>
+                    @for(header of listCurrentHeader; track header.id){
+                    <td>{{ header.id }}</td>
+                    }
+                </tr>
+                }
+                }@else{
+                <tr>
+                    <td colspan="1">
+                        no files
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </tui-scrollbar>
+    }
+</div>

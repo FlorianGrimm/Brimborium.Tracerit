@@ -1,20 +1,35 @@
-    <div tuiAppearance="floating" >
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Creation Time UTC</th>
-                    <th>Length</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for(directoryInfo of directoryList$ | async; track directoryInfo.name){
-                <tr>
-                    <td>{{directoryInfo.name}}</td>
-                    <td>{{directoryInfo.creationTimeUtc}}</td>
-                    <td>{{directoryInfo.length}}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
+<div tuiAppearance="floating">
+    @if (error$|async; as error) {
+    <div>
+        {{error}}
     </div>
+    } @else {
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Creation Time UTC</th>
+                <th>Length</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(listFile$ | async; as listFile) {
+            @let currentFile=currentFile$ | async;
+            @for(fileInfo of listFile; track fileInfo.name){
+            <tr (click)="setCurrentFils(fileInfo.name)" [class.selected]="currentFile === fileInfo.name">
+                <td>{{ fileInfo.name }}</td>
+                <td>{{ fileInfo.creationTimeUtc }}</td>
+                <td>{{ fileInfo.length|fileSize }}</td>
+            </tr>
+            }
+            }@else{
+            <tr>
+                <td colspan="3">
+                    no files
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>

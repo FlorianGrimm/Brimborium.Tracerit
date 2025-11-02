@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { LogFileInformationList, parseDirectoryBrowse, DirectoryBrowseResponse } from '../Api';
+import { LogFileInformationList, parseDirectoryBrowse, DirectoryBrowseResponse, parseJsonl, GetFileResponse } from '../Api';
 import { map, Observable } from 'rxjs';
 
 @Injectable({
@@ -9,7 +9,7 @@ import { map, Observable } from 'rxjs';
 export class HttpClientService {
   private http = inject(HttpClient);
 
-  public getDirectoryList() {
+  public getDirectoryList(): Observable<DirectoryBrowseResponse> {
     return this.http.get(
       "/api/DirectoryList",
       {
@@ -26,7 +26,10 @@ export class HttpClientService {
             const result = parseDirectoryBrowse(response.body);
             return result;
           } else {
-            const result: DirectoryBrowseResponse = ({ mode: "error", error: `${response.status} ${response.statusText}` });
+            const result: DirectoryBrowseResponse = {
+              mode: "error",
+              error: `${response.status} ${response.statusText}`
+            };
             return result;
           }
         }
@@ -34,8 +37,33 @@ export class HttpClientService {
     );
   }
 
-  public getFile(name: string) {
-    return this.http.get<LogFileInformationList>(
-      `/api/File/${encodeURIComponent(name)}`);
+  public getFile(name: string): Observable<GetFileResponse> {
+    return this.http.get(
+      `/api/File/${encodeURIComponent(name)}`,
+      {
+        observe: 'response',
+        responseType: 'text',
+        cache: 'no-store'
+      }
+    ).pipe(
+      map((response) => {
+        if (200 === response.status) {
+          const body = response.body || "";
+          const data = parseJsonl(body);
+          const result: GetFileResponse = {
+            mode: "success",
+            data: data
+          };
+          return result;
+        }
+        {
+          const result: GetFileResponse = {
+            mode: "error",
+            error: `${response.status} ${response.statusText}`
+          };
+          return result;
+        }
+      })
+    );
   }
 }
