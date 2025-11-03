@@ -199,4 +199,6 @@ export type PropertyHeader = {
     index: number;
     visualIndex: number;
     show:boolean;
+    headerCellStyle?: any;
+    dataCellStyle?: any;
 };

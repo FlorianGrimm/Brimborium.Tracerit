@@ -16,6 +16,7 @@ $aside-content-width-expanded: calc($aside-width-expanded - $aside-width - 4px);
     width: calc(100vw - $scollbar-width);
     min-height: calc(100vh - $scollbar-height);
     aside {
+        z-index: 10;
         display: flex;
         flex-direction: column;
         position: fixed;
@@ -72,6 +73,11 @@ table.table-tracerit {
             font-weight: 600;
             border-bottom: 2px solid #ddd;
         }
+        tr.header-sticky{
+            position: sticky;
+            top: 1px;
+            background-color: white;
+        }
     }
 
     tbody {
@@ -105,10 +111,10 @@ table.table-tracerit {
             }
         }
     }
+
     th.sticky,
     td.sticky {
         position: sticky;
-        left:$aside-width;
-        background-color: tomato !important;
+        left:$aside-width;        
     }
 }

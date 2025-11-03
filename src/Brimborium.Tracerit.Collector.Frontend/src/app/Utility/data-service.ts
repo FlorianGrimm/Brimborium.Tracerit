@@ -12,7 +12,10 @@ export class DataService {
   listAllHeader$ = new BehaviorSubject<PropertyHeader[]>([]);
   listFile$ = new BehaviorSubject<LogFileInformationList>([]);
   currentFile$ = new BehaviorSubject<string | undefined>(undefined);
+  listSelectedFileName$ = new BehaviorSubject<string[]>([]);
+
   listLogLine$ = new BehaviorSubject<LogLine[]>([]);
+  mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
 
   constructor() {
     this.addDefaultMapName();
@@ -26,21 +29,55 @@ export class DataService {
 
   public setCurrentFile(name: (string | undefined)): (string | undefined) {
     this.currentFile$.next(name);
+    if (name === undefined) {
+      this.listSelectedFileName$.next([]);
+    } else {
+      this.listSelectedFileName$.next([name]);
+    }
     return name;
   }
 
+  setListLogLineByName(name: string, data: LogLine[]) {
+    this.extractHeader(data);
+    let contentSubject=this.mapLogLineByName.get(name);
+    if (undefined === contentSubject){
+      contentSubject=new BehaviorSubject<LogLine[]>(data);
+      this.mapLogLineByName.set(name, contentSubject);
+    } else {
+      contentSubject.next(data);
+    }
+  }
+
+  clearMapLogLineByNameOthers(listSelectedName: string[]) {
+    const listToClear:string[]=[];
+    for(let name of this.mapLogLineByName.keys()){
+      if (listSelectedName.includes(name)){
+        // OK
+      } else {
+        // clear
+        listToClear.push(name);
+      }
+    }
+    for(let name of listToClear){
+      this.mapLogLineByName.delete(name);
+    }
+  }
+
+
   setListLogLine(data: LogLine[]) {
-    // console.log("listLogLine$", data);
-    const listNameLength = this.listAllHeader.length
+    this.extractHeader(data);
+    this.listLogLine$.next(data);
+  }
+
+  extractHeader(data: LogLine[]) {
     for (const line of data) {
       for (const prop of line.data.values()) {
         this.addMapName(prop.name, prop.typeValue);
       }
     }
-    if (listNameLength !== this.listAllHeader.length) {
+    if (this.listAllHeader$.getValue().length !== this.listAllHeader.length) {
       this.listAllHeader$.next(this.listAllHeader);
     }
-    this.listLogLine$.next(data);
   }
 
   addDefaultMapName() {

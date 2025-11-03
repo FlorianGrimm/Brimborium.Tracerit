@@ -6,33 +6,41 @@
     } @else {
     @let currentLogLine = currentLogLine$ | async;
     @let listCurrentHeader = listCurrentHeader$ | async;
-        <table class="table-tracerit">
-            <thead>
-                <tr>
-                    <th class="sticky">Id</th>
-                    @for(header of listCurrentHeader; track header.id){
-                    <td>{{ header.name }}</td>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @if(listLogLine$ | async; as listLogLine) {
-                @for(logLine of listLogLine; track logLine.id){
-                <tr (click)="setCurrentLogLine(logLine.id)" [class.selected]="currentLogLine === logLine.id">
-                    <td class="sticky" >{{ logLine.id }}</td>
-                    @for(header of listCurrentHeader; track header.id){
-                    <td>{{ header.id }}</td>
-                    }
-                </tr>
+    <table class="table-tracerit">
+        <thead>
+            <tr class="header-sticky">
+                <th class="sticky">Id</th>
+                @for(header of listCurrentHeader; track header.id){
+                <td [style]="header.dataCellStyle">
+                    {{ header.name }}
+                </td>
                 }
-                }@else{
-                <tr>
-                    <td colspan="1">
-                        no files
-                    </td>
-                </tr>
+            </tr>
+        </thead>
+        <tbody>
+            @let listLogLine = (listLogLine$ | async) ?? [];
+            @for(logLine of listLogLine; track logLine.id){
+            <tr (click)="setCurrentLogLine(logLine.id)" [class.selected]="currentLogLine === logLine.id">
+                <td class="sticky">{{ logLine.id }}</td>
+                @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
+                <td [style]="header.dataCellStyle">
+                    {{ getContent(logLine, header) }}
+                </td>
                 }
-            </tbody>
-        </table>
+            </tr>
+            } @empty {
+            <tr>
+                <td colspan="1">
+                    no data - no file loaded.
+                    Load here
+                    <button type="button" routerLink="/tracorit/directory-list">
+                        <span-lucide [img]="FileStack" class="my-icon"></span-lucide>
+                        <span>Directory</span>
+                    </button>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
     }
 </div>

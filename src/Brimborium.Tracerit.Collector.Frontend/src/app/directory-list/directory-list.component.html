@@ -7,6 +7,7 @@
     <table class="table-tracerit">
         <thead>
             <tr>
+                <th></th>
                 <th>Name</th>
                 <th>Creation Time UTC</th>
                 <th>Length</th>
@@ -15,11 +16,19 @@
         <tbody>
             @if(listFile$ | async; as listFile) {
             @let currentFile=currentFile$ | async;
+            @let selected=(selected$ | async)||[];
             @for(fileInfo of listFile; track fileInfo.name){
-            <tr (click)="setCurrentFils(fileInfo.name)" [class.selected]="currentFile === fileInfo.name">
-                <td>{{ fileInfo.name }}</td>
-                <td>{{ fileInfo.creationTimeUtc }}</td>
-                <td>{{ fileInfo.length|fileSize }}</td>
+            <tr  [class.selected]="currentFile === fileInfo.name">
+                <td><label style="width: 100%; height: 100%;">
+                    <input type="checkbox" 
+                    [checked]="selected.includes(fileInfo.name)" 
+                    (change)="onSelectedChange(fileInfo.name)"
+                    />
+                </label>
+                </td>
+                <td (click)="loadFile(fileInfo.name)">{{ fileInfo.name }}</td>
+                <td (click)="loadFile(fileInfo.name)">{{ fileInfo.creationTimeUtc }}</td>
+                <td (click)="loadFile(fileInfo.name)">{{ fileInfo.length|fileSize }}</td>
             </tr>
             }
             }@else{
