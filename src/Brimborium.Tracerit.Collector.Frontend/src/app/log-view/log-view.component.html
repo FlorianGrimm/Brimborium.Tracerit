@@ -1,20 +1,8 @@
-<div>
-    currentLogLineId:{{currentLogLineId$|async}}
-</div>
-<div>
-    contextLogLineId:{{contextLogLineId$|async}}
-</div>
-
-<hr/>
-
 @if (error$|async; as error) {
 <div>
     {{error}}
 </div>
 } @else {
-<div>
-    <div>Filter</div>
-</div>
 @let currentLogLineId = currentLogLineId$ | async;
 @let contextLogLineId = contextLogLineId$ | async;
 @let listCurrentHeader = listCurrentHeader$ | async;
@@ -32,14 +20,14 @@
                 }
             </th>
             @for(header of listCurrentHeader; track header.id){
-            <td [style]="header.dataCellStyle" title="{{ header.typeValue }}">
+            <th [style]="header.dataCellStyle" title="{{ header.typeValue }}">
                 {{ header.name }}
-            </td>
+            </th>
             }
         </tr>
         <tr class="header-sticky" style="top: 44px">
             <th class="sticky" >
-                <span-lucide [img]="Funnel" class="my-icon"></span-lucide>
+                <span-lucide [img]="Funnel" class="my-icon"></span-lucide>TODO
             </th>
             @for(header of listCurrentHeader; track header.id){
             <td>

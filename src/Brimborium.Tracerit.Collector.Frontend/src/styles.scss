@@ -73,6 +73,9 @@ table.table-tracerit {
             font-weight: 600;
             border-bottom: 2px solid #ddd;
         }
+        td{
+            border-bottom: 2px solid #ddd;
+        }
         tr.header-sticky{
             position: sticky;
             top: 1px;
