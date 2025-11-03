@@ -197,8 +197,82 @@ export type PropertyHeader = {
     name: string;
     typeValue: TypeValue;
     index: number;
+
     visualIndex: number;
-    show:boolean;
+    show: boolean;
+    filter?: LogLineValue;
+
     headerCellStyle?: any;
     dataCellStyle?: any;
 };
+
+export function getLogLinePropertyByName(
+    logLine: LogLine,
+    name: string, typeValue?: TypeValue): (LogLineValue | undefined) {
+    const property = logLine.data.get(name);
+    if ((undefined !== property)
+        && ((undefined === typeValue) || (typeValue === property.typeValue))) {
+        return property;
+    }
+    return undefined;
+}
+
+export function getLogLineTimestampValue(
+    logLine: LogLine | undefined
+): (ZonedDateTime | undefined) {
+    if (undefined === logLine) { return undefined; }
+    const property = logLine.data.get("timestamp");
+    if ((undefined !== property)
+        && (("dt" === property.typeValue) || ("dto" === property.typeValue))) {
+        return property.value;
+    }
+    return undefined;
+}
+
+export function filterListLogLine(
+    listLogLine: LogLine[] | undefined,
+    listHeader: PropertyHeader[]) {
+    const result: LogLine[] = [];
+    if (undefined === listLogLine) { return result; }
+    const listFilteredHeader: PropertyHeader[] = [];
+    for (const header of listHeader) {
+        if (undefined === header.filter) { continue; }
+        listFilteredHeader.push(header);
+    }
+
+    if (0 === listFilteredHeader.length) { return listLogLine; }
+
+    for (const logLine of listLogLine) {
+        let add = true;
+        for (const header of listFilteredHeader) {
+            const dataProperty = logLine.data.get(header.name);
+            if (undefined === dataProperty) { add = false; break; }
+            if (undefined === header.filter) { continue; }
+
+            if (!isPropertyValueEqual(dataProperty, header.filter!)) { add = false; break; }
+        }
+        if (add) { result.push(logLine); }
+    }
+    return result;
+}
+
+export function isPropertyValueEqual(
+    dataProperty: LogLineValue,
+    filter: LogLineValue) {
+
+    if (dataProperty.typeValue !== filter.typeValue) { return false; }
+
+    switch (dataProperty.typeValue) {
+        case "str": return dataProperty.value.startsWith(filter.value as string);
+        case "int": return dataProperty.value == filter.value;
+        case "lvl": return dataProperty.value == filter.value;
+        case "dt": return dataProperty.value == filter.value;
+        case "dto": return dataProperty.value == filter.value;
+        case "dur": return dataProperty.value == filter.value;
+        case "bool": return dataProperty.value == filter.value;
+        case "dbl": return dataProperty.value == filter.value;
+        case "enum": return dataProperty.value == filter.value;
+        case "uuid": return dataProperty.value == filter.value;
+        default: return false;
+    }
+}

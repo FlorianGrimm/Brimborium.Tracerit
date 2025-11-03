@@ -77,6 +77,11 @@ table.table-tracerit {
             position: sticky;
             top: 1px;
             background-color: white;
+            z-index: 2;
+            th,
+            td {
+                background-color: white;
+            }
         }
     }
 
