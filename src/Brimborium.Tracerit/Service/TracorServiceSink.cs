@@ -109,9 +109,8 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
                 if (tracorData is TracorDataRecord tracorDataRecord) { 
                     TracorDataUtility.SetActivityIfNeeded(tracorDataRecord.ListProperty);
                 }
-
             } else {
-                tracorData = this._TracorDataConvertService.ConvertPublic(/*callee,*/ value);
+                tracorData = this._TracorDataConvertService.ConvertPublic(callee, value);
             }
             tracorData.TracorIdentifier = callee;
             tracorData.Timestamp = timestamp;

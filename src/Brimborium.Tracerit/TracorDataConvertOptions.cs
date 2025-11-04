@@ -17,7 +17,7 @@ public sealed class TracorDataConvertOptions {
     /// <summary>
     /// Gets a dictionary of data accessor factories indexed by TracorIdentifierType.
     /// </summary>
-    public List<KeyValuePair<TracorIdentifierType, ITracorDataAccessorFactory>> TracorDataAccessorByTypePrivate { get; } = new();
+    public List<KeyValuePair<Type, ITracorDataAccessorFactory>> TracorDataAccessorByTypePrivate { get; } = new();
 
     /// <summary>
     /// Gets a dictionary of data accessor factories indexed by type.
@@ -29,43 +29,12 @@ public sealed class TracorDataConvertOptions {
     /// </summary>
     public List<ITracorDataAccessorFactory> ListTracorDataAccessor { get; } = new();
 
-    public List<ITracorConvertObjectToListProperty> ListTracorConvertToListProperty { get; } = new();
+    public List<ITracorConvertObjectToListProperty> ListTracorConvertObjectToListProperty { get; } = new();
     
-    /// <summary>
-    /// Adds a strongly-typed data accessor factory for the specified type.
-    /// </summary>
-    /// <typeparam name="T">The type that the data accessor factory can handle.</typeparam>
-    /// <param name="tracorIdentifier">the matching tracorIdentifier</param>
-    /// <param name="tracorDataAccessorFactory">the factory</param>
-    /// <returns>fluent this</returns>
-    public TracorDataConvertOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentifier tracorIdentifier, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
-        TracorIdentifierType tracorIdentifierType = new(tracorIdentifier.Source, tracorIdentifier.Scope, typeof(T));
-        this.TracorDataAccessorByTypePrivate.Add(new (tracorIdentifierType, tracorDataAccessorFactory));
+    public TracorDataConvertOptions AddTracorDataAccessorByTypePrivate<T>(ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
+        this.TracorDataAccessorByTypePrivate.Add(new (typeof(T), tracorDataAccessorFactory));
         return this;
     }
-
-    /// <summary>
-    /// Adds a strongly-typed data accessor factory for the specified type.
-    /// </summary>
-    /// <typeparam name="T">The type that the data accessor factory can handle.</typeparam>
-    /// <param name="tracorIdentifierType"></param>
-    /// <param name="tracorDataAccessorFactory"></param>
-    /// <returns>fluent this</returns>
-    /// <exception cref="ArgumentException">if <typeparamref name="T"/> does not matched <paramref name="tracorDataAccessorFactory"/> TypeParameter.</exception>
-    public TracorDataConvertOptions AddTracorDataAccessorByTypePrivate<T>(TracorIdentifierType tracorIdentifierType, ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
-        if (!typeof(T).Equals(tracorIdentifierType.TypeParameter)) {
-            throw new ArgumentException("Mismatch T and TypeParameter", nameof(tracorIdentifierType));
-        }
-        this.TracorDataAccessorByTypePrivate.Add(new(tracorIdentifierType, tracorDataAccessorFactory));
-        return this;
-    }
-
-    /// <summary>
-    /// Adds a strongly-typed data accessor factory for the specified type.
-    /// </summary>
-    /// <typeparam name="T">The type that the data accessor factory can handle.</typeparam>
-    /// <param name="tracorDataAccessorFactory">The data accessor factory to add.</param>
-    /// <returns>This <see cref="TracorDataConvertOptions"/> instance for method chaining.</returns>
     public TracorDataConvertOptions AddTracorDataAccessorByTypePublic<T>(ITracorDataAccessorFactory<T> tracorDataAccessorFactory) {
         this.TracorDataAccessorByTypePublic[typeof(T)] = tracorDataAccessorFactory;
         return this;

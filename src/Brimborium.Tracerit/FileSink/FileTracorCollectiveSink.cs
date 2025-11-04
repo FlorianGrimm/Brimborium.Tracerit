@@ -203,13 +203,16 @@ public sealed class FileTracorCollectiveSink : ITracorCollectiveSink, IDisposabl
     }
 
     private void Dispose(bool disposing) {
-        using (var optionsMonitorDisposing = this._FileTracorOptionsMonitorDisposing) {
-            using (var onApplicationStoppingDisposing = this._OnApplicationStoppingDisposing) {
-                if (disposing) {
-                    this._FileTracorOptionsMonitorDisposing = null;
-                    this._OnApplicationStoppingDisposing = null;
+        using (var tracorOptionsMonitorDisposing = this._TracorOptionsMonitorDisposing) {
+            using (var optionsMonitorDisposing = this._FileTracorOptionsMonitorDisposing) {
+                using (var onApplicationStoppingDisposing = this._OnApplicationStoppingDisposing) {
+                    if (disposing) {
+                        this._TracorOptionsMonitorDisposing = null;
+                        this._FileTracorOptionsMonitorDisposing = null;
+                        this._OnApplicationStoppingDisposing = null;
+                    }
+                    this.Flush();
                 }
-                this.Flush();
             }
         }
     }

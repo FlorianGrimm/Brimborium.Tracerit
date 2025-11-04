@@ -131,6 +131,15 @@ public interface ITracorDataAccessor<T> {
     void ConvertProperties(T value, List<TracorDataProperty> listProperty);
 }
 
+/// <summary>
+/// Can convert itself for tracor
+/// </summary>
 public interface ITracorDataSelfAccessor {
-    void ConvertProperties(List<TracorDataProperty> listProperty);
+    /// <summary>
+    /// Convert Properties
+    /// </summary>
+    /// <param name="isPublic">true - public; false - private pip</param>
+    /// <param name="tracorDataConvertService">convert service</param>
+    /// <param name="listProperty">target</param>
+    void ConvertProperties(bool isPublic, ITracorDataConvertService tracorDataConvertService, List<TracorDataProperty> listProperty);
 }

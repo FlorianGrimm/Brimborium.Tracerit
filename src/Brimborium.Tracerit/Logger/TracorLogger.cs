@@ -197,12 +197,19 @@ internal sealed class TracorLogger : ILogger {
             foreach (var (key, value) in keyValuePairs) {
                 if (value is null) { continue; }
 
+                /*
                 TracorDataUtility.ConvertObjectToListProperty(
                     isPublic: true,
                     levelWatchDog: 1,
                     key, value,
                     listProperty,
                     this._TracorDataConvertService);
+                */
+                this._TracorDataConvertService.ConvertObjectToListProperty(
+                    isPublic: true,
+                    levelWatchDog: 1,
+                    key, value,
+                    listProperty);
             }
         }
     }

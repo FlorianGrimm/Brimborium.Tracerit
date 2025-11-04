@@ -10,7 +10,7 @@ public class TracorDataConvertServiceTests {
     [Test]
     public async Task ConvertListPropertyForITracorConvertToListProperty() {
         var sut = new TracorDataConvertService(new TracorDataRecordPool(0), new LoggerTracorDataPool(0));
-        sut.AddTracorConvertToListProperty([new SomethingTracorConvertToListProperty()]);
+        sut.AddTracorConvertObjectToListProperty([new SomethingTracorConvertToListProperty()]);
         Something given = new("A", 2);
         TracorDataRecord act = new();
         

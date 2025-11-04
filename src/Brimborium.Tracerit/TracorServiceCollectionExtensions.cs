@@ -64,6 +64,7 @@ public static partial class TracorServiceCollectionExtensions {
         serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
         serviceBuilder.AddSingleton<ITracorServiceSink, DisabledTracorServiceSink>();
         serviceBuilder.AddSingleton<ITracorDataConvertService>(TracorDataConvertService.Create);
+        serviceBuilder.AddSingleton<LateTracorDataConvertService>();
         serviceBuilder.AddSingleton<DisabledTracorValidator>();
         serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<DisabledTracorValidator>());
@@ -102,6 +103,7 @@ public static partial class TracorServiceCollectionExtensions {
         serviceBuilder.AddTransient<ITracorCollectiveSink>(
             static (sp) => sp.GetRequiredService<TracorValidator>());
         serviceBuilder.AddSingleton<ITracorDataConvertService>(TracorDataConvertService.Create);
+        serviceBuilder.AddSingleton<LateTracorDataConvertService>();
         serviceBuilder.AddSingleton<TracorValidator>(TracorValidator.Create);
         serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<TracorValidator>());
