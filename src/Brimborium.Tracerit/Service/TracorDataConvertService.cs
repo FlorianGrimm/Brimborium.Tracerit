@@ -2,7 +2,6 @@
 
 public sealed class TracorDataConvertService : ITracorDataConvertService {
     private readonly TracorDataRecordPool _TracorDataRecordPool;
-    private readonly LoggerTracorDataPool _LoggerTracorDataPool;
     private bool _AllowReflection;
 
     public static TracorDataConvertService Create(IServiceProvider serviceProvider) {
@@ -20,11 +19,9 @@ public sealed class TracorDataConvertService : ITracorDataConvertService {
     private ImmutableDictionary<Type, ITracorConvertObjectToListProperty?> _CacheTracorConvertSelfToListProperty = ImmutableDictionary<Type, ITracorConvertObjectToListProperty?>.Empty;
 
     public TracorDataConvertService(
-        TracorDataRecordPool tracorDataRecordPool,
-        LoggerTracorDataPool loggerTracorDataPool
+        TracorDataRecordPool tracorDataRecordPool
         ) {
         this._TracorDataRecordPool = tracorDataRecordPool;
-        this._LoggerTracorDataPool = loggerTracorDataPool;
 
         this.AddTracorDataAccessorByTypePublic(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor(), tracorDataRecordPool));
         //this.AddTracorDataAccessorByTypePublic(new JsonDocumentTracorDataFactory());
@@ -68,8 +65,7 @@ public sealed class TracorDataConvertService : ITracorDataConvertService {
     public TracorDataConvertService(
         IServiceProvider serviceProvider
         ) : this(
-            tracorDataRecordPool: serviceProvider.GetService<TracorDataRecordPool>() ?? new(0),
-            loggerTracorDataPool: serviceProvider.GetService<LoggerTracorDataPool>() ?? new(0)
+            tracorDataRecordPool: serviceProvider.GetService<TracorDataRecordPool>() ?? new(0)
         ) {
     }
 

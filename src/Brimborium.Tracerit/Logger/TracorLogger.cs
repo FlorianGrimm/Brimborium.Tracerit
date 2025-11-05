@@ -112,16 +112,6 @@ internal sealed class TracorLogger : ILogger {
         return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
     }
 
-    //private readonly static object[] _ObjLogLevel = [
-    //    (object)LogLevel.Trace,
-    //    (object)LogLevel.Debug,
-    //    (object)LogLevel.Information,
-    //    (object)LogLevel.Warning,
-    //    (object)LogLevel.Error,
-    //    (object)LogLevel.Critical,
-    //    (object)LogLevel.None
-    //];
-
     private void ConvertProperties(
         TracorDataRecord loggerTracorData,
         TracorIdentifier tracorIdentifier,
@@ -197,14 +187,6 @@ internal sealed class TracorLogger : ILogger {
             foreach (var (key, value) in keyValuePairs) {
                 if (value is null) { continue; }
 
-                /*
-                TracorDataUtility.ConvertObjectToListProperty(
-                    isPublic: true,
-                    levelWatchDog: 1,
-                    key, value,
-                    listProperty,
-                    this._TracorDataConvertService);
-                */
                 this._TracorDataConvertService.ConvertObjectToListProperty(
                     isPublic: true,
                     levelWatchDog: 1,

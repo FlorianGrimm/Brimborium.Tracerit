@@ -142,26 +142,6 @@ public static class ITracorDataExtension {
         return false;
     }
 
-    /// <summary>
-    /// Attempts to get a strongly-typed property value from the trace data.
-    /// </summary>
-    /// <typeparam name="T">The expected type of the property value.</typeparam>
-    /// <param name="tracorData">The trace data to query.</param>
-    /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <param name="value">When this method returns, contains the strongly-typed property value if found and can be cast to the specified type; otherwise, the default value.</param>
-    /// <returns>True if the property was found and can be cast to the specified type; otherwise, false.</returns>
-    [Obsolete]
-    public static bool TryGetPropertyValue<T>(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out T value) {
-        if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)) {
-            if (propertyValue is T propertyValueTyped) {
-                value = propertyValueTyped;
-                return true;
-            }
-        }
-        value = default;
-        return false;
-    }
-
     public static bool TryGetTracorDataProperty(
         this ITracorData thatTracorData,
         string propertyName,
@@ -222,6 +202,32 @@ public static class ITracorDataExtension {
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameMessage,
                     message));
+        }
+    }
+
+    public static void CopyPropertiesToSinkBase<TTracorData>(
+        ITracorData thatTracorData,
+        TracorPropertySinkTarget target)
+        where TTracorData : ITracorData {
+        { 
+            ref var targetProperty = ref (target.ListHeader.GetNext());
+            targetProperty.Name = TracorConstants.TracorDataPropertyNameTimestamp;
+            targetProperty.SetDateTimeValue(thatTracorData.Timestamp);
+        }
+        if (thatTracorData.TracorIdentifier.Source is { Length: > 0 } source) {
+            ref var targetProperty = ref (target.ListHeader.GetNext());
+            targetProperty.Name = TracorConstants.TracorDataPropertyNameSource;
+            targetProperty.SetStringValue(source);
+        }
+        if (thatTracorData.TracorIdentifier.Scope is { Length: > 0 } scope) {
+            ref var targetProperty = ref (target.ListHeader.GetNext());
+            targetProperty.Name = TracorConstants.TracorDataPropertyNameScope;
+            targetProperty.SetStringValue(scope);
+        }
+        if (thatTracorData.TracorIdentifier.Message is { Length: > 0 } message) {
+            ref var targetProperty = ref (target.ListHeader.GetNext());
+            targetProperty.Name = TracorConstants.TracorDataPropertyNameMessage;
+            targetProperty.SetStringValue(message);
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Brimborium.Tracerit.Test.Service;
 public class TracorDataConvertServiceTests {
     [Test]
     public async Task ConvertListPropertyForITracorConvertToListProperty() {
-        var sut = new TracorDataConvertService(new TracorDataRecordPool(0), new LoggerTracorDataPool(0));
+        var sut = new TracorDataConvertService(new TracorDataRecordPool(0));
         sut.AddTracorConvertObjectToListProperty([new SomethingTracorConvertToListProperty()]);
         Something given = new("A", 2);
         TracorDataRecord act = new();
@@ -34,7 +34,7 @@ public class TracorDataConvertServiceTests {
 
     [Test]
     public async Task ConvertListPropertyForITracorConvertSelfToListProperty() {
-        var sut = new TracorDataConvertService(new TracorDataRecordPool(0), new LoggerTracorDataPool(0));
+        var sut = new TracorDataConvertService(new TracorDataRecordPool(0));
         
         AnotherThing given = new("A", 2);
         TracorDataRecord act = new();

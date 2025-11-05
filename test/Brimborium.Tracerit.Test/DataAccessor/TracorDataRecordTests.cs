@@ -3,13 +3,14 @@ namespace Brimborium.Tracerit.Test.DataAccessor;
 /// <summary>
 /// Unit tests for ITracorData implementations and related data accessor functionality.
 /// </summary>
-public class ValueTracorDataTests {
+public class TracorDataRecordTests {
 
     [Test]
-    public async Task ValueTracorData_ShouldProvideValueProperty() {
+    public async Task TracorDataRecord_ShouldProvideValueProperty() {
         // Arrange
         var testValue = "test string";
-        var tracorData = new ValueTracorData<string>(testValue);
+        var tracorData = new TracorDataRecord().Add(new("value", testValue));
+
 
         // Act & Assert
         await Assert.That(tracorData.GetListPropertyName()).Contains(
@@ -22,20 +23,20 @@ public class ValueTracorDataTests {
     }
 
     [Test]
-    public async Task ValueTracorData_ShouldReturnOriginalValue() {
+    public async Task TracorDataRecord_ShouldReturnOriginalValue() {
         // Arrange
         var testValue = 42;
-        var tracorData = new ValueTracorData<int>(testValue);
+        var tracorData = new TracorDataRecord().Add(new("value", testValue));
 
         // Act & Assert
-        await Assert.That(tracorData.TryGetOriginalValue(out var originalValue)).IsTrue();
-        await Assert.That(originalValue).IsEqualTo(testValue);
+        await Assert.That(tracorData.TryGetPropertyValueInteger("value", out var act)).IsTrue();
+        await Assert.That(act).IsEqualTo(testValue);
     }
 
     [Test]
-    public async Task ValueTracorData_ShouldReturnNullForUnknownProperty() {
+    public async Task TracorDataRecord_ShouldReturnNullForUnknownProperty() {
         // Arrange
-        var tracorData = new ValueTracorData<string>("test");
+        var tracorData = new TracorDataRecord().Add(new("value", "test"));
 
         // Act & Assert
         await Assert.That(tracorData.TryGetPropertyValue("UnknownProperty", out var propertyValue)).IsFalse();
@@ -116,7 +117,7 @@ public class ValueTracorDataTests {
     }
 
     [Test]
-    public async Task ValueAccessorFactory_ShouldCreateValueTracorData() {
+    public async Task ValueAccessorFactory_ShouldCreateTracorDataRecord() {
         // Arrange
         var factory = new ValueAccessorFactory<string>(new(0));
         var testValue = "test string";
@@ -143,7 +144,7 @@ public class ValueTracorDataTests {
     [Test]
     public async Task ITracorDataExtension_TryGetPropertyValue_ShouldCastCorrectly() {
         // Arrange
-        var tracorData = new ValueTracorData<int>(42);
+        var tracorData = new TracorDataRecord().Add(new("value", 42));
 
         // Act & Assert
         await Assert.That(tracorData.IsEqualInteger(

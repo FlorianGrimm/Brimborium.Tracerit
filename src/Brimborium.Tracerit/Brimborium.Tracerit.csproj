@@ -33,6 +33,7 @@
     <PackageReference Include="Microsoft.Extensions.ObjectPool" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" />
     <PackageReference Include="System.Text.Json" />
     <!--
         <PackageReference Include="System.Diagnostics.DiagnosticSource" />

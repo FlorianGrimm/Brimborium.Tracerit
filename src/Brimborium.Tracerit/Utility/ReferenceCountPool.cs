@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit.Utility;
+﻿#pragma warning disable IDE0041 // Use 'is null' check
+
+namespace Brimborium.Tracerit.Utility;
 
 public interface IReferenceCountObject : IDisposable {
     void IncrementReferenceCount();
@@ -78,9 +80,7 @@ public abstract class ReferenceCountObject<T>
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public void SetValue(T value) {
-        if (!ReferenceEquals(this._Value, null)) {
-            throw new ObjectDisposedException(this.GetType().Name);
-        }
+        ObjectDisposedException.ThrowIf(!ReferenceEquals(this._Value, null), this);
 
         this._Value = value;
     }
@@ -103,6 +103,7 @@ public abstract class ReferenceCountPool<T>
     private readonly T?[] _Pool;
     private long _RentIndex;
     private long _ReturnIndex;
+    private T? _Quick;
 
     public ReferenceCountPool(int capacity = 0) {
         this.Capacity = 0 < capacity ? capacity : DefaultMaxPoolSize;
@@ -112,6 +113,8 @@ public abstract class ReferenceCountPool<T>
     public int Count => (int)(Volatile.Read(ref this._ReturnIndex) - Volatile.Read(ref this._RentIndex));
 
     public T Rent() {
+        var quick = System.Threading.Interlocked.Exchange(ref this._Quick, null);
+        if (quick is not null) { return quick; }
         while (true) {
             var rentSnapshot = Volatile.Read(ref this._RentIndex);
             var returnSnapshot = Volatile.Read(ref this._ReturnIndex);
@@ -155,6 +158,12 @@ public abstract class ReferenceCountPool<T>
         if (0 != valueT.CanBeReturned()) {
             // 0 < valueT.CanBeReturned() -> buggy?
             // 0 > valueT.CanBeReturned() -> not ready
+            return;
+        }
+
+        if (ReferenceEquals(
+            System.Threading.Interlocked.CompareExchange(ref this._Quick, valueT, null),
+            null)) {
             return;
         }
 

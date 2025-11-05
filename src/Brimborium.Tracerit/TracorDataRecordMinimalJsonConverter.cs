@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿using System.Runtime.InteropServices;
+
+namespace Brimborium.Tracerit;
 
 public sealed class TracorDataRecordMinimalJsonConverter
     : System.Text.Json.Serialization.JsonConverter<TracorDataRecord> {
@@ -25,11 +27,49 @@ public sealed class TracorDataRecordMinimalJsonConverter
     }
 }
 
+public sealed class TracorPropertySinkTargetMinimalJsonConverter
+    : System.Text.Json.Serialization.JsonConverter<TracorPropertySinkTarget> {
+    public override TracorPropertySinkTarget? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+        throw new JsonException();
+    }
+    public override void Write(
+        Utf8JsonWriter writer,
+        TracorPropertySinkTarget value,
+        JsonSerializerOptions options) {
+        writer.WriteStartArray();
+        if (value.ListHeader is { Count:>0 } listHeader) {
+            var listTracorDataProperty = listHeader.ListTracorDataProperty;
+            for (int index = 0; index < listHeader.Count; index++) {
+                ref readonly var item = ref listTracorDataProperty[index];
+                TracorDataPropertyMinimalJsonConverter.WriteRef(writer, in item, options);
+            }
+        }
+
+        if (value.ListProperty is { Count: > 0 } listProperty) {
+            var spanProperty = CollectionsMarshal.AsSpan(listProperty);
+            for (int index = 0, cnt = spanProperty.Length; index < cnt; index++) { 
+                ref readonly var item = ref spanProperty[index];
+                TracorDataPropertyMinimalJsonConverter.WriteRef(writer, in item, options);
+            }
+        }
+
+        if (value.ListPropertyFromTracorData is { Count: > 0 } listPropertyFromTracorData) {
+            var spanProperty = CollectionsMarshal.AsSpan(listPropertyFromTracorData);
+            for (int index = 0, cnt = spanProperty.Length; index < cnt; index++) {
+                ref readonly var item = ref spanProperty[index];
+                TracorDataPropertyMinimalJsonConverter.WriteRef(writer, in item, options);
+            }
+        }
+
+        writer.WriteEndArray();
+    }
+}
+    
+
 public sealed class ITracorDataMinimalJsonConverter
     : System.Text.Json.Serialization.JsonConverter<ITracorData> {
     public override ITracorData? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-        var converterTracorDataProperty = options.GetConverter(typeof(TracorDataProperty));
-
+        //var converterTracorDataProperty = options.GetConverter(typeof(TracorDataProperty));
         return ITracorDataJsonMinimalConverterUtility.Read(ref reader, typeToConvert, options);
     }
 
@@ -39,16 +79,18 @@ public sealed class ITracorDataMinimalJsonConverter
 }
 
 public static class ITracorDataJsonMinimalConverterUtility {
+#pragma warning disable IDE0060 // Remove unused parameter
     public static TracorDataRecord? Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
         JsonSerializerOptions options,
         TracorDataRecordPool? tracorDataRecordPool = default) {
+#pragma warning restore IDE0060 // Remove unused parameter
         if (reader.TokenType != JsonTokenType.StartArray) {
             throw new JsonException($"StartArray expected, but {reader.TokenType} found.");
         }
 
-        var depth = reader.CurrentDepth;
+        //var depth = reader.CurrentDepth;
         var typeTracorDataProperty = typeof(TracorDataProperty);
         var converterTracorDataProperty = (System.Text.Json.Serialization.JsonConverter<TracorDataProperty>)options.GetConverter(typeTracorDataProperty);
 
@@ -166,6 +208,7 @@ public sealed class TracorDataJsonMinimalConverterFactory : JsonConverterFactory
 
     private TracorDataRecordMinimalJsonConverter? _TracorDataRecordJsonConverter;
     private ITracorDataMinimalJsonConverter? _ITracorDataJsonConverter;
+    private TracorPropertySinkTargetMinimalJsonConverter? _TracorPropertySinkTargetMinimalJsonConverter;
 
     public TracorDataJsonMinimalConverterFactory(
         TracorDataRecordPool? tracorDataRecordPool
@@ -174,19 +217,24 @@ public sealed class TracorDataJsonMinimalConverterFactory : JsonConverterFactory
     }
 
     public override bool CanConvert(Type typeToConvert) {
-        if (typeof(ITracorData) == typeToConvert) { return true; }
+        if (typeof(TracorPropertySinkTarget) == typeToConvert) { return true; }
         if (typeof(TracorDataRecord) == typeToConvert) { return true; }
+        if (typeof(ITracorData) == typeToConvert) { return true; }
         if (typeof(ITracorData).IsAssignableFrom(typeToConvert)) { return true; }
         return false;
     }
 
     public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) {
-        if (typeof(ITracorData) == typeToConvert) {
-            var result = (this._ITracorDataJsonConverter ??= new ITracorDataMinimalJsonConverter());
-            return result;
-        }
         if (typeof(TracorDataRecord) == typeToConvert) {
             var result = (this._TracorDataRecordJsonConverter ??= new TracorDataRecordMinimalJsonConverter(this._TracorDataRecordPool));
+            return result;
+        }
+        if (typeof(TracorPropertySinkTarget) == typeToConvert) {
+            var result = (this._TracorPropertySinkTargetMinimalJsonConverter ??= new TracorPropertySinkTargetMinimalJsonConverter());
+            return result;
+        }
+        if (typeof(ITracorData) == typeToConvert) {
+            var result = (this._ITracorDataJsonConverter ??= new ITracorDataMinimalJsonConverter());
             return result;
         }
         if (typeof(ITracorData).IsAssignableFrom(typeToConvert)) {

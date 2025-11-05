@@ -1,6 +1,5 @@
 ﻿#pragma warning disable IDE0017
 
-
 namespace Brimborium.Tracerit;
 
 /// <summary>
@@ -10,7 +9,7 @@ namespace Brimborium.Tracerit;
 public sealed class TracorDataRecord
     : ReferenceCountObject
     , ITracorData {
-    private readonly List<TracorDataProperty> _ListProperty = new(64);
+    private readonly List<TracorDataProperty> _ListProperty = new(8);
 
     public TracorDataRecord() : base(null) { }
     /// <summary>
@@ -74,6 +73,11 @@ public sealed class TracorDataRecord
         listProperty.AddRange(this.ListProperty);
     }
 
+    public void CopyPropertiesToSink(TracorPropertySinkTarget target) {
+        ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(this, target);
+        target.ListPropertyFromTracorData = this.ListProperty;
+    }
+
     /// <summary>
     /// Determines whether the current trace data partially equals the expected data.
     /// </summary>
@@ -134,6 +138,11 @@ public sealed class TracorDataRecord
 
     internal string GetDebuggerDisplay() {
         return $"{this.TracorIdentifier} {this.ListProperty.FirstOrDefault().GetDebuggerDisplay()} {this.Timestamp:o}";
+    }
+
+    public TracorDataRecord Add(TracorDataProperty value) {
+        this.ListProperty.Add(value);
+        return this;
     }
 }
 

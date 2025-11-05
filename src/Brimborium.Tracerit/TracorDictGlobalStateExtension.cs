@@ -45,7 +45,7 @@ public static class TracorDictGlobalStateExtension {
         ITracorData tracorData,
         string targetPropertyName
         ) {
-        if (tracorData.TryGetPropertyValueString(sourcePropertyName, out string stringValue)) {
+        if (tracorData.TryGetPropertyValueString(sourcePropertyName, out var stringValue)) {
             globalState.SetValue(new(targetPropertyName, stringValue));
             return true;
         } else {
@@ -208,7 +208,7 @@ public static class TracorDictGlobalStateExtension {
         ITracorData tracorData,
         string targetPropertyName
         ) {
-        if (tracorData.TryGetPropertyValueEnum(sourcePropertyName, out string enumValue)) {
+        if (tracorData.TryGetPropertyValueEnum(sourcePropertyName, out var enumValue)) {
             globalState.SetValue(new(targetPropertyName, enumValue));
             return true;
         } else {

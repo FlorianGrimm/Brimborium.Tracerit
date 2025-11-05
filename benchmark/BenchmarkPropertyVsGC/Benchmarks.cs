@@ -22,7 +22,7 @@ namespace BenchmarkPropertyVsGC;
 #if false
 [CPUUsageDiagnoser]
 #endif
-#if false
+#if true
 [Config(typeof(Config))]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [MemoryDiagnoser]
@@ -34,13 +34,20 @@ public class Benchmarks {
 
     private class Config : ManualConfig {
         public Config() {
+#if false
             this.AddJob(Job.MediumRun.WithGcServer(true).WithGcForce(true).WithId("ServerForce"));
             this.AddJob(Job.MediumRun.WithGcServer(true).WithGcForce(false).WithId("Server"));
             this.AddJob(Job.MediumRun.WithGcServer(false).WithGcForce(true).WithId("Workstation"));
             this.AddJob(Job.MediumRun.WithGcServer(false).WithGcForce(false).WithId("WorkstationForce"));
+#else
+            this.AddJob(Job.ShortRun.WithGcServer(true).WithGcForce(true).WithId("ServerForce"));
+            this.AddJob(Job.ShortRun.WithGcServer(true).WithGcForce(false).WithId("Server"));
+            this.AddJob(Job.ShortRun.WithGcServer(false).WithGcForce(true).WithId("Workstation"));
+            this.AddJob(Job.ShortRun.WithGcServer(false).WithGcForce(false).WithId("WorkstationForce"));
+#endif
         }
     }
-#if true
+#if false
 
     [Benchmark]
     public void UsingGC() {
@@ -129,9 +136,7 @@ public class Benchmarks {
         for (long idxRepeat = 0; idxRepeat < 1000; idxRepeat++) {
             using (var activity = benchmarkInstrumentation.StartRoot()) {
                 for (long idxCalls = 0; idxCalls < 1000; idxCalls++) {
-                    if (tracor.GetPublicTracor(LogLevel.Information, "gna") is { Enabled: true } tracorGna) {
-                        tracorGna.TracePublic(idxCalls);
-                    }
+                    tracor.GetPublicTracor(LogLevel.Information, "gna").TracePublic(idxCalls);
                 }
             }
         }

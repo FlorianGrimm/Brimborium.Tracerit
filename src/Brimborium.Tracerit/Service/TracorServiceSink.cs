@@ -71,26 +71,20 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
             var timestamp = DateTime.UtcNow;
             TracorIdentifier callee = new(TracorConstants.SourceTracorPrivate, scope, message);
             ITracorData tracorData;
+            bool disposeTracorData;
+
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
-                tracorData.TracorIdentifier = callee;
+                disposeTracorData = false;
             } else {
                 tracorData = this._TracorDataConvertService.ConvertPrivate(callee, value);
-                if (tracorData.TracorIdentifier.IsEmpty()) {
-                    tracorData.TracorIdentifier = callee;
-                }
+                disposeTracorData = true;
             }
+            tracorData.TracorIdentifier = callee;
             tracorData.Timestamp = timestamp;
 
-            if (value is IReferenceCountObject referenceCountObject) {
-                referenceCountObject.IncrementReferenceCount();
-                this._Publisher.OnTrace(false, tracorData);
+            if (disposeTracorData && tracorData is IReferenceCountObject referenceCountObject) {
                 referenceCountObject.Dispose();
-            } else {
-                this._Publisher.OnTrace(false, tracorData);
-                if (tracorData is IDisposable disposable) {
-                    disposable.Dispose();
-                }
             }
         } catch (Exception error) {
             this._Logger.LogError(exception: error, message: "Trace Failed");
@@ -100,30 +94,27 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     public void TracePublic<T>(string scope, LogLevel level, string message, T value) {
         try {
             ITracorData tracorData;
+            bool disposeTracorData;
 
             DateTime timestamp = DateTime.UtcNow;
             TracorIdentifier callee = new(TracorConstants.SourceTracorPublic, scope, message);
-
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
-                if (tracorData is TracorDataRecord tracorDataRecord) { 
+                disposeTracorData = false;
+                if (tracorData is TracorDataRecord tracorDataRecord) {
                     TracorDataUtility.SetActivityIfNeeded(tracorDataRecord.ListProperty);
                 }
             } else {
                 tracorData = this._TracorDataConvertService.ConvertPublic(callee, value);
+                disposeTracorData = true;
             }
             tracorData.TracorIdentifier = callee;
             tracorData.Timestamp = timestamp;
 
-            if (value is IReferenceCountObject referenceCountObject) {
-                referenceCountObject.IncrementReferenceCount();
-                this._Publisher.OnTrace(true, tracorData);
+            this._Publisher.OnTrace(true, tracorData);
+
+            if (disposeTracorData && tracorData is IReferenceCountObject referenceCountObject) {
                 referenceCountObject.Dispose();
-            } else {
-                this._Publisher.OnTrace(true, tracorData);
-                if (tracorData is IDisposable disposable) {
-                    disposable.Dispose();
-                }
             }
         } catch (Exception error) {
             this._Logger.LogError(exception: error, message: "Trace Failed");

@@ -88,4 +88,9 @@ public sealed class JsonDocumentTracorData
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         // TODO: if needed
     }
+
+    public void CopyPropertiesToSink(TracorPropertySinkTarget target) {
+        ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(this, target);
+        this.ConvertProperties(target.ListProperty);
+    }
 }

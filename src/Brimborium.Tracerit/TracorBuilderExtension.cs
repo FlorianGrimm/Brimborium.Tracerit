@@ -21,7 +21,6 @@ public static class TracorBuilderExtension {
     public static ITracorBuilder AddTracorLogger(
         this ITracorBuilder tracorBuilder,
         Action<TracorLoggerOptions>? configure = default) {
-        tracorBuilder.Services.AddSingleton<LoggerTracorDataPool>(LoggerTracorDataPool.Create);
         tracorBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, TracorLoggerProvider>());
 
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorLoggerOptions>();
@@ -135,12 +134,12 @@ public static class TracorBuilderExtension {
     internal static ITracorBuilder AddFileTracorCollectiveSinkServices(
         this ITracorBuilder tracorBuilder) {
         foreach (var serviceDescriptor in tracorBuilder.Services) {
-            if (typeof(FileTracorCollectiveSink).Equals(serviceDescriptor.ServiceType)) {
+            if (typeof(TracorCollectiveFileSink).Equals(serviceDescriptor.ServiceType)) {
                 return tracorBuilder;
             }
         } 
-        tracorBuilder.Services.Add(ServiceDescriptor.Singleton<ITracorCollectiveSink, FileTracorCollectiveSink>());
-        tracorBuilder.Services.AddSingleton<FileTracorCollectiveSink>();
+        tracorBuilder.Services.Add(ServiceDescriptor.Singleton<ITracorCollectiveSink, TracorCollectiveFileSink>());
+        tracorBuilder.Services.AddSingleton<TracorCollectiveFileSink>();
         return tracorBuilder;
     }
 
@@ -161,8 +160,8 @@ public static class TracorBuilderExtension {
     public static ITracorBuilder AddFileTracorCollectiveSinkDefault(
         this ITracorBuilder tracorBuilder,
         IConfigurationRoot? configuration = default,
-        Action<FileTracorOptions>? configure = default) {
-        var optionsBuilder = tracorBuilder.Services.AddOptions<FileTracorOptions>();
+        Action<TracorFileSinkOptions>? configure = default) {
+        var optionsBuilder = tracorBuilder.Services.AddOptions<TracorFileSinkOptions>();
         if (configuration is { }) {
             optionsBuilder.Bind(GetConfigurationTracorSinkFileSection(configuration));
         }
@@ -176,8 +175,8 @@ public static class TracorBuilderExtension {
     public static ITracorBuilder AddFileTracorCollectiveSinkCustom(
         this ITracorBuilder tracorBuilder,
         IConfiguration? configuration = default,
-        Action<FileTracorOptions>? configure = default) {
-        var optionsBuilder = tracorBuilder.Services.AddOptions<FileTracorOptions>();
+        Action<TracorFileSinkOptions>? configure = default) {
+        var optionsBuilder = tracorBuilder.Services.AddOptions<TracorFileSinkOptions>();
         if (configuration is { }) {
             optionsBuilder.Bind(configuration);
         }

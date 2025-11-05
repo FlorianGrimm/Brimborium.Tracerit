@@ -61,13 +61,13 @@ public static class TracorDataSerialization {
 
     public static Stream? GetReadStream(
         string logfile) {
-        var compression = FileTracorCollectiveSink.GetCompressionFromFileName(logfile);
+        var compression = TracorCollectiveFileSink.GetCompressionFromFileName(logfile);
         if (compression is { } compressionValue) {
             var fileStream = System.IO.File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (FileTracorCollectiveCompression.Gzip == compressionValue) {
+            if (TracorCompression.Gzip == compressionValue) {
                 return new GZipStream(fileStream, new ZLibCompressionOptions() { }, leaveOpen: false);
             }
-            if (FileTracorCollectiveCompression.Brotli == compressionValue) {
+            if (TracorCompression.Brotli == compressionValue) {
                 return new BrotliStream(fileStream, new BrotliCompressionOptions() { }, leaveOpen: false);
             }
             return fileStream;

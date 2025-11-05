@@ -6,7 +6,7 @@ public class FileTracorCollectiveSinkTests {
     [Test]
     public async Task GetDirectory_baseDirectory_Test() {
         var root = GetLogRootDirectory();
-        var act = FileTracorCollectiveSink.GetDirectory(
+        var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: root,
             getBaseDirectory: null,
             directory: null);
@@ -16,7 +16,7 @@ public class FileTracorCollectiveSinkTests {
     [Test]
     public async Task GetDirectory_getBaseDirectory_Test() {
         var root = GetLogRootDirectory();
-        var act = FileTracorCollectiveSink.GetDirectory(
+        var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: null,
             getBaseDirectory: () => root,
             directory: null);
@@ -28,7 +28,7 @@ public class FileTracorCollectiveSinkTests {
         var root = GetLogRootDirectory();
         var rootLog2 = System.IO.Path.Combine(root, "Log2");
         System.IO.Directory.CreateDirectory(rootLog2);
-        var act = FileTracorCollectiveSink.GetDirectory(
+        var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: root,
             getBaseDirectory: null,
             directory: "Log2");
@@ -40,7 +40,7 @@ public class FileTracorCollectiveSinkTests {
         var root = GetLogRootDirectory();
         var rootLog2 = System.IO.Path.Combine(root, "Log2");
         System.IO.Directory.CreateDirectory(rootLog2);
-        var act = FileTracorCollectiveSink.GetDirectory(
+        var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: null,
             getBaseDirectory: () => root,
             directory: "Log2");
@@ -58,17 +58,18 @@ public class FileTracorCollectiveSinkTests {
         List<TracorDataRecord> listTracorDataRecord = new();
         var ctsApplicationStopping = new CancellationTokenSource();
 
-        using (var sutFileTracorCollectiveSink = new FileTracorCollectiveSink(
+        TracorFileSinkOptions tracorFileSinkOptions = new TracorFileSinkOptions() {
+            BaseDirectory = root,
+            Directory = "Log2",
+            Period = TimeSpan.FromMinutes(30),
+            FlushPeriod = TimeSpan.FromSeconds(10)            
+        };
+        tracorFileSinkOptions.SetOnGetApplicationStopping((_) => ctsApplicationStopping.Token);
+        using (var sutFileTracorCollectiveSink = new TracorCollectiveFileSink(
             new TracorOptions() {
                 ApplicationName = "test"
             },
-            new FileTracorOptions() {
-                BaseDirectory = root,
-                Directory = "Log2",
-                Period = TimeSpan.FromMinutes(30),
-                FlushPeriod = TimeSpan.FromSeconds(10),
-                OnGetApplicationStopping = (_) => ctsApplicationStopping.Token
-            })) {
+            tracorFileSinkOptions)) {
             for (int idx = 0; idx < 1000; idx++) {
                 using (TracorDataRecord tracorDataRecord = tracorDataRecordPool.Rent()) {
                     tracorDataRecord.TracorIdentifier = callee;

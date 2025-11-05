@@ -22,6 +22,10 @@ public sealed class NullTypeData : ITracorData {
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
     }
 
+    public void CopyPropertiesToSink(TracorPropertySinkTarget target) {
+        ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(this, target);
+    }
+
     /// <inheritdoc />
     /// <summary>
     /// Returns an empty list since null data has no properties.

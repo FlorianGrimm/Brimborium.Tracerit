@@ -57,7 +57,7 @@ public class Program {
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("Start App {MachineName}", System.Environment.MachineName);
-        var fileTracorCollectiveSink = host.Services.GetRequiredService<FileTracorCollectiveSink>();
+        var fileTracorCollectiveSink = host.Services.GetRequiredService<TracorCollectiveFileSink>();
         await fileTracorCollectiveSink.FlushAsync();
 
         await host.RunAsync();
@@ -87,12 +87,12 @@ public class ControlService {
 
 public class WriterService : BackgroundService {
     private readonly ControlService _ControlService;
-    private readonly FileTracorCollectiveSink _FileTracorCollectiveSink;
+    private readonly TracorCollectiveFileSink _FileTracorCollectiveSink;
     private readonly ILogger<WriterService> _Logger;
 
     public WriterService(
         ControlService controlService,
-        FileTracorCollectiveSink fileTracorCollectiveSink,
+        TracorCollectiveFileSink fileTracorCollectiveSink,
         ILogger<WriterService> logger
         ) {
         this._ControlService = controlService;

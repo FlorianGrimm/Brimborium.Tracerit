@@ -40,7 +40,7 @@ public class Program {
             .AddFileTracorCollectiveSinkDefault(
                configuration: builder.Configuration,
                configure: (fileTracorOptions) => {
-                   fileTracorOptions.OnGetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
+                   fileTracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
                })
             .AddTracorActivityListener(tracorEnabled)
             .AddTracorInstrumentation<ReadAndWriteInstrumentation>()
@@ -58,7 +58,7 @@ public class Program {
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("Start App {MachineName}", System.Environment.MachineName);
-        var fileTracorCollectiveSink = host.Services.GetRequiredService<FileTracorCollectiveSink>();
+        var fileTracorCollectiveSink = host.Services.GetRequiredService<TracorCollectiveFileSink>();
         await fileTracorCollectiveSink.FlushAsync();
 
         await host.RunAsync();
@@ -95,14 +95,14 @@ public class ControlService {
 public class WriterService : BackgroundService {
     private readonly ReadAndWriteInstrumentation _ReadAndWriteInstrumentation;
     private readonly ControlService _ControlService;
-    private readonly FileTracorCollectiveSink _FileTracorCollectiveSink;
+    private readonly TracorCollectiveFileSink _FileTracorCollectiveSink;
     private readonly ITracorSink<WriterService> _Tracor;
     private readonly ILogger<WriterService> _Logger;
 
     public WriterService(
         ReadAndWriteInstrumentation readAndWriteInstrumentation,
         ControlService controlService,
-        FileTracorCollectiveSink fileTracorCollectiveSink,
+        TracorCollectiveFileSink fileTracorCollectiveSink,
         ITracorSink<WriterService> tracor,
         ILogger<WriterService> logger
         ) {
@@ -143,7 +143,7 @@ public class WriterService : BackgroundService {
 public static partial class ReadAndWriteLoggerExtension {
     [LoggerMessage(LogLevel.Trace, "To be ignored:{number}")]
     public static partial void WriterToBeIgnored(this ILogger logger, int number);
-    
+
     [LoggerMessage(LogLevel.Information, "Inner loop iteration:{number}")]
     public static partial void WriterInnerLoop(this ILogger logger, int number);
 
@@ -152,11 +152,11 @@ public static partial class ReadAndWriteLoggerExtension {
 }
 
 public class ReaderService : BackgroundService {
-    private readonly FileTracorCollectiveSink _FileTracorCollectiveSink;
+    private readonly TracorCollectiveFileSink _FileTracorCollectiveSink;
     private readonly ControlService _ControlService;
 
     public ReaderService(
-        FileTracorCollectiveSink fileTracorCollectiveSink,
+        TracorCollectiveFileSink fileTracorCollectiveSink,
         ControlService controlService
         ) {
         this._FileTracorCollectiveSink = fileTracorCollectiveSink;
