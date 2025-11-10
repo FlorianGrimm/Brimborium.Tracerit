@@ -52,7 +52,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
         next: (value) => {
           const listSelectedLogLines: BehaviorSubject<LogLine[]>[] = [];
           const listSelectedName: string[] = [];
-          debugger;
+
           for (let name of value.selected) {
             const listLogLine$ = this.dataService.mapLogLineByName.get(name);
             if (undefined === listLogLine$) { continue; }

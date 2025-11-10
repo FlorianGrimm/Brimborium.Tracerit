@@ -7,6 +7,7 @@
 @let contextLogLineId = contextLogLineId$ | async;
 @let listCurrentHeader = listCurrentHeader$ | async;
 <div class="log-view-content">
+    <app-time-ruler></app-time-ruler>
     <div class="log-view-table">
         <table class="table-tracerit">
             <thead>
@@ -86,8 +87,8 @@
                 </tr>
             </thead>
             <tbody>
-                @let listLogLine = (listLogLineDisplay$ | async) ?? [];
-                @for(logLine of listLogLine; track logLine.id){
+                @let listLogLineFiltered = (listLogLineFiltered$ | async) ?? [];
+                @for(logLine of listLogLineFiltered; track logLine.id){
                 <tr (click)="setCurrentLogLine(logLine.id, $event)"
                     (contextmenu)="setContextLogLine(logLine.id, $event)"
                     [class.selected]="currentLogLineId === logLine.id">

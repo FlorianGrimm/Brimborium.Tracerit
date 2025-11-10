@@ -218,22 +218,22 @@ export function getLogLinePropertyByName(
 }
 
 export function getLogLineTimestampValue(
-    logLine: LogLine | undefined
-): (ZonedDateTime | undefined) {
-    if (undefined === logLine) { return undefined; }
+    logLine: LogLine | null | undefined
+): (ZonedDateTime | null) {
+    if (undefined === logLine || null === logLine) { return null; }
     const property = logLine.data.get("timestamp");
     if ((undefined !== property)
         && (("dt" === property.typeValue) || ("dto" === property.typeValue))) {
         return property.value;
     }
-    return undefined;
+    return null;
 }
 
 export function filterListLogLine(
-    listLogLine: LogLine[] | undefined,
+    listLogLine: LogLine[] | null | undefined,
     listHeader: PropertyHeader[]) {
     const result: LogLine[] = [];
-    if (undefined === listLogLine) { return result; }
+    if (undefined === listLogLine || null === listLogLine) { return result; }
     const listFilteredHeader: PropertyHeader[] = [];
     for (const header of listHeader) {
         if (undefined === header.filter) { continue; }

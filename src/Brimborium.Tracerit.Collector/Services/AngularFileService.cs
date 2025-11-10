@@ -54,8 +54,12 @@ public sealed class AngularFileService : EndpointDataSource {
         if (fileInfo.Exists) {
             context.Response.ContentType = "text/html";
             context.Response.ContentLength = fileInfo.Length;
-            using (var fileStream = fileInfo.CreateReadStream()) {
-                await fileStream.CopyToAsync(context.Response.Body, context.RequestAborted);
+            try {
+                using (var fileStream = fileInfo.CreateReadStream()) {
+                    await fileStream.CopyToAsync(context.Response.Body, context.RequestAborted);
+                }
+            } catch {
+                context.Response.StatusCode = 404;
             }
         } else {
             var output = System.Text.Encoding.UTF8.GetBytes(

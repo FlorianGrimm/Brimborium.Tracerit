@@ -8,13 +8,17 @@ import { getVisualHeader } from '../Utility/propertyHeaderUtility';
 import { LucideAngularModule, FileStack, ChevronLeft, ChevronRight, Funnel, FunnelPlus, FunnelX } from 'lucide-angular';
 import { RouterLink } from '@angular/router';
 import { Duration, ZonedDateTime } from '@js-joda/core';
+import { TimeRulerComponent } from "../time-ruler/time-ruler.component";
+import { LogTimeDataService } from '../Utility/log-time-data.service';
 
 @Component({
   selector: 'app-log-view',
   imports: [
     AsyncPipe,
     RouterLink,
-    LucideAngularModule],
+    LucideAngularModule,
+    TimeRulerComponent
+  ],
   templateUrl: './log-view.component.html',
   styleUrl: './log-view.component.scss',
 })
@@ -29,26 +33,30 @@ export class LogViewComponent {
   readonly subscription = new Subscription();
   readonly dataService = inject(DataService);
   readonly httpClientService = inject(HttpClientService);
+  readonly logTimeDataService = inject(LogTimeDataService);
 
   readonly listAllHeader$ = new BehaviorSubject<PropertyHeader[]>([]);
   readonly listCurrentHeader$ = new BehaviorSubject<PropertyHeader[]>([]);
 
   readonly listLogLine$ = new BehaviorSubject<LogLine[]>([]);
-  readonly listLogLineDisplay$ = new BehaviorSubject<LogLine[]>([]);
+  readonly listLogLineFiltered$ = new BehaviorSubject<LogLine[]>([]);
   readonly filter$ = new BehaviorSubject<number>(1);
 
-  readonly currentLogLineId$ = new BehaviorSubject<number | undefined>(undefined);
-  readonly currentLogLine$ = new BehaviorSubject<LogLine | undefined>(undefined);
-  readonly currentLogTimestamp$ = new BehaviorSubject<(ZonedDateTime | undefined)>(undefined);
+  readonly currentLogLineId$ = new BehaviorSubject<number | null>(null);
+  readonly currentLogLine$ = new BehaviorSubject<LogLine | null>(null);
+  readonly currentLogTimestamp$ = new BehaviorSubject<(ZonedDateTime | null)>(null);
 
-  readonly contextLogLineId$ = new BehaviorSubject<number | undefined>(undefined);
-  readonly contextLogLine$ = new BehaviorSubject<LogLine | undefined>(undefined);
+  readonly contextLogLineId$ = new BehaviorSubject<number | null>(null);
+  readonly contextLogLine$ = new BehaviorSubject<LogLine | null>(null);
 
-  readonly error$ = new BehaviorSubject<undefined | string>(undefined);
+  readonly error$ = new BehaviorSubject<null | string>(null);
 
   constructor() {
     this.subscription.add(
       this.dataService.listLogLine$.subscribe(this.listLogLine$));
+
+    this.subscription.add(
+      this.logTimeDataService.listLogLineFiltered$.subscribe(this.listLogLineFiltered$));
 
     this.subscription.add(
       this.dataService.listAllHeader$.subscribe({
@@ -57,6 +65,7 @@ export class LogViewComponent {
           this.listCurrentHeader$.next(getVisualHeader(value));
         }
       }));
+
     this.subscription.add(
       combineLatest({
         filter: this.filter$,
@@ -64,12 +73,14 @@ export class LogViewComponent {
         listCurrentHeader: this.listCurrentHeader$
       }).subscribe({
         next: (value) => {
-          console.log("filter")
           const result = filterListLogLine(value.listLogLine, value.listCurrentHeader);
-          this.listLogLineDisplay$.next(result);
+          this.logTimeDataService.listLogLineFiltered$.next(result);
         }
       })
     );
+    this.subscription.add(this.logTimeDataService.currentLogLineId$.subscribe(this.currentLogLineId$));
+    this.subscription.add(this.logTimeDataService.currentLogLine$.subscribe(this.currentLogLine$));
+    this.subscription.add(this.logTimeDataService.currentLogTimestamp$.subscribe(this.currentLogTimestamp$));
   }
 
   getContent(logLine: LogLine, header: PropertyHeader): string {
@@ -95,9 +106,9 @@ export class LogViewComponent {
   setCurrentLogLine(logLineId: number, $event: MouseEvent) {
     const listLogLine = this.listLogLine$.getValue();
     const logLine = listLogLine.find((item) => (logLineId === item.id));
-    this.currentLogLineId$.next(logLine?.id);
-    this.currentLogLine$.next(logLine);
-    this.currentLogTimestamp$.next(getLogLineTimestampValue(logLine));
+    console.log("LogViewComponent.setCurrentLogLine-logLine", logLine);
+
+    this.logTimeDataService.currentLogLineId$.next(logLine?.id ?? null);
     $event.stopPropagation();
     return false;
   }
@@ -106,11 +117,12 @@ export class LogViewComponent {
     console.log("setContextLogLine", logLineId, $event.button);
     const listLogLine = this.listLogLine$.getValue();
     const logLine = listLogLine.find((item) => (logLineId === item.id));
-    if (this.contextLogLineId$.getValue() === logLine?.id) {
-      this.contextLogLineId$.next(undefined);
-      this.contextLogLine$.next(undefined);
+    if ((logLine === undefined)
+      || (this.contextLogLineId$.getValue() === logLine.id)) {
+      this.contextLogLineId$.next(null);
+      this.contextLogLine$.next(null);
     } else {
-      this.contextLogLineId$.next(logLine?.id);
+      this.contextLogLineId$.next(logLine.id);
       this.contextLogLine$.next(logLine);
     }
     $event.stopPropagation();
@@ -119,10 +131,10 @@ export class LogViewComponent {
 
   getCurrentDiff(logLine: LogLine): string {
     const currentLogTimestamp = this.currentLogTimestamp$.getValue();
-    if (undefined === currentLogTimestamp) { return ""; }
+    if (undefined === currentLogTimestamp || null === currentLogTimestamp) { return ""; }
 
     const timestamp = getLogLineTimestampValue(logLine);
-    if (undefined === timestamp) { return ""; }
+    if (undefined === timestamp || null === timestamp) { return ""; }
 
     const dur = Duration.between(timestamp, currentLogTimestamp);
     return dur.toString();
@@ -149,8 +161,8 @@ export class LogViewComponent {
         typeValue: "str",
         value: value
       };
-    } else if ("str" === header.filter.typeValue){
-      header.filter.value=value;
+    } else if ("str" === header.filter.typeValue) {
+      header.filter.value = value;
     }
     this.filter$.next(1 + this.filter$.getValue());
     return false;
