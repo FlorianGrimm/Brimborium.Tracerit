@@ -22,7 +22,7 @@ namespace BenchmarkPropertyVsGC;
 #if false
 [CPUUsageDiagnoser]
 #endif
-#if true
+#if false
 [Config(typeof(Config))]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [MemoryDiagnoser]

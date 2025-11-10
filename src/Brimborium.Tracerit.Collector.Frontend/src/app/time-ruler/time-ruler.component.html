@@ -1,21 +1,59 @@
 <div #containerElement class="time-ruler">
     @let state=state$|async;
-    @if((null !== state) && (0 < state.displayWidth) && ("" !== state.viewBox)){ 
+    @if((null !== state) && (0 < state.displayWidth) && ("" !== state.viewBox)){
         <svg #svgElement [attr.viewBox]="state.viewBox"
         style="width:100%; height:100px;">
-        <text fill="black"  attr.transform="translate({{toPositionX(state.startZoom)}}, 75) rotate(270)">
+@for (logTick of state.listLogTick; track logTick.id) {
+    <line
+        [attr.x1]="logTick.positionX1"
+        [attr.y1]="logTick.positionY"
+        [attr.x2]="logTick.positionX2+1"
+        [attr.y2]="logTick.positionY+4"
+        [attr.stroke]="logTick.color"
+        [attr.stroke-width]="1" />
+}
+        <!-- Draw ticks -->
+        @for (tick of state.listTick; track tick.position) {
+            <line
+                [attr.x1]="tick.position"
+                [attr.y1]="tick.isMajor ? 60 : 70"
+                [attr.x2]="tick.position"
+                [attr.y2]="80"
+                stroke="black"
+                [attr.stroke-width]="tick.isMajor ? 2 : 1" />
+            @if (tick.isMajor) {
+                <text
+                    attr.transform="translate({{tick.position}}, 55) rotate(270)"
+                    fill="black"
+                    text-anchor="middle"
+                    font-size="10">
+                    {{tick.label}}
+                </text>
+            }
+        }
+
+        <!-- Start/End labels -->
+        <text fill="black" attr.transform="translate({{toPositionX(state.startZoom)}}, 75) rotate(270)">
             {{toTimeString(state.startZoom) || 'Start'}}
         </text>
-        <text fill="black"  attr.transform="translate({{toPositionX(state.finishZoom)}}, 75) rotate(270)">
+        <text fill="black" attr.transform="translate({{toPositionX(state.finishZoom)}}, 75) rotate(270)">
             {{toTimeString(state.finishZoom) || 'Stop'}}
         </text>
         @if (state.startCurrent !== null){
-            <text fill="black"  attr.transform="translate({{toPositionX(state.startCurrent)}}, 75) rotate(270)">
-                {{toTimeString(state.startCurrent) || 'Current'}}
+          @let positionCurrent=toPositionX(state.startCurrent);
+           <line
+                [attr.x1]="positionCurrent"
+                [attr.y1]="80"
+                [attr.x2]="positionCurrent"
+                [attr.y2]="100"
+                stroke="blue"
+                [attr.stroke-width]="1" />
+            <text fill="blue" attr.transform="translate({{toPositionX(state.startCurrent)}}, 80)">
+                Current:{{toTimeString(state.startCurrent)}}
             </text>
         }
 
         <line x1="0" y1="80" [attr.x2]="toPositionX(state.finishZoom)" y2="80" stroke="black" />
         </svg>
-        }
+    }
 </div>
