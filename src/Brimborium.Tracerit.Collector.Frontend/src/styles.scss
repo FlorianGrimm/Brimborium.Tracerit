@@ -82,14 +82,27 @@ $main-content-width: calc(100vw - $aside-width - $scollbar-width);
     height: calc(100vh - $scollbar-height);
     display: grid;
     grid-template-columns: auto;
-    grid-template-rows: auto 200px;
+    grid-template-rows: 100px auto 200px;
 
+    app-time-ruler {
+        display: block;
+        grid-row: 1;
+        .time-ruler {
+            width: 100%;
+            height: 100px;
+            border-bottom: 1px solid #ccc;
+            font-family: monospace;
+            font-size: 10px;
+        }
+    }
     .log-view-table {
+                grid-row: 2;
         width: $main-content-width;
         overflow: scroll;
     }
 
     .log-view-property {
+                grid-row: 3;
         width: $main-content-width;
         overflow: scroll;
 

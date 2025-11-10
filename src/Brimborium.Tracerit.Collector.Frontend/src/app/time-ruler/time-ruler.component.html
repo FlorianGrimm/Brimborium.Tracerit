@@ -1,0 +1,21 @@
+<div #containerElement class="time-ruler">
+    @let state=state$|async;
+    @if((null !== state) && (0 < state.displayWidth) && ("" !== state.viewBox)){ 
+        <svg #svgElement [attr.viewBox]="state.viewBox"
+        style="width:100%; height:100px;">
+        <text fill="black"  attr.transform="translate({{toPositionX(state.startZoom)}}, 75) rotate(270)">
+            {{toTimeString(state.startZoom) || 'Start'}}
+        </text>
+        <text fill="black"  attr.transform="translate({{toPositionX(state.finishZoom)}}, 75) rotate(270)">
+            {{toTimeString(state.finishZoom) || 'Stop'}}
+        </text>
+        @if (state.startCurrent !== null){
+            <text fill="black"  attr.transform="translate({{toPositionX(state.startCurrent)}}, 75) rotate(270)">
+                {{toTimeString(state.startCurrent) || 'Current'}}
+            </text>
+        }
+
+        <line x1="0" y1="80" [attr.x2]="toPositionX(state.finishZoom)" y2="80" stroke="black" />
+        </svg>
+        }
+</div>
