@@ -3,5 +3,6 @@
     <ArtifactsPath>$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'artifacts'))</ArtifactsPath>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 </Project>

@@ -89,5 +89,6 @@ public class TracorActivityListenerOptions {
     /// </summary>
     public List<ActivitySourceIdentifier> ListActivitySourceIdenifier { get; set; } = new();
 
-    public List<IActivitySourceResolver> ListActivitySourceResolver { get; set; } = new();
+    private readonly List<IActivitySourceResolver> _ListActivitySourceResolver = new();
+    public List<IActivitySourceResolver> GetListActivitySourceResolver() => this._ListActivitySourceResolver;
 }

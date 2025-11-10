@@ -1,7 +1,15 @@
-﻿namespace Brimborium.Tracerit.Expression;
+﻿
+namespace Brimborium.Tracerit.Expression;
 
-public class ValidatorExpressionState {
-    protected ValidatorExpressionState() { }
+public abstract class ValidatorExpressionState {
+    protected ValidatorExpressionState() { 
+    }
 
-    public bool Successfull;
+    protected ValidatorExpressionState(TracorValidatorOnTraceResult result) {
+        this.Result = result;
+    }
+
+    public TracorValidatorOnTraceResult Result = TracorValidatorOnTraceResult.None;
+
+    internal protected abstract ValidatorExpressionState Copy();
 }

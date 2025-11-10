@@ -1,84 +1,43 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace Brimborium.Tracerit.Condition;
-
-public sealed class PredicateTracorDataCondition : IExpressionCondition {
-    private readonly Func<ITracorData, bool> _FnCondition;
-    private readonly string? _FnConditionDisplay;
-
-    public PredicateTracorDataCondition(
-        Func<ITracorData, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
-        ) {
-        this._FnCondition = fnCondition;
-        this._FnConditionDisplay = doNotPopulateThisValue;
-    }
-
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
-        bool result = this._FnCondition(tracorData);
-        currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
-        return result;
-    }
-
-    public static OrCondition operator +(PredicateTracorDataCondition left, IExpressionCondition right) {
-        return new OrCondition([left, right]);
-    }
-
-    public static AndCondition operator *(PredicateTracorDataCondition left, IExpressionCondition right) {
-        return new AndCondition([left, right]);
-    }
-}
-
-public sealed class PredicateTracorDataCondition<TTracorData> : IExpressionCondition
-    where TTracorData : ITracorData {
-    private readonly Func<TTracorData, bool> _FnCondition;
-    private readonly string? _FnConditionDisplay;
-
-    public PredicateTracorDataCondition(
-        Func<TTracorData, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
-        ) {
-        this._FnCondition = fnCondition;
-        this._FnConditionDisplay = doNotPopulateThisValue;
-    }
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
-        if (tracorData is TTracorData tracorDataTyped) {
-            var result = this._FnCondition(tracorDataTyped);
-            currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
-            return result;
-        }
-        return false;
-    }
-
-    public static OrCondition operator +(PredicateTracorDataCondition<TTracorData> left, IExpressionCondition right) {
-        return new OrCondition([left, right]);
-    }
-
-    public static AndCondition operator *(PredicateTracorDataCondition<TTracorData> left, IExpressionCondition right) {
-        return new AndCondition([left, right]);
-    }
-}
+﻿namespace Brimborium.Tracerit.Condition;
 
 public sealed class PredicateValueCondition<TValue> : IExpressionCondition<TValue> {
-    private readonly Func<TValue, bool> _FnCondition;
+    private readonly Func<TValue, bool>? _FnConditionBool;
+    private readonly Func<TValue, TracorValidatorOnTraceResult>? _FnConditionOTR;
     private readonly string? _FnConditionDisplay;
 
     public PredicateValueCondition(
-        Func<TValue, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
+        Func<TValue, bool> fnConditionBool,
+        [CallerArgumentExpression(nameof(fnConditionBool))] string? doNotPopulateThisValue = null
         ) {
-        this._FnCondition = fnCondition;
+        this._FnConditionBool = fnConditionBool;
         this._FnConditionDisplay = doNotPopulateThisValue;
     }
 
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public PredicateValueCondition(
+       Func<TValue, TracorValidatorOnTraceResult> fnConditionOTR,
+       [CallerArgumentExpression(nameof(fnConditionOTR))] string? doNotPopulateThisValue = null
+       ) {
+        this._FnConditionOTR = fnConditionOTR;
+        this._FnConditionDisplay = doNotPopulateThisValue;
+    }
+
+    public TracorValidatorOnTraceResult DoesMatch(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         if (tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var value)) {
-            bool result = this._FnCondition(value);
-            currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
-            return result;
+            if (this._FnConditionBool is { } fnConditionBool) {
+                bool result = fnConditionBool(value);
+                currentContext.LoggerUtility.LogConditionBool(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
+                return result ? TracorValidatorOnTraceResult.Successful : TracorValidatorOnTraceResult.None;
+            }
+            if (this._FnConditionOTR is { } fnConditionOTR) {
+                TracorValidatorOnTraceResult result = fnConditionOTR(value);
+                currentContext.LoggerUtility.LogConditionOTR(tracorData.TracorIdentifier, result, this._FnConditionDisplay);
+                return result;
+            }
         }
-        return false;
+        return TracorValidatorOnTraceResult.None;
     }
 
     public static OrCondition operator +(PredicateValueCondition<TValue> left, IExpressionCondition right) {
@@ -89,35 +48,3 @@ public sealed class PredicateValueCondition<TValue> : IExpressionCondition<TValu
         return new AndCondition([left, right]);
     }
 }
-
-public sealed class PredicateValueGlobalStateCondition<TValue> : IExpressionCondition<TValue> {
-    private readonly Func<TValue, TracorGlobalState, bool> _FnCondition;
-    private readonly string? _FnConditionDisplay;
-
-    public PredicateValueGlobalStateCondition(
-        Func<TValue, TracorGlobalState, bool> fnCondition,
-        [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
-        ) {
-        this._FnCondition = fnCondition;
-        this._FnConditionDisplay = doNotPopulateThisValue;
-    }
-
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
-        if (tracorData is ITracorData<TValue> tracorDataTyped
-            && tracorDataTyped.TryGetOriginalValue(out var value)) {
-            bool result = this._FnCondition(value, currentContext.GlobalState);
-            currentContext.LoggerUtility.LogCondition(callee, result, this._FnConditionDisplay);
-            return result;
-        }
-        return false;
-    }
-
-    public static OrCondition operator +(PredicateValueGlobalStateCondition<TValue> left, IExpressionCondition right) {
-        return new OrCondition([left, right]);
-    }
-
-    public static AndCondition operator *(PredicateValueGlobalStateCondition<TValue> left, IExpressionCondition right) {
-        return new AndCondition([left, right]);
-    }
-}
-

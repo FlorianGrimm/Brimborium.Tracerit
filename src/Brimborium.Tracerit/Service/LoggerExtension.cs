@@ -2,16 +2,28 @@
 
 public static partial class LoggerExtension {
     [LoggerMessage(
-        EventId = 1450604493,
-        EventName = "Condition",
+        EventName = "ConditionBool",
         Level = LogLevel.Debug,
         Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
-    public static partial void LogCondition(
+    public static partial void LogConditionBool(
         this ILogger logger,
-        TracorIdentitfier callee, bool result, string? fnConditionDisplay);
+        TracorIdentifier callee, bool result, string? fnConditionDisplay);
+
+    [LoggerMessage(
+        EventName = "ConditionBoolOTR",
+        Level = LogLevel.Debug,
+        Message = "Result {result} Callee {callee} fnConditionDisplay:{fnConditionDisplay}")]
+    public static partial void LogConditionOTR(
+    this ILogger logger,
+    TracorIdentifier callee, TracorValidatorOnTraceResult result, string? fnConditionDisplay);
 
     [LoggerMessage(LogLevel.Debug, "{activitySourceIdentifier} returns {result}")]
     public static partial void OnShouldListenToReturns(
         this ILogger logger,
         ActivitySourceIdentifier activitySourceIdentifier, bool result);
+
+    [LoggerMessage(LogLevel.Debug, "{validatorExpression} returns {traceResult}")]
+    public static partial void LogSetStateComplete(
+        this ILogger logger, 
+        string? validatorExpression, TracorValidatorOnTraceResult traceResult);
 }

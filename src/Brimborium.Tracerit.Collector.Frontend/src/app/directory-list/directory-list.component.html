@@ -1,0 +1,44 @@
+<div tuiAppearance="floating">
+    @if (error$|async; as error) {
+    <div>
+        {{error}}
+    </div>
+    } @else {
+    <table class="table-tracerit">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Creation Time UTC</th>
+                <th>Length</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(listFile$ | async; as listFile) {
+            @let currentFile=currentFile$ | async;
+            @let selected=(selected$ | async)||[];
+            @for(fileInfo of listFile; track fileInfo.name){
+            <tr  [class.selected]="currentFile === fileInfo.name">
+                <td><label style="width: 100%; height: 100%;">
+                    <input type="checkbox" 
+                    [checked]="selected.includes(fileInfo.name)" 
+                    (change)="onSelectedChange(fileInfo.name)"
+                    />
+                </label>
+                </td>
+                <td (click)="loadFile(fileInfo.name)">{{ fileInfo.name }}</td>
+                <td (click)="loadFile(fileInfo.name)">{{ fileInfo.creationTimeUtc }}</td>
+                <td (click)="loadFile(fileInfo.name)">{{ fileInfo.length|fileSize }}</td>
+            </tr>
+            }
+            }@else{
+            <tr>
+                <td colspan="3">
+                    no files
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>

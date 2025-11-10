@@ -33,10 +33,12 @@ public readonly struct OnTraceStepCurrentContext {
     /// </summary>
     public ValidatorStepIdentifier Identifier => this._Identifier;
 
+    public readonly ImmutableArray<TracorReportStateItem> ReportState => this._ExecutionState.ListReportState;
+
     /// <summary>
     /// Gets the fork state for the current execution context.
     /// </summary>
-    public readonly TracorForkState ForkState => this._ExecutionState.ForkState;
+    public readonly ImmutableDictionary<string, TracorDataProperty> DictForkState => this._ExecutionState.DictForkState;
 
     /// <summary>
     /// Gets the global state for the current execution context.
@@ -100,24 +102,58 @@ public readonly struct OnTraceStepCurrentContext {
             this._LoggerUtility);
     }
 
-    public readonly void CreateFork(string propertyName, object propertyValue, IEqualityComparer equalityComparer) {
+    public readonly void CreateFork(TracorDataProperty propertyValue) {
         var copy = this._ExecutionState.Copy();
-        this._ExecutionState.GlobalState[propertyName] = propertyValue;
-        this._ExecutionState.ForkState.SetItem(propertyName, propertyValue, equalityComparer);
+        this._ExecutionState.SetValueForkState(propertyValue);
         this._Modifications.AddFork(this._ExecutionState, copy);
     }
 
-    public readonly OnTraceStepExecutionState? TryGetFork(string propertyName, object propertyValue) {
-        TracorForkState forkState = new(this._ExecutionState.ForkState);
-        forkState[propertyName] = propertyValue;
+    public readonly OnTraceStepExecutionState? TryGetFork(in TracorDataProperty propertyValue) {
+        var forkState = this._ExecutionState.DictForkState.ToDictionary();
+        forkState[propertyValue.Name] = propertyValue;
         return this._Modifications.TryGetFork(forkState);
     }
-    public readonly void SetStateSuccessfull(IValidatorExpression validatorExpression, ValidatorExpressionState state) {
-        state.Successfull = true;
-        if (validatorExpression.Label is { } label) {
-            this._ExecutionState.ListSuccessState.Add(label);
-        }
+
+    public readonly OnTraceStepExecutionState? TryGetFork(in TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare) {
+        return this._Modifications.TryGetFork(tdpCurrent, fnCompare);
     }
 
-    // public void SuccessFull() {     }
+    public readonly TracorValidatorOnTraceResult SetStateSuccessful(IValidatorExpression validatorExpression, ValidatorExpressionState state, DateTime timestamp) {
+        this._LoggerUtility.LogSetStateComplete(validatorExpression.Label, TracorValidatorOnTraceResult.Successful);
+        state.Result = TracorValidatorOnTraceResult.Successful;
+        if (validatorExpression.Label is { Length:>0 } label) { 
+            this.AddReportState(new(label, TracorValidatorOnTraceResult.Successful, timestamp));
+        }
+        return TracorValidatorOnTraceResult.Successful;
+    }
+
+    public readonly TracorValidatorOnTraceResult SetStateFailed(IValidatorExpression validatorExpression, ValidatorExpressionState state, DateTime timestamp) {
+        this._LoggerUtility.LogSetStateComplete(validatorExpression.Label, TracorValidatorOnTraceResult.Failed);
+        state.Result = TracorValidatorOnTraceResult.Failed;
+        if (validatorExpression.Label is { Length: > 0 } label) {
+            this.AddReportState(new(label, TracorValidatorOnTraceResult.Failed, timestamp));
+        }
+        return TracorValidatorOnTraceResult.Failed;
+    }
+
+    public readonly TracorValidatorOnTraceResult SetStateComplete(
+        IValidatorExpression validatorExpression,
+        ValidatorExpressionState state,
+        TracorValidatorOnTraceResult result, 
+        DateTime timestamp) {
+        this._LoggerUtility.LogSetStateComplete(validatorExpression.Label, result);
+        state.Result = result;
+        if (validatorExpression.Label is { Length: > 0 } label) {
+            this.AddReportState(new(label, result, timestamp));
+        }
+        return result;
+    }
+
+    public void AddReportState(TracorReportStateItem value) {
+        this._ExecutionState.AddReportState(value);
+    }
+
+    public void SetValueGlobalState(TracorDataProperty value) {
+        this._ExecutionState.SetValueGlobalState(value);
+    }
 }

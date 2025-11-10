@@ -10,24 +10,30 @@ public sealed class OrCondition : IExpressionCondition {
 
     public IExpressionCondition[] ExpressionConditions => this._ExpressionConditions;
 
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         for (int idx = 0; idx < this._ExpressionConditions.Length; idx++) {
             IExpressionCondition condition = this._ExpressionConditions[idx];
-            bool result = condition.DoesMatch(callee, tracorData, currentContext);
-            if (result) {
-                return true;
-            } else {
+            TracorValidatorOnTraceResult result = condition.DoesMatch(tracorData, currentContext);
+            if (result == TracorValidatorOnTraceResult.Successful) {
+                return TracorValidatorOnTraceResult.Successful;
+            } else if (result == TracorValidatorOnTraceResult.None) {
                 if (this._ExpressionConditions.Length <= (idx + 1)) {
-                    return false;
-                } else { 
+                    return TracorValidatorOnTraceResult.None;
+                } else {
                     continue;
                 }
+            } else if (result == TracorValidatorOnTraceResult.None) {
+                return TracorValidatorOnTraceResult.Failed;
             }
         }
-        return false;
+        return TracorValidatorOnTraceResult.None;
     }
 
     public static OrCondition operator +(OrCondition left, IExpressionCondition right) {
+        if (right is OrCondition orConditionRight) {
+            return new OrCondition([left, .. orConditionRight.ExpressionConditions]);
+        }
+
         return new OrCondition([.. left.ExpressionConditions, right]);
     }
 }

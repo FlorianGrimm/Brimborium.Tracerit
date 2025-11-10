@@ -18,22 +18,33 @@ public sealed class OneOfExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override TracorValidatorOnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<OneOfExpressionState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
         for (var idx = 0; idx < this._ListChild.Length; idx++) {
             var child = this._ListChild[idx];
-            var childResult = child.OnTrace(callee, tracorData, currentContext.GetChildContext(idx));
-            if (OnTraceResult.Successfull == childResult) {
-                currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+            var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
+            if (TracorValidatorOnTraceResult.Successful == childResult) {
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
         }
-        return OnTraceResult.None;
+        return TracorValidatorOnTraceResult.None;
     }
 
     internal sealed class OneOfExpressionState : ValidatorExpressionState {
+        public OneOfExpressionState() {
+        }
+
+        private OneOfExpressionState(
+            TracorValidatorOnTraceResult result
+            ) : base(result) {
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new OneOfExpressionState(this.Result);
     }
 }

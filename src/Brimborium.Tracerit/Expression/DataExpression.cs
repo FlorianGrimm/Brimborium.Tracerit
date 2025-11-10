@@ -3,141 +3,70 @@
 namespace Brimborium.Tracerit.Expression;
 
 public sealed class DataExpression : ValidatorExpression {
-    private readonly TracorDataCollection _Expected;
-
+    private readonly TracorDataRecordCollection _Expected;
 
     public DataExpression(
         string expected
         ) {
-        this._Expected = TracorDataSerialization.ParseTracorDataCollection(expected);
+        this._Expected = TracorDataSerialization.DeserializeSimple(expected);
     }
 
     public DataExpression(
-        TracorDataCollection expected
+        TracorDataRecordCollection expected
         ) {
         this._Expected = expected;
     }
 
-    public override OnTraceResult OnTrace(
-        TracorIdentitfier callee,
+    public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<DataStepState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
-#warning here
+        // TODO: here
         var childIndex = state.DataIndex;
         var count = this._Expected.ListData.Count;
         if (childIndex < count) {
-            var childResult = IsPartialEquals(
-                currentData: new TracorIdentitfierData(callee, tracorData),
+            var childResult = this.IsPartialEquals(
+                currentData: tracorData,
                 expectedData: this._Expected.ListData[childIndex],
                 currentContext, state, childIndex);
             if (childResult) {
                 childIndex++;
                 if (childIndex < count) {
                     state.DataIndex = childIndex;
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 } else {
                     state.DataIndex = count;
-                    currentContext.SetStateSuccessfull(this, state);
-                    return OnTraceResult.Successfull;
+                    return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                 }
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         } else {
-            currentContext.SetStateSuccessfull(this, state);
-            return OnTraceResult.Successfull;
+            return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
         }
     }
 
     private bool IsPartialEquals(
-        TracorIdentitfierData currentData,
-        TracorDataRecord expectedData,
-        OnTraceStepCurrentContext currentContext,
-        DataStepState state,
-        int childIndex) {
-#warning here var operation = expectedData.GetOperation();
-        var operation = TracorDataRecordOperation.Data;
-        if (operation is TracorDataRecordOperation.Data ) {
-            return IsPartialEqualsOperationData(
-                currentData,
-                expectedData,
-                currentContext,
-                state,
-                childIndex);
-        }
-
-        if (operation is TracorDataRecordOperation.Filter) {
-        }
-
-        var count = this._Expected.ListData.Count;
-        var childIndexArgument = childIndex + 1;
-        this.GetOpArgumentData(childIndex + 1);
-        TracorDataRecord opArgumentData;
-        for (; childIndexArgument < count; childIndexArgument++) {
-            opArgumentData = this._Expected.ListData[childIndexArgument];
-#warning here (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {             }
-        }
-        if (count <= childIndexArgument) {
-            // error
-            // TODO: report
-            return true;
-        }
-        var operationData = expectedData;
-        if (operation is TracorDataRecordOperation.VariableGet) {
-                //opArgumentData
-            foreach (var operationProperty in operationData.ListProperty) {
-                var nameToRead = operationProperty.Name;
-                var nameToWrite = operationProperty.TextValue is { Length:>0}? operationProperty.TextValue:nameToRead;
-            }
-        }
-        if (operation is TracorDataRecordOperation.VariableSet) {
-        }
-
-        // no diff found
-        return true;
-    }
-
-    private (TracorDataRecord? tdr, int index) GetOpArgumentData(int index) {
-        var count = this._Expected.ListData.Count;
-        int indexOp = index;
-        for (; indexOp < count; indexOp++) {
-        var    opArgumentData = this._Expected.ListData[indexOp];
-            /*
-            if (opArgumentData.GetOperation() == TracorDataRecordOperation.Data) {              
-            return (opArgumentData, indexOp);
-            }
-            */
-        }
-        if (count <= indexOp) {
-            // error
-            // TODO: report
-            return (null, indexOp);
-        }
-        return (null, index);
-    }
-
-    private static bool IsPartialEqualsOperationData(
-        TracorIdentitfierData currentData,
+        ITracorData currentData,
         TracorDataRecord expectedData,
         OnTraceStepCurrentContext currentContext,
         DataStepState state,
         int childIndex) {
 
-        if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
-            var currentTracorIdentitfier = currentData.TracorIdentitfier;
-            if (!MatchEqualityComparerTracorIdentitfier.Default.Equals(
-                    currentTracorIdentitfier,
-                    expectedtracorIdentitfier)) {
+        if (expectedData.TracorIdentifier is { } expectedTracorIdentifier) {
+            var currentTracorIdentifier = currentData.TracorIdentifier;
+            if (!MatchEqualityComparerTracorIdentifier.Default.Equals(
+                    currentTracorIdentifier,
+                    expectedTracorIdentifier)) {
                 return false;
             }
         }
         if (0 < expectedData.ListProperty.Count) {
             foreach (var expectedProperty in expectedData.ListProperty) {
-                if (currentData.TracorData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
+                if (currentData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
                     if (expectedProperty.HasEqualValue(currentPropertyValue)) {
                         // equal -> ok
                     } else {
@@ -153,7 +82,22 @@ public sealed class DataExpression : ValidatorExpression {
         // no diff found
         return true;
     }
-}
-internal sealed class DataStepState : ValidatorExpressionState {
-    public int DataIndex = 0;
+
+    internal sealed class DataStepState : ValidatorExpressionState {
+        public int DataIndex = 0;
+        public DataStepState() {
+        }
+
+        private DataStepState(
+            TracorValidatorOnTraceResult result,
+            int dataIndex
+            ) : base(result) {
+            this.DataIndex = dataIndex;
+        }
+        protected internal override ValidatorExpressionState Copy()
+            => new DataStepState(
+                this.Result,
+                this.DataIndex
+                );
+    }
 }

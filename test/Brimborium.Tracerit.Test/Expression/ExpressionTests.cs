@@ -10,18 +10,22 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var expression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "test"));
+        var expression = new MatchExpression(
+            condition: Predicate(
+                data => data.IsEqualString("value", "test")));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+        validatorPath.OnTrace(new TracorDataRecord() {
+            TracorIdentifier = callee,
+            ListProperty = [new TracorDataProperty("value", "test")]
+        });
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
@@ -32,22 +36,26 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var expression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "expected"));
+        var expression = new MatchExpression(
+            condition: Predicate(
+                data => data.IsEqualString("Value", "expected")));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("actual"));
+        validatorPath.OnTrace(new TracorDataRecord() {
+            TracorIdentifier = callee,
+            ListProperty = [new TracorDataProperty("value", "test")]
+        });
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunnging()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
     }
 
     [Test]
@@ -55,27 +63,36 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var childExpression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "child"));
+
 
         var expression = new MatchExpression(
-            condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "parent"),
-            listChild: childExpression);
+            condition: Predicate(
+                data => data.IsEqualString("value", "parent")),
+            listChild: [
+                new MatchExpression(
+                    condition: Predicate(
+                        data => data.IsEqualString("value", "child")))]);
 
-        var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        using (var validatorPath = validator.Add(expression)) {
+            var callee = new TracorIdentifier("Test", "Method");
 
-        // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("parent"));
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("child"));
+            // Act
+            validatorPath.OnTrace(new TracorDataRecord() {
+                TracorIdentifier = callee,
+                ListProperty = [new TracorDataProperty("value", "parent")]
+            });
+            validatorPath.OnTrace(new TracorDataRecord() {
+                TracorIdentifier = callee,
+                ListProperty = [new TracorDataProperty("value", "child")]
+            });
 
-        // Assert
-        await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+            // Assert
+            await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+        }
     }
 
     [Test]
@@ -83,25 +100,34 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new SequenceExpression()
-            .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "first")))
-            .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "second")));
+            .Add(new MatchExpression(
+                condition: Predicate(
+                    data => data.IsEqualString("value", "first"))))
+            .Add(new MatchExpression(condition:
+                new PredicateTracorDataCondition(
+                    data => data.IsEqualString("value", "second"))));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("first"));
+        validatorPath.OnTrace(
+                new TracorDataRecord() {
+                    TracorIdentifier = callee,
+                    ListProperty = [new TracorDataProperty("value", "first")]
+                });
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunnging()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
 
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("second"));
+        validatorPath.OnTrace(new TracorDataRecord() {
+            TracorIdentifier = callee,
+            ListProperty = [new TracorDataProperty("value", "second")]
+        });
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
@@ -112,22 +138,30 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new SequenceExpression()
-            .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "first")))
-            .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "second")));
+            .Add(new MatchExpression(condition: Predicate(
+                data => data.IsEqualString("value", "second")))
+            .Add(new MatchExpression(condition: Predicate(data =>
+                data.IsEqualString("value", "second")))));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("second"));
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("first"));
+        validatorPath.OnTrace(new TracorDataRecord() {
+            TracorIdentifier = callee,
+            ListProperty = [new TracorDataProperty("value", "second")]
+        });
+
+        validatorPath.OnTrace(
+                new TracorDataRecord() {
+                    TracorIdentifier = callee,
+                    ListProperty = [new TracorDataProperty("value", "first")]
+                });
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
@@ -136,10 +170,10 @@ public class ExpressionTests {
     [Test]
     public async Task SequenceExpression_OperatorPlus_ShouldAddExpression() {
         // Arrange
-        var firstExpression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "first"));
-        var secondExpression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "second"));
+        var firstExpression = new MatchExpression(condition: Predicate(data =>
+            data.IsEqualString("value", "first")));
+        var secondExpression = new MatchExpression(condition: Predicate(data =>
+            data.IsEqualString("value", "second")));
 
         var sequence = new SequenceExpression().Add(firstExpression);
 
@@ -155,25 +189,28 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var child1 = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "test"));
-        var child2 = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "test"));
+        var child1 = new MatchExpression(condition: Predicate(data =>
+            data.IsEqualString("value", "test")));
+        var child2 = new MatchExpression(condition: Predicate(data =>
+            data.IsEqualString("value", "test")));
 
         var expression = new FilterExpression(
             label: "FilterExpression",
-            condition: new PredicateTracorDataCondition(data => true),
+            condition: Predicate(data => true),
             listChild: [child1, child2]);
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+        validatorPath.OnTrace(new TracorDataRecord() {
+            TracorIdentifier = callee,
+            ListProperty = [new TracorDataProperty("value", "test")]
+        });
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
@@ -184,31 +221,40 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var child1 = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "first"));
-        var child2 = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "second"));
+        var child1 = new MatchExpression(condition: Predicate(data =>
+            data.IsEqualString("value", "first")));
+        var child2 = new MatchExpression(condition: Predicate(data =>
+            data.IsEqualString("value", "second")));
 
         var expression = new FilterExpression(
             label: "FilterExpression",
-            condition: new PredicateTracorDataCondition(data => true),
+            condition: Predicate(data => true),
             listChild: [child1, child2]);
 
-        var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        using (var validatorPath = validator.Add(expression)) {
+            var callee = new TracorIdentifier("Test", "Method");
 
-        // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("first"));
-        await Assert.That(validatorPath.GetListFinished()).IsEmpty();
+            // Act
+            validatorPath.OnTrace(
+                new TracorDataRecord() { 
+                    TracorIdentifier = callee ,
+                    ListProperty = [new TracorDataProperty("value", "first")]
+                });
 
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("second"));
+            await Assert.That(validatorPath.GetListFinished()).IsEmpty();
 
-        // Assert
-        await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+            validatorPath.OnTrace(new TracorDataRecord() {
+                TracorIdentifier = callee,
+                ListProperty = [new TracorDataProperty("value", "second")]
+            }); 
+
+            // Assert
+            await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+        }
     }
 
     [Test]
@@ -216,24 +262,28 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var child = new MatchExpression(condition: new PredicateTracorDataCondition(data => true));
         var expression = new FilterExpression(
-            condition: new PredicateTracorDataCondition(data => false),
-            listChild: child);
+            condition: Predicate(data => false),
+            listChild: [
+                new MatchExpression(
+                    condition: Predicate(data => true))]);
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+        validatorPath.OnTrace(new TracorDataRecord() {
+            TracorIdentifier = callee,
+            ListProperty = [new TracorDataProperty("first", "first")]
+        });
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunnging()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
     }
 
     [Test]

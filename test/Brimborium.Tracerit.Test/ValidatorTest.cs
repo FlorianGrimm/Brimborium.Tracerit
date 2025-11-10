@@ -9,20 +9,21 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor(options => {
-            options.AddTracorDataAccessorByType<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
-            options.AddTracorDataAccessorByType<string>(new ValueAccessorFactory<string>());
-        });
+        serviceBuilder.AddEnabledTracor(
+            configureConvert: options => {
+                options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor(), new(0)));
+                options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>(new(0)));
+            });
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
-        ITracor tracor = serviceProvider.GetRequiredService<ITracor>();
+        ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         ITracorValidator tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var validatorPath = tracorValidator
         .Add(
             new SequenceExpression()
             .Add(new MatchExpression(
                 condition: new PredicateTracorDataCondition(
-                    static (data) => data.IsEqual("PathAndQuery", "/1"))
+                    static (data) => data.IsEqualString("PathAndQuery", "/1"))
                 )
             )
             .Add(new MatchExpression() {
@@ -35,10 +36,10 @@ public class ValidatorTest {
         );
         Uri uriPageLocation1 = new("https://localhost/1", UriKind.Absolute);
         Uri uriPageLocation2 = new("https://localhost/2", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
-        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
+        tracor.TracePublic("something", LogLevel.Information, "test", "something");
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation1);
+        tracor.TracePublic("else", LogLevel.Information, "test", "else");
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation2);
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNotNull();
@@ -51,13 +52,14 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor(options => {
-            options.AddTracorDataAccessorByType<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor()));
-            options.AddTracorDataAccessorByType<string>(new ValueAccessorFactory<string>());
+        serviceBuilder.AddEnabledTracor(
+            configureConvert: options => {
+            options.AddTracorDataAccessorByTypePublic<Uri>(new BoundAccessorTracorDataFactory<Uri>(new SystemUriTracorDataAccessor(), new(0)));
+            options.AddTracorDataAccessorByTypePublic<string>(new ValueAccessorFactory<string>(new(0)));
         });
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
-        ITracor tracor = serviceProvider.GetRequiredService<ITracor>();
+        ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         ITracorValidator tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var validatorPath = tracorValidator
         .Add(
@@ -77,22 +79,22 @@ public class ValidatorTest {
         );
         Uri uriPageLocation1 = new("https://localhost/1", UriKind.Absolute);
         Uri uriPageLocation2 = new("https://localhost/2", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
+        tracor.TracePublic("something", LogLevel.Information, "test", "something");
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNull();
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation1);
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNull();
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
+        tracor.TracePublic("else", LogLevel.Information, "test", "else");
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNull();
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation2);
         {
             var act = validatorPath.GetFinished((_) => true);
             await Assert.That(act).IsNotNull();
@@ -105,14 +107,14 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(static options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor();
+        serviceBuilder.AddEnabledTracor();
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
-        ITracor tracor = serviceProvider.GetRequiredService<ITracor>();
+        ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         ITracorValidator tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var validatorPath = tracorValidator
         .Add(
-            new GroupByExpression<string>() {
+            new GroupByExpression() {
                 PropertyName = "Host"
             }
             .Add(
@@ -126,43 +128,43 @@ public class ValidatorTest {
         Uri uriPageLocation3 = new("https://def/1", UriKind.Absolute);
         Uri uriPageLocation4 = new("https://def/2", UriKind.Absolute);
         Uri uriPageLocation5 = new("https://ghi/1", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
+        tracor.TracePublic("something", LogLevel.Information, "test", "something");
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation1);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation3);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation3);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(3);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(3);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
+        tracor.TracePublic("else", LogLevel.Information, "test", "else");
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation2);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation4);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation4);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation5);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation5);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(2);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(2);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(2);
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "abc" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "abc" == txtHost);
             await Assert.That(act).IsNotNull();
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "def" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "def" == txtHost);
             await Assert.That(act).IsNotNull();
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "ghi" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "ghi" == txtHost);
             await Assert.That(act).IsNull();
         }
     }
@@ -174,10 +176,10 @@ public class ValidatorTest {
         serviceBuilder.AddLogging(static options => {
             options.AddConsole();
         });
-        serviceBuilder.AddTesttimeTracor();
+        serviceBuilder.AddEnabledTracor();
         var serviceProvider = serviceBuilder.BuildServiceProvider();
 
-        ITracor tracor = serviceProvider.GetRequiredService<ITracor>();
+        ITracorServiceSink tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         ITracorValidator tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         var validatorPath = tracorValidator
         .Add(
@@ -190,12 +192,12 @@ public class ValidatorTest {
                     setGlobalState: "Host"
                     ),
                 listChild: new FilterExpression(
-                    label:"",
+                    label: "",
                     condition:
-                        new AlwaysCondition<Uri,string>(
-                            fnGetProperty: static (value) =>value.Host,
+                        new AlwaysCondition<Uri, string>(
+                            fnGetProperty: static (value) => value.Host,
                             setGlobalState: "Host2"),
-                    listChild:[
+                    listChild: [
                         EqualsValue(static (Uri data) => data.PathAndQuery, "/1").AsMatch(),
                         EqualsValue(static (Uri data) => data.PathAndQuery, "/2").AsMatch()]
                 )
@@ -206,39 +208,39 @@ public class ValidatorTest {
         Uri uriPageLocation3 = new("https://def/1", UriKind.Absolute);
         Uri uriPageLocation4 = new("https://def/2", UriKind.Absolute);
         Uri uriPageLocation5 = new("https://ghi/1", UriKind.Absolute);
-        tracor.Trace(new TracorIdentitfier("Logger", "something"), "something");
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation1);
+        tracor.TracePublic("something", LogLevel.Information, "test", "something");
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation1);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation3);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation3);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "else"), "else");
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation2);
+        tracor.TracePublic("else", LogLevel.Information, "test", "else");
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation2);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(1);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(1);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(0);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation4);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation4);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(0);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(0);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
-        tracor.Trace(new TracorIdentitfier("Logger", "Page.Location"), uriPageLocation5);
+        tracor.TracePublic("Page.Location", LogLevel.Information, "test", uriPageLocation5);
         {
-            await Assert.That(validatorPath.GetListRunnging().Count).IsEqualTo(0);
+            await Assert.That(validatorPath.GetListRunning().Count).IsEqualTo(0);
             await Assert.That(validatorPath.GetListFinished().Count).IsEqualTo(1);
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "def" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "def" == txtHost);
             await Assert.That(act).IsNotNull();
         }
         {
-            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host is string txtHost && "ghi" == txtHost);
+            var act = validatorPath.GetFinished((s) => s.TryGetValue("Host", out var host) && host.TryGetStringValue(out var txtHost) && "ghi" == txtHost);
             await Assert.That(act).IsNull();
         }
     }

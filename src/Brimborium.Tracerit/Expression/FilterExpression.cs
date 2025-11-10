@@ -48,26 +48,28 @@ public sealed class FilterExpression : ValidatorExpression {
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override TracorValidatorOnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<FilterExpressionState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
 
-        if (this.Condition.DoesMatch(callee, tracorData, currentContext)) {
+        var conditionResult = this.Condition.DoesMatch(tracorData, currentContext);
+        if (TracorValidatorOnTraceResult.Successful == conditionResult) {
             for (var idx = 0; idx < this._ListChild.Length; idx++) {
                 var child = this._ListChild[idx];
-                var childResult = child.OnTrace(callee, tracorData, currentContext.GetChildContext(idx));
-                if (OnTraceResult.Successfull == childResult) {
-                    state.ChildSuccessfull.Add(idx);
+                var childResult = child.OnTrace(tracorData, currentContext.GetChildContext(idx));
+                if (TracorValidatorOnTraceResult.Successful == childResult) {
+                    state.ChildSuccessful.Add(idx);
                 }
             }
-            if (state.ChildSuccessfull.Count == this._ListChild.Length) {
-                currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+            if (state.ChildSuccessful.Count == this._ListChild.Length) {
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
         }
-        return OnTraceResult.None;
+        return TracorValidatorOnTraceResult.None;
     }
 
     /// <summary>
@@ -77,7 +79,23 @@ public sealed class FilterExpression : ValidatorExpression {
         /// <summary>
         /// Gets or sets the set of child expression indices that have been successfully matched.
         /// </summary>
-        public HashSet<int> ChildSuccessfull = new();
+        public HashSet<int> ChildSuccessful;
+
+        public FilterExpressionState() {
+            this.ChildSuccessful = new();
+        }
+
+        private FilterExpressionState(
+            TracorValidatorOnTraceResult result,
+            HashSet<int> childSuccessful) {
+            this.Result = result;
+            this.ChildSuccessful = childSuccessful;
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new FilterExpressionState(
+                this.Result,
+                this.ChildSuccessful.ToHashSet());
     }
 }
 
@@ -104,7 +122,7 @@ public sealed class FilterExpression<T> : ValidatorExpression {
 
     public IExpressionCondition Condition { get; set; } = AlwaysCondition.Instance;
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override OnTraceResult OnTrace(TracorIdentifier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<FilterExpressionState>();
         if (state.Successfull) {
             return OnTraceResult.Successfull;
@@ -133,12 +151,12 @@ public sealed class FilterExpression<T> : ValidatorExpression {
 
 #endif
 
-public static class FilterExpressionExtension{
+public static class FilterExpressionExtension {
     public static FilterExpression FilterExpression(
         this IExpressionCondition condition,
         string? label = default,
         params IValidatorExpression[] listChild
-        ) 
+        )
         => new(label, condition, listChild);
 
 #if false

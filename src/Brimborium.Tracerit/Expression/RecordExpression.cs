@@ -9,33 +9,52 @@ public sealed class RecordExpression : ValidatorExpression {
         this._Child = child;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
-        if (tracorData is IReferenceCountObject referenceCountObject) {
-            referenceCountObject.IncrementReferenceCount();
+    public override TracorValidatorOnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
+        if (tracorData is TracorDataRecord tracorDataRecord) {
+            tracorDataRecord.IncrementReferenceCount();
+            this._ReportExpressionResult.ListData.Add(tracorData);
+        } else {
+            tracorDataRecord = TracorDataRecord.Convert(tracorData, null);
+            this._ReportExpressionResult.ListData.Add(tracorDataRecord);
+            tracorData = tracorDataRecord;
         }
-        this._ReportExpressionResult.ListData.Add(new(callee, tracorData));
-        var childResult = this._Child.OnTrace(callee, tracorData, currentContext.GetChildContext(0));
+
+        var childResult = this._Child.OnTrace(tracorData, currentContext.GetChildContext(0));
         return childResult;
     }
 
-    internal sealed class ReportExpressionState : ValidatorExpressionState { }
+    internal sealed class ReportExpressionState : ValidatorExpressionState {
+        public ReportExpressionState() {
+        }
+
+        private ReportExpressionState(
+            TracorValidatorOnTraceResult result
+            ) : base(result) {
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new ReportExpressionState(this.Result);
+    }
 }
 
 public sealed class RecordExpressionResult : IDisposable {
 
-    public List<TracorIdentitfierData> ListData { get; } = new();
+    public List<ITracorData> ListData { get; } = new();
 
     public TracorDataCollection ToTracorListData()
-        => TracorDataSerialization.ToTracorDataCollection(this.ListData);
+        => new TracorDataCollection(this.ListData);
 
     public string ToTracorDataCollectionJson(
         System.Text.Json.JsonSerializerOptions? options = null)
-        => TracorDataSerialization.ToTracorDataCollectionJson(this.ListData, options);
+        => TracorDataSerialization.SerializeSimple(
+            this.ListData, options);
 
     private void Dispose(bool disposing) {
         if (0 < this.ListData.Count) {
             foreach (var item in this.ListData) {
-                if (item.TracorData is IReferenceCountObject referenceCountObject) {
+                if (item is IReferenceCountObject referenceCountObject) {
                     referenceCountObject.Dispose();
                 }
             }

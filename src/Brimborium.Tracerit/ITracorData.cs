@@ -19,16 +19,30 @@ public interface ITracorData {
     bool TryGetPropertyValue(string propertyName, out object? propertyValue);
 
     /// <summary>
-    /// Get the properties.
+    /// Try to get TracorDataProperty named <paramref name="propertyName"/>.
     /// </summary>
-    /// <param name="propertyName">the property Name.</param>
-    /// <returns>the property value or null.</returns>
-    object? this[string propertyName] { get; }
+    /// <param name="propertyName">The property name to search fpr.</param>
+    /// <param name="result">if return true - it contains the property</param>
+    /// <returns>true if found.</returns>
+    /// <remarks>it does not search in special properties</remarks>
+    bool TryGetDataProperty(string propertyName, out TracorDataProperty result);
+
+    /// <summary>
+    /// Gets or sets the timestamp
+    /// </summary>
+    DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    TracorIdentifier TracorIdentifier { get; set; }
 
     /// <summary>
     /// Convert to <paramref name="listProperty"/>.
     /// </summary>
     void ConvertProperties(List<TracorDataProperty> listProperty);
+
+    void CopyPropertiesToSink(TracorPropertySinkTarget target);
 }
 
 /// <summary>
@@ -117,4 +131,17 @@ public interface ITracorDataAccessor<T> {
     /// Convert to <paramref name="listProperty"/>.
     /// </summary>
     void ConvertProperties(T value, List<TracorDataProperty> listProperty);
+}
+
+/// <summary>
+/// Can convert itself for tracor
+/// </summary>
+public interface ITracorDataSelfAccessor {
+    /// <summary>
+    /// Convert Properties
+    /// </summary>
+    /// <param name="isPublic">true - public; false - private pip</param>
+    /// <param name="tracorDataConvertService">convert service</param>
+    /// <param name="listProperty">target</param>
+    void ConvertProperties(bool isPublic, ITracorDataConvertService tracorDataConvertService, List<TracorDataProperty> listProperty);
 }

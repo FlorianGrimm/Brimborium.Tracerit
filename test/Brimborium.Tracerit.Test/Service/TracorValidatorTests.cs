@@ -10,7 +10,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -29,12 +29,13 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new MatchExpression();
-        var globalState = new TracorGlobalState().SetValue("TestKey", "TestValue");
+        List<TracorDataProperty> globalState = new();
+        globalState.Add(TracorDataProperty.CreateStringValue("TestKey", "TestValue"));
 
         // Act
         var validatorPath = validator.Add(expression, globalState);
@@ -48,22 +49,22 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new SequenceExpression()
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "first")))
+                data.IsEqualString("Value", "first"))))
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-                data.TryGetPropertyValue<string>("Value", out var value) && value == "second")));
+                data.IsEqualString("Value", "second"))));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("first"));
-        var runningStates = validatorPath.GetListRunnging();
+        validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "first")) );
+        var runningStates = validatorPath.GetListRunning();
 
         // Assert
         await Assert.That(runningStates).HasCount().EqualTo(1);
@@ -75,23 +76,25 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var expression = new MatchExpression(condition: new PredicateTracorDataCondition(data =>
-            data.TryGetPropertyValue<string>("Value", out var value) && value == "test"));
+        var expression = new MatchExpression(
+            condition: new PredicateTracorDataCondition(
+                data => data.IsEqualString("value", "test")));
 
-        var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        using (var validatorPath = validator.Add(expression)) {
+            var callee = new TracorIdentifier("Test", "Method");
 
-        // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
-        var finishedStates = validatorPath.GetListFinished();
+            // Act
+            validatorPath.OnTrace(new TracorDataRecord(){ TracorIdentifier = callee }.Add(new ("value", "test")));
+            var finishedStates = validatorPath.GetListFinished();
 
-        // Assert
-        await Assert.That(finishedStates).HasCount().EqualTo(1);
-        await Assert.That(validatorPath.GetListRunnging()).IsEmpty();
+            // Assert
+            await Assert.That(finishedStates).HasCount().EqualTo(1);
+            await Assert.That(validatorPath.GetListRunning()).IsEmpty();
+        }
     }
 
     [Test]
@@ -99,25 +102,32 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
-        var expression = new MatchExpression(condition: new AlwaysCondition<string, string>(
+        var expression = new MatchExpression(
+            condition: new AlwaysCondition<string, string>(
             fnGetProperty: value => value,
             setGlobalState: "TestProperty"));
 
-        var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        using (var validatorPath = validator.Add(expression)) {
+            var callee = new TracorIdentifier("Test", "Method");
 
-        // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test value"));
-        var finishedState = validatorPath.GetFinished(state =>
-            state.TryGetValue("TestProperty", out var prop) && prop is string str && str == "test value");
+            // Act
+            validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new ("value","test value")) );
+            var finishedState = validatorPath.GetFinished(
+                state => state.DictGlobalState.TryGetValue("TestProperty", out var prop)
+                    && prop.TryGetStringValue(out var str)
+                    && str == "test value");
 
-        // Assert
-        await Assert.That(finishedState).IsNotNull();
-        await Assert.That(finishedState!.GetValue<string>("TestProperty")).IsEqualTo("test value");
+            // Assert
+            await Assert.That(finishedState).IsNotNull();
+            var success = finishedState!.DictGlobalState.TryGetValue("TestProperty", out var act);
+            await Assert.That(success).IsTrue();
+            await Assert.That(act.TryGetStringValue(out _)).IsTrue();
+            await Assert.That(act.TryGetStringValue(out var result) ? result : "").IsEqualTo("test value");
+        }
     }
 
     [Test]
@@ -125,18 +135,18 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new MatchExpression();
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
-        validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+        validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));
         var finishedState = validatorPath.GetFinished(state =>
-            state.TryGetValue("NonExistentKey", out var _));
+            state.DictGlobalState.TryGetValue("NonExistentKey", out var _));
 
         // Assert
         await Assert.That(finishedState).IsNull();
@@ -147,7 +157,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -165,7 +175,7 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -174,11 +184,11 @@ public class TracorValidatorTests {
 
         var validatorPath1 = validator.Add(expression1);
         var validatorPath2 = validator.Add(expression2);
-        var callee = new TracorIdentitfier("Test", "Method");
-        var tracorData = new ValueTracorData<string>("test");
+        var callee = new TracorIdentifier("Test", "Method");
+        var tracorData = (new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));
 
         // Act
-        validator.OnTrace(callee, tracorData);
+        validator.OnTrace(true, tracorData);
 
         // Assert
         await Assert.That(validatorPath1.GetListFinished()).HasCount().EqualTo(1);
@@ -190,18 +200,18 @@ public class TracorValidatorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new MatchExpression();
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
 
         // Act
         var traceTask = Task.Run(() => {
             Thread.Sleep(100); // Small delay to simulate async processing
-            validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+            validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));
         });
 
         var finishedState = await validatorPath.GetFinishedAsync(null, TimeSpan.FromSeconds(1));
@@ -212,26 +222,26 @@ public class TracorValidatorTests {
     }
 
     [Test]
-    public async Task TracorValidatorPath_GetRunngingAsync_ShouldReturnRunningState() {
+    public async Task TracorValidatorPath_GetRunningAsync_ShouldReturnRunningState() {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddTesttimeTracor();
+        serviceCollection.AddEnabledTracor();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
         var expression = new SequenceExpression("TestLabel")
-            .Add(new MatchExpression(label: "FirstMatch",condition: new PredicateTracorDataCondition(data => true)))
+            .Add(new MatchExpression(label: "FirstMatch", condition: new PredicateTracorDataCondition(data => true)))
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data => false))); // Never matches
 
         using (var validatorPath = validator.Add(expression)) {
-            var callee = new TracorIdentitfier("Test", "Method");
+            var callee = new TracorIdentifier("Test", "Method");
 
             // Act
-            validatorPath.OnTrace(callee, new ValueTracorData<string>("test"));
+            validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));
 
-            var runningStateTestLabel = validatorPath.GetRunnging("TestLabel");
-            var runningStateFirstMatch = validatorPath.GetRunnging("FirstMatch");
+            var runningStateTestLabel = validatorPath.GetRunning("TestLabel");
+            var runningStateFirstMatch = validatorPath.GetRunning("FirstMatch");
 
             // Assert
             await Assert.That(runningStateTestLabel).IsNull();

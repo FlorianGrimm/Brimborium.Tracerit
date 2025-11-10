@@ -1,4 +1,6 @@
 using Brimborium.Tracerit;
+using Brimborium.Tracerit.Filter;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Sample.WebApp;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
@@ -30,10 +32,12 @@ public partial class Program {
         StartupActions startupActions
         ) {
         var builder = WebApplication.CreateBuilder(args);
-        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+        _ = builder.Logging.AddConfiguration(
+            builder.Configuration.GetSection("Logging"));
 
         // Add services to the container.
-        builder.Services.AddRazorPages();
+        //builder.Services.AddRazorPages((RazorPagesOptions rpo) => { });
+
         builder.Services.AddAngularFileService()
             .Configure(options => {
                 options.AngularPathPrefix.Add("home");
@@ -43,6 +47,7 @@ public partial class Program {
         builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
             .AddNegotiate();
 
+        builder.Services.AddAuthorization();
         /*
         builder.Services.AddHealthChecks().AddTypeActivatedCheck<>();
         */
@@ -76,14 +81,25 @@ public partial class Program {
 
         }
 #endif
-
-        builder.Services.AddTracor(startupActions.Testtime);
-        builder.Services.AddTracorActivityListener(startupActions.Testtime);
-        builder.Services.AddInstrumentation<SampleInstrumentation>();
+        var tracorOptions = builder.Configuration.BindTracorOptionsDefault(new());
+        var tracorEnabled = tracorOptions.IsEnabled || startupActions.Testtime;
+        builder.Services.AddTracor(addEnabledServices: tracorEnabled)
+            .AddFileTracorCollectiveSinkDefault(
+               configuration: builder.Configuration,
+               configure: (fileTracorOptions) => {
+                   fileTracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+               })
+            .AddTracorActivityListener(tracorEnabled)
+            .AddTracorInstrumentation<SampleInstrumentation>()
+            .AddTracorLogger()
+            ;
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
         var app = builder.Build();
+
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Start App {MachineName}", System.Environment.MachineName);
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment()) {
@@ -96,8 +112,10 @@ public partial class Program {
             app.UseHttpsRedirection();
         }
 
+        // app.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
+
         /*
-        app.MapHealthChecks("/healthz").AllowAnonymous();
+            app.MapHealthChecks("/healthz").AllowAnonymous();
         */
 
         app.UseAuthentication();
@@ -106,13 +124,24 @@ public partial class Program {
 
         app.UseAuthorization();
 
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
         app.MapGet("/ping", (HttpContext httpContext) => {
             var now = System.DateTimeOffset.Now;
             var result = $"pong {now:u}";
             logger.PingResult(now);
             return result;
         }).AllowAnonymous();
+
+        app.MapGet("/hack", (HttpContext httpContext) => {
+            var tracor = httpContext.RequestServices.GetRequiredService<ITracorSink<Program>>();
+            var now = System.DateTimeOffset.Now;
+            var result = $"hack {now:u}";
+            tracor.GetPrivateTracor(LogLevel.Information, "hack1").TracePrivate(now);
+            if (tracor.GetPrivateTracor(LogLevel.Information, "hack2") is { Enabled: true } tracorEnabled) {
+                tracorEnabled.TracePrivate(now);
+            }
+            return result;
+        }).AllowAnonymous();
+
 
         app.UseAngularFileService();
 

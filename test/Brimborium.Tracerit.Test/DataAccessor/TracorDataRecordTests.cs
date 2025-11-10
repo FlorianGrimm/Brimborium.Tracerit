@@ -1,0 +1,158 @@
+namespace Brimborium.Tracerit.Test.DataAccessor;
+
+/// <summary>
+/// Unit tests for ITracorData implementations and related data accessor functionality.
+/// </summary>
+public class TracorDataRecordTests {
+
+    [Test]
+    public async Task TracorDataRecord_ShouldProvideValueProperty() {
+        // Arrange
+        var testValue = "test string";
+        var tracorData = new TracorDataRecord().Add(new("value", testValue));
+
+
+        // Act & Assert
+        await Assert.That(tracorData.GetListPropertyName()).Contains(
+            TracorConstants.TracorDataPropertyNameValue
+            );
+        await Assert.That(tracorData.TryGetPropertyValue(
+            TracorConstants.TracorDataPropertyNameValue,
+            out var propertyValue)).IsTrue();
+        await Assert.That(propertyValue).IsEqualTo(testValue);
+    }
+
+    [Test]
+    public async Task TracorDataRecord_ShouldReturnOriginalValue() {
+        // Arrange
+        var testValue = 42;
+        var tracorData = new TracorDataRecord().Add(new("value", testValue));
+
+        // Act & Assert
+        await Assert.That(tracorData.TryGetPropertyValueInteger("value", out var act)).IsTrue();
+        await Assert.That(act).IsEqualTo(testValue);
+    }
+
+    [Test]
+    public async Task TracorDataRecord_ShouldReturnNullForUnknownProperty() {
+        // Arrange
+        var tracorData = new TracorDataRecord().Add(new("value", "test"));
+
+        // Act & Assert
+        await Assert.That(tracorData.TryGetPropertyValue("UnknownProperty", out var propertyValue)).IsFalse();
+        await Assert.That(propertyValue).IsNull();
+    }
+
+    [Test]
+    public async Task SystemUriTracorDataAccessor_ShouldProvideUriProperties() {
+        // Arrange
+        var uri = new Uri("https://example.com/path?query=value");
+        var accessor = new SystemUriTracorDataAccessor();
+
+        // Act
+        var propertyNames = accessor.GetListPropertyNameTyped(uri);
+
+        // Assert
+        await Assert.That(propertyNames).Contains("value");
+        await Assert.That(propertyNames).Contains("ToString");
+        await Assert.That(propertyNames).Contains("Host");
+        await Assert.That(propertyNames).Contains("PathAndQuery");
+    }
+
+    [Test]
+    public async Task SystemUriTracorDataAccessor_ShouldReturnCorrectPropertyValues() {
+        // Arrange
+        var uri = new Uri("https://example.com/path?query=value");
+        var accessor = new SystemUriTracorDataAccessor();
+
+        // Act & Assert
+        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "value", out var valueProperty)).IsTrue();
+        await Assert.That(valueProperty).IsEqualTo(uri);
+
+        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "Host", out var hostProperty)).IsTrue();
+        await Assert.That(hostProperty).IsEqualTo("example.com");
+
+        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "PathAndQuery", out var pathProperty)).IsTrue();
+        await Assert.That(pathProperty).IsEqualTo("/path?query=value");
+
+        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "ToString", out var toStringProperty)).IsTrue();
+        await Assert.That(toStringProperty).IsEqualTo(uri.ToString());
+    }
+
+    [Test]
+    public async Task SystemUriTracorDataAccessor_ShouldReturnFalseForUnknownProperty() {
+        // Arrange
+        var uri = new Uri("https://example.com");
+        var accessor = new SystemUriTracorDataAccessor();
+
+        // Act & Assert
+        await Assert.That(accessor.TryGetPropertyValueTyped(uri, "UnknownProperty", out var propertyValue)).IsFalse();
+        await Assert.That(propertyValue).IsNull();
+    }
+
+    [Test]
+    public async Task TracorDataAccessorFactory_ShouldCreateTracorDataForCorrectType() {
+        // Arrange
+        var uri = new Uri("https://example.com");
+        var accessor = new SystemUriTracorDataAccessor();
+        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor, new(0));
+
+        // Act & Assert
+        await Assert.That(factory.TryGetData(uri, out var tracorData)).IsTrue();
+        await Assert.That(tracorData).IsNotNull();
+
+        await Assert.That(factory.TryGetDataTyped(uri, out var typedTracorData)).IsTrue();
+        await Assert.That(typedTracorData).IsNotNull();
+    }
+
+    [Test]
+    public async Task TracorDataAccessorFactory_ShouldReturnFalseForIncorrectType() {
+        // Arrange
+        var accessor = new SystemUriTracorDataAccessor();
+        var factory = new BoundAccessorTracorDataFactory<Uri>(accessor, new(0));
+
+        // Act & Assert
+        await Assert.That(factory.TryGetData("not a uri", out var tracorData)).IsFalse();
+        await Assert.That(tracorData).IsNull();
+    }
+
+    [Test]
+    public async Task ValueAccessorFactory_ShouldCreateTracorDataRecord() {
+        // Arrange
+        var factory = new ValueAccessorFactory<string>(new(0));
+        var testValue = "test string";
+
+        // Act & Assert
+        await Assert.That(factory.TryGetData(testValue, out var tracorData)).IsTrue();
+        await Assert.That(tracorData).IsNotNull();
+
+        await Assert.That(factory.TryGetDataTyped(testValue, out var typedTracorData)).IsTrue();
+        await Assert.That(typedTracorData).IsNotNull();
+    }
+
+    [Test]
+    public async Task NullTypeData_ShouldProvideEmptyProperties() {
+        // Arrange
+        var nullData = new NullTypeData();
+
+        // Act & Assert
+        await Assert.That(nullData.GetListPropertyName()).IsEmpty();
+        await Assert.That(nullData.TryGetPropertyValue("AnyProperty", out var propertyValue)).IsFalse();
+        await Assert.That(propertyValue).IsNull();
+    }
+
+    [Test]
+    public async Task ITracorDataExtension_TryGetPropertyValue_ShouldCastCorrectly() {
+        // Arrange
+        var tracorData = new TracorDataRecord().Add(new("value", 42));
+
+        // Act & Assert
+        await Assert.That(tracorData.IsEqualInteger(
+            TracorConstants.TracorDataPropertyNameValue,
+            42)).IsTrue();
+
+        await Assert.That(tracorData.IsEqualString(
+            TracorConstants.TracorDataPropertyNameValue,
+            "42")).IsFalse();
+    }
+}

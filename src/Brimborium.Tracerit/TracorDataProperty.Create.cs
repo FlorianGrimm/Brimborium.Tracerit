@@ -1,114 +1,159 @@
-﻿namespace Brimborium.Tracerit;
+﻿#pragma warning disable IDE0079
+#pragma warning disable IDE0009
+
+namespace Brimborium.Tracerit;
 
 public partial struct TracorDataProperty {
-	public const string TypeNameAny = "any";
-	public const string TypeNameString = "str";
-	public const string TypeNameInteger = "int";
-	public const string TypeNameLevelValue = "lvl";
-	public const string TypeNameDateTime = "dt";
-	public const string TypeNameDateTimeOffset = "dto";
-	public const string TypeNameBoolean = "bool";
-	public const string TypeNameLong = "long";
-	public const string TypeNameDouble = "dbl";
+    
+    public static TracorDataProperty Create(string argName, object? argValueQ) {
+        if (argValueQ is not { } argValueNotNull) {
+            return CreateNull(argName);
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToUuidValue(argValueNotNull, out var resultValue)) {
+                return CreateUuidValue(argName, resultValue);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToStringValue(argValueNotNull, out var resultValue)) {
+                return CreateStringValue(argName, resultValue);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToInteger(argValueNotNull, out var resultValue)) {
+                return CreateIntegerValue(argName, resultValue);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToLogLevelValue(argValueNotNull, out var resultValue)) {
+                return CreateLevelValue(argName, resultValue);
+            }
+        }
+        {
+            if (argValueNotNull is { } && argValueNotNull.GetType().IsEnum) {
+                return CreateEnumValue(argName, argValueNotNull);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToDoubleValue(argValueNotNull, out var resultValue)) {
+                return CreateDoubleValue(argName, resultValue);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToDateTimeValue(argValueNotNull, out var resultValue)) {
+                return CreateDateTimeValue(argName, resultValue);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToDateTimeOffsetValue(argValueNotNull, out var resultValue)) {
+                return CreateDateTimeOffsetValue(argName, resultValue);
+            }
+        }
+        {
+            if (TracorDataUtility.TryCastObjectToDurationValue(argValueNotNull, out var resultValue)) {
+                return CreateDurationValue(argName, resultValue);
+            }
+        }
+        {
+            var result = new TracorDataProperty(argName);
+            result.SetAnyValue(argValueNotNull);
+            return result;
+        }
+    }
 
-	public static TracorDataProperty Create(string argName, object argValue) {
-		if (argValue is string stringValue) {
-			return CreateString(argName, stringValue);
-		}
-		if (argValue is int intValue) {
-			return CreateInteger(argName, intValue);
-		}
-		if (argValue is LogLevel logLevelValue) {
-			return CreateLevelValue(argName, logLevelValue);
-		}
-		if (argValue is DateTime dtValue) {
-			return CreateDateTime(argName, dtValue);
-		}
-		if (argValue is DateTimeOffset dtoValue) {
-			return CreateDateTimeOffset(argName, dtoValue);
-		}
-		if (argValue is long longValue) {
-			return CreateLong(argName, longValue);
-		}
-		if (argValue is double doubleValue) {
-			return CreateDouble(argName, doubleValue);
-		}
-		{
-			return new TracorDataProperty(
-				name: argName,
-				typeValue: TracorDataPropertyTypeValue.Any,
-				textValue: argValue.ToString() ?? string.Empty,
-				value: argValue
-			);
-		}
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, string argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateString(string argName, string argValue)
-		=> new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.String,
-			textValue: argValue,
-			value: argValue
-		);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, long argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateInteger(string argName, int argValue)
-		=> new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.Integer,
-			textValue: argValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat),
-			value: argValue
-		);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, bool argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateLevelValue(string argName, LogLevel argValue)
-		=> new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.LevelValue,
-			textValue: argValue.ToString(),
-			value: argValue
-		);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create<T>(string argName, T argValue)
+        where T : struct, Enum
+        => new TracorDataProperty(argName, argValue.ToString(), TracorDataPropertyTypeValue.Enum);
 
-	public static TracorDataProperty CreateDateTime(string argName, DateTime argValue) {
-		var ns = TracorDataUtility.DateTimeToUnixTimeNanoseconds(argValue);
-		return new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.DateTime,
-			textValue: ns.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat),
-			value: argValue
-		);
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, LogLevel argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateDateTimeOffset(string argName, DateTimeOffset argValue) {
-		var ns = TracorDataUtility.DateTimeOffsetToUnixTimeNanoseconds(argValue);
-		return new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.DateTimeOffset,
-			textValue: ns.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat),
-			value: argValue
-		);
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, double argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateBoolean(string argName, bool argValue)
-		=> new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.Boolean,
-			textValue: TracorDataUtility.GetBoolString(argValue),
-			value: TracorDataUtility.GetBoolValueBoxes(argValue)
-		);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, DateTime argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateLong(string argName, long argValue)
-		=> new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.Long,
-			textValue: argValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat),
-			value: argValue
-		);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, DateTimeOffset argValue)
+        => new TracorDataProperty(argName, argValue);
 
-	public static TracorDataProperty CreateDouble(string argName, double argValue)
-		=> new TracorDataProperty(
-			name: argName,
-			typeValue: TracorDataPropertyTypeValue.Double,
-			textValue: argValue.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat),
-			value: argValue
-		);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, TimeSpan argValue)
+        => new TracorDataProperty(argName, argValue);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty Create(string argName, Guid argValue)
+        => new TracorDataProperty(argName, argValue);
+
+    //
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateNull(string argName)
+        => new TracorDataProperty(
+            name: argName,
+            typeValue: TracorDataPropertyTypeValue.Null,
+            textValue: string.Empty
+        );
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateStringValue(string argName, string argValue)
+        => new TracorDataProperty(argName, argValue);
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateIntegerValue(string argName, long argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateBoolean(string argName, bool argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateEnumValue<T>(string argName, T argValue)
+        where T : struct, Enum
+        => new TracorDataProperty(argName, argValue.ToString(), TracorDataPropertyTypeValue.Enum);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] 
+    public static TracorDataProperty CreateEnumValue(string argName, object argValue) => new TracorDataProperty(argName, argValue.ToString()!, TracorDataPropertyTypeValue.Enum);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateLevelValue(string argName, LogLevel argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateDoubleValue(string argName, double argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateDateTimeValue(string argName, DateTime argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateDateTimeOffsetValue(string argName, DateTimeOffset argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateDurationValue(string argName, TimeSpan argValue) 
+        => new TracorDataProperty(argName, argValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TracorDataProperty CreateUuidValue(string argName, Guid argValue) 
+        => new TracorDataProperty(argName, argValue);
 }

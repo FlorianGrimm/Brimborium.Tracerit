@@ -24,7 +24,7 @@ public sealed class AngularFileService : EndpointDataSource {
         }
     }
 
-    public void Initialze() {
+    public void Initialize() {
         var webRootPath = this._WebHostEnvironment.WebRootPath;
         var webRootProvider = this._WebHostEnvironment.WebRootFileProvider;
         var additionalPathProvider = new PhysicalFileProvider(

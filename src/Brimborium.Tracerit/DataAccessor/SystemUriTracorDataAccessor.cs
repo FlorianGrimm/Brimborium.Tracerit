@@ -2,20 +2,20 @@
 
 public sealed class SystemUriTracorDataAccessor : ITracorDataAccessor<Uri> {
     public void ConvertProperties(Uri value, List<TracorDataProperty> listProperty) {
-        listProperty.Add(TracorDataProperty.CreateString(nameof(System.Uri.AbsoluteUri), value.AbsoluteUri));
-        listProperty.Add(TracorDataProperty.CreateString(nameof(System.Uri.Host), value.Host));
-        listProperty.Add(TracorDataProperty.CreateString(nameof(System.Uri.LocalPath), value.LocalPath));
-        listProperty.Add(TracorDataProperty.CreateString(nameof(System.Uri.Query), value.Query));
-        listProperty.Add(TracorDataProperty.CreateString(nameof(System.Uri.PathAndQuery), value.PathAndQuery));
+        listProperty.Add(TracorDataProperty.CreateStringValue(nameof(System.Uri.AbsoluteUri), value.AbsoluteUri));
+        listProperty.Add(TracorDataProperty.CreateStringValue(nameof(System.Uri.Host), value.Host));
+        listProperty.Add(TracorDataProperty.CreateStringValue(nameof(System.Uri.LocalPath), value.LocalPath));
+        listProperty.Add(TracorDataProperty.CreateStringValue(nameof(System.Uri.Query), value.Query));
+        listProperty.Add(TracorDataProperty.CreateStringValue(nameof(System.Uri.PathAndQuery), value.PathAndQuery));
     }
 
     public List<string> GetListPropertyNameTyped(Uri value) {
-        return ["Value", "ToString", "Host", "PathAndQuery"];
+        return [TracorConstants.TracorDataPropertyNameValue, "ToString", "Host", "PathAndQuery"];
     }
 
     public bool TryGetPropertyValueTyped(Uri value, string propertyName, out object? propertyValue) {
         switch (propertyName) {
-            case "Value":
+            case TracorConstants.TracorDataPropertyNameValue:
                 propertyValue = value;
                 return true;
             case nameof(System.Uri.ToString):

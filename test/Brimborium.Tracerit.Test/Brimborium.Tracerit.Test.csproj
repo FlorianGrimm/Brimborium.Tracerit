@@ -7,6 +7,11 @@
     <NoWarn>$(NoWarn);CA*;CA1852</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Expression\GroupByExpressionTests.cs" />
+    <Compile Remove="Expression\RecordExpressionTests.cs" />
+    <Compile Remove="ValidatorTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
@@ -17,5 +22,13 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="FileSink\Log\Log2\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Expression\GroupByExpressionTests.cs" />
+    <None Include="Expression\RecordExpressionTests.cs" />
+    <None Include="ValidatorTest.cs" />
   </ItemGroup>
 </Project>

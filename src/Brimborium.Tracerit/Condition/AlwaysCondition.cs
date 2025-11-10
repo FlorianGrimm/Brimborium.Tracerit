@@ -16,11 +16,10 @@ public sealed class AlwaysCondition : IExpressionCondition {
     /// <summary>
     /// Always returns true, indicating that this condition is always satisfied.
     /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="tracorData">The trace data to evaluate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>Always returns true.</returns>
-    public bool DoesMatch(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) => true;
+    public TracorValidatorOnTraceResult DoesMatch(ITracorData tracorData, OnTraceStepCurrentContext currentContext) => TracorValidatorOnTraceResult.Successful;
 }
 
 /// <summary>
@@ -45,8 +44,7 @@ public sealed class AlwaysCondition<TValue, TProperty> : IExpressionCondition {
         this._SetGlobalState = setGlobalState;
     }
 
-    public bool DoesMatch(
-        TracorIdentitfier callee,
+    public TracorValidatorOnTraceResult DoesMatch(
         ITracorData tracorData,
         OnTraceStepCurrentContext currentContext) {
         if (this._FnGetProperty is { } fnGetProperty
@@ -54,9 +52,9 @@ public sealed class AlwaysCondition<TValue, TProperty> : IExpressionCondition {
             && tracorData is ITracorData<TValue> tracorDataTyped
             && tracorDataTyped.TryGetOriginalValue(out var valueTyped)) {
             if (fnGetProperty(valueTyped) is { } propertyValue) {
-                currentContext.GlobalState[setGlobalState] = propertyValue;
+                currentContext.SetValueGlobalState(TracorDataProperty.Create(setGlobalState, propertyValue));
             }
         }
-        return true;
+        return TracorValidatorOnTraceResult.Successful;
     }
 }

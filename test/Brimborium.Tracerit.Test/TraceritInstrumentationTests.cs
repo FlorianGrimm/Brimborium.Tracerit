@@ -9,7 +9,7 @@ namespace Brimborium.Tracerit.Test
             await Assert.That(sut.GetActivitySource()).IsNotNull();
             sut.Dispose();
             await Assert.That(sut.ActivitySource).IsNull();
-            Assert.Throws(() => sut.GetActivitySource());
+            Assert.Throws<Exception>(() => sut.GetActivitySource());
         }
     }
 }

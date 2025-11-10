@@ -10,7 +10,7 @@ public class ConditionTests {
     public async Task AlwaysCondition_ShouldAlwaysReturnTrue() {
         // Arrange
         var condition = AlwaysCondition.Instance;
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -38,7 +38,7 @@ public class ConditionTests {
             fnGetProperty: value => value.ToUpper(),
             setGlobalState: "UpperValue");
 
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -55,7 +55,7 @@ public class ConditionTests {
     public async Task NeverCondition_ShouldAlwaysReturnFalse() {
         // Arrange
         var condition = NeverCondition.Instance;
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -75,7 +75,7 @@ public class ConditionTests {
             data.TryGetPropertyValue<string>("Value", out var value) && value.StartsWith("t"));
 
         var andCondition = new AndCondition(condition1, condition2);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -93,7 +93,7 @@ public class ConditionTests {
         var condition2 = new PredicateTracorDataCondition(data => false);
 
         var andCondition = new AndCondition(condition1, condition2);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -111,7 +111,7 @@ public class ConditionTests {
         var condition2 = new PredicateTracorDataCondition(data => true);
 
         var orCondition = new OrCondition(condition1, condition2);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -129,7 +129,7 @@ public class ConditionTests {
         var condition2 = new PredicateTracorDataCondition(data => false);
 
         var orCondition = new OrCondition(condition1, condition2);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 
@@ -146,7 +146,7 @@ public class ConditionTests {
         var condition = new PredicateTracorDataCondition(data =>
             data.TryGetPropertyValue<string>("Value", out var value) && value == "expected");
 
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var context = CreateTestContext();
 
         // Act & Assert
@@ -161,7 +161,7 @@ public class ConditionTests {
     public async Task PredicateValueCondition_ShouldEvaluateTypedValue() {
         // Arrange
         var condition = new PredicateValueCondition<string>(value => value.Length > 3);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var context = CreateTestContext();
 
         // Act & Assert
@@ -176,7 +176,7 @@ public class ConditionTests {
     public async Task PredicateValueCondition_ShouldReturnFalseForWrongType() {
         // Arrange
         var condition = new PredicateValueCondition<string>(value => true);
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<int>(42);
         var context = CreateTestContext();
 
@@ -194,7 +194,7 @@ public class ConditionTests {
             globalState.TryGetValue("ExpectedValue", out var expected) &&
             expected is string expectedStr && value == expectedStr);
 
-        var callee = new TracorIdentitfier("Test", "Method");
+        var callee = new TracorIdentifier("Test", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
         context.GlobalState["ExpectedValue"] = "test";
@@ -238,8 +238,8 @@ public class ConditionTests {
     public async Task CalleeCondition_ShouldMatchCallerIdentifier() {
         // Arrange
         var condition = new CalleeCondition("Test", "Method");
-        var matchingCallee = new TracorIdentitfier("Test", "Method");
-        var nonMatchingCallee = new TracorIdentitfier("Other", "Method");
+        var matchingCallee = new TracorIdentifier("Test", "Method");
+        var nonMatchingCallee = new TracorIdentifier("Other", "Method");
         var tracorData = new ValueTracorData<string>("test");
         var context = CreateTestContext();
 

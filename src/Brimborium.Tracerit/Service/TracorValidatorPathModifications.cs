@@ -1,7 +1,7 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
 public sealed class TracorValidatorPathModifications {
-    private TracorValidatorPath _TracorValidatorPath;
+    private readonly TracorValidatorPath _TracorValidatorPath;
 
     internal TracorValidatorPathModifications(TracorValidatorPath tracorValidatorPath) {
         this._TracorValidatorPath = tracorValidatorPath;
@@ -11,6 +11,9 @@ public sealed class TracorValidatorPathModifications {
         this._TracorValidatorPath.AddFork(before, value);
     }
 
-    internal OnTraceStepExecutionState? TryGetFork(TracorForkState forkState)
+    internal OnTraceStepExecutionState? TryGetFork(in Dictionary<string, TracorDataProperty> forkState)
         => this._TracorValidatorPath.TryGetFork(forkState);
+
+    internal OnTraceStepExecutionState? TryGetFork(in TracorDataProperty tdpCurrent, Func<TracorDataProperty, TracorDataProperty, bool> fnCompare)
+        => this._TracorValidatorPath.TryGetFork(tdpCurrent, fnCompare);
 }

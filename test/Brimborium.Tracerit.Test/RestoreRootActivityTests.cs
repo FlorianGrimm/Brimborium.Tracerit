@@ -14,26 +14,26 @@ public class RestoreRootActivityTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddConsole();
         });
-        serviceBuilder.AddTracorLogger();
-        serviceBuilder.AddTracor(true);
-        serviceBuilder.AddTracorActivityListener(true);
-        serviceBuilder.AddInstrumentation<SampleTest1Instrumentation>();
+        serviceBuilder.AddTracor(true)
+            .AddTracorActivityListener(true)
+            .AddTracorInstrumentation<SampleTest1Instrumentation>();
+            ;
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();
         serviceProvider.TracorActivityListenerStart();
-        var testtimeTracorActivityListener = serviceProvider.GetRequiredService<TesttimeTracorActivityListener>();
+        var enabledTracorActivityListener = serviceProvider.GetRequiredService<EnabledTracorActivityListener>();
 
         var sampleTest1Instrumentation = serviceProvider.GetRequiredService<SampleTest1Instrumentation>();
 
         RecordExpressionResult reportExpressionResult = new();
-        var tracor = serviceProvider.GetRequiredService<ITracor>();
+        var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var tracorValidator = serviceProvider.GetRequiredService<ITracorValidator>();
         using (var validatorPath = tracorValidator.Add(
             new RecordExpression(
                 reportExpressionResult,
                 new SequenceExpression(
                     listChild: [
-                        Wrap(static(ITracorData data) => data.IsEqual("operation", "test3")).Predicate().AsMatch()
+                        Wrap(static(ITracorData data) => data.IsEqualString("operation", "test3")).Predicate().AsMatch()
                         ])))
             ) {
             using (var rootActivity = sampleTest1Instrumentation.StartRoot(name:"aaa")) {

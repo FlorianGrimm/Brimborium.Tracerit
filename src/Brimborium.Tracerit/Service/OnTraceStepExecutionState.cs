@@ -1,35 +1,65 @@
-﻿namespace Brimborium.Tracerit.Service;
+﻿
 
+
+namespace Brimborium.Tracerit.Service;
+
+[DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public sealed class OnTraceStepExecutionState {
-    private readonly Dictionary<ValidatorStepIdentifier, ValidatorExpressionState> _DictStateByStep = new();
+#pragma warning disable IDE1006 // Naming Styles
+    internal readonly Dictionary<ValidatorStepIdentifier, ValidatorExpressionState> DictStateByStep = new();
+#pragma warning restore IDE1006 // Naming Styles
 
-    public OnTraceStepExecutionState(TracorGlobalState? globalState = default, HashSet<string>? listSuccessState = default) {
-        this.GlobalState = globalState ?? new TracorGlobalState();
-        if (listSuccessState is { Count: > 0 }) {
-            this.ListSuccessState = new HashSet<string>(listSuccessState);
+    public readonly Lock Lock = new Lock();
+    private static long _IdNext = 0;
+    public readonly long Id = System.Threading.Interlocked.Increment(ref _IdNext);
+
+    public OnTraceStepExecutionState(List<TracorDataProperty>? globalState = default) {
+        this.ListReportState = ImmutableArray<TracorReportStateItem>.Empty;
+        this.DictForkState = ImmutableDictionary<string, TracorDataProperty>.Empty;
+        if (globalState is null) {
+            this.DictGlobalState = ImmutableDictionary<string, TracorDataProperty>.Empty;
         } else {
-            this.ListSuccessState = new HashSet<string>();
+            this.DictGlobalState = globalState.ToImmutableDictionary(i => i.Name);
         }
     }
 
-    public TracorForkState ForkState { get; } = new();
-    public TracorGlobalState GlobalState { get; }
-    public HashSet<string> ListSuccessState { get; }
+    private OnTraceStepExecutionState(OnTraceStepExecutionState src) {
+        this.ListReportState = src.ListReportState;
+        this.DictForkState = src.DictForkState;
+        this.DictGlobalState = src.DictGlobalState;
+        foreach (var kv in src.DictStateByStep) {
+            this.DictStateByStep[kv.Key] = kv.Value.Copy();
+        }
+    }
+
+    internal ImmutableArray<TracorReportStateItem> ListReportState;
+    internal ImmutableDictionary<string, TracorDataProperty> DictForkState;
+    internal ImmutableDictionary<string, TracorDataProperty> DictGlobalState;
+
+    public TracorGlobalState GlobalState => new TracorGlobalState(this);
+
+    public Dictionary<ValidatorStepIdentifier, TracorValidatorOnTraceResult> GetDictCompleted() {
+        Dictionary<ValidatorStepIdentifier, TracorValidatorOnTraceResult> result = new();
+        foreach (var kvp in this.DictStateByStep) {
+            result[kvp.Key] = kvp.Value.Result;
+        }
+        return result;
+    }
 
     public TState GetState<TState>(ValidatorStepIdentifier identifier)
         where TState : ValidatorExpressionState, new() {
-        if (this._DictStateByStep.TryGetValue(identifier, out var state)) {
+        if (this.DictStateByStep.TryGetValue(identifier, out var state)) {
             return (TState)state;
         } else {
             var stateTyped = new TState();
-            this._DictStateByStep[identifier] = stateTyped;
+            this.DictStateByStep[identifier] = stateTyped;
             return stateTyped;
         }
     }
 
     public bool TryGetState<TState>(ValidatorStepIdentifier identifier, [MaybeNullWhen(false)] out TState state)
         where TState : ValidatorExpressionState {
-        if (this._DictStateByStep.TryGetValue(identifier, out var foundState)
+        if (this.DictStateByStep.TryGetValue(identifier, out var foundState)
             && foundState is TState foundStateTyped) {
             state = foundStateTyped;
             return true;
@@ -39,10 +69,32 @@ public sealed class OnTraceStepExecutionState {
     }
 
     internal OnTraceStepExecutionState Copy() {
-        var result = new OnTraceStepExecutionState(default, this.ListSuccessState);
-        result.ForkState.CopyFrom(this.ForkState);
-        result.GlobalState.CopyFrom(this.GlobalState);
-        result._DictStateByStep.CopyFrom(this._DictStateByStep);
-        return result;
+        return new OnTraceStepExecutionState(this);
+    }
+
+    internal TracorRunningState GetTracorRunningState()
+        => new TracorRunningState(
+            this.ListReportState,
+            this.DictGlobalState);
+
+    internal TracorFinishState GetFinishState(TracorValidatorOnTraceResult finalResult)
+        => new TracorFinishState(
+            finalResult,
+            this.ListReportState,
+            this.DictGlobalState);
+
+    private string GetDebuggerDisplay()
+        => $"{this.Id} SbS:{this.DictStateByStep.Count}; FS:{this.DictForkState.Count}; GS:{this.DictGlobalState.Count}";
+
+    internal void SetValueForkState(TracorDataProperty propertyValue) {
+        this.DictForkState = this.DictForkState.SetItem(propertyValue.Name, propertyValue);
+    }
+
+    internal void AddReportState(TracorReportStateItem value) {
+        this.ListReportState = this.ListReportState.Add(value);
+    }
+
+    internal void SetValueGlobalState(TracorDataProperty value) {
+        this.DictGlobalState=this.DictGlobalState.SetItem(value.Name, value);
     }
 }

@@ -1,58 +1,39 @@
-﻿using System.Text.Json.Serialization;
+﻿#pragma warning disable IDE0017
 
 namespace Brimborium.Tracerit;
 
 /// <summary>
 /// Represents a record of trace data, including properties and identifiers.
 /// </summary>
+[DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public sealed class TracorDataRecord
     : ReferenceCountObject
     , ITracorData {
+    private readonly List<TracorDataProperty> _ListProperty = new(8);
+
     public TracorDataRecord() : base(null) { }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
     /// </summary>
     public TracorDataRecord(IReferenceCountPool? owner) : base(owner) { }
 
     /// <summary>
-    /// Gets or sets the operation type for this trace data record.
-    /// </summary>
-    public TracorDataRecordOperation Operation { get; set; }
-
-    /// <summary>
     /// Gets or sets the identifier associated with this trace data record.
     /// </summary>
-    public TracorIdentitfier? TracorIdentitfier { get; set; }
+    public TracorIdentifier TracorIdentifier { get; set; }
+
+    public DateTime Timestamp { get; set; }
 
     /// <summary>
     /// Gets the list of properties associated with this trace data record.
     /// </summary>
-    public List<TracorDataProperty> ListProperty { get; } = new(64);
-
-    /// <summary>
-    /// Converts this record to a <see cref="TracorIdentitfierData"/> object.
-    /// </summary>
-    /// <returns>A <see cref="TracorIdentitfierData"/> containing the identifier and this record.</returns>
-    public TracorIdentitfierData ToTracorIdentitfierData()
-        => new TracorIdentitfierData(
-            this.TracorIdentitfier ?? new(string.Empty, string.Empty),
-            this);
-
-    /// <summary>
-    /// Gets the value of a property by name.
-    /// </summary>
-    /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <returns>The value of the property if found; otherwise, null.</returns>
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var result)) {
-                return result;
-            } else {
-                return null;
-            }
+    public List<TracorDataProperty> ListProperty {
+        get=> this._ListProperty; 
+        set {
+            this._ListProperty.AddRange(value);
         }
     }
-
     /// <inheritdoc/>
     public List<string> GetListPropertyName() {
         List<string> result = new(this.ListProperty.Count);
@@ -64,9 +45,10 @@ public sealed class TracorDataRecord
 
     /// <inheritdoc/>
     public bool TryGetPropertyValue(string propertyName, out object? propertyValue) {
-        foreach (var property in this.ListProperty) {
-            if (propertyName == property.Name) {
-                propertyValue = property.Value;
+        var listProperty = this.ListProperty;
+        for (int index = 0; index < listProperty.Count; index++) {
+            if (string.Equals(listProperty[index].Name, propertyName, StringComparison.Ordinal)) {
+                propertyValue = listProperty[index].Value;
                 return true;
             }
         }
@@ -74,9 +56,27 @@ public sealed class TracorDataRecord
         return false;
     }
 
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        var listProperty = this.ListProperty;
+        for (int index = 0; index < listProperty.Count; index++) {
+            if (string.Equals(listProperty[index].Name, propertyName, StringComparison.Ordinal)) { 
+                result = listProperty[index];
+                return true;
+            }
+        }
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
+
+
     /// <inheritdoc/>
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         listProperty.AddRange(this.ListProperty);
+    }
+
+    public void CopyPropertiesToSink(TracorPropertySinkTarget target) {
+        ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(this, target);
+        target.ListPropertyFromTracorData = this.ListProperty;
     }
 
     /// <summary>
@@ -85,18 +85,18 @@ public sealed class TracorDataRecord
     /// <param name="currentData">The current trace identifier data.</param>
     /// <param name="expectedData">The expected trace data record.</param>
     /// <returns>True if the current data matches the expected data; otherwise, false.</returns>
-    public static bool IsPartialEquals(TracorIdentitfierData currentData, TracorDataRecord expectedData) {
-        if (expectedData.TracorIdentitfier is { } expectedtracorIdentitfier) {
-            var currentTracorIdentitfier = currentData.TracorIdentitfier;
-            if (!MatchEqualityComparerTracorIdentitfier.Default.Equals(
-                    currentTracorIdentitfier,
-                    expectedtracorIdentitfier)) {
+    public static bool IsPartialEquals(ITracorData currentData, TracorDataRecord expectedData) {
+        if (expectedData.TracorIdentifier is { } expectedTracorIdentifier) {
+            var currentTracorIdentifier = currentData.TracorIdentifier;
+            if (!MatchEqualityComparerTracorIdentifier.Default.Equals(
+                    currentTracorIdentifier,
+                    expectedTracorIdentifier)) {
                 return false;
             }
         }
         if (0 < expectedData.ListProperty.Count) {
             foreach (var expectedProperty in expectedData.ListProperty) {
-                if (currentData.TracorData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
+                if (currentData.TryGetPropertyValue(expectedProperty.Name, out var currentPropertyValue)) {
                     if (expectedProperty.HasEqualValue(currentPropertyValue)) {
                         // equal -> ok
                     } else {
@@ -118,8 +118,36 @@ public sealed class TracorDataRecord
         this.ListProperty.Clear();
     }
 
-    protected override bool IsStateReseted() {
+    protected override bool IsStateReset() {
         return this.ListProperty.Count == 0 && this.ListProperty.Capacity <= 128;
+    }
+
+    public static TracorDataRecord Convert(ITracorData src, TracorDataRecordPool? tracorDataRecordPool) {
+        if (src is TracorDataRecord result) {
+            return result;
+        }
+        {
+            if (tracorDataRecordPool is { }) {
+                result = tracorDataRecordPool.Rent();
+            } else { 
+                result = new TracorDataRecord();
+            }
+
+            result.TracorIdentifier = src.TracorIdentifier;
+            result.Timestamp = src.Timestamp;
+            src.ConvertProperties(result.ListProperty);
+
+            return result;
+        }
+    }
+
+    internal string GetDebuggerDisplay() {
+        return $"{this.TracorIdentifier} {this.ListProperty.FirstOrDefault().GetDebuggerDisplay()} {this.Timestamp:o}";
+    }
+
+    public TracorDataRecord Add(TracorDataProperty value) {
+        this.ListProperty.Add(value);
+        return this;
     }
 }
 
@@ -141,19 +169,13 @@ public sealed class TracorDataRecordAccessorFactory : ITracorDataAccessorFactory
         return true;
     }
 }
-public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> {
-    public static TracorDataRecordPool Create(IServiceProvider provider) => new(0);
 
-    public TracorDataRecordPool(int capacity) : base(capacity) { }
+public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> {
+    [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
+    public TracorDataRecordPool() : this(0) { }
+
+    public TracorDataRecordPool(int capacity) : base(capacity) { 
+    }
 
     protected override TracorDataRecord Create() => new TracorDataRecord(this);
 }
-/*
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(TracorDataCollection))]
-[JsonSerializable(typeof(TracorDataRecord))]
-[JsonSerializable(typeof(TracorDataProperty))]
-[JsonSerializable(typeof(TracorIdentitfier))]
-internal partial class TracorDataJsonSerializerContext : JsonSerializerContext {
-}
-*/

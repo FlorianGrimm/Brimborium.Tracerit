@@ -6,13 +6,24 @@ namespace Brimborium.Tracerit.Service;
 /// This implementation provides no properties and always returns false for property value queries.
 /// </summary>
 public sealed class NullTypeData : ITracorData {
-    public object? this[string propertyName] {
-        get {
-            return null;
-        }
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    public TracorIdentifier TracorIdentifier { get; set; }
+
+    public DateTime Timestamp { get; set; }
+
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        result = new TracorDataProperty(string.Empty);
+        return false;
     }
 
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
+    }
+
+    public void CopyPropertiesToSink(TracorPropertySinkTarget target) {
+        ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(this, target);
     }
 
     /// <inheritdoc />

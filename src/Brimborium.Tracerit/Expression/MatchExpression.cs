@@ -43,50 +43,52 @@ public sealed class MatchExpression : ValidatorExpression {
     /// <summary>
     /// Processes a trace event by first checking if it matches the condition, then processing child expressions in sequence.
     /// </summary>
-    /// <param name="callee">The identifier of the caller or trace point.</param>
     /// <param name="tracorData">The trace data to validate.</param>
     /// <param name="currentContext">The current context of the validation step.</param>
     /// <returns>The result of the trace validation.</returns>
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override TracorValidatorOnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<MatchStepState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
         if (!state.Matched) {
-            var matched = this.Condition.DoesMatch(callee, tracorData, currentContext);
-            if (matched) {
+            var conditionResult = this.Condition.DoesMatch(tracorData, currentContext);
+            if (TracorValidatorOnTraceResult.Successful == conditionResult) {
                 state.Matched = true;
                 if (0 == this._ListChild.Length) {
-                    currentContext.SetStateSuccessfull(this, state);
-                    return OnTraceResult.Successfull;
+                    return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                 } else {
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 }
-            } else {
-                return OnTraceResult.None;
+            } else if (TracorValidatorOnTraceResult.Failed == conditionResult) {
+                return currentContext.SetStateFailed(this, state, tracorData.Timestamp);
+            } else { 
+                return TracorValidatorOnTraceResult.None;
             }
         }
         {
             var childIndex = state.ChildIndex;
             if (childIndex < this._ListChild.Length) {
                 var childContext = currentContext.GetChildContext(childIndex);
-                var childResult = this._ListChild[childIndex].OnTrace(callee, tracorData, childContext);
-                if (OnTraceResult.Successfull == childResult) {
+                var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
+                if (TracorValidatorOnTraceResult.Successful == childResult) {
                     childIndex++;
                     if (childIndex < this._ListChild.Length) {
                         state.ChildIndex = childIndex;
-                        return OnTraceResult.None;
+                        return TracorValidatorOnTraceResult.None;
                     } else {
                         state.ChildIndex = this._ListChild.Length;
-                        currentContext.SetStateSuccessfull(this, state);
-                        return OnTraceResult.Successfull;
+                        return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                     }
+                } else if (TracorValidatorOnTraceResult.Failed == childResult) {
+                    return currentContext.SetStateFailed(this, state, tracorData.Timestamp);
                 } else {
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 }
             } else {
-                currentContext.SetStateSuccessfull(this, state);
-                return OnTraceResult.Successfull;
+                return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
             }
         }
     }
@@ -104,5 +106,20 @@ public sealed class MatchExpression : ValidatorExpression {
         /// Gets or sets the index of the current child expression being processed.
         /// </summary>
         public int ChildIndex;
+
+        public MatchStepState() {
+        }
+
+        private MatchStepState(
+            TracorValidatorOnTraceResult result,
+            bool matched,
+            int childIndex
+            ) : base(result) {
+            this.Matched = matched;
+            this.ChildIndex = childIndex;
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new MatchStepState(this.Result, this.Matched, this.ChildIndex);
     }
 }

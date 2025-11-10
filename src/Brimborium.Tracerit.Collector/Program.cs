@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using System.Runtime.CompilerServices;
+
 [assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.Test")]
+
 namespace Brimborium.Tracerit.Collector;
 
 public class Program {
@@ -33,9 +34,7 @@ public class Program {
 
         builder.Services.AddAngularFileService()
             .Configure(options => {
-                options.AngularPathPrefix.Add("home");
-                options.AngularPathPrefix.Add("page1");
-                options.AngularPathPrefix.Add("page2");
+                options.AngularPathPrefix.Add("tracorit");
             });
 
         // Add services to the container.
@@ -49,6 +48,13 @@ public class Program {
             // By default, all incoming requests will be authorized according to the default policy.
             options.FallbackPolicy = options.DefaultPolicy;
         });
+        builder.Services.AddSingleton<IController, UIEndpoints>();
+        builder.Services.AddSingleton<IController, CollectorTracorEndpoints>();
+        builder.Services.AddTraceritCollector();
+
+        
+        builder.Services.AddOptions<AppConfig>().BindConfiguration("");
+        builder.Services.AddSingleton<LogFileService>();
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
@@ -64,9 +70,13 @@ public class Program {
         //    app.UseHttpsRedirection();
         //}
 
-        app.UseAuthorization();
-        app.UseAuthentication();
+        //app.UseAuthorization();
+        //app.UseAuthentication();
         app.UseAngularFileService();
+        app.UseTraceritCollector();
+        foreach (var controller in app.Services.GetServices<IController>()) { 
+            controller.MapEndpoints(app);
+        }
 
         if (startupActions.ConfigureWebApplication is { } configureWebApplication) { configureWebApplication(app); }
 

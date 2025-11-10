@@ -1,4 +1,5 @@
 ﻿namespace Brimborium.Tracerit.DataAccessor;
+
 public sealed class JsonDocumentTracorData
     : ReferenceCountObject<System.Text.Json.JsonDocument>
     , ITracorData<System.Text.Json.JsonDocument> {
@@ -8,16 +9,6 @@ public sealed class JsonDocumentTracorData
 
     public JsonDocumentTracorData(System.Text.Json.JsonDocument value) : base(default) {
         this._Value = value;
-    }
-
-    public object? this[string propertyName] {
-        get {
-            if (this.TryGetPropertyValue(propertyName, out var propertyValue)) {
-                return propertyValue;
-            } else {
-                return null;
-            }
-        }
     }
 
     public List<string> GetListPropertyName() {
@@ -35,13 +26,13 @@ public sealed class JsonDocumentTracorData
             return result;
         }
         if (value.RootElement.ValueKind == System.Text.Json.JsonValueKind.String) {
-            return ["Value"];
+            return [TracorConstants.TracorDataPropertyNameValue];
         }
         if (value.RootElement.ValueKind == System.Text.Json.JsonValueKind.False) {
-            return ["Value"];
+            return [TracorConstants.TracorDataPropertyNameValue];
         }
         if (value.RootElement.ValueKind == System.Text.Json.JsonValueKind.True) {
-            return ["Value"];
+            return [TracorConstants.TracorDataPropertyNameValue];
         }
         return [];
     }
@@ -82,7 +73,24 @@ public sealed class JsonDocumentTracorData
         return false;
     }
 
+    /// <summary>
+    /// Gets or sets the identifier associated with this trace data record.
+    /// </summary>
+    public TracorIdentifier TracorIdentifier { get; set; }
+    
+    public DateTime Timestamp { get; set; }
+
+    public bool TryGetDataProperty(string propertyName, out TracorDataProperty result) {
+        result = new TracorDataProperty(string.Empty);
+        return false;
+    }
+
     public void ConvertProperties(List<TracorDataProperty> listProperty) {
         // TODO: if needed
+    }
+
+    public void CopyPropertiesToSink(TracorPropertySinkTarget target) {
+        ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(this, target);
+        this.ConvertProperties(target.ListProperty);
     }
 }

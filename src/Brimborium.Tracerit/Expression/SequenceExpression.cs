@@ -41,38 +41,54 @@ public sealed class SequenceExpression : ValidatorExpression {
         return this;
     }
 
-    public override OnTraceResult OnTrace(TracorIdentitfier callee, ITracorData tracorData, OnTraceStepCurrentContext currentContext) {
+    public override TracorValidatorOnTraceResult OnTrace(
+        ITracorData tracorData,
+        OnTraceStepCurrentContext currentContext) {
         var state = currentContext.GetState<SequenceStepState>();
-        if (state.Successfull) {
-            return OnTraceResult.Successfull;
+        if (state.Result.IsComplete()) {
+            return state.Result;
         }
 
         var childIndex = state.ChildIndex;
         if (childIndex < this._ListChild.Length) {
             var childContext = currentContext.GetChildContext(childIndex);
-            var childResult = this._ListChild[childIndex].OnTrace(callee, tracorData, childContext);
-            if (OnTraceResult.Successfull == childResult) {
+            var childResult = this._ListChild[childIndex].OnTrace(tracorData, childContext);
+            if (TracorValidatorOnTraceResult.Successful == childResult) {
                 childIndex++;
                 if (childIndex < this._ListChild.Length) {
                     state.ChildIndex = childIndex;
-                    return OnTraceResult.None;
+                    return TracorValidatorOnTraceResult.None;
                 } else {
                     state.ChildIndex = this._ListChild.Length;
-                    currentContext.SetStateSuccessfull(this, state);
-                    return OnTraceResult.Successfull;
+                    return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
                 }
             } else {
-                return OnTraceResult.None;
+                return TracorValidatorOnTraceResult.None;
             }
         } else {
-            currentContext.SetStateSuccessfull(this, state);
-            return OnTraceResult.Successfull;
+            return currentContext.SetStateSuccessful(this, state, tracorData.Timestamp);
         }
     }
 
     internal sealed class SequenceStepState : ValidatorExpressionState {
         public int ChildIndex = 0;
+
+        public SequenceStepState() {
+        }
+
+        private SequenceStepState(
+            TracorValidatorOnTraceResult result,
+            int childIndex
+            ) : base(result) {
+            this.ChildIndex = childIndex;
+        }
+
+        protected internal override ValidatorExpressionState Copy()
+            => new SequenceStepState(
+                this.Result,
+                this.ChildIndex);
     }
+
 
     public static SequenceExpression operator +(SequenceExpression left, IValidatorExpression right) {
         return new(left.Label, left.ListChild.Add(right));

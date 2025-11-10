@@ -11,10 +11,10 @@ internal sealed class ExceptionInfo {
     }
 
     public ExceptionInfo(Exception exception) {
-        TypeName = exception.GetType().FullName;
-        Message = exception.Message;
-        HResult = exception.HResult;
-        VerboseMessage = exception.ToString();
+        this.TypeName = exception.GetType().FullName;
+        this.Message = exception.Message;
+        this.HResult = exception.HResult;
+        this.VerboseMessage = exception.ToString();
     }
 
     public string? TypeName { get; }
