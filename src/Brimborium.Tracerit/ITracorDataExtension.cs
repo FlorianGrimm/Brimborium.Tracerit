@@ -153,7 +153,7 @@ public static class ITracorDataExtension {
             return true;
         }
         if (string.Equals(TracorConstants.TracorDataPropertyNameSource, propertyName, StringComparison.Ordinal)) {
-            var value = (thatTracorData.TracorIdentifier.Source is { Length: > 0 } source) ? source : string.Empty;
+            var value = (thatTracorData.TracorIdentifier.SourceProvider is { Length: > 0 } source) ? source : string.Empty;
             result = TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameSource,
                     value);
@@ -185,7 +185,7 @@ public static class ITracorDataExtension {
             TracorDataProperty.CreateDateTimeValue(
                 TracorConstants.TracorDataPropertyNameTimestamp,
                 thatTracorData.Timestamp));
-        if (thatTracorData.TracorIdentifier.Source is { Length: > 0 } source) {
+        if (thatTracorData.TracorIdentifier.SourceProvider is { Length: > 0 } source) {
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameSource,
@@ -214,7 +214,7 @@ public static class ITracorDataExtension {
             targetProperty.Name = TracorConstants.TracorDataPropertyNameTimestamp;
             targetProperty.SetDateTimeValue(thatTracorData.Timestamp);
         }
-        if (thatTracorData.TracorIdentifier.Source is { Length: > 0 } source) {
+        if (thatTracorData.TracorIdentifier.SourceProvider is { Length: > 0 } source) {
             ref var targetProperty = ref (target.ListHeader.GetNext());
             targetProperty.Name = TracorConstants.TracorDataPropertyNameSource;
             targetProperty.SetStringValue(source);

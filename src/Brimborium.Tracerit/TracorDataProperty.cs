@@ -41,39 +41,48 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         _TypeValue = TracorDataPropertyTypeValue.Integer;
         Name = name;
         LongValue = longValue;
+        DoubleValue = 0;
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(string name, bool boolValue) {
         Name = name;
         TypeValue = TracorDataPropertyTypeValue.Boolean;
         LongValue = boolValue ? 1L : 0L;
+        DoubleValue = 0;
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(string name, LogLevel levelValue) {
         Name = name;
         TypeValue = TracorDataPropertyTypeValue.Level;
+        LongValue = 0;
+        DoubleValue= 0;
         InnerObjectValue = TracorDataUtility.ConvertLogLevelToString(levelValue);
     }
 
     public TracorDataProperty(string name, double doubleValue) {
         Name = name;
         TypeValue = TracorDataPropertyTypeValue.Double;
+        LongValue = 0;
         DoubleValue = doubleValue;
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(string name, DateTime dateTimeValue) {
         Name = name;
         TypeValue = TracorDataPropertyTypeValue.DateTime;
-        LongValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(dateTimeValue);
-        InnerObjectValue = dateTimeValue;
+        (LongValue, DoubleValue)= TracorDataUtility.DateTimeToUnixTimeNanosecondsAndKind(dateTimeValue);
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(string name, DateTimeOffset dateTimeOffsetValue) {
         Name = name;
         TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
-        var (ticksValue, _) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(dateTimeOffsetValue);
+        var (ticksValue, offsetValue) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(dateTimeOffsetValue);
         LongValue = ticksValue;
-        InnerObjectValue = dateTimeOffsetValue;
+        DoubleValue = offsetValue;
+        InnerObjectValue = null;
     }
 
     public TracorDataProperty(string name, TimeSpan timeSpanValue) {
@@ -330,14 +339,8 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetDateTimeValue(out DateTime value) {
         if (TypeValue == TracorDataPropertyTypeValue.DateTime) {
-            if (InnerObjectValue is DateTime dateTimeValue) {
-                value = dateTimeValue;
-                return true;
-            }
-            if (InnerObjectValue is long longValue) {
-                value = TracorDataUtility.UnixTimeNanosecondsToDateTime(longValue);
-                return true;
-            }
+            value = TracorDataUtility.UnixTimeNanosecondsAndKindToDateTime(LongValue, DoubleValue);
+            return true;
         }
         value = new DateTime(0);
         return false;
@@ -346,17 +349,24 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetDateTimeValue(DateTime value) {
         TypeValue = TracorDataPropertyTypeValue.DateTime;
-        LongValue = TracorDataUtility.DateTimeToUnixTimeNanoseconds(value);
-        InnerObjectValue = value;
+        (LongValue, DoubleValue) = TracorDataUtility.DateTimeToUnixTimeNanosecondsAndKind(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetDateTimeOffsetValue(DateTimeOffset value) {
+        TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
+        var (ticksValue, offsetValue) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
+        LongValue = ticksValue;
+        DoubleValue = (double) offsetValue;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool TryGetDateTimeOffsetValue(out DateTimeOffset value) {
         if (TypeValue == TracorDataPropertyTypeValue.DateTimeOffset) {
-            if (InnerObjectValue is DateTimeOffset dateTimeOffsetValue) {
-                value = dateTimeOffsetValue;
-                return true;
-            }
+            //if (InnerObjectValue is DateTimeOffset dateTimeOffsetValue) {
+            //    value = dateTimeOffsetValue;
+            //    return true;
+            //}
             if (InnerObjectValue is string { Length: > 0 } stringValue) {
                 if (DateTimeOffset.TryParseExact(
                     stringValue,
@@ -368,7 +378,8 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
                     return true;
                 }
             }
-            value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(LongValue, 0);
+            // value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(LongValue, 0);
+            value = TracorDataUtility.UnixTimeNanosecondsAndOffsetToDateTimeOffset(LongValue, (long)DoubleValue);
             return true;
         }
         value = new DateTimeOffset(new DateTime(0, DateTimeKind.Utc), TimeSpan.Zero);
@@ -383,16 +394,6 @@ public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
         }
         value = TimeSpan.Zero;
         return false;
-    }
-
-    
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetDateTimeOffsetValue(DateTimeOffset value) {
-        TypeValue = TracorDataPropertyTypeValue.DateTimeOffset;
-        var (ticksValue, _) = TracorDataUtility.DateTimeOffsetToUnixTimeNanosecondsAndOffset(value);
-        LongValue = ticksValue;
-        InnerObjectValue = value;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

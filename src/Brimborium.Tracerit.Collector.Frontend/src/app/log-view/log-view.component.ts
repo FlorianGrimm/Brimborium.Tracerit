@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, filter, map, Subscription } from 'rxjs'
 import { DataService } from '../Utility/data-service';
 import { HttpClientService } from '../Utility/http-client-service';
 import { filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, JsonPipe, KeyValuePipe } from '@angular/common';
 import { getVisualHeader } from '../Utility/propertyHeaderUtility';
 import { LucideAngularModule, FileStack, ChevronLeft, ChevronRight, Funnel, FunnelPlus, FunnelX } from 'lucide-angular';
 import { RouterLink } from '@angular/router';

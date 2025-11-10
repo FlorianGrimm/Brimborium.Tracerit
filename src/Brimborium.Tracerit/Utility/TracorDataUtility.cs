@@ -443,12 +443,34 @@ public static partial class TracorDataUtility {
         return (ticks - _UnixEpochTicks) * _NanosecondsPerTicks;
     }
 
+    public static (long ns, double kind) DateTimeToUnixTimeNanosecondsAndKind(DateTime dt) {
+        long ticks = (dt.Kind == DateTimeKind.Utc) ? dt.Ticks : dt.ToUniversalTime().Ticks;
+        long ns = (ticks - _UnixEpochTicks) * _NanosecondsPerTicks;
+        double kind = (double)dt.Kind;
+        return (ns, kind);
+    }
+
     public static DateTime UnixTimeNanosecondsToDateTime(long ns) {
         return new DateTime((ns / _NanosecondsPerTicks) + _UnixEpochTicks, DateTimeKind.Utc);
     }
 
     public static long DateTimeOffsetToUnixTimeNanoseconds(DateTimeOffset dto) {
         return (dto.UtcTicks - _UnixEpochTicks) * _NanosecondsPerTicks;
+    }
+
+    public static DateTime UnixTimeNanosecondsAndKindToDateTime(long ns, double kind) {
+        DateTimeKind dtKind = (kind) switch {
+            2.0d => DateTimeKind.Local,
+            1.0d => DateTimeKind.Utc,
+            _ => DateTimeKind.Unspecified
+        };
+        var ticks = (ns / _NanosecondsPerTicks) + _UnixEpochTicks;
+
+        return (kind) switch {
+            2.0d => new DateTime(ticks, DateTimeKind.Utc).ToLocalTime(),
+            1.0d => new DateTime(ticks, DateTimeKind.Utc),
+            _ => new DateTime((new DateTime(ticks, DateTimeKind.Utc).ToLocalTime()).Ticks, DateTimeKind.Unspecified)
+        };
     }
 
     public static (long longVaule, long offsetValue) DateTimeOffsetToUnixTimeNanosecondsAndOffset(DateTimeOffset dto) {
@@ -469,7 +491,7 @@ public static partial class TracorDataUtility {
             tsOffset);
     }
 
-    public static long TimeSpanToDurationNanoseconds(TimeSpan value) { 
+    public static long TimeSpanToDurationNanoseconds(TimeSpan value) {
         return value.Ticks * _NanosecondsPerTicks;
     }
 
@@ -559,7 +581,7 @@ public static partial class TracorDataUtility {
         }
     }
 
-    public static LogLevel ConvertStringToLogLevel(string value) 
+    public static LogLevel ConvertStringToLogLevel(string value)
         => (value) switch {
             "Trace" => LogLevel.Trace,
             "Debug" => LogLevel.Debug,

@@ -1,15 +1,6 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
 public sealed class TracorValidator : ITracorValidator {
-
-    public static TracorValidator Create(IServiceProvider serviceProvider) {
-        var tracorDataRecordPool = serviceProvider.GetRequiredService<TracorDataRecordPool>();
-        var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-        return new TracorValidator(
-            tracorDataRecordPool,
-            loggerFactory);
-    }
-
     private ImmutableArray<ITracorValidatorPath> _ListValidatorPath = ImmutableArray<ITracorValidatorPath>.Empty;
     private readonly Lock _LockListTracorStepPath = new();
     private readonly ILoggerFactory _LoggerFactory;
@@ -17,7 +8,7 @@ public sealed class TracorValidator : ITracorValidator {
     private ILogger? _LoggerCondition;
     private LoggerUtility? _LoggerUtility;
 
-
+    [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
     public TracorValidator(
         TracorDataRecordPool tracorDataRecordPool,
         ILoggerFactory loggerFactory) {

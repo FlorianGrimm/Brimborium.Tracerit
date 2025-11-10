@@ -122,7 +122,7 @@ public static class ITracorDataJsonMinimalConverterUtility {
                     if (TracorConstants.TracorDataPropertyNameSource == tracorDataProperty.Name) {
                         state = 2;
                         if (tracorDataProperty.TryGetStringValue(out var sourceValue)) {
-                            tracorIdentifier.Source = sourceValue ?? string.Empty;
+                            tracorIdentifier.SourceProvider = sourceValue ?? string.Empty;
                             continue;
                         }
                     }

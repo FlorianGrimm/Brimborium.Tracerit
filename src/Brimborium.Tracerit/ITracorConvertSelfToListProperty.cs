@@ -5,5 +5,6 @@ public interface ITracorConvertSelfToListProperty {
         bool isPublic,
         int levelWatchDog,
         string name,
+        ITracorDataConvertService dataConvertService,
         List<TracorDataProperty> listProperty);
 }

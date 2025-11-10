@@ -1,5 +1,7 @@
 ﻿#pragma warning disable IDE0041 // Use 'is null' check
 
+using System.Net.Quic;
+
 namespace Brimborium.Tracerit.Utility;
 
 public interface IReferenceCountObject : IDisposable {
@@ -114,7 +116,10 @@ public abstract class ReferenceCountPool<T>
 
     public T Rent() {
         var quick = System.Threading.Interlocked.Exchange(ref this._Quick, null);
-        if (quick is not null) { return quick; }
+        if (quick is not null) {
+            quick.IncrementReferenceCount();
+            return quick;
+        }
         while (true) {
             var rentSnapshot = Volatile.Read(ref this._RentIndex);
             var returnSnapshot = Volatile.Read(ref this._ReturnIndex);
@@ -145,7 +150,10 @@ public abstract class ReferenceCountPool<T>
                 */
             }
         }
-        return this.Create();
+        {
+            var result = this.Create();
+            return result;
+        }
     }
 
     protected abstract T Create();

@@ -12,6 +12,7 @@ public sealed class TracorDataRecord
     private readonly List<TracorDataProperty> _ListProperty = new(8);
 
     public TracorDataRecord() : base(null) { }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorDataRecord"/> class.
     /// </summary>
@@ -121,12 +122,16 @@ public sealed class TracorDataRecord
         return this.ListProperty.Count == 0 && this.ListProperty.Capacity <= 128;
     }
 
-    public static TracorDataRecord Convert(ITracorData src) {
+    public static TracorDataRecord Convert(ITracorData src, TracorDataRecordPool? tracorDataRecordPool) {
         if (src is TracorDataRecord result) {
             return result;
         }
         {
-            result = new TracorDataRecord();
+            if (tracorDataRecordPool is { }) {
+                result = tracorDataRecordPool.Rent();
+            } else { 
+                result = new TracorDataRecord();
+            }
 
             result.TracorIdentifier = src.TracorIdentifier;
             result.Timestamp = src.Timestamp;
@@ -164,21 +169,13 @@ public sealed class TracorDataRecordAccessorFactory : ITracorDataAccessorFactory
         return true;
     }
 }
-public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> {
-#pragma warning disable IDE0060 // Remove unused parameter
-    public static TracorDataRecordPool Create(IServiceProvider provider) => new(0);
-#pragma warning restore IDE0060 // Remove unused parameter
 
-    public TracorDataRecordPool(int capacity) : base(capacity) { }
+public sealed class TracorDataRecordPool : ReferenceCountPool<TracorDataRecord> {
+    [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
+    public TracorDataRecordPool() : this(0) { }
+
+    public TracorDataRecordPool(int capacity) : base(capacity) { 
+    }
 
     protected override TracorDataRecord Create() => new TracorDataRecord(this);
 }
-/*
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(TracorDataCollection))]
-[JsonSerializable(typeof(TracorDataRecord))]
-[JsonSerializable(typeof(TracorDataProperty))]
-[JsonSerializable(typeof(TracorIdentifier))]
-internal partial class TracorDataJsonSerializerContext : JsonSerializerContext {
-}
-*/

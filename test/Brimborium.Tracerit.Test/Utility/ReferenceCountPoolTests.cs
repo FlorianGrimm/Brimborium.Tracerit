@@ -74,7 +74,10 @@ public class ReferenceCountPoolTests {
         // Arrange
         var pool = new TestReferenceCountPool(10);
         var obj1 = pool.Rent();
+        await Assert.That(((IReferenceCountObject)obj1).CanBeReturned()).IsEqualTo(1);
         obj1.Dispose(); // Return to pool
+
+        await Assert.That(((IReferenceCountObject)obj1).CanBeReturned()).IsEqualTo(0);
 
         // Act
         var obj2 = pool.Rent();

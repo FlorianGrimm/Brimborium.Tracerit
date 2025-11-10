@@ -64,7 +64,7 @@ public static class TracorBuilderExtension {
         Action<TracorActivityListenerOptions>? configure = null
         ) {
         // add runtime do nothing implementations
-        tracorBuilder.Services.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
+        tracorBuilder.Services.AddSingleton<TracorDataRecordPool>();
         tracorBuilder.Services.AddSingleton<DisabledTracorActivityListener>();
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>(
             (sp) => sp.GetRequiredService<DisabledTracorActivityListener>());
@@ -88,7 +88,7 @@ public static class TracorBuilderExtension {
         IConfiguration? configuration = null,
         Action<TracorActivityListenerOptions>? configure = null
         ) {
-        tracorBuilder.Services.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
+        tracorBuilder.Services.AddSingleton<TracorDataRecordPool>();
 
         var configurationSection = configuration;
         tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>(EnabledTracorActivityListener.Create);

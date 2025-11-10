@@ -30,7 +30,7 @@ dotnet_search_reference_assemblies = true
 # Organize usings
 dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = false
-file_header_template = ""
+file_header_template = MIT - Florian Grimm
 dotnet_diagnostic.IDE0073.severity = none
 
 # this. and Me. preferences

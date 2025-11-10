@@ -6,125 +6,143 @@
 @let currentLogLineId = currentLogLineId$ | async;
 @let contextLogLineId = contextLogLineId$ | async;
 @let listCurrentHeader = listCurrentHeader$ | async;
-<table class="table-tracerit">
-    <thead>
-        <tr class="header-sticky">
-            <th class="sticky">
-                <div>
-                    Id
-                </div>
-                @if(undefined != currentLogLineId){
-                <div>
-                    {{currentLogLineId}}
-                </div>
-                }
-            </th>
-            @for(header of listCurrentHeader; track header.id){
-            <th [style]="header.dataCellStyle" title="{{ header.typeValue }}">
-                {{ header.name }}
-            </th>
-            }
-        </tr>
-        <tr class="header-sticky" style="top: 44px">
-            <th class="sticky" >
-                <span-lucide [img]="Funnel" class="my-icon"></span-lucide>TODO
-            </th>
-            @for(header of listCurrentHeader; track header.id){
-            <td>
-                <span>
-                    @switch (header.typeValue) {
-                    @case ("null") {
-                    null
+<div class="log-view-content">
+    <div class="log-view-table">
+        <table class="table-tracerit">
+            <thead>
+                <tr class="header-sticky">
+                    <th class="sticky">
+                        <div>
+                            Id
+                        </div>
+                        @if(undefined != currentLogLineId){
+                        <div>
+                            {{currentLogLineId}}
+                        </div>
+                        }
+                    </th>
+                    @for(header of listCurrentHeader; track header.id){
+                    <th [style]="header.dataCellStyle" title="{{ header.typeValue }}">
+                        {{ header.name }}
+                    </th>
                     }
-                    @case ("str") {
-                    <input type="text" [value]="header.filter?.value" (input)="setFilterStrValue(header,$event.target.value)" />
+                </tr>
+                <tr class="header-sticky" style="top: 44px">
+                    <th class="sticky">
+                        <span-lucide [img]="Funnel" class="my-icon"></span-lucide>TODO
+                    </th>
+                    @for(header of listCurrentHeader; track header.id){
+                    <td>
+                        <span>
+                            @switch (header.typeValue) {
+                            @case ("null") {
+                            null
+                            }
+                            @case ("str") {
+                            <input type="text" [value]="header.filter?.value"
+                                (input)="setFilterStrValue(header,$event.target.value)" />
+                            }
+                            @case ("int") {
+                            int {{header.filter?.value}}
+                            }
+                            @case ("lvl") {
+                            lvl {{header.filter?.value}}
+                            }
+                            @case ("dt") {
+                            dt {{header.filter?.value}}
+                            }
+                            @case ("dto") {
+                            dto {{header.filter?.value}}
+                            }
+                            @case ("dur") {
+                            dur {{header.filter?.value}}
+                            }
+                            @case ("bool") {
+                            bool {{header.filter?.value}}
+                            }
+                            @case ("dbl") {
+                            dbl {{header.filter?.value}}
+                            }
+                            @case ("enum") {
+                            enum {{header.filter?.value}}
+                            }
+                            @case ("uuid") {
+                            uuid {{header.filter?.value}}
+                            }
+                            @default {
+                            -- {{header.filter?.value}}
+                            }
+                            }
+                        </span>
+                        <span>
+                            @if(undefined !== header.filter){
+                            <button type="button" (click)="removeFilter(header.id)">
+                                <span-lucide [img]="FunnelX" class="my-icon"></span-lucide>
+                            </button>
+                            }
+                        </span>
+                    </td>
                     }
-                    @case ("int") {
-                    int {{header.filter?.value}}
+                </tr>
+            </thead>
+            <tbody>
+                @let listLogLine = (listLogLineDisplay$ | async) ?? [];
+                @for(logLine of listLogLine; track logLine.id){
+                <tr (click)="setCurrentLogLine(logLine.id, $event)"
+                    (contextmenu)="setContextLogLine(logLine.id, $event)"
+                    [class.selected]="currentLogLineId === logLine.id">
+                    <td class="sticky">
+                        <div>
+                            {{ logLine.id }}
+                        </div>
+                        <div>
+                            {{ getCurrentDiff(logLine) }}
+                        </div>
+                    </td>
+                    @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
+                    <td [style]="header.dataCellStyle" (contextmenu)="setContextLogLine(logLine.id, $event)">
+                        {{ getContent(logLine, header) }}
+                    </td>
                     }
-                    @case ("lvl") {
-                    lvl {{header.filter?.value}}
-                    }
-                    @case ("dt") {
-                    dt {{header.filter?.value}}
-                    }
-                    @case ("dto") {
-                    dto {{header.filter?.value}}
-                    }
-                    @case ("dur") {
-                    dur {{header.filter?.value}}
-                    }
-                    @case ("bool") {
-                    bool {{header.filter?.value}}
-                    }
-                    @case ("dbl") {
-                    dbl {{header.filter?.value}}
-                    }
-                    @case ("enum") {
-                    enum {{header.filter?.value}}
-                    }
-                    @case ("uuid") {
-                    uuid {{header.filter?.value}}
-                    }
-                    @default {
-                    -- {{header.filter?.value}}
-                    }
-                    }
-                </span>
-                <span>
-                    @if(undefined !== header.filter){
-                        <button type="button" (click)="removeFilter(header.id)">
-                            <span-lucide [img]="FunnelX" class="my-icon"></span-lucide>
+                </tr>
+                @if(contextLogLineId === logLine.id){
+                <tr>
+                    <td>Menu</td>
+                    @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
+                    <td>
+                        <button type="button" (click)="addFilter(logLine.id, header.id)">
+                            <span-lucide [img]="FunnelPlus" class="my-icon"></span-lucide>
                         </button>
+                    </td>
                     }
-                </span>
-            </td>
-            }
-        </tr>
-    </thead>
-    <tbody>
-        @let listLogLine = (listLogLineDisplay$ | async) ?? [];
-        @for(logLine of listLogLine; track logLine.id){
-        <tr (click)="setCurrentLogLine(logLine.id, $event)" (contextmenu)="setContextLogLine(logLine.id, $event)"
-            [class.selected]="currentLogLineId === logLine.id">
-            <td class="sticky">
-                <div>
-                    {{ logLine.id }}
-                </div>
-                <div>
-                    {{ getCurrentDiff(logLine) }}
-                </div>
-            </td>
-            @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
-            <td [style]="header.dataCellStyle" (contextmenu)="setContextLogLine(logLine.id, $event)">
-                {{ getContent(logLine, header) }}
-            </td>
-            }
-        </tr>
-        @if(contextLogLineId === logLine.id){
-        <tr>
-            <td>Menu</td>
-            @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
-            <td>
-                <button type="button" (click)="addFilter(logLine.id, header.id)">
-                    <span-lucide [img]="FunnelPlus" class="my-icon"></span-lucide>
-                </button>
-            </td>
-            }
-        </tr>
+                </tr>
+                }
+                } @empty {
+                <tr>
+                    <td colspan="1">
+                        no data - no file loaded.
+                        Load here
+                        <button type="button" routerLink="/tracorit/directory-list">
+                            <span-lucide [img]="FileStack" class="my-icon"></span-lucide>
+                            <span>Directory</span>
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @let currentLogLine = currentLogLine$|async;
+    <div class="log-view-property">
+        @if((null === currentLogLine)||(undefined === currentLogLine)){
+        No LogLine selected
+        } @else {
+        <div class="log-view-property-item"><label> Id:</label><div class="log-view-property-item-value">{{currentLogLine.id}}</div></div>
+        @for(item of currentLogLine.data.values(); track item.name){
+        <div class="log-view-property-item"><label>{{item.name}}:</label><div class="log-view-property-item-value">{{item.value}}</div></div>
         }
-        } @empty {
-        <tr>
-            <td colspan="1">
-                no data - no file loaded.
-                Load here
-                <button type="button" routerLink="/tracorit/directory-list">
-                    <span-lucide [img]="FileStack" class="my-icon"></span-lucide>
-                    <span>Directory</span>
-                </button>
-            </td>
-        </tr>
         }
-    </tbody>
-</table>
+    </div>
+</div>
+
 }

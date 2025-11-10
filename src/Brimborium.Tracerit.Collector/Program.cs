@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using System.Runtime.CompilerServices;
+
 [assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.Test")]
+
 namespace Brimborium.Tracerit.Collector;
 
 public class Program {
@@ -47,7 +48,11 @@ public class Program {
             // By default, all incoming requests will be authorized according to the default policy.
             options.FallbackPolicy = options.DefaultPolicy;
         });
-        builder.Services.AddSingleton<UIEndpoints>();
+        builder.Services.AddSingleton<IController, UIEndpoints>();
+        builder.Services.AddSingleton<IController, CollectorTracorEndpoints>();
+        builder.Services.AddTraceritCollector();
+
+        
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
         builder.Services.AddSingleton<LogFileService>();
 
@@ -68,7 +73,10 @@ public class Program {
         //app.UseAuthorization();
         //app.UseAuthentication();
         app.UseAngularFileService();
-        app.Services.GetRequiredService<UIEndpoints>().MapUiEndpoints(app);
+        app.UseTraceritCollector();
+        foreach (var controller in app.Services.GetServices<IController>()) { 
+            controller.MapEndpoints(app);
+        }
 
         if (startupActions.ConfigureWebApplication is { } configureWebApplication) { configureWebApplication(app); }
 

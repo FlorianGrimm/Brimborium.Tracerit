@@ -188,6 +188,85 @@ public class TracorDataPropertyTests {
         }
     }
 
+    [Test]
+    public async Task CreateDateTimeNowTest() {
+        var dtNow = DateTime.Now;
+        var dtUtcNow = DateTime.UtcNow;
+        {
+            await Assert.That(dtNow.Kind).IsEqualTo(DateTimeKind.Local);
+            TracorDataProperty tracorDataProperty = new TracorDataProperty("test", dtNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtNow.Kind).IsEqualTo(DateTimeKind.Local);
+            TracorDataProperty tracorDataProperty = TracorDataProperty.CreateDateTimeValue("test", dtNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtNow.Kind).IsEqualTo(DateTimeKind.Local);
+            TracorDataProperty tracorDataProperty = TracorDataProperty.Create("test", dtNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtNow.Kind).IsEqualTo(DateTimeKind.Local);
+            TracorDataProperty tracorDataProperty = TracorDataProperty.Create("test", (object)dtNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtNow.Kind).IsEqualTo(DateTimeKind.Local);
+            TracorDataProperty tracorDataProperty = new TracorDataProperty("test");
+            tracorDataProperty.SetDateTimeValue(dtNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+
+
+        {
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(DateTimeKind.Utc);
+            TracorDataProperty tracorDataProperty = new TracorDataProperty("test", dtUtcNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtUtcNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(DateTimeKind.Utc);
+            TracorDataProperty tracorDataProperty = TracorDataProperty.CreateDateTimeValue("test", dtUtcNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtUtcNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(DateTimeKind.Utc);
+            TracorDataProperty tracorDataProperty = TracorDataProperty.Create("test", dtUtcNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtUtcNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(DateTimeKind.Utc);
+            TracorDataProperty tracorDataProperty = TracorDataProperty.Create("test", (object)dtUtcNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtUtcNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+        {
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(DateTimeKind.Utc);
+            TracorDataProperty tracorDataProperty = new TracorDataProperty("test");
+            tracorDataProperty.SetDateTimeValue(dtUtcNow);
+            await Assert.That(tracorDataProperty.TryGetDateTimeValue(out var dtAct)).IsTrue();
+            await Assert.That(dtUtcNow.Ticks).IsEqualTo(dtAct.Ticks);
+            await Assert.That(dtUtcNow.Kind).IsEqualTo(dtAct.Kind);
+        }
+    }
 
     [Test]
     [Arguments("abc", "2000-01-02T03:04:05.0000000+02:00", 946775045000000000)]
@@ -203,7 +282,7 @@ public class TracorDataPropertyTests {
             await Assert.That(act.TryGetIntegerValue(out var intValue) ? intValue : -1).IsEqualTo(-1);
             await Assert.That(act.TryGetLevelValue(out var lvlValue) ? lvlValue : LogLevel.None).IsEqualTo(LogLevel.None);
             await Assert.That(act.TryGetDateTimeValue(out var dtValue) ? dtValue : DateTime.MinValue).IsEqualTo(DateTime.MinValue);
-            
+
             await Assert.That((act.TryGetDateTimeOffsetValue(out var dtoValue1) ? dtoValue1 : DateTimeOffset.FromUnixTimeMilliseconds(0)).UtcTicks).IsEqualTo(argValue.UtcTicks);
             await Assert.That((act.TryGetDateTimeOffsetValue(out var dtoValue2) ? dtoValue2 : DateTimeOffset.FromUnixTimeMilliseconds(0)).UtcTicks).IsEqualTo(argValueUtc.UtcTicks);
 

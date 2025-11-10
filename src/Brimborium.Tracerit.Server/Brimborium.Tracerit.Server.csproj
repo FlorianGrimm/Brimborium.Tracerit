@@ -7,7 +7,16 @@
     <DefineConstants>$(DefineConstants);GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" />
+    <Compile Remove="Server\TracorCollectorWebSocketService.cs" />
+    <Compile Remove="Server\WebSocketConnectionManager.cs" />
+    <Compile Remove="Server\WebSocketHandler.cs" />
+  </ItemGroup>
+  <ItemGroup>
+	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	<None Include="Server\TracorCollectorWebSocketService.cs" />
+	<None Include="Server\WebSocketConnectionManager.cs" />
+	<None Include="Server\WebSocketHandler.cs" />
+	<PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Net.ClientFactory" />
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>

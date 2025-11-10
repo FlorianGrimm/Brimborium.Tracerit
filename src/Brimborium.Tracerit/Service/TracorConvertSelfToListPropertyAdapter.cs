@@ -7,14 +7,36 @@ internal sealed class TracorConvertSelfToListPropertyAdapter<T>
 
     public Type GetValueType() => typeof(T);
 
-    public void ConvertObjectToListProperty(bool isPublic, int levelWatchDog, string name, object? value, List<TracorDataProperty> listProperty) {
+    public void ConvertObjectToListProperty(
+        bool isPublic,
+        int levelWatchDog,
+        string name,
+        object? value,
+        ITracorDataConvertService dataConvertService,
+        List<TracorDataProperty> listProperty) {
         if (value is null) { return; }
         if (value is T valueT) {
-            valueT.ConvertSelfToListProperty(isPublic, levelWatchDog, name, listProperty);
+            valueT.ConvertSelfToListProperty(
+                isPublic,
+                levelWatchDog,
+                name,
+                dataConvertService,
+                listProperty);
         }
     }
 
-    public void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, T value, List<TracorDataProperty> listProperty) {
-        value.ConvertSelfToListProperty(isPublic, levelWatchDog, name, listProperty);
+    public void ConvertValueToListProperty(
+        bool isPublic,
+        int levelWatchDog,
+        string name,
+        T value,
+        ITracorDataConvertService dataConvertService,
+        List<TracorDataProperty> listProperty) {
+        value.ConvertSelfToListProperty(
+            isPublic,
+            levelWatchDog,
+            name,
+            dataConvertService,
+            listProperty);
     }
 }

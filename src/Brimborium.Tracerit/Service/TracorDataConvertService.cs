@@ -297,11 +297,11 @@ public sealed class TracorDataConvertService : ITracorDataConvertService {
            List<TracorDataProperty> listProperty) {
         if (value is null) { return; }
         if (value is ITracorConvertSelfToListProperty tracorConvertSelfToListProperty) {
-            tracorConvertSelfToListProperty.ConvertSelfToListProperty(isPublic, levelWatchDog, name, listProperty);
+            tracorConvertSelfToListProperty.ConvertSelfToListProperty(isPublic, levelWatchDog, name, this, listProperty);
             return;
         }
         if (this.GetTracorConvertObjectToListProperty(value.GetType()) is { } converter) {
-            converter.ConvertObjectToListProperty(isPublic, levelWatchDog, name, value, listProperty);
+            converter.ConvertObjectToListProperty(isPublic, levelWatchDog, name, value, this, listProperty);
             return;
         }
     }
@@ -313,11 +313,11 @@ public sealed class TracorDataConvertService : ITracorDataConvertService {
         T value,
         List<TracorDataProperty> listProperty) {
         if (value is ITracorConvertSelfToListProperty tracorConvertSelfToListProperty) {
-            tracorConvertSelfToListProperty.ConvertSelfToListProperty(isPublic, levelWatchDog, name, listProperty);
+            tracorConvertSelfToListProperty.ConvertSelfToListProperty(isPublic, levelWatchDog, name, this, listProperty);
             return;
         }
         if (this.GetConverterValueListProperty<T>() is { } converter) {
-            converter.ConvertValueToListProperty(isPublic, levelWatchDog, name, value, listProperty);
+            converter.ConvertValueToListProperty(isPublic, levelWatchDog, name, value, this, listProperty);
             return;
         }
     }

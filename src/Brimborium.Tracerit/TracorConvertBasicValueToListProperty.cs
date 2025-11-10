@@ -33,7 +33,7 @@ $t | Sort-Object | % {
  internal sealed class TracorConvert$($name)ValueToListProperty
     : TracorConvertValueToListProperty<$($type)> {
     
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, $($type) value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, $($type) value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -53,7 +53,7 @@ $t | Sort-Object | % {
 internal sealed class TracorConvertBoolValueToListProperty
    : TracorConvertValueToListProperty<bool> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, bool value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, bool value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -62,7 +62,7 @@ internal sealed class TracorConvertBoolValueToListProperty
 internal sealed class TracorConvertByteValueToListProperty
    : TracorConvertValueToListProperty<byte> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, byte value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, byte value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -71,7 +71,7 @@ internal sealed class TracorConvertByteValueToListProperty
 internal sealed class TracorConvertDateOnlyValueToListProperty
    : TracorConvertValueToListProperty<DateOnly> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, DateOnly value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, DateOnly value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value.ToDateTime(new TimeOnly())));
     }
 }
@@ -80,7 +80,7 @@ internal sealed class TracorConvertDateOnlyValueToListProperty
 internal sealed class TracorConvertDateTimeValueToListProperty
    : TracorConvertValueToListProperty<DateTime> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, DateTime value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, DateTime value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -89,7 +89,7 @@ internal sealed class TracorConvertDateTimeValueToListProperty
 internal sealed class TracorConvertDateTimeOffsetValueToListProperty
    : TracorConvertValueToListProperty<DateTimeOffset> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, DateTimeOffset value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, DateTimeOffset value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -98,7 +98,7 @@ internal sealed class TracorConvertDateTimeOffsetValueToListProperty
 internal sealed class TracorConvertDecimalValueToListProperty
    : TracorConvertValueToListProperty<decimal> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, decimal value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, decimal value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, (double)value));
     }
 }
@@ -107,7 +107,7 @@ internal sealed class TracorConvertDecimalValueToListProperty
 internal sealed class TracorConvertDoubleValueToListProperty
    : TracorConvertValueToListProperty<double> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, double value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, double value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -116,7 +116,7 @@ internal sealed class TracorConvertDoubleValueToListProperty
 internal sealed class TracorConvertFloatValueToListProperty
    : TracorConvertValueToListProperty<float> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, float value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, float value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -125,7 +125,7 @@ internal sealed class TracorConvertFloatValueToListProperty
 internal sealed class TracorConvertGuidValueToListProperty
    : TracorConvertValueToListProperty<Guid> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, Guid value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, Guid value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -134,7 +134,7 @@ internal sealed class TracorConvertGuidValueToListProperty
 internal sealed class TracorConvertIntValueToListProperty
    : TracorConvertValueToListProperty<int> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, int value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, int value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -143,7 +143,7 @@ internal sealed class TracorConvertIntValueToListProperty
 internal sealed class TracorConvertLogLevelValueToListProperty
    : TracorConvertValueToListProperty<LogLevel> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, LogLevel value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, LogLevel value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -152,7 +152,7 @@ internal sealed class TracorConvertLogLevelValueToListProperty
 internal sealed class TracorConvertLongValueToListProperty
    : TracorConvertValueToListProperty<long> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, long value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, long value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -161,7 +161,7 @@ internal sealed class TracorConvertLongValueToListProperty
 internal sealed class TracorConvertNintValueToListProperty
    : TracorConvertValueToListProperty<nint> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, nint value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, nint value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -170,7 +170,7 @@ internal sealed class TracorConvertNintValueToListProperty
 internal sealed class TracorConvertNuintValueToListProperty
    : TracorConvertValueToListProperty<nuint> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, nuint value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, nuint value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -179,7 +179,7 @@ internal sealed class TracorConvertNuintValueToListProperty
 internal sealed class TracorConvertSbyteValueToListProperty
    : TracorConvertValueToListProperty<sbyte> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, sbyte value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, sbyte value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -188,7 +188,7 @@ internal sealed class TracorConvertSbyteValueToListProperty
 internal sealed class TracorConvertShortValueToListProperty
    : TracorConvertValueToListProperty<short> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, short value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, short value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -197,7 +197,7 @@ internal sealed class TracorConvertShortValueToListProperty
 internal sealed class TracorConvertStringValueToListProperty
    : TracorConvertValueToListProperty<string> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, string value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, string value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -206,7 +206,7 @@ internal sealed class TracorConvertStringValueToListProperty
 internal sealed class TracorConvertTimeSpanValueToListProperty
    : TracorConvertValueToListProperty<TimeSpan> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, TimeSpan value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, TimeSpan value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -215,7 +215,7 @@ internal sealed class TracorConvertTimeSpanValueToListProperty
 internal sealed class TracorConvertUintValueToListProperty
    : TracorConvertValueToListProperty<uint> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, uint value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, uint value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -224,7 +224,7 @@ internal sealed class TracorConvertUintValueToListProperty
 internal sealed class TracorConvertUlongValueToListProperty
    : TracorConvertValueToListProperty<ulong> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, ulong value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, ulong value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }
@@ -233,7 +233,7 @@ internal sealed class TracorConvertUlongValueToListProperty
 internal sealed class TracorConvertUshortValueToListProperty
    : TracorConvertValueToListProperty<ushort> {
 
-    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, ushort value, List<TracorDataProperty> listProperty) {
+    public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, ushort value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
         listProperty.Add(new TracorDataProperty(name, value));
     }
 }

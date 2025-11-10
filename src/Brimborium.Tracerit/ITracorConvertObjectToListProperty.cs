@@ -4,11 +4,12 @@ public interface ITracorConvertObjectToListProperty {
     Type GetValueType();
 
     void ConvertObjectToListProperty(
-            bool isPublic,
-            int levelWatchDog,
-            string name,
-            object? value,
-            List<TracorDataProperty> listProperty);
+        bool isPublic,
+        int levelWatchDog,
+        string name,
+        object? value,
+        ITracorDataConvertService dataConvertService,
+        List<TracorDataProperty> listProperty);
 }
 
 public interface ITracorConvertValueToListProperty<T> : ITracorConvertObjectToListProperty {
@@ -17,5 +18,6 @@ public interface ITracorConvertValueToListProperty<T> : ITracorConvertObjectToLi
         int levelWatchDog,
         string name,
         T value,
+        ITracorDataConvertService dataConvertService,
         List<TracorDataProperty> listProperty);
 }

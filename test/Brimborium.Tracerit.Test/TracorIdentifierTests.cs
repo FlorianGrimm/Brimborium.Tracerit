@@ -11,7 +11,7 @@ public class TracorIdentifierTests {
         var identifier = new TracorIdentifier("TestSource", "TestCallee");
 
         // Assert
-        await Assert.That(identifier.Source).IsEqualTo("TestSource");
+        await Assert.That(identifier.SourceProvider).IsEqualTo("TestSource");
         await Assert.That(identifier.Scope).IsEqualTo("TestCallee");
     }
 
@@ -21,7 +21,7 @@ public class TracorIdentifierTests {
         var identifier = TracorIdentifier.Create("TestCallee");
 
         // Assert
-        await Assert.That(identifier.Source).IsEqualTo(string.Empty);
+        await Assert.That(identifier.SourceProvider).IsEqualTo(string.Empty);
         await Assert.That(identifier.Scope).IsEqualTo("TestCallee");
     }
 
@@ -34,7 +34,7 @@ public class TracorIdentifierTests {
         var child = parent.Child("Child");
 
         // Assert
-        await Assert.That(child.Source).IsEqualTo("TestSource");
+        await Assert.That(child.SourceProvider).IsEqualTo("TestSource");
         await Assert.That(child.Scope).IsEqualTo("Parent.Child");
     }
 
@@ -48,7 +48,7 @@ public class TracorIdentifierTests {
         var child2 = child1.Child("Child2");
 
         // Assert
-        await Assert.That(child2.Source).IsEqualTo("TestSource");
+        await Assert.That(child2.SourceProvider).IsEqualTo("TestSource");
         await Assert.That(child2.Scope).IsEqualTo("Root.Child1.Child2");
     }
 
@@ -187,7 +187,7 @@ public class TracorIdentifierTests {
 
         // Assert
         await Assert.That(child1.Scope).IsSameReferenceAs(child2.Scope);
-        await Assert.That(child1.Source).IsEqualTo("TestSource");
+        await Assert.That(child1.SourceProvider).IsEqualTo("TestSource");
         await Assert.That(child1.Scope).IsEqualTo("Root.Child");
     }
 

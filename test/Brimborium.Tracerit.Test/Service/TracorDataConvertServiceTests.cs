@@ -23,7 +23,7 @@ public class TracorDataConvertServiceTests {
     }
     private record class Something(string A, int B);
     private class SomethingTracorConvertToListProperty : TracorConvertValueToListProperty<Something> {
-        public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, Something value, List<TracorDataProperty> listProperty) {
+        public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, Something value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
             if (levelWatchDog < 0) { return; }
             var prefix = name is { Length: 0 } ? name : $"{name}.";
 
@@ -48,7 +48,7 @@ public class TracorDataConvertServiceTests {
     }
 
     private record class AnotherThing(string A, int B) : ITracorConvertSelfToListProperty {
-        public void ConvertSelfToListProperty(bool isPublic, int levelWatchDog, string name, List<TracorDataProperty> listProperty) {
+        public void ConvertSelfToListProperty(bool isPublic, int levelWatchDog, string name, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
             if (levelWatchDog < 0) { return; }
             var prefix = name is { Length: 0 } ? name : $"{name}.";
 

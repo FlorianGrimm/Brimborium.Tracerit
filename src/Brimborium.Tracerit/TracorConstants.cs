@@ -4,17 +4,17 @@ public static class TracorConstants {
     /// <summary>
     /// TracorPrivate
     /// </summary>
-    public const string SourceTracorPrivate = "TracorPrivate";
+    public const string SourceProviderTracorPrivate = "TracorPrivate";
 
     /// <summary>
     /// TracorPublic
     /// </summary>
-    public const string SourceTracorPublic = "TracorPublic";
+    public const string SourceProviderTracorPublic = "TracorPublic";
 
     /// <summary>
     /// Activity
     /// </summary>
-    public const string SourceActivity = "Activity";
+    public const string SourceProviderActivity = "Activity";
     public const string MessageActivityStart = "Start";
     public const string MessageActivityStop = "Stop";
 

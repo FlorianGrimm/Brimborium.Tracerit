@@ -16,7 +16,7 @@ public sealed class RecordExpression : ValidatorExpression {
             tracorDataRecord.IncrementReferenceCount();
             this._ReportExpressionResult.ListData.Add(tracorData);
         } else {
-            tracorDataRecord = TracorDataRecord.Convert(tracorData);
+            tracorDataRecord = TracorDataRecord.Convert(tracorData, null);
             this._ReportExpressionResult.ListData.Add(tracorDataRecord);
             tracorData = tracorDataRecord;
         }

@@ -52,7 +52,7 @@ public static class TracorDataSerialization {
                 tracorDataRecord.IncrementReferenceCount();
                 result.ListData.Add(tracorDataRecord);
             } else {
-                tracorDataRecord = TracorDataRecord.Convert(tracorData);
+                tracorDataRecord = TracorDataRecord.Convert(tracorData, null);
                 result.ListData.Add(tracorDataRecord);
             }
         }

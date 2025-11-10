@@ -3,7 +3,7 @@
 namespace BenchmarkPropertyVsGC {
     internal class Program {
         static void Main(string[] args) {
-#if false
+#if true
             Benchmarks benchmarks = new();
             benchmarks.Setup();
             benchmarks.TracorActivityAndLogger();

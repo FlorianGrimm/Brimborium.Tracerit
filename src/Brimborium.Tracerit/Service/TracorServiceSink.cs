@@ -49,7 +49,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     public bool IsPrivateEnabled(string scope, LogLevel logLevel) {
         if (this._Publisher.IsEnabled()) {
             var tracorScopedFilter = this._TracorScopedFilterFactory.CreateTracorScopedFilter(scope);
-            if (tracorScopedFilter.IsEnabled(sourceName: TracorConstants.SourceTracorPrivate, logLevel: logLevel)) {
+            if (tracorScopedFilter.IsEnabled(sourceName: TracorConstants.SourceProviderTracorPrivate, logLevel: logLevel)) {
                 return true;
             }
         }
@@ -59,7 +59,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     public bool IsPublicEnabled(string scope, LogLevel logLevel) {
         if (this._Publisher.IsEnabled()) {
             var tracorScopedFilter = this._TracorScopedFilterFactory.CreateTracorScopedFilter(scope);
-            if (tracorScopedFilter.IsEnabled(sourceName: TracorConstants.SourceTracorPublic, logLevel: logLevel)) {
+            if (tracorScopedFilter.IsEnabled(sourceName: TracorConstants.SourceProviderTracorPublic, logLevel: logLevel)) {
                 return true;
             }
         }
@@ -69,7 +69,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     public void TracePrivate<T>(string scope, LogLevel level, string message, T value) {
         try {
             var timestamp = DateTime.UtcNow;
-            TracorIdentifier callee = new(TracorConstants.SourceTracorPrivate, scope, message);
+            TracorIdentifier callee = new(TracorConstants.SourceProviderTracorPrivate, scope, message);
             ITracorData tracorData;
             bool disposeTracorData;
 
@@ -97,7 +97,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
             bool disposeTracorData;
 
             DateTime timestamp = DateTime.UtcNow;
-            TracorIdentifier callee = new(TracorConstants.SourceTracorPublic, scope, message);
+            TracorIdentifier callee = new(TracorConstants.SourceProviderTracorPublic, scope, message);
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
                 disposeTracorData = false;

@@ -3,6 +3,7 @@
 public class TracorDataUtilityTests {
     [Test]
     public async Task DateTimeTest() {
+        var cultureInfo = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
         {
             var dt0 = DateTime.UtcNow;
             var ns0 = TracorDataUtility.DateTimeToUnixTimeNanoseconds(dt0);
@@ -10,6 +11,30 @@ public class TracorDataUtilityTests {
             var ns1 = TracorDataUtility.DateTimeToUnixTimeNanoseconds(dt1);
             await Assert.That(ns0).IsEqualTo(ns1);
             await Assert.That(dt0).IsEqualTo(dt1);
+        }
+        {
+            await Assert.That(DateTime.TryParse("2001-01-02T03:04:05Z", cultureInfo, out var dt)).IsTrue();
+            await Assert.That(dt.Ticks).IsEqualTo(631140050450000000L);
+            await Assert.That(dt.Kind).IsEqualTo(DateTimeKind.Local);
+            var (ns, kind) = TracorDataUtility.DateTimeToUnixTimeNanosecondsAndKind(dt);
+            await Assert.That(ns).IsEqualTo(978404645000000000L);
+            await Assert.That(kind).IsEqualTo(2.0d);
+        
+            var dtAct = TracorDataUtility.UnixTimeNanosecondsAndKindToDateTime(ns, kind);
+            await Assert.That(dtAct.Ticks).IsEqualTo(dt.Ticks);
+            await Assert.That(dtAct.Kind).IsEqualTo(dt.Kind);
+        }
+        {
+            await Assert.That(DateTime.TryParse("2001-01-02T03:04:05", cultureInfo, out var dt)).IsTrue();
+            await Assert.That(dt.Ticks).IsEqualTo(631140014450000000);
+            await Assert.That(dt.Kind).IsEqualTo(DateTimeKind.Unspecified);
+            var (ns, kind) = TracorDataUtility.DateTimeToUnixTimeNanosecondsAndKind(dt);
+            await Assert.That(ns).IsEqualTo(978401045000000000L);
+            await Assert.That(kind).IsEqualTo(0.0d);
+
+            var dtAct = TracorDataUtility.UnixTimeNanosecondsAndKindToDateTime(ns, kind);
+            await Assert.That(dtAct.Ticks).IsEqualTo(dt.Ticks);
+            await Assert.That(dtAct.Kind).IsEqualTo(dt.Kind);
         }
     }
 

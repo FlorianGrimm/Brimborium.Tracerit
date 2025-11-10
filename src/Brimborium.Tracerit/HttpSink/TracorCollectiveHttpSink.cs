@@ -4,29 +4,35 @@ namespace Brimborium.Tracerit.HttpSink;
 
 public sealed class TracorCollectiveHttpSink
     : TracorCollectiveBulkSink<TracorHttpSinkOptions> {
-    private static readonly RecyclableMemoryStreamManager _Manager = new RecyclableMemoryStreamManager();
 
     private string? _TargetUrl;
 
     public TracorCollectiveHttpSink(
         TracorOptions tracorOptions,
-        TracorHttpSinkOptions httpSinkOptions
-        ) : this(tracorOptions, httpSinkOptions, new()) {
+        TracorHttpSinkOptions httpSinkOptions,
+        TracorMemoryPoolManager tracorRecyclableMemoryStreamManager
+        ) : this(
+            tracorOptions, httpSinkOptions, tracorRecyclableMemoryStreamManager, 
+            new()) {        
     }
 
     public TracorCollectiveHttpSink(
         TracorOptions tracorOptions,
         TracorHttpSinkOptions httpSinkOptions,
+        TracorMemoryPoolManager tracorRecyclableMemoryStreamManager,
         TracorEmergencyLogging tracorEmergencyLogging)
         : base(tracorOptions, httpSinkOptions, tracorEmergencyLogging) {
+        this._TracorMemoryPoolManager = tracorRecyclableMemoryStreamManager;
     }
 
     public TracorCollectiveHttpSink(
         IServiceProvider serviceProvider,
         IOptionsMonitor<TracorOptions> tracorOptions,
         IOptionsMonitor<TracorHttpSinkOptions> httpSinkOptions,
+        TracorMemoryPoolManager tracorRecyclableMemoryStreamManager,
         TracorEmergencyLogging tracorEmergencyLogging
         ) : base(serviceProvider, tracorOptions, httpSinkOptions, tracorEmergencyLogging) {
+        this._TracorMemoryPoolManager = tracorRecyclableMemoryStreamManager;
     }
 
     internal override void SetBulkSinkOptionsExtended(TracorHttpSinkOptions options) {
@@ -38,6 +44,7 @@ public sealed class TracorCollectiveHttpSink
         => this._TargetUrl is { Length: > 0 };
 
     private HttpClient? _HttpClient;
+    private readonly TracorMemoryPoolManager _TracorMemoryPoolManager;
 
     protected override async Task WriteAsync(List<ITracorData> listTracorData) {
         if (this._HttpClient is { } httpClient) {
@@ -48,7 +55,7 @@ public sealed class TracorCollectiveHttpSink
             using (HttpRequestMessage httpRequestMessage = new HttpRequestMessage(
                 HttpMethod.Post,
                 this._TargetUrl)) {
-                using (var stream = _Manager.GetStream()) {
+                using (var stream = this._TracorMemoryPoolManager.RecyclableMemoryStreamManager.GetStream()) {
                     using (var brotliStream = new BrotliStream(stream, CompressionMode.Compress, true)) {
                         await this.ConvertAndWriteAsync(listTracorData, false, true, brotliStream);
                         brotliStream.Flush();

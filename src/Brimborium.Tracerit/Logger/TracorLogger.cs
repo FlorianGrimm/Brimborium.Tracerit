@@ -16,6 +16,7 @@ internal sealed class TracorLogger : ILogger {
 
     public TracorLogger(
         string name,
+        TracorDataRecordPool tracorDataRecordPool,
         ITracorDataConvertService tracorDataConvertService,
         ITracorCollectivePublisher publisher,
         LogLevel? minimumLogLevel,
@@ -23,7 +24,7 @@ internal sealed class TracorLogger : ILogger {
         this._Name = name;
         this._TracorDataConvertService = tracorDataConvertService;
         this._Publisher = publisher;
-        this._Pool = new(2048);
+        this._Pool = tracorDataRecordPool;
 
         // if the name is this namespace or sub-namespace - don't tracor
         if (publisher.IsEnabled()) {
@@ -124,7 +125,7 @@ internal sealed class TracorLogger : ILogger {
         string formatted,
         Exception? exception) {
         // TODO: key from otel
-        loggerTracorData.TracorIdentifier = new(tracorIdentifier.Source, tracorIdentifier.Scope, formatted);
+        loggerTracorData.TracorIdentifier = new(tracorIdentifier.SourceProvider, tracorIdentifier.Scope, formatted);
 
         if (activityTraceId is { Length: > 0 }) {
             loggerTracorData.ListProperty.Add(

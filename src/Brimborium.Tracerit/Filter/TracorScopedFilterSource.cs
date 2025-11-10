@@ -44,11 +44,11 @@ public class TracorScopedFilterSource : ITracorScopedFilterSource {
 
 public sealed class PublicTracorScopedFilterSource
     : ITracorScopedFilterSource {
-    public string GetSourceName() => TracorConstants.SourceTracorPublic;
+    public string GetSourceName() => TracorConstants.SourceProviderTracorPublic;
 }
 
 public sealed class PrivateTracorScopedFilterSource
     : ITracorScopedFilterSource {
 
-    public string GetSourceName() => TracorConstants.SourceTracorPrivate;
+    public string GetSourceName() => TracorConstants.SourceProviderTracorPrivate;
 }

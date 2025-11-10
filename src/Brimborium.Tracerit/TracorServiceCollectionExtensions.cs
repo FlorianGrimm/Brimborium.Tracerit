@@ -61,7 +61,8 @@ public static partial class TracorServiceCollectionExtensions {
         string tracorScopedFilterSection = "") {
         serviceBuilder.AddSingleton<TracorEmergencyLogging>();
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
-        serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
+        serviceBuilder.AddSingleton<TracorDataRecordPool>();
+        serviceBuilder.AddSingleton<TracorMemoryPoolManager>();
         serviceBuilder.AddSingleton<ITracorServiceSink, DisabledTracorServiceSink>();
         serviceBuilder.AddSingleton<ITracorDataConvertService>(TracorDataConvertService.Create);
         serviceBuilder.AddSingleton<LateTracorDataConvertService>();
@@ -98,13 +99,14 @@ public static partial class TracorServiceCollectionExtensions {
         string tracorScopedFilterSection = "") {
         serviceBuilder.AddSingleton<TracorEmergencyLogging>();
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
-        serviceBuilder.AddSingleton<TracorDataRecordPool>(TracorDataRecordPool.Create);
+        serviceBuilder.AddSingleton<TracorDataRecordPool>();
+        serviceBuilder.AddSingleton<TracorMemoryPoolManager>();
         serviceBuilder.AddSingleton<ITracorServiceSink, TracorServiceSink>();
         serviceBuilder.AddTransient<ITracorCollectiveSink>(
             static (sp) => sp.GetRequiredService<TracorValidator>());
         serviceBuilder.AddSingleton<ITracorDataConvertService>(TracorDataConvertService.Create);
         serviceBuilder.AddSingleton<LateTracorDataConvertService>();
-        serviceBuilder.AddSingleton<TracorValidator>(TracorValidator.Create);
+        serviceBuilder.AddSingleton<TracorValidator>();
         serviceBuilder.AddSingleton<ITracorValidator>(
             static (serviceProvider) => serviceProvider.GetRequiredService<TracorValidator>());
         serviceBuilder.AddSingleton(typeof(LazyCreatedLogger<>));
