@@ -1,9 +1,10 @@
 import { AsyncPipe } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, HostListener, inject, Input, OnDestroy, output, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, Input, OnDestroy, output, Output, ViewChild } from '@angular/core';
 import { DateTimeFormatter, Duration, ZonedDateTime, ZoneId } from '@js-joda/core';
 import { BehaviorSubject, combineLatest, debounce, debounceTime, delay, distinctUntilChanged, map, Subscription } from 'rxjs';
 import { LogTimeDataService } from '../Utility/log-time-data.service';
 import { getLogLineTimestampValue, LogLine } from '../Api';
+import { setTimeRangeFinishIfChanged, setTimeRangeOrNullIfChanged, setTimeRangeStartIfChanged, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
 
 const epoch0 = ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.UTC);
 const epoch1 = ZonedDateTime.of(1970, 1, 1, 1, 1, 1, 1, ZoneId.UTC);
@@ -32,6 +33,7 @@ type TimeRulerViewModel = {
   tickUnit: string;
   majorTickEvery: number;
 
+  listLogLineFiltered: LogLine[];
   listTick: TimescaleTick[];
   listLogTick: LogTick[];
 };
@@ -60,14 +62,14 @@ const dateTimeFormatterHHmmssSSS = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
   ],
   templateUrl: './time-ruler.component.html',
   styleUrl: './time-ruler.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   subscription = new Subscription();
   subscriptionState = new Subscription();
   readonly logTimeDataService = inject(LogTimeDataService);
 
-  public startFilter$ = new BehaviorSubject<ZonedDateTime | null>(null);
-  public finishFilter$ = new BehaviorSubject<ZonedDateTime | null>(null);
+  public rangeFilter$ = new BehaviorSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }));
 
   readonly state$ = new BehaviorSubject<TimeRulerViewModel>({
     displayWidth: 0,
@@ -91,6 +93,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     tickUnit: 'ms',
     majorTickEvery: 10,
 
+    listLogLineFiltered: [],
     listTick: [],
     listLogTick: []
   });
@@ -112,15 +115,9 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     this.updateViewBox();
 
     this.subscriptionState.add(
-      combineLatest({
-        startFilter: this.logTimeDataService.startFilter$,
-        finishFilter: this.logTimeDataService.finishFilter$,
-      }).pipe(
-        delay(0)
-      ).subscribe({
+      this.logTimeDataService.rangeFilter$.subscribe({
         next: (value) => {
-          this.startFilter$.next(value.startFilter);
-          this.finishFilter$.next(value.finishFilter);
+          setTimeRangeOrNullIfChanged(this.rangeFilter$, value);
         }
       })
     );
@@ -145,38 +142,40 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     this.subscriptionState.add(
       combineLatest({
         listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
-        startZoom: this.logTimeDataService.startZoom$,
-        finishZoom: this.logTimeDataService.finishZoom$,
-        startFilter: this.logTimeDataService.startFilter$,
-        finishFilter: this.logTimeDataService.finishFilter$,
+        rangeZoom: this.logTimeDataService.rangeZoom$,
+        rangeFilter: this.logTimeDataService.rangeFilter$,
       }).pipe(
         delay(0)
       ).subscribe({
         next: (value) => {
-          if ((null === value.startFilter) && (null === value.finishFilter)) {
+          if ((null === value.rangeFilter.start) && (null === value.rangeFilter.finish)) {
             if (1 < value.listLogLineFiltered.length) {
               const tsStart = getLogLineTimestampValue(value.listLogLineFiltered[0]);
               const tsFinish = getLogLineTimestampValue(value.listLogLineFiltered[value.listLogLineFiltered.length - 1]);
-
-              this.startFilter$.next(tsStart);
-              this.finishFilter$.next(tsFinish);
+              setTimeRangeOrNullIfChanged(this.rangeFilter$, {
+                start: tsStart,
+                finish: tsFinish
+              });
             }
           } else {
             // startZoom<=startFilter<=finishFilter<=finishZoom
-            if (value.startZoom.compareTo(value.startFilter) <= 0
-              && value.startFilter.compareTo(value.finishZoom) <= 0
+            let tsStart: ZonedDateTime;
+            let tsFinish: ZonedDateTime;
+            if (value.rangeZoom.start.compareTo(value.rangeFilter.start) <= 0
+              && value.rangeFilter.start.compareTo(value.rangeZoom.finish) <= 0
             ) {
-              this.startFilter$.next(value.startFilter);
+              tsStart = value.rangeFilter.start;
             } else {
-              this.startFilter$.next(value.startZoom);
+              tsStart = value.rangeZoom.start;
             }
-            if (value.startZoom.compareTo(value.finishFilter) <= 0
-              && value.finishFilter.compareTo(value.finishZoom) <= 0
+            if (value.rangeZoom.start.compareTo(value.rangeFilter.finish) <= 0
+              && value.rangeFilter.finish.compareTo(value.rangeZoom.finish) <= 0
             ) {
-              this.finishFilter$.next(value.finishFilter);
+              tsFinish = value.rangeFilter.finish;
             } else {
-              this.finishFilter$.next(value.finishZoom);
+              tsFinish = value.rangeZoom.finish;
             }
+            setTimeRangeOrNullIfChanged(this.rangeFilter$, { start: tsStart, finish: tsFinish });
           }
         }
       })
@@ -184,58 +183,40 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
 
     this.subscriptionState.add(
       combineLatest({
-        displayWidth: this.displayWidth$.pipe(
-          distinctUntilChanged(),
-          delay(0)
-        ),
+        displayWidth: this.displayWidth$,
 
-        startZoom: this.logTimeDataService.startZoom$,
-        finishZoom: this.logTimeDataService.finishZoom$,
-        durationZoom: this.logTimeDataService.durationZoom$,
+        rangeZoom: this.logTimeDataService.rangeZoom$,
 
-        startCurrent: this.logTimeDataService.startCurrent$,
-        finishCurrent: this.logTimeDataService.finishCurrent$,
+        rangeCurrent: this.logTimeDataService.rangeCurrent$,
 
-        startFilter: this.startFilter$,
-        finishFilter: this.finishFilter$,
+        rangeFilter: this.rangeFilter$,
 
         listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
       }).pipe(
-        debounceTime(50),
-        distinctUntilChanged((a, b) => {
-          return a.displayWidth === b.displayWidth
-            && a.startZoom === b.startZoom
-            && a.finishZoom === b.finishZoom
-            && a.durationZoom === b.durationZoom
-            && a.startCurrent === b.startCurrent
-            && a.finishCurrent === b.finishCurrent
-            && a.startFilter === b.startFilter
-            && a.finishFilter === b.finishFilter
-            && a.listLogLineFiltered === b.listLogLineFiltered;
-        })
+        delay(0),
       ).subscribe({
         next: (value) => {
 
           let { tickInterval, tickUnit, majorTickEvery }: { tickInterval: Duration; tickUnit: string; majorTickEvery: number; } = this.calculateTicksBaseInfo(value);
           // startZoom<=startFilter<=finishFilter<=finishZoom
           let startFilter: ZonedDateTime;
-          if (null !== value.startFilter
-            && value.startZoom.compareTo(value.startFilter) <= 0
-            && value.startFilter.compareTo(value.finishZoom) <= 0
+          if (null !== value.rangeFilter.start
+            && value.rangeZoom.start.compareTo(value.rangeFilter.start) <= 0
+            && value.rangeFilter.start.compareTo(value.rangeZoom.finish) <= 0
           ) {
-            startFilter = value.startFilter;
+            startFilter = value.rangeFilter.start;
           } else {
-            startFilter = value.startZoom;
+            startFilter = value.rangeZoom.start;
           }
 
           let finishFilter: ZonedDateTime;
-          if (null !== value.finishFilter
-            && value.startZoom.compareTo(value.finishFilter) <= 0
-            && value.finishFilter.compareTo(value.finishZoom) <= 0
+          if (null !== value.rangeFilter.finish
+            && value.rangeZoom.start.compareTo(value.rangeFilter.finish) <= 0
+            && value.rangeFilter.finish.compareTo(value.rangeZoom.finish) <= 0
           ) {
-            finishFilter = value.finishFilter;
+            finishFilter = value.rangeFilter.finish;
           } else {
-            finishFilter = value.finishZoom;
+            finishFilter = value.rangeZoom.finish;
           }
 
           const startFilterPositionX = this.toPositionX(startFilter);
@@ -246,12 +227,12 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
             displayWidth: value.displayWidth,
             viewBox: `0 0 ${value.displayWidth ?? 100} 100`,
 
-            startZoom: value.startZoom,
-            finishZoom: value.finishZoom,
-            durationZoom: value.durationZoom,
+            startZoom: value.rangeZoom.start,
+            finishZoom: value.rangeZoom.finish,
+            durationZoom: value.rangeZoom.duration,
 
-            startCurrent: value.startCurrent,
-            finishCurrent: value.finishCurrent,
+            startCurrent: value.rangeCurrent.start,
+            finishCurrent: value.rangeCurrent.finish,
 
             startFilter: startFilter,
             finishFilter: finishFilter,
@@ -264,10 +245,10 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
             tickUnit: tickUnit,
             majorTickEvery: majorTickEvery,
 
+            listLogLineFiltered: value.listLogLineFiltered,
             listTick: [],
             listLogTick: []
           };
-          this.generateTicks(result);
           console.log("state", {
             startZoom: result.startZoom?.toString(),
             finishZoom: result.finishZoom?.toString(),
@@ -276,7 +257,10 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
             startFilterPositionX: result.startFilterPositionX,
             finishFilterPositionX: result.finishFilterPositionX
           });
-          //this.generateLogTicks(value.listLogLineFiltered, result)
+          /*
+          this.generateTicks(result);
+          this.generateLogTicks(value.listLogLineFiltered, result)
+          */
           this.state$.next(result);
         }
       })
@@ -329,8 +313,12 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   }
 
 
-  private calculateTicksBaseInfo(value: { displayWidth: number; startZoom: ZonedDateTime; finishZoom: ZonedDateTime; durationZoom: Duration; startCurrent: ZonedDateTime | null; finishCurrent: ZonedDateTime | null; listLogLineFiltered: LogLine[]; }) {
-    let duration = value.durationZoom;
+  private calculateTicksBaseInfo(
+    value: {
+      displayWidth: number;
+      rangeZoom: TimeRangeDuration;
+    }) {
+    let duration = value.rangeZoom.duration;
     let displayWidth = value.displayWidth - 30;
     // Calculate timeline ruler scale and unit
     let tickInterval: Duration;
@@ -373,6 +361,13 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     return { tickInterval, tickUnit, majorTickEvery };
   }
 
+  getListTick(state: TimeRulerViewModel): TimescaleTick[]{
+    if(state.listTick.length === 0){
+      this.generateTicks(state);
+    }
+    return state.listTick;
+  }
+
   generateTicks(state: TimeRulerViewModel) {
     const ticks: Array<TimescaleTick> = state.listTick;
     ticks.splice(0, ticks.length);
@@ -410,6 +405,13 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
         break;
       }
     }
+  }
+
+  getListLogTick(state: TimeRulerViewModel): LogTick[] {
+    if (state.listLogTick.length === 0) {
+      this.generateLogTicks(state.listLogLineFiltered, state);
+    }
+    return state.listLogTick;
   }
 
   generateLogTicks(listLogLineFiltered: LogLine[], result: TimeRulerViewModel) {
@@ -500,14 +502,12 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
           ...currentState,
           startFilterPositionX: clientX
         });
-        //this.startFilter$.next(ts);
       } else if (this.dragState.mode === 'finish') {
         this.state$.next({
           ...currentState,
           finishFilterPositionX: clientX,
           finishFilterWidth: currentState.displayWidth - clientX
         });
-        //this.finishFilter$.next(ts);
       }
       $event.preventDefault();
       $event.stopPropagation();
@@ -521,9 +521,9 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
       if (ts === null) { return; }
       console.log("onMouseUp", this.dragState.mode, ts.toString());
       if (this.dragState.mode === 'start') {
-        this.logTimeDataService.startFilter$.next(ts);
+        setTimeRangeStartIfChanged(this.logTimeDataService.rangeFilter$, ts);
       } else if (this.dragState.mode === 'finish') {
-        this.logTimeDataService.finishFilter$.next(ts);
+        setTimeRangeFinishIfChanged(this.logTimeDataService.rangeFilter$, ts);
       }
       this.dragState = { mode: '', startClientX: 0, startPositionX: 0 };
       $event.preventDefault();
@@ -533,9 +533,11 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   onMouseDblClick(mode: 'start' | 'finish') {
     if (this.dragState.mode === '') {
       if (mode === 'start') {
-        this.logTimeDataService.startFilter$.next(this.logTimeDataService.startComplete$.getValue());
+        const nextStart = this.logTimeDataService.startComplete$.getValue();
+        setTimeRangeStartIfChanged(this.logTimeDataService.rangeFilter$, nextStart);
       } else if (mode === 'finish') {
-        this.logTimeDataService.finishFilter$.next(this.logTimeDataService.finishComplete$.getValue());
+        const nextFinish = this.logTimeDataService.finishComplete$.getValue();
+        setTimeRangeFinishIfChanged(this.logTimeDataService.rangeFilter$, nextFinish);
       }
     }
   }

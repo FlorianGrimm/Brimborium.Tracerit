@@ -65,7 +65,7 @@ export class DataService {
 
 
   setListLogLine(data: LogLine[]) {
-    this.extractHeader(data);
+    //this.extractHeader(data);
     this.listLogLine$.next(data);
   }
 

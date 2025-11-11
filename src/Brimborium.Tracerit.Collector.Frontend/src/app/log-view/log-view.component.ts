@@ -71,20 +71,13 @@ export class LogViewComponent {
         filter: this.filter$,
         listLogLine: this.listLogLine$,
         listCurrentHeader: this.listCurrentHeader$,
-        startZoom: this.logTimeDataService.startZoom$,
-        startFilter: this.logTimeDataService.startFilter$,
-        finishFilter: this.logTimeDataService.finishFilter$,
-        finishZoom: this.logTimeDataService.finishZoom$
+        //rangeZoom: this.logTimeDataService.rangeZoom$,
+        //rangeFilter: this.logTimeDataService.rangeFilter$,
       }).pipe(
-        delay(0)
+        delay(10)
       ).subscribe({
         next: (value) => {
           const resultFilteredCondition = filterListLogLine(value.listLogLine, value.listCurrentHeader);
-          const resultFilteredTime = resultFilteredCondition.filter(item => {
-            const ts = getLogLineTimestampValue(item);
-            if (ts === null) { return false; }
-            return (value.startFilter.compareTo(ts) <= 0) && (ts.compareTo(value.finishFilter) <= 0);
-          });
           this.logTimeDataService.listLogLineFilteredCondition$.next(resultFilteredCondition);
         }
       })
@@ -93,10 +86,8 @@ export class LogViewComponent {
     this.subscription.add(
       combineLatest({
         listLogLineFilteredCondition: this.logTimeDataService.listLogLineFilteredCondition$,
-        startZoom: this.logTimeDataService.startZoom$,
-        startFilter: this.logTimeDataService.startFilter$,
-        finishFilter: this.logTimeDataService.finishFilter$,
-        finishZoom: this.logTimeDataService.finishZoom$
+        rangeZoom: this.logTimeDataService.rangeZoom$,
+        rangeFilter: this.logTimeDataService.rangeFilter$,
       }).pipe(
         delay(0)
       ).subscribe({
@@ -105,7 +96,7 @@ export class LogViewComponent {
             (item) => {
               const ts = getLogLineTimestampValue(item);
               if (ts === null) { return false; }
-              return (value.startFilter.compareTo(ts) <= 0) && (ts.compareTo(value.finishFilter) <= 0);
+              return (value.rangeFilter.start.compareTo(ts) <= 0) && (ts.compareTo(value.rangeFilter.finish) <= 0);
             });
           this.logTimeDataService.listLogLineFilteredTime$.next(resultFilteredTime);
         }

@@ -3,12 +3,12 @@
   @if((null !== state) && (0 < state.displayWidth) && ("" !==state.viewBox)){ <svg #svgElement
     [attr.viewBox]="state.viewBox">
 
-    @for (logTick of state.listLogTick; track logTick.id) {
+    @for (logTick of getListLogTick(state); track logTick.id) {
     <line [attr.x1]="logTick.positionX1" [attr.y1]="logTick.positionY" [attr.x2]="logTick.positionX2+1"
       [attr.y2]="logTick.positionY+4" [attr.stroke]="logTick.color" [attr.stroke-width]="1" />
     }
     <!-- Draw ticks -->
-    @for (tick of state.listTick; track tick.id) {
+    @for (tick of getListTick(state); track tick.id) {
     <line [attr.x1]="tick.position" [attr.y1]="tick.isMajor ? 60 : 70" [attr.x2]="tick.position" [attr.y2]="80"
       stroke="black" [attr.stroke-width]="tick.isMajor ? 2 : 1" />
     @if (tick.isMajor) {
