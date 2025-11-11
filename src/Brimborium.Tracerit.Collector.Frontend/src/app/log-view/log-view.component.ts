@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { BehaviorSubject, combineLatest, filter, map, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, delay, filter, map, Subscription } from 'rxjs';
 import { DataService } from '../Utility/data-service';
 import { HttpClientService } from '../Utility/http-client-service';
 import { filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
@@ -56,7 +56,7 @@ export class LogViewComponent {
       this.dataService.listLogLine$.subscribe(this.listLogLine$));
 
     this.subscription.add(
-      this.logTimeDataService.listLogLineFiltered$.subscribe(this.listLogLineFiltered$));
+      this.logTimeDataService.listLogLineFilteredCondition$.subscribe(this.listLogLineFiltered$));
 
     this.subscription.add(
       this.dataService.listAllHeader$.subscribe({
@@ -70,14 +70,48 @@ export class LogViewComponent {
       combineLatest({
         filter: this.filter$,
         listLogLine: this.listLogLine$,
-        listCurrentHeader: this.listCurrentHeader$
-      }).subscribe({
+        listCurrentHeader: this.listCurrentHeader$,
+        startZoom: this.logTimeDataService.startZoom$,
+        startFilter: this.logTimeDataService.startFilter$,
+        finishFilter: this.logTimeDataService.finishFilter$,
+        finishZoom: this.logTimeDataService.finishZoom$
+      }).pipe(
+        delay(0)
+      ).subscribe({
         next: (value) => {
-          const result = filterListLogLine(value.listLogLine, value.listCurrentHeader);
-          this.logTimeDataService.listLogLineFiltered$.next(result);
+          const resultFilteredCondition = filterListLogLine(value.listLogLine, value.listCurrentHeader);
+          const resultFilteredTime = resultFilteredCondition.filter(item => {
+            const ts = getLogLineTimestampValue(item);
+            if (ts === null) { return false; }
+            return (value.startFilter.compareTo(ts) <= 0) && (ts.compareTo(value.finishFilter) <= 0);
+          });
+          this.logTimeDataService.listLogLineFilteredCondition$.next(resultFilteredCondition);
         }
       })
     );
+
+    this.subscription.add(
+      combineLatest({
+        listLogLineFilteredCondition: this.logTimeDataService.listLogLineFilteredCondition$,
+        startZoom: this.logTimeDataService.startZoom$,
+        startFilter: this.logTimeDataService.startFilter$,
+        finishFilter: this.logTimeDataService.finishFilter$,
+        finishZoom: this.logTimeDataService.finishZoom$
+      }).pipe(
+        delay(0)
+      ).subscribe({
+        next: (value) => {
+          const resultFilteredTime = value.listLogLineFilteredCondition.filter(
+            (item) => {
+              const ts = getLogLineTimestampValue(item);
+              if (ts === null) { return false; }
+              return (value.startFilter.compareTo(ts) <= 0) && (ts.compareTo(value.finishFilter) <= 0);
+            });
+          this.logTimeDataService.listLogLineFilteredTime$.next(resultFilteredTime);
+        }
+      })
+    );
+
     this.subscription.add(this.logTimeDataService.currentLogLineId$.subscribe(this.currentLogLineId$));
     this.subscription.add(this.logTimeDataService.currentLogLine$.subscribe(this.currentLogLine$));
     this.subscription.add(this.logTimeDataService.currentLogTimestamp$.subscribe(this.currentLogTimestamp$));

@@ -1,28 +1,43 @@
 import { AsyncPipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, HostListener, inject, Input, OnDestroy, output, Output, ViewChild } from '@angular/core';
 import { DateTimeFormatter, Duration, ZonedDateTime, ZoneId } from '@js-joda/core';
-import { BehaviorSubject, combineLatest, delay, distinctUntilChanged, map, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, debounce, debounceTime, delay, distinctUntilChanged, map, Subscription } from 'rxjs';
 import { LogTimeDataService } from '../Utility/log-time-data.service';
 import { getLogLineTimestampValue, LogLine } from '../Api';
 
-const epoch = ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.UTC);
+const epoch0 = ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.UTC);
+const epoch1 = ZonedDateTime.of(1970, 1, 1, 1, 1, 1, 1, ZoneId.UTC);
+
+const LogLineColors = ["red", "green", "blue", "yellow", "orange", "purple", "pink", "brown", "gray", "black"];
 
 type TimeRulerViewModel = {
   displayWidth: number;
   viewBox: string;
+
   startZoom: ZonedDateTime;
   finishZoom: ZonedDateTime;
   durationZoom: Duration;
+
   startCurrent: ZonedDateTime | null;
   finishCurrent: ZonedDateTime | null;
+
+  startFilter: ZonedDateTime | null;
+  finishFilter: ZonedDateTime | null;
+
+  startFilterPositionX: number | null,
+  finishFilterPositionX: number | null,
+  finishFilterWidth: number | null,
+
   tickInterval: Duration;
   tickUnit: string;
   majorTickEvery: number;
+
   listTick: TimescaleTick[];
   listLogTick: LogTick[];
 };
 
 type TimescaleTick = {
+  id: number;
   position: number;
   isMajor: boolean;
   label: string;
@@ -32,7 +47,7 @@ type LogTick = {
   positionX1: number;
   positionX2: number;
   positionY: number;
-  color:string;
+  color: string;
   logLine: LogLine;
 };
 
@@ -51,19 +66,33 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   subscriptionState = new Subscription();
   readonly logTimeDataService = inject(LogTimeDataService);
 
+  public startFilter$ = new BehaviorSubject<ZonedDateTime | null>(null);
+  public finishFilter$ = new BehaviorSubject<ZonedDateTime | null>(null);
+
   readonly state$ = new BehaviorSubject<TimeRulerViewModel>({
     displayWidth: 0,
     viewBox: '',
-    startZoom: epoch,
-    finishZoom: epoch,
-    durationZoom: Duration.ofSeconds(0),
+
+    startZoom: epoch0,
+    finishZoom: epoch1,
+    durationZoom: Duration.between(epoch0, epoch1),
+
     startCurrent: null,
     finishCurrent: null,
+
+    startFilter: null,
+    finishFilter: null,
+
+    startFilterPositionX: null,
+    finishFilterPositionX: null,
+    finishFilterWidth: 0,
+
     tickInterval: Duration.ofMillis(100),
     tickUnit: 'ms',
     majorTickEvery: 10,
+
     listTick: [],
-    listLogTick:[]
+    listLogTick: []
   });
 
   @ViewChild('containerElement', { static: true }) containerElement!: ElementRef<HTMLDivElement>;
@@ -84,40 +113,170 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
 
     this.subscriptionState.add(
       combineLatest({
-        displayWidth: this.displayWidth$.pipe(
-          distinctUntilChanged(),
-          delay(0)
-        ),
-        startZoom: this.logTimeDataService.startZoom$,
-        finishZoom: this.logTimeDataService.finishZoom$,
-        durationZoom: this.logTimeDataService.durationZoom$,
-        startCurrent: this.logTimeDataService.startCurrent$,
-        finishCurrent: this.logTimeDataService.finishCurrent$,
-        listLogLineFiltered: this.logTimeDataService.listLogLineFiltered$,
+        startFilter: this.logTimeDataService.startFilter$,
+        finishFilter: this.logTimeDataService.finishFilter$,
       }).pipe(
         delay(0)
       ).subscribe({
         next: (value) => {
+          this.startFilter$.next(value.startFilter);
+          this.finishFilter$.next(value.finishFilter);
+        }
+      })
+    );
+
+    this.subscriptionState.add(
+      combineLatest({
+        listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
+        currentLogLineId: this.logTimeDataService.currentLogLineId$,
+        currentLogLine: this.logTimeDataService.currentLogLine$,
+      }).pipe(
+        delay(0)
+      ).subscribe({
+        next: (value) => {
+          if (0 < value.listLogLineFiltered.length
+            && ((null === value.currentLogLineId) || (undefined === value.currentLogLineId))
+          ) {
+            this.logTimeDataService.currentLogLineId$.next(value.listLogLineFiltered[0].id);
+          }
+        }
+      })
+    );
+    this.subscriptionState.add(
+      combineLatest({
+        listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
+        startZoom: this.logTimeDataService.startZoom$,
+        finishZoom: this.logTimeDataService.finishZoom$,
+        startFilter: this.logTimeDataService.startFilter$,
+        finishFilter: this.logTimeDataService.finishFilter$,
+      }).pipe(
+        delay(0)
+      ).subscribe({
+        next: (value) => {
+          if ((null === value.startFilter) && (null === value.finishFilter)) {
+            if (1 < value.listLogLineFiltered.length) {
+              const tsStart = getLogLineTimestampValue(value.listLogLineFiltered[0]);
+              const tsFinish = getLogLineTimestampValue(value.listLogLineFiltered[value.listLogLineFiltered.length - 1]);
+
+              this.startFilter$.next(tsStart);
+              this.finishFilter$.next(tsFinish);
+            }
+          } else {
+            // startZoom<=startFilter<=finishFilter<=finishZoom
+            if (value.startZoom.compareTo(value.startFilter) <= 0
+              && value.startFilter.compareTo(value.finishZoom) <= 0
+            ) {
+              this.startFilter$.next(value.startFilter);
+            } else {
+              this.startFilter$.next(value.startZoom);
+            }
+            if (value.startZoom.compareTo(value.finishFilter) <= 0
+              && value.finishFilter.compareTo(value.finishZoom) <= 0
+            ) {
+              this.finishFilter$.next(value.finishFilter);
+            } else {
+              this.finishFilter$.next(value.finishZoom);
+            }
+          }
+        }
+      })
+    );
+
+    this.subscriptionState.add(
+      combineLatest({
+        displayWidth: this.displayWidth$.pipe(
+          distinctUntilChanged(),
+          delay(0)
+        ),
+
+        startZoom: this.logTimeDataService.startZoom$,
+        finishZoom: this.logTimeDataService.finishZoom$,
+        durationZoom: this.logTimeDataService.durationZoom$,
+
+        startCurrent: this.logTimeDataService.startCurrent$,
+        finishCurrent: this.logTimeDataService.finishCurrent$,
+
+        startFilter: this.startFilter$,
+        finishFilter: this.finishFilter$,
+
+        listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
+      }).pipe(
+        debounceTime(50),
+        distinctUntilChanged((a, b) => {
+          return a.displayWidth === b.displayWidth
+            && a.startZoom === b.startZoom
+            && a.finishZoom === b.finishZoom
+            && a.durationZoom === b.durationZoom
+            && a.startCurrent === b.startCurrent
+            && a.finishCurrent === b.finishCurrent
+            && a.startFilter === b.startFilter
+            && a.finishFilter === b.finishFilter
+            && a.listLogLineFiltered === b.listLogLineFiltered;
+        })
+      ).subscribe({
+        next: (value) => {
 
           let { tickInterval, tickUnit, majorTickEvery }: { tickInterval: Duration; tickUnit: string; majorTickEvery: number; } = this.calculateTicksBaseInfo(value);
+          // startZoom<=startFilter<=finishFilter<=finishZoom
+          let startFilter: ZonedDateTime;
+          if (null !== value.startFilter
+            && value.startZoom.compareTo(value.startFilter) <= 0
+            && value.startFilter.compareTo(value.finishZoom) <= 0
+          ) {
+            startFilter = value.startFilter;
+          } else {
+            startFilter = value.startZoom;
+          }
+
+          let finishFilter: ZonedDateTime;
+          if (null !== value.finishFilter
+            && value.startZoom.compareTo(value.finishFilter) <= 0
+            && value.finishFilter.compareTo(value.finishZoom) <= 0
+          ) {
+            finishFilter = value.finishFilter;
+          } else {
+            finishFilter = value.finishZoom;
+          }
+
+          const startFilterPositionX = this.toPositionX(startFilter);
+          const finishFilterPositionX = this.toPositionX(finishFilter);
+          const finishFilterWidth = value.displayWidth - finishFilterPositionX;
 
           const result: TimeRulerViewModel = {
             displayWidth: value.displayWidth,
             viewBox: `0 0 ${value.displayWidth ?? 100} 100`,
+
             startZoom: value.startZoom,
             finishZoom: value.finishZoom,
             durationZoom: value.durationZoom,
+
             startCurrent: value.startCurrent,
             finishCurrent: value.finishCurrent,
-            tickInterval:tickInterval,
-            tickUnit:tickUnit,
-            majorTickEvery:majorTickEvery,
+
+            startFilter: startFilter,
+            finishFilter: finishFilter,
+
+            startFilterPositionX: startFilterPositionX,
+            finishFilterPositionX: finishFilterPositionX,
+            finishFilterWidth: finishFilterWidth,
+
+            tickInterval: tickInterval,
+            tickUnit: tickUnit,
+            majorTickEvery: majorTickEvery,
+
             listTick: [],
-            listLogTick:[]
+            listLogTick: []
           };
           this.generateTicks(result);
-          this.generateLogTicks(value.listLogLineFiltered, result)
-          console.log("state", result);
+          console.log("state", {
+            startZoom: result.startZoom?.toString(),
+            finishZoom: result.finishZoom?.toString(),
+            startFilter: result.startFilter?.toString(),
+            finishFilter: result.finishFilter?.toString(),
+            startFilterPositionX: result.startFilterPositionX,
+            finishFilterPositionX: result.finishFilterPositionX
+          });
+          //this.generateLogTicks(value.listLogLineFiltered, result)
           this.state$.next(result);
         }
       })
@@ -158,6 +317,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
       }
     }
   }
+
   toTimeString(value: ZonedDateTime | null) {
     if (value === null) { return ""; }
     try {
@@ -219,14 +379,15 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
 
     let currentTime = state.startZoom;
     let tickCount = 0;
+    let index = 0;
 
     while (currentTime.isBefore(state.finishZoom) || currentTime.equals(state.finishZoom)) {
       const position = this.toPositionX(currentTime);
       const isMajor
         = (tickCount !== 0)
-          &&((tickCount % state.majorTickEvery === 0)
-            || (tickCount % 5=== 0)
-          );
+        && ((tickCount % state.majorTickEvery === 0)
+          || (tickCount % 5 === 0)
+        );
 
       let label = '';
       if (isMajor) {
@@ -239,23 +400,25 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
         }
       }
 
-      ticks.push({ position, isMajor, label });
+      ticks.push({ id: index++, position, isMajor, label });
 
       currentTime = currentTime.plus(state.tickInterval);
       tickCount++;
 
       // Safety break to prevent infinite loops
-      if (tickCount > 1000) break;
+      if (state.displayWidth < tickCount) {
+        break;
+      }
     }
   }
 
   generateLogTicks(listLogLineFiltered: LogLine[], result: TimeRulerViewModel) {
     result.listLogTick.splice(0, result.listLogTick.length);
     let oldPosition = 15;
-    let index=0;
-    const colors=["red","green","blue","yellow","orange","purple","pink","brown","gray","black"];
+    let index = 0;
+
     for (const logLine of listLogLineFiltered) {
-      const ts=logLine.data.get("timestamp")?.value as (ZonedDateTime | undefined | null);
+      const ts = logLine.data.get("timestamp")?.value as (ZonedDateTime | undefined | null);
       if (ts === undefined || ts === null) { continue; }
       const position = this.toPositionX(ts);
       index++;;
@@ -263,10 +426,121 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
         id: logLine.id,
         positionX1: oldPosition,
         positionX2: position,
-        positionY: (index % 30)*2,
-        color:colors[index % colors.length],
-        logLine:logLine });
-        oldPosition = position;
+        positionY: (index % 30) * 2,
+        color: LogLineColors[index % LogLineColors.length],
+        logLine: logLine
+      });
+      oldPosition = position;
     }
   }
+
+  private toTimeFromPositionX(positionX: number): ZonedDateTime | null {
+    const state = this.state$.getValue();
+    if (!state.startZoom || !state.finishZoom || state.displayWidth === 0) {
+      return null;
+    }
+
+    const displayWidth = state.displayWidth - 30;
+    const relativeX = positionX - 15;
+    const ratio = Math.max(0, Math.min(1, relativeX / displayWidth));
+
+    const durationMillis = state.durationZoom.toMillis();
+    const offsetMillis = durationMillis * ratio;
+
+    return state.startZoom.plusNanos(offsetMillis * 1000000);
+  }
+
+  dragState: {
+    mode: 'start' | 'finish' | '';
+    startClientX: number;
+    startPositionX: number;
+  } = {
+      mode: '',
+      startClientX: 0,
+      startPositionX: 0,
+    }
+
+  onMouseDown($event: MouseEvent, mode: 'start' | 'finish') {
+    const clientX = clientXToPositionX($event.clientX);
+    const state = this.state$.getValue();
+    console.log("clientX", clientX, "startFilterPositionX", state.startFilterPositionX);
+    if (mode === 'start') {
+      if (0 <= clientX && clientX < (state.startFilterPositionX ?? 0)) {
+        this.dragState = {
+          mode: 'start',
+          startClientX: clientX,
+          startPositionX: (state.startFilterPositionX ?? 0),
+        }
+      };
+      console.log(this.dragState);
+    } else if (mode === 'finish') {
+      if ((state.finishFilterPositionX ?? 0) <= clientX && clientX < (state.displayWidth ?? 0)) {
+        this.dragState = {
+          mode: 'finish',
+          startClientX: clientX,
+          startPositionX: (state.startFilterPositionX ?? 0),
+        }
+      };
+      console.log(this.dragState);
+    }
+    $event.preventDefault();
+    $event.stopPropagation();
+  }
+  onMouseMove($event: MouseEvent, mode: 'start' | 'finish' | 'inner') {
+    if (this.dragState.mode === mode
+      || this.dragState.mode !== '' && mode === 'inner'
+    ) {
+      const clientX = clientXToPositionX($event.clientX);
+      const ts = this.toTimeFromPositionX(clientX);
+      if (ts === null) { return; }
+      console.log($event.clientX, clientX, this.dragState, ts.toString());
+      const currentState = this.state$.getValue();
+      if (this.dragState.mode === 'start') {
+        this.state$.next({
+          ...currentState,
+          startFilterPositionX: clientX
+        });
+        //this.startFilter$.next(ts);
+      } else if (this.dragState.mode === 'finish') {
+        this.state$.next({
+          ...currentState,
+          finishFilterPositionX: clientX,
+          finishFilterWidth: currentState.displayWidth - clientX
+        });
+        //this.finishFilter$.next(ts);
+      }
+      $event.preventDefault();
+      $event.stopPropagation();
+    }
+  }
+  onMouseUp($event: MouseEvent, mode: 'start' | 'finish' | 'inner') {
+    if ((this.dragState.mode === mode)
+      || (this.dragState.mode !== '' && mode === 'inner')) {
+      const clientX = clientXToPositionX($event.clientX);
+      const ts = this.toTimeFromPositionX(clientX);
+      if (ts === null) { return; }
+      console.log("onMouseUp", this.dragState.mode, ts.toString());
+      if (this.dragState.mode === 'start') {
+        this.logTimeDataService.startFilter$.next(ts);
+      } else if (this.dragState.mode === 'finish') {
+        this.logTimeDataService.finishFilter$.next(ts);
+      }
+      this.dragState = { mode: '', startClientX: 0, startPositionX: 0 };
+      $event.preventDefault();
+      $event.stopPropagation();
+    }
+  }
+  onMouseDblClick(mode: 'start' | 'finish') {
+    if (this.dragState.mode === '') {
+      if (mode === 'start') {
+        this.logTimeDataService.startFilter$.next(this.logTimeDataService.startComplete$.getValue());
+      } else if (mode === 'finish') {
+        this.logTimeDataService.finishFilter$.next(this.logTimeDataService.finishComplete$.getValue());
+      }
+    }
+  }
+
+}
+function clientXToPositionX(clientX: number) {
+  return clientX - 48;
 }
