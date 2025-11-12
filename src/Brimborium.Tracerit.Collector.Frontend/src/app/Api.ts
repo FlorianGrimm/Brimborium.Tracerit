@@ -240,7 +240,7 @@ export function filterListLogLine(
         listFilteredHeader.push(header);
     }
 
-    if (0 === listFilteredHeader.length) { return listLogLine; }
+    if (0 === listFilteredHeader.length) { return listLogLine.slice(); }
 
     for (const logLine of listLogLine) {
         let add = true;

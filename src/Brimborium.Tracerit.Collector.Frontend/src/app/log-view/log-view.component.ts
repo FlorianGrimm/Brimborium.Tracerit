@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { BehaviorSubject, combineLatest, delay, filter, map, Subscription } from 'rxjs';
 import { DataService } from '../Utility/data-service';
 import { HttpClientService } from '../Utility/http-client-service';
@@ -10,6 +10,10 @@ import { RouterLink } from '@angular/router';
 import { Duration, ZonedDateTime } from '@js-joda/core';
 import { TimeRulerComponent } from "../time-ruler/time-ruler.component";
 import { LogTimeDataService } from '../Utility/log-time-data.service';
+import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
+import { MasterRingSubject } from "../Utility/MasterRingSubject";
+import { MasterRingService } from '../Utility/master-ring.service';
+import { AppRingOrder } from '../app-ring-order';
 
 @Component({
   selector: 'app-log-view',
@@ -22,7 +26,7 @@ import { LogTimeDataService } from '../Utility/log-time-data.service';
   templateUrl: './log-view.component.html',
   styleUrl: './log-view.component.scss',
 })
-export class LogViewComponent {
+export class LogViewComponent implements OnDestroy {
   readonly FileStack = FileStack;
   readonly ChevronLeft = ChevronLeft;
   readonly ChevronRight = ChevronRight;
@@ -31,32 +35,46 @@ export class LogViewComponent {
   readonly FunnelX = FunnelX;
 
   readonly subscription = new Subscription();
+  readonly ring$ = inject(MasterRingService).dependendRing('LogTimeDataService-ring$', this.subscription);
   readonly dataService = inject(DataService);
   readonly httpClientService = inject(HttpClientService);
   readonly logTimeDataService = inject(LogTimeDataService);
 
-  readonly listAllHeader$ = new BehaviorSubject<PropertyHeader[]>([]);
-  readonly listCurrentHeader$ = new BehaviorSubject<PropertyHeader[]>([]);
+  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([], 
+    AppRingOrder.LogViewComponent_listAllHeader, 'LogViewComponent_listAllHeader', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value?.length); });
+  readonly listCurrentHeader$ = new BehaviorRingSubject<PropertyHeader[]>([], 
+    AppRingOrder.LogViewComponent_listCurrentHeader, 'LogViewComponent_listCurrentHeader', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
 
-  readonly listLogLine$ = new BehaviorSubject<LogLine[]>([]);
-  readonly listLogLineFiltered$ = new BehaviorSubject<LogLine[]>([]);
-  readonly filter$ = new BehaviorSubject<number>(1);
+  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([], 
+    AppRingOrder.LogViewComponent_listLogLine, 'LogViewComponent_listLogLine', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value?.length); });
+  readonly listLogLineFilteredCondition$ = new BehaviorRingSubject<LogLine[]>([], 
+    AppRingOrder.LogViewComponent_listLogLineFilteredCondition, 'LogViewComponent_listLogLineFilteredCondition', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value?.length); });
+  readonly filter$ = new BehaviorRingSubject<number>(1, 1, 'filter$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
-  readonly currentLogLineId$ = new BehaviorSubject<number | null>(null);
-  readonly currentLogLine$ = new BehaviorSubject<LogLine | null>(null);
-  readonly currentLogTimestamp$ = new BehaviorSubject<(ZonedDateTime | null)>(null);
+  readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null, 
+    AppRingOrder.LogViewComponent_currentLogLineId, 'LogViewComponent_currentLogLineId', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null, 
+    AppRingOrder.LogViewComponent_currentLogLine, 'LogViewComponent_currentLogLine', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null, 
+    AppRingOrder.LogViewComponent_currentLogTimestamp, 'LogViewComponent_currentLogTimestamp', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
-  readonly contextLogLineId$ = new BehaviorSubject<number | null>(null);
-  readonly contextLogLine$ = new BehaviorSubject<LogLine | null>(null);
+  readonly contextLogLineId$ = new BehaviorRingSubject<number | null>(null, 
+    AppRingOrder.LogViewComponent_contextLogLineId, 'LogViewComponent_contextLogLineId', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  readonly contextLogLine$ = new BehaviorRingSubject<LogLine | null>(null, 
+    AppRingOrder.LogViewComponent_contextLogLine, 'LogViewComponent_contextLogLine', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
-  readonly error$ = new BehaviorSubject<null | string>(null);
+  readonly error$ = new BehaviorRingSubject<null | string>(null, 1, 'error$');
 
   constructor() {
     this.subscription.add(
-      this.dataService.listLogLine$.subscribe(this.listLogLine$));
+      this.dataService.listLogLine$.pipeAndSubscribe(this.listLogLine$, (subject) => subject));
 
     this.subscription.add(
-      this.logTimeDataService.listLogLineFilteredCondition$.subscribe(this.listLogLineFiltered$));
+      this.logTimeDataService.listLogLineFilteredCondition$.pipeAndSubscribe(this.listLogLineFilteredCondition$, (subject) => subject));
 
     this.subscription.add(
       this.dataService.listAllHeader$.subscribe({
@@ -66,46 +84,33 @@ export class LogViewComponent {
         }
       }));
 
-    this.subscription.add(
-      combineLatest({
-        filter: this.filter$,
-        listLogLine: this.listLogLine$,
-        listCurrentHeader: this.listCurrentHeader$,
-        //rangeZoom: this.logTimeDataService.rangeZoom$,
-        //rangeFilter: this.logTimeDataService.rangeFilter$,
-      }).pipe(
-        delay(10)
-      ).subscribe({
-        next: (value) => {
-          const resultFilteredCondition = filterListLogLine(value.listLogLine, value.listCurrentHeader);
-          this.logTimeDataService.listLogLineFilteredCondition$.next(resultFilteredCondition);
-        }
-      })
-    );
-
-    this.subscription.add(
-      combineLatest({
-        listLogLineFilteredCondition: this.logTimeDataService.listLogLineFilteredCondition$,
-        rangeZoom: this.logTimeDataService.rangeZoom$,
-        rangeFilter: this.logTimeDataService.rangeFilter$,
-      }).pipe(
-        delay(0)
-      ).subscribe({
-        next: (value) => {
-          const resultFilteredTime = value.listLogLineFilteredCondition.filter(
-            (item) => {
-              const ts = getLogLineTimestampValue(item);
-              if (ts === null) { return false; }
-              return (value.rangeFilter.start.compareTo(ts) <= 0) && (ts.compareTo(value.rangeFilter.finish) <= 0);
-            });
-          this.logTimeDataService.listLogLineFilteredTime$.next(resultFilteredTime);
-        }
-      })
-    );
+    // this.subscription.add(
+    //   combineLatest({
+    //     listLogLineFilteredCondition: this.logTimeDataService.listLogLineFilteredCondition$,
+    //     rangeFilter: this.logTimeDataService.rangeFilter$,
+    //   }).pipe(
+    //     delay(0)
+    //   ).subscribe({
+    //     next: (value) => {
+    //       /*
+    //       const resultFilteredTime = value.listLogLineFilteredCondition.filter(
+    //         (item) => {
+    //           const ts = getLogLineTimestampValue(item);
+    //           if (ts === null) { return false; }
+    //           return (value.rangeFilter.start.compareTo(ts) <= 0) && (ts.compareTo(value.rangeFilter.finish) <= 0);
+    //         });
+    //       */
+    //       this.logTimeDataService.listLogLineFilteredTime$.next(value.listLogLineFilteredCondition);
+    //     }
+    //   })
+    // );
 
     this.subscription.add(this.logTimeDataService.currentLogLineId$.subscribe(this.currentLogLineId$));
     this.subscription.add(this.logTimeDataService.currentLogLine$.subscribe(this.currentLogLine$));
     this.subscription.add(this.logTimeDataService.currentLogTimestamp$.subscribe(this.currentLogTimestamp$));
+  }
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 
   getContent(logLine: LogLine, header: PropertyHeader): string {

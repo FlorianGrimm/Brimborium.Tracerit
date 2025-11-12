@@ -87,7 +87,7 @@
                 </tr>
             </thead>
             <tbody>
-                @let listLogLineFiltered = (listLogLineFiltered$ | async) ?? [];
+                @let listLogLineFiltered = (listLogLineFilteredCondition$ | async) ?? [];
                 @for(logLine of listLogLineFiltered; track logLine.id){
                 <tr (click)="setCurrentLogLine(logLine.id, $event)"
                     (contextmenu)="setContextLogLine(logLine.id, $event)"

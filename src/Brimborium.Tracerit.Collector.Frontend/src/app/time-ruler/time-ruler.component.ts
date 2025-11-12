@@ -1,10 +1,14 @@
 import { AsyncPipe } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, Input, OnDestroy, output, Output, ViewChild } from '@angular/core';
 import { DateTimeFormatter, Duration, ZonedDateTime, ZoneId } from '@js-joda/core';
-import { BehaviorSubject, combineLatest, debounce, debounceTime, delay, distinctUntilChanged, map, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, debounce, debounceTime, delay, distinctUntilChanged, filter, map, Subscription } from 'rxjs';
 import { LogTimeDataService } from '../Utility/log-time-data.service';
 import { getLogLineTimestampValue, LogLine } from '../Api';
 import { setTimeRangeFinishIfChanged, setTimeRangeOrNullIfChanged, setTimeRangeStartIfChanged, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
+import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
+import { MasterRingSubject } from "../Utility/MasterRingSubject";
+import { MasterRingService } from '../Utility/master-ring.service';
+import { AppRingOrder } from '../app-ring-order';
 
 const epoch0 = ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.UTC);
 const epoch1 = ZonedDateTime.of(1970, 1, 1, 1, 1, 1, 1, ZoneId.UTC);
@@ -67,41 +71,75 @@ const dateTimeFormatterHHmmssSSS = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   subscription = new Subscription();
   subscriptionState = new Subscription();
+  readonly ring$ = inject(MasterRingService).dependendRing('LogTimeDataService-ring$', this.subscription);
   readonly logTimeDataService = inject(LogTimeDataService);
 
-  public rangeFilter$ = new BehaviorSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }));
+  public rangeFilter$ = new BehaviorRingSubject<TimeRangeOrNull>(
+    Object.freeze({ start: null, finish: null }),
+    AppRingOrder.TimeRulerComponent_rangeFilter,
+    'TimeRulerComponent_rangeFilter', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
-  readonly state$ = new BehaviorSubject<TimeRulerViewModel>({
-    displayWidth: 0,
-    viewBox: '',
+  readonly state$ = new BehaviorRingSubject<TimeRulerViewModel>(
+    {
+      displayWidth: 0,
+      viewBox: '',
 
-    startZoom: epoch0,
-    finishZoom: epoch1,
-    durationZoom: Duration.between(epoch0, epoch1),
+      startZoom: epoch0,
+      finishZoom: epoch1,
+      durationZoom: Duration.between(epoch0, epoch1),
 
-    startCurrent: null,
-    finishCurrent: null,
+      startCurrent: null,
+      finishCurrent: null,
 
-    startFilter: null,
-    finishFilter: null,
+      startFilter: null,
+      finishFilter: null,
 
-    startFilterPositionX: null,
-    finishFilterPositionX: null,
-    finishFilterWidth: 0,
+      startFilterPositionX: null,
+      finishFilterPositionX: null,
+      finishFilterWidth: 0,
 
-    tickInterval: Duration.ofMillis(100),
-    tickUnit: 'ms',
-    majorTickEvery: 10,
+      tickInterval: Duration.ofMillis(100),
+      tickUnit: 'ms',
+      majorTickEvery: 10,
 
-    listLogLineFiltered: [],
-    listTick: [],
-    listLogTick: []
-  });
+      listLogLineFiltered: [],
+      listTick: [],
+      listLogTick: []
+    },
+    AppRingOrder.TimeRulerComponent_state, 'TimeRulerComponent_state', this.subscription, this.ring$, undefined,
+    (name, message, value) => {
+      console.log(name, message, {
+        displayWidth: value?.displayWidth,
+        viewBox: value?.viewBox,
+
+        startZoom: value?.startZoom?.toString(),
+        finishZoom: value?.finishZoom?.toString(),
+        durationZoom: value?.durationZoom?.toString(),
+
+        startFilter: value?.startFilter?.toString(),
+        finishFilter: value?.finishFilter?.toString(),
+
+        startFilterPositionX: value?.startFilterPositionX,
+        finishFilterPositionX: value?.finishFilterPositionX,
+        finishFilterWidth: value?.finishFilterWidth,
+
+        tickInterval: value?.tickInterval?.toString(),
+        tickUnit: value?.tickUnit,
+        majorTickEvery: value?.majorTickEvery,
+
+        listLogLineFiltered: value?.listLogLineFiltered.length,
+        listTick: value?.listTick.length,
+        listLogTick: value?.listLogTick.length,
+      });
+    }
+  );
 
   @ViewChild('containerElement', { static: true }) containerElement!: ElementRef<HTMLDivElement>;
   @ViewChild('svgElement', { static: true }) svgElement!: ElementRef<SVGSVGElement>;
 
-  public readonly displayWidth$ = new BehaviorSubject<number>(800);
+  public readonly displayWidth$ = new BehaviorRingSubject<number>(0, 
+    AppRingOrder.TimeRulerComponent_displayWidth,  "TimeRulerComponent_displayWidth", this.subscription, this.ring$, undefined,
+    (name, message, value) => {      console.log(name, message, { displayWidth: value });    }  );
 
   constructor() {
   }
@@ -112,8 +150,6 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.updateViewBox();
-
     this.subscriptionState.add(
       this.logTimeDataService.rangeFilter$.subscribe({
         next: (value) => {
@@ -180,10 +216,15 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
         }
       })
     );
+    this.displayWidth$.validateRing(this.state$);
+    this.logTimeDataService.rangeZoom$.validateRing(this.state$);
+    this.logTimeDataService.rangeCurrent$.validateRing(this.state$);
+    this.rangeFilter$.validateRing(this.state$);
+    this.logTimeDataService.listLogLineFilteredCondition$.validateRing(this.state$);
 
     this.subscriptionState.add(
       combineLatest({
-        displayWidth: this.displayWidth$,
+        displayWidth: this.displayWidth$.pipe(filter(value=>0<value)),
 
         rangeZoom: this.logTimeDataService.rangeZoom$,
 
@@ -193,10 +234,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
 
         listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
       }).pipe(
-        delay(0),
-      ).subscribe({
-        next: (value) => {
-
+        map(value => {
           let { tickInterval, tickUnit, majorTickEvery }: { tickInterval: Duration; tickUnit: string; majorTickEvery: number; } = this.calculateTicksBaseInfo(value);
           // startZoom<=startFilter<=finishFilter<=finishZoom
           let startFilter: ZonedDateTime;
@@ -249,22 +287,28 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
             listTick: [],
             listLogTick: []
           };
-          console.log("state", {
-            startZoom: result.startZoom?.toString(),
-            finishZoom: result.finishZoom?.toString(),
-            startFilter: result.startFilter?.toString(),
-            finishFilter: result.finishFilter?.toString(),
-            startFilterPositionX: result.startFilterPositionX,
-            finishFilterPositionX: result.finishFilterPositionX
-          });
+          // console.log("state", {
+          //   startZoom: result.startZoom?.toString(),
+          //   finishZoom: result.finishZoom?.toString(),
+          //   startFilter: result.startFilter?.toString(),
+          //   finishFilter: result.finishFilter?.toString(),
+          //   startFilterPositionX: result.startFilterPositionX,
+          //   finishFilterPositionX: result.finishFilterPositionX
+          // });
           /*
           this.generateTicks(result);
           this.generateLogTicks(value.listLogLineFiltered, result)
           */
-          this.state$.next(result);
+          return result;
+        })
+      ).subscribe({
+        next: (value) => {
+          this.state$.next(value);
         }
       })
     );
+    
+    this.updateViewBox();
   }
 
   @HostListener('window:resize')
@@ -361,8 +405,8 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     return { tickInterval, tickUnit, majorTickEvery };
   }
 
-  getListTick(state: TimeRulerViewModel): TimescaleTick[]{
-    if(state.listTick.length === 0){
+  getListTick(state: TimeRulerViewModel): TimescaleTick[] {
+    if (state.listTick.length === 0) {
       this.generateTicks(state);
     }
     return state.listTick;
@@ -531,13 +575,14 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     }
   }
   onMouseDblClick(mode: 'start' | 'finish') {
+    const rangeComplete = this.logTimeDataService.rangeComplete$.getValue();
+
     if (this.dragState.mode === '') {
       if (mode === 'start') {
-        const nextStart = this.logTimeDataService.startComplete$.getValue();
-        setTimeRangeStartIfChanged(this.logTimeDataService.rangeFilter$, nextStart);
+        const nextStart = rangeComplete.start;
+        setTimeRangeStartIfChanged(this.logTimeDataService.rangeFilter$, rangeComplete.start);
       } else if (mode === 'finish') {
-        const nextFinish = this.logTimeDataService.finishComplete$.getValue();
-        setTimeRangeFinishIfChanged(this.logTimeDataService.rangeFilter$, nextFinish);
+        setTimeRangeFinishIfChanged(this.logTimeDataService.rangeFilter$, rangeComplete.finish);
       }
     }
   }

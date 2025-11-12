@@ -1,21 +1,39 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { LogFileInformationList, LogLine, PropertyHeader, TypeValue } from '../Api';
+import { BehaviorRingSubject } from './BehaviorRingSubject';
+import { MasterRingService } from './master-ring.service';
+import { AppRingOrder } from '../app-ring-order';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
+  readonly subscription = new Subscription();
+  readonly ring$ = inject(MasterRingService).dependendRing('DataService-ring$', this.subscription);
   mapName = new Map<string, PropertyHeader>();
   listAllHeader: PropertyHeader[] = [];
-  listAllHeader$ = new BehaviorSubject<PropertyHeader[]>([]);
-  listFile$ = new BehaviorSubject<LogFileInformationList>([]);
-  currentFile$ = new BehaviorSubject<string | undefined>(undefined);
-  listSelectedFileName$ = new BehaviorSubject<string[]>([]);
 
-  listLogLine$ = new BehaviorSubject<LogLine[]>([]);
-  mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
+  listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
+    AppRingOrder.DataService_listAllHeader, 'DataService_listAllHeader', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+  listFile$ = new BehaviorRingSubject<LogFileInformationList>([],
+    AppRingOrder.DataService_listFile, 'DataService_listFile', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+  currentFile$ = new BehaviorRingSubject<string | undefined>(undefined,
+    AppRingOrder.DataService_currentFile, 'DataService_currentFile', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
+  listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
+    AppRingOrder.DataService_listSelectedFileName, 'DataService_listSelectedFileName', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+
+  // listLogLine 
+  listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
+    AppRingOrder.DataService_listLogLine, 'DataService_listLogLine', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+
+  readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
 
   constructor() {
     this.addDefaultMapName();
@@ -39,9 +57,9 @@ export class DataService {
 
   setListLogLineByName(name: string, data: LogLine[]) {
     this.extractHeader(data);
-    let contentSubject=this.mapLogLineByName.get(name);
-    if (undefined === contentSubject){
-      contentSubject=new BehaviorSubject<LogLine[]>(data);
+    let contentSubject = this.mapLogLineByName.get(name);
+    if (undefined === contentSubject) {
+      contentSubject = new BehaviorRingSubject<LogLine[]>(data, 1, `listLogLine$-${name}`);
       this.mapLogLineByName.set(name, contentSubject);
     } else {
       contentSubject.next(data);
@@ -49,23 +67,23 @@ export class DataService {
   }
 
   clearMapLogLineByNameOthers(listSelectedName: string[]) {
-    const listToClear:string[]=[];
-    for(let name of this.mapLogLineByName.keys()){
-      if (listSelectedName.includes(name)){
+    const listToClear: string[] = [];
+    for (let name of this.mapLogLineByName.keys()) {
+      if (listSelectedName.includes(name)) {
         // OK
       } else {
         // clear
         listToClear.push(name);
       }
     }
-    for(let name of listToClear){
+    for (let name of listToClear) {
       this.mapLogLineByName.delete(name);
     }
   }
 
 
   setListLogLine(data: LogLine[]) {
-    //this.extractHeader(data);
+    this.extractHeader(data);
     this.listLogLine$.next(data);
   }
 
@@ -76,16 +94,16 @@ export class DataService {
       }
     }
     if (this.listAllHeader$.getValue().length !== this.listAllHeader.length) {
-      this.listAllHeader$.next(this.listAllHeader);
+      this.listAllHeader$.next([...this.listAllHeader]);
     }
   }
 
   addDefaultMapName() {
-
-    // this.addMapName("timestamp");
-    // this.addMapName("source");
-    // this.addMapName("scope");
-    // this.addMapName("message");
+    this.addMapName("timestamp", "dt", true);
+    this.addMapName("logLevel", "lvl", true);
+    this.addMapName("source", "str", true);
+    this.addMapName("scope", "str", true);
+    this.addMapName("message", "str", true);
     // this.addMapName("value");
     // this.addMapName("event.id");
     // this.addMapName("event.name");
@@ -98,7 +116,6 @@ export class DataService {
     // this.addMapName("activity.parentSpanId.2");
     // this.addMapName("activity.parentSpanId.3");
     // this.addMapName("activity.traceFlags");
-    // this.addMapName("logLevel");
     // this.addMapName("exception.typeName");
     // this.addMapName("exception.message");
     // this.addMapName("exception.hResult");
@@ -110,7 +127,7 @@ export class DataService {
     // this.addMapName("{OriginalFormat}");
   }
 
-  addMapName(name: string, typeValue: TypeValue, show: boolean = true) {
+  addMapName(name: string, typeValue: TypeValue, show: boolean = false) {
     let result = this.mapName.get(name);
     if (result === undefined) {
       if (!this.mapName.has(name)) {

@@ -7,6 +7,10 @@ import { FileSizePipe } from '../pipe/file-size.pipe';
 
 import type { LogFileInformationList, LogFileInformation, LogLine } from '../Api';
 import { Router } from '@angular/router';
+import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
+import { MasterRingSubject } from "../Utility/MasterRingSubject";
+import { MasterRingService } from '../Utility/master-ring.service';
+import { AppRingOrder } from '../app-ring-order';
 
 @Component({
   selector: 'app-directory-list',
@@ -16,16 +20,23 @@ import { Router } from '@angular/router';
 })
 export class DirectoryListComponent implements OnInit, OnDestroy {
   subscription = new Subscription();
+  
+  ring$ = inject(MasterRingService).dependendRing('DirectoryListComponent-ring$', this.subscription);
   router = inject(Router);
   dataService = inject(DataService);
   httpClientService = inject(HttpClientService);
 
-  currentFile$ = new BehaviorSubject<string | undefined>(undefined);
-  listFile$ = new BehaviorSubject<LogFileInformationList>([]);
-  error$ = new BehaviorSubject<undefined | string>(undefined);
-  selected$ = new BehaviorSubject<string[]>([]);
-  loaded$ = new BehaviorSubject<boolean>(false);
-  listFileLoading$ = new BehaviorSubject<string[]>([]);
+  currentFile$ = new BehaviorRingSubject<string | undefined>(undefined, 1, 'currentFile$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  listFile$ = new BehaviorRingSubject<LogFileInformationList>([], 1, 'listFile$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  error$ = new BehaviorRingSubject<undefined | string>(undefined, 1, 'error$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  selected$ = new BehaviorRingSubject<string[]>([], 
+    AppRingOrder.DirectoryListComponent_selected, 'DirectoryListComponent_selected', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
+  
+  loaded$ = new BehaviorRingSubject<boolean>(false, 
+    AppRingOrder.DirectoryListComponent_loaded, 'DirectoryListComponent_loaded', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
+  listFileLoading$ = new BehaviorRingSubject<string[]>([], 1, 'listFileLoading$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
   constructor() {
     this.subscription.add(this.dataService.listFile$.subscribe(this.listFile$));
