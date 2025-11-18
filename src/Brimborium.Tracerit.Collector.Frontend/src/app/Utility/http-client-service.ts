@@ -67,8 +67,35 @@ export class HttpClientService {
     );
   }
 
-  getCurrentStream() {
-    throw new Error('Method not implemented.');
+  getCurrentStream() : Observable<GetFileResponse> {
+    return this.http.get(
+      `/api/Current`,
+      {
+        observe: 'response',
+        responseType: 'text',
+        cache: 'no-store'
+      }
+    ).pipe(
+      map((response) => {
+        if (200 === response.status) {
+          const body = response.body || "";
+          const data = parseJsonl(body);
+          const result: GetFileResponse = {
+            mode: "success",
+            data: data
+          };
+          return result;
+        }
+        {
+          const result: GetFileResponse = {
+            mode: "error",
+            error: `${response.status} ${response.statusText}`
+          };
+          return result;
+        }
+      })
+    );
   }
+
 
 }

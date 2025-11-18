@@ -20,12 +20,21 @@ public static class TraceritServerServiceBuilderExtensions {
         return serviceBuilder;
     }
 
-    public static IServiceCollection AddTraceritServerControllers(
-        this IServiceCollection serviceBuilder
+    public static WebApplicationBuilder AddTraceritServerControllers(
+        this WebApplicationBuilder webApplicationBuilder,
+        string configSectionPath = "",
+        Action<TracorLogFileServiceOptions>? configure = null
         ) {
-        serviceBuilder.AddSingleton<IController, UIEndpoints>();
-        serviceBuilder.AddSingleton<IController, CollectorTracorEndpoints>();
+        webApplicationBuilder.Services.AddSingleton<IController, UIEndpoints>();
+        webApplicationBuilder.Services.AddSingleton<IController, CollectorTracorEndpoints>();
+        webApplicationBuilder.Services.AddSingleton<LogFileService>();
 
-        return serviceBuilder;
+        var optionBuilder = webApplicationBuilder.Services.AddOptions<TracorLogFileServiceOptions>();
+        optionBuilder.BindConfiguration(configSectionPath);
+        if (configure is not null) {
+            optionBuilder.Configure(configure);
+        }
+
+        return webApplicationBuilder;
     }
 }

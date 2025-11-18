@@ -39,7 +39,10 @@ public class Program {
             //   configure: (fileTracorOptions) => {
             //       fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping;
             //   })
-            .AddTracorActivityListener(tracorEnabled)
+            .AddTracorActivityListener(
+                enabled: tracorEnabled,
+                configuration: default,
+                configure: default)
             .AddTracorInstrumentation<MemoryConsumptionInstrumentation>()
             .AddTracorValidatorService((options) => {
                 options.AddValidator(Create());

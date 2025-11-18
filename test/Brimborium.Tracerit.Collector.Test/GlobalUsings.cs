@@ -27,7 +27,7 @@ global using global::Microsoft.Playwright;
 global using global::TUnit.Playwright;
 
 global using global::Brimborium.Tracerit.Collector;
-global using global::Brimborium.Tracerit.Collector.Services;
+global using global::Brimborium.Tracerit.Service;
 global using global::Brimborium.Tracerit.Collector.Test;
 global using global::Brimborium.Tracerit.Collector.Test.TestUtility;
 

@@ -97,7 +97,10 @@ public class Benchmarks {
                 addEnabledServices: tracorEnabled,
                 configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options),
                 configureConvert: default)
-            .AddTracorActivityListener(tracorEnabled)
+            .AddTracorActivityListener(
+                enabled:tracorEnabled,
+                configuration: default,
+                configure: default)
             .AddTracorInstrumentation<BenchmarkInstrumentation>()
             .AddTracorLogger()
             .AddTracorScopedFilter((tracorScopedFilterBuilder) => {

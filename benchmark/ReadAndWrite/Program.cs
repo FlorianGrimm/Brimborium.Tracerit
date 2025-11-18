@@ -45,7 +45,10 @@ public class Program {
                configuration: builder.Configuration,
                configure: (fileTracorOptions) => {
                })
-            .AddTracorActivityListener(tracorEnabled)
+            .AddTracorActivityListener(
+                enabled:tracorEnabled,
+                configuration: default,
+                configure: default)
             .AddTracorInstrumentation<ReadAndWriteInstrumentation>()
             .AddTracorLogger()
             .AddTracorScopedFilter((tracorScopedFilterBuilder) => {

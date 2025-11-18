@@ -5,10 +5,6 @@
     </div>
     } @else {
         <div>
-            <label>
-                <input type="checkbox" [checked]="useCurrentStream$|async" (change)="useCurrentStream$.next($event.target.checked)" />
-                Current Stream
-            </label>
             <button type="button" (click)="loadCurrentStream()" >Current Stream</button>
         </div>
     <table class="table-tracerit">

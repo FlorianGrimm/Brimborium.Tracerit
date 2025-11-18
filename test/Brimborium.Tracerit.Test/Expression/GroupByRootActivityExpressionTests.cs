@@ -19,7 +19,8 @@ public class GroupByRootActivityExpressionTests {
             configureTracor: default,
             configureConvert: default)
             .AddTracorActivityListener(
-                true,
+                enabled:true,
+                configuration: configuration,
                 configure: (options) => {
                     options.ActivitySourceStartEventEnabled = options.ActivitySourceStopEventEnabled = true;
                 })

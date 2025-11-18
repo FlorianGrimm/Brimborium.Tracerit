@@ -62,7 +62,7 @@ public partial class Program {
             var serviceName = SampleInstrumentation.ActivitySourceName;
             var serviceVersion = SampleInstrumentation.ActivitySourceVersion;
             builder.Logging.AddOpenTelemetry();
-            
+
             builder.Services.AddOpenTelemetry()
                 .ConfigureResource(
                     resource => resource
@@ -88,12 +88,12 @@ public partial class Program {
                                     //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/logs");
                                     //4318/v1/traces
                                 });
-                        }, (openTelemetryLoggerOptions) => {
-                            openTelemetryLoggerOptions.IncludeFormattedMessage = true;
-                        })
-                        //.WithMetrics(metrics => metrics
-                        //    .AddMeter(serviceName)
-                        //    .AddConsoleExporter())
+                            }, (openTelemetryLoggerOptions) => {
+                                openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+                            })
+                         //.WithMetrics(metrics => metrics
+                         //    .AddMeter(serviceName)
+                         //    .AddConsoleExporter())
 
                          ;
 
@@ -112,13 +112,18 @@ public partial class Program {
         var tracorEnabled = tracorOptions.IsEnabled || startupActions.Testtime;
         builder.Services.AddTracor(
             addEnabledServices: tracorEnabled,
-            configureTracor: (tracorOptions) => { 
+            configureTracor: (tracorOptions) => {
                 tracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
             },
             configureConvert: null,
             tracorScopedFilterSection: ""
             )
-            .AddTracorActivityListener(tracorEnabled)
+            .AddTracorActivityListener(
+                enabled: tracorEnabled,
+                configuration: default,
+                configure: (options) => { 
+                    options.AllowAllActivitySource = true;
+                })
             .AddTracorInstrumentation<SampleInstrumentation>()
             .AddTracorLogger()
             .AddFileTracorCollectiveSinkDefault(
@@ -129,7 +134,7 @@ public partial class Program {
                 configure: (tracorHttpSinkOptions) => {
                     tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
                 });
-            ;
+        ;
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 

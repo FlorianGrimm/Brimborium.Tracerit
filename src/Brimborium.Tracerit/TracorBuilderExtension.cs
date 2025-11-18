@@ -38,8 +38,8 @@ public static class TracorBuilderExtension {
     public static ITracorBuilder AddTracorActivityListener(
         this ITracorBuilder tracorBuilder,
         bool enabled,
-        IConfiguration? configuration = null,
-        Action<TracorActivityListenerOptions>? configure = null
+        IConfiguration? configuration,
+        Action<TracorActivityListenerOptions>? configure
         ) {
         if (enabled) {
             return tracorBuilder.AddEnabledTracorActivityListener(configuration, configure);
@@ -56,10 +56,8 @@ public static class TracorBuilderExtension {
     /// <returns>fluent this</returns>
     public static ITracorBuilder AddDisabledTracorActivityListener(
         this ITracorBuilder tracorBuilder,
-#pragma warning disable IDE0060 // Remove unused parameter
-        IConfiguration? configuration = null,
-#pragma warning restore IDE0060 // Remove unused parameter
-        Action<TracorActivityListenerOptions>? configure = null
+        IConfiguration? configuration,
+        Action<TracorActivityListenerOptions>? configure
         ) {
         // add runtime do nothing implementations
         tracorBuilder.Services.AddSingleton<TracorDataRecordPool>();
@@ -69,9 +67,13 @@ public static class TracorBuilderExtension {
 
         // options configure
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>();
+        if (configuration is { }) {
+            optionsBuilder.Bind(configuration);
+        }
         if (configure is { }) {
             optionsBuilder.Configure(configure);
         }
+
         return tracorBuilder;
     }
 
@@ -83,8 +85,8 @@ public static class TracorBuilderExtension {
     /// <returns>fluent this</returns>
     public static ITracorBuilder AddEnabledTracorActivityListener(
         this ITracorBuilder tracorBuilder,
-        IConfiguration? configuration = null,
-        Action<TracorActivityListenerOptions>? configure = null
+        IConfiguration? configuration,
+        Action<TracorActivityListenerOptions>? configure
         ) {
         tracorBuilder.Services.AddSingleton<TracorDataRecordPool>();
 
@@ -93,11 +95,10 @@ public static class TracorBuilderExtension {
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>((sp) => sp.GetRequiredService<EnabledTracorActivityListener>());
 
         // options configure
-        if (configuration is { }) {
-            tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>()
-                .Bind(configuration);
-        }
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>();
+        if (configuration is { }) {
+            optionsBuilder.Bind(configuration);
+        }
         if (configure is { }) {
             optionsBuilder.Configure(configure);
         }

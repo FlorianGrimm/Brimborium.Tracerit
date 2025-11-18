@@ -13,21 +13,27 @@ export class DataService {
   mapName = new Map<string, PropertyHeader>();
   listAllHeader: PropertyHeader[] = [];
 
-  listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
+  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
     0, 'DataService_listAllHeader', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
-  listFile$ = new BehaviorRingSubject<LogFileInformationList>([],
+
+  readonly useCurrentStream$ = new BehaviorRingSubject<boolean>(false, 1, 'DataService_useCurrentStream$', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
+
+  readonly listFile$ = new BehaviorRingSubject<LogFileInformationList>([],
     0, 'DataService_listFile', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
-  currentFile$ = new BehaviorRingSubject<string | undefined>(undefined,
+
+  readonly currentFile$ = new BehaviorRingSubject<string | undefined>(undefined,
     0, 'DataService_currentFile', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
-  listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
+
+  readonly listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
     0, 'DataService_listSelectedFileName', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
   // listLogLine 
-  listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
+  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
     0, 'DataService_listLogLine', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
@@ -143,5 +149,14 @@ export class DataService {
       }
     }
     return result;
+  }
+
+  reloadIfNecessary() {
+    if (this.useCurrentStream$.getValue()) {
+      this.loadCurrentStream();
+    }
+  }
+  loadCurrentStream() {
+    
   }
 }

@@ -19,7 +19,10 @@ public class DataExpressionTests {
             addEnabledServices: true,
             configureTracor: default,
             configureConvert: default)
-            .AddTracorActivityListener(true)
+            .AddTracorActivityListener(
+                enabled:true,
+                configuration: default,
+                configure: default)
             .AddTracorInstrumentation<SampleTestInstrumentation>();
 
         var serviceProvider = serviceBuilder.BuildServiceProvider();

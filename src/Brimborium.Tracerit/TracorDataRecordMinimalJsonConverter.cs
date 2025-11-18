@@ -177,7 +177,10 @@ public static class ITracorDataJsonMinimalConverterUtility {
                 converterTracorDataProperty.Write(writer, property, options);
             }
 
-            foreach (var property in tracorDataRecord.ListProperty) {
+            var list = tracorDataRecord.ListProperty;
+            var span = CollectionsMarshal.AsSpan(list);
+            for (var i = 0; i < list.Count; i++) {
+                var property = span[i];
                 converterTracorDataProperty.Write(writer, property, options);
             }
             writer.WriteEndArray();

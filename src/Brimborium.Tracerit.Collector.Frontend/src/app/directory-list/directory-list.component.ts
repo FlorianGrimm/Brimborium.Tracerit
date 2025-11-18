@@ -24,9 +24,6 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   dataService = inject(DataService);
   httpClientService = inject(HttpClientService);
 
-  useCurrentStream$ = new BehaviorRingSubject<boolean>(false, 1, 'DirectoryListComponent_useCurrentStream$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-
   currentFile$ = new BehaviorRingSubject<string | undefined>(undefined, 1, 'DirectoryListComponent_currentFile$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
   listFile$ = new BehaviorRingSubject<LogFileInformationList>([], 1, 'DirectoryListComponent_listFile$', this.subscription, this.ring$, undefined,
@@ -112,6 +109,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   }
 
   load() {
+    this.dataService.useCurrentStream$.next(false);
     const subscription = new Subscription();    
     this.subscription.add(subscription);
     subscription.add(
@@ -137,17 +135,25 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   }
 
   loadCurrentStream() {
-    this.useCurrentStream$.next(true);
-    this.httpClientService.getCurrentStream();
-    // this.dataService.loadCurrentStream().pipe(take(1)).subscribe({
-    //   next: (value) => {
-    //     this.router.navigate(['tracorit', 'log']);
-    //   }
-    // });
+    this.dataService.useCurrentStream$.next(true);
+    const subscription = new Subscription();
+    this.subscription.add(subscription);
+    subscription.add(
+    this.httpClientService.getCurrentStream().subscribe({
+      next: (value) => {
+        if ("success" === value.mode) {
+          this.dataService.setListLogLine(value.data);
+          this.router.navigate(['tracorit', 'log']);
+        } else {
+          this.error$.next(value.error);
+        }
+      },
+    }));
     return false;
   }
 
   loadFile(name: string) {
+    this.dataService.useCurrentStream$.next(false);
     const directoryList = this.listFile$.getValue();
     const listMatch = directoryList.filter(item => name === item.name);
     if (1 != listMatch.length) { return false; }

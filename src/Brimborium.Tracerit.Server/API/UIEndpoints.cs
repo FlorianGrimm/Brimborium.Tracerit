@@ -43,6 +43,7 @@ public class UIEndpoints : IController {
                 System.Text.Json.JsonSerializer.Serialize(outStream, tracorDataRecord, this._JsonSerializerOptions);
                 outStream.Write(newline);
             }
+            outStream.Position = 0;
             return Results.Stream(outStream, "application/jsonl");
         });
 

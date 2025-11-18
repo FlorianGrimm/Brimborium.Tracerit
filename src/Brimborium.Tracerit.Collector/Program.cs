@@ -50,10 +50,10 @@ public class Program {
         });
         
         builder.Services.AddTraceritCollector();
-        builder.Services.AddTraceritServerControllers();
+        builder.AddTraceritServerControllers();
 
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
-        builder.Services.AddSingleton<LogFileService>();
+        
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 

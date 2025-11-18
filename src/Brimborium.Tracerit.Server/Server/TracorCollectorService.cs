@@ -1,5 +1,7 @@
 ﻿// MIT - Florian Grimm
 
+using Brimborium.Tracerit.Utility;
+
 namespace Brimborium.Tracerit.Server;
 
 public sealed class TracorCollectorService : ITracorCollector {
@@ -18,13 +20,21 @@ public sealed class TracorCollectorService : ITracorCollector {
 
     public void Push(TracorDataRecord tracorDataRecord) {
         using (this._Lock.EnterScope()) {
-            if (1024 <= this._ListTracorDataRecord.Count) { 
-                this._ListTracorDataRecord.RemoveRange(0, 512);
-                this._ListTracorDataRecord.Add(tracorDataRecord);
+            while (128 <= this._ListTracorDataRecord.Count) {
+                var tracorDataRecordToRemove=this._ListTracorDataRecord[0];
+                this._ListTracorDataRecord.RemoveAt(0);
+                if (tracorDataRecordToRemove is ReferenceCountObject referenceCountObject) {
+                    referenceCountObject.Dispose();
+                }
             }
+            {
+                if (tracorDataRecord is ReferenceCountObject referenceCountObject) {
+                    referenceCountObject.IncrementReferenceCount();
+                }
+            }
+            this._ListTracorDataRecord.Add(tracorDataRecord);
         }
     }
-    
 }
 
 public interface ITracorCollector {

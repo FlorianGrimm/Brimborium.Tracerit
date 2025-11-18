@@ -18,7 +18,10 @@ public class RestoreRootActivityTests {
             addEnabledServices: true,
             configureTracor: default,
             configureConvert: default)
-            .AddTracorActivityListener(true)
+            .AddTracorActivityListener(
+                enabled: true,
+                configuration: default,
+                configure: default)
             .AddTracorInstrumentation<SampleTest1Instrumentation>();
             ;
 
