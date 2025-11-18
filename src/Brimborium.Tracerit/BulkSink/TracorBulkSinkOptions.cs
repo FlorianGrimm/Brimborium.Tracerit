@@ -9,24 +9,6 @@ public class TracorBulkSinkOptions {
     /// </summary>
     public TimeSpan FlushPeriod { get; set; } = TimeSpan.FromSeconds(1);
 
-    private Func<IServiceProvider, CancellationToken>? _OnGetApplicationStopping;
-
-    /// <summary>
-    /// Important allows to retrieve the IHostApplicationLifetime.ApplicationStopping which is essential for periodical flush.
-    /// So that at the end the buffer will be flushed.
-    /// </summary>
-    /// <example>
-    /// fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
-    /// </example>
-    public Func<IServiceProvider, CancellationToken>? GetOnGetApplicationStopping() {
-        return this._OnGetApplicationStopping;
-    }
-
-    public TracorBulkSinkOptions SetOnGetApplicationStopping(Func<IServiceProvider, CancellationToken>? value) {
-        this._OnGetApplicationStopping = value;
-        return this;
-    }
-
     private TracorDataRecord? _Resource;
 
     /// <summary>

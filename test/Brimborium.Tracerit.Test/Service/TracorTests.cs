@@ -46,7 +46,9 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddDisabledTracor();
+        serviceCollection.AddDisabledTracor(
+            configureTracor:default,
+            configureConvert:default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -80,7 +82,9 @@ public class TracorTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddDisabledTracor();
+        serviceCollection.AddDisabledTracor(
+            configureTracor: default,
+            configureConvert: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();

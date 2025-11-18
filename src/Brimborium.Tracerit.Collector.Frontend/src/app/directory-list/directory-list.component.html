@@ -4,6 +4,13 @@
         {{error}}
     </div>
     } @else {
+        <div>
+            <label>
+                <input type="checkbox" [checked]="useCurrentStream$|async" (change)="useCurrentStream$.next($event.target.checked)" />
+                Current Stream
+            </label>
+            <button type="button" (click)="loadCurrentStream()" >Current Stream</button>
+        </div>
     <table class="table-tracerit">
         <thead>
             <tr>
@@ -16,13 +23,13 @@
         <tbody>
             @if(listFile$ | async; as listFile) {
             @let currentFile=currentFile$ | async;
-            @let selected=(selected$ | async)||[];
+            @let listSelectedFileName=(listSelectedFileName$ | async)||[];
             @for(fileInfo of listFile; track fileInfo.name){
             <tr  [class.selected]="currentFile === fileInfo.name">
                 <td><label style="width: 100%; height: 100%;">
                     <input type="checkbox" 
-                    [checked]="selected.includes(fileInfo.name)" 
-                    (change)="onSelectedChange(fileInfo.name)"
+                    [checked]="listSelectedFileName.includes(fileInfo.name)" 
+                    (change)="onListSelectedFileNameChange(fileInfo.name)"
                     />
                 </label>
                 </td>

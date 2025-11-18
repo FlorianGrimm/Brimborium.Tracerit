@@ -1,15 +1,15 @@
-import { inject, Inject, Injectable } from '@angular/core';
-import { BehaviorSubject, combineLatest, debounceTime, delay, distinctUntilChanged, map, pipe, Subscription } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
+import { combineLatest, distinctUntilChanged, filter, map, Subscription, switchMap, tap } from 'rxjs';
 import { filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
-import { Duration, ZonedDateTime, ZoneId } from '@js-joda/core';
-import { epoch0, epoch1, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, setTimeRangeOrNullStartIfChanged, TimeRange, TimeRangeDuration, TimeRangeOrNull } from './time-range';
+import { Duration, ZonedDateTime } from '@js-joda/core';
+import { epoch0, epoch1, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, TimeRange, TimeRangeDuration, TimeRangeOrNull } from './time-range';
 import { debounceToggle } from './debounceToggle';
 import { BehaviorRingSubject } from './BehaviorRingSubject';
-import { MasterRingSubject } from "./MasterRingSubject";
 import { MasterRingService } from './master-ring.service';
-import { AppRingOrder } from '../app-ring-order';
 import { combineLatestRingSubject } from './CombineLatestRingSubject';
 import { DataService } from './data-service';
+import { createObserableSubscripe } from './ObservableSubscripe';
+import { combineLatestSubject } from './CombineLatestSubject';
 
 @Injectable({
   providedIn: 'root',
@@ -19,43 +19,87 @@ export class LogTimeDataService {
   readonly ring$ = inject(MasterRingService).dependendRing('LogTimeDataService-ring$', this.subscription);
   readonly dataService = inject(DataService);
 
+  readonly useCurrentStream$ = new BehaviorRingSubject<boolean>(false, 1, 'LogTimeDataService_useCurrentStream$', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
+
   // input
-  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([], 
-    AppRingOrder.LogTimeDataService_listLogLine, 'LogTimeDataService_listLogLine', this.subscription, this.ring$, undefined,
+  readonly listLogLineCurrentStream$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'LogTimeDataService_listLogLineCurrentStream', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
-
-  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([], 
-    AppRingOrder.LogTimeDataService_listAllHeader, 'LogTimeDataService_listAllHeader', this.subscription, this.ring$, undefined,
+  readonly listLogLineFiles$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'LogTimeDataService_listLogLineFiles', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
-      
+  
+  readonly listLogLineFilesSubscripe = createObserableSubscripe({
+    obs: this.dataService.listLogLine$.pipe(
+      tap({
+        next: (value) => {
+          this.listLogLineFiles$.next(value);
+        }
+      })
+    ),
+    subscribtion: this.subscription,
+    immediate: true
+  });
+
+  readonly listLogLineInputSources$ = combineLatestSubject({
+    dictObservable: {
+      useCurrentStream: this.useCurrentStream$,
+      listLogLineCurrentStream: this.listLogLineCurrentStream$,
+      listLogLineFiles: this.listLogLineFiles$,
+    },
+    name: 'LogTimeDataService_listLogLineInputSources$'
+  });
+
+  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'LogTimeDataService_listLogLine', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+
+  readonly listLogLineSubscripe = createObserableSubscripe({
+    obs: this.useCurrentStream$.pipe(
+      switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$) 
+    ).pipe(
+      tap({
+        next: (value) => {
+          this.listLogLine$.next(value);
+        }
+      })
+    ),
+    subscribtion: this.subscription,
+    immediate: true
+  });
+
+  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
+    0, 'LogTimeDataService_listAllHeader', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
 
   // filter
   // input
-  readonly listFilterCondition$ = new BehaviorRingSubject<PropertyHeader[]>([], 
-    AppRingOrder.LogTimeDataService_listFilterCondition, 'LogTimeDataService_listFilterCondition', this.subscription, this.ring$, undefined,
+  readonly listFilterCondition$ = new BehaviorRingSubject<PropertyHeader[]>([],
+    0, 'LogTimeDataService_listFilterCondition', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
   // calculated output depended on listLogLine$ and listFilterCondition$
-  readonly listLogLineFilteredCondition$ = new BehaviorRingSubject<LogLine[]>([], 
-    AppRingOrder.LogTimeDataService_listLogLineFilteredCondition,  'LogTimeDataService_listLogLineFilteredCondition', this.subscription, this.ring$, undefined,
+  readonly listLogLineFilteredCondition$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'LogTimeDataService_listLogLineFilteredCondition', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+
+  // calculated output depended on listLogLineFilteredCondition$ and rangeFilter$
+  readonly listLogLineFilteredTime$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'LogTimeDataService_listLogLineFilteredTime', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
   // input
-  readonly listLogLineFilteredTime$ = new BehaviorRingSubject<LogLine[]>([], 
-    AppRingOrder.LogTimeDataService_listLogLineFilteredTime,  'LogTimeDataService_listLogLineFilteredTime', this.subscription, this.ring$, undefined,    
-    (name, message, value) => { console.log(name, message, value?.length); });
-
-  // input
-  readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null, 
-    AppRingOrder.LogTimeDataService_currentLogLineId, 'currentLogLineId$', this.subscription, this.ring$, undefined,
+  readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null,
+    0, 'currentLogLineId$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
   // depended listLogLineFiltered$ currentLogLineId$
-  readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null, 
-    AppRingOrder.LogTimeDataService_currentLogLine, 'currentLogLine$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
+    0, 'currentLogLine$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
-  readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null, 
-    AppRingOrder.LogTimeDataService_currentLogTimestamp, 'currentLogTimestamp$', this.subscription, this.ring$, undefined,
+  readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null,
+    0, 'currentLogTimestamp$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.toString()); });
 
   // input
@@ -67,7 +111,7 @@ export class LogTimeDataService {
       start: epoch0,
       finish: epoch1,
     }),
-    AppRingOrder.LogTimeDataService_rangeComplete, 'rangeComplete$', this.subscription, this.ring$, undefined,
+    0, 'rangeComplete$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() }); });
 
   // input
@@ -88,7 +132,7 @@ export class LogTimeDataService {
     finish: epoch1,
     duration: Duration.between(epoch0, epoch1)
   }),
-    AppRingOrder.LogTimeDataService_rangeZoom, 'LogTimeDataService_rangeZoom',
+    0, 'LogTimeDataService_rangeZoom',
     this.subscription, this.ring$, undefined,
     (name, message, value) => {
       console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString(), duration: value?.duration?.toString() });
@@ -99,14 +143,14 @@ export class LogTimeDataService {
     start: epoch0,
     finish: epoch1,
   }),
-    AppRingOrder.LogTimeDataService_rangeFilter, 'LogTimeDataService_rangeFilter', this.subscription, this.ring$, undefined,
+    0, 'LogTimeDataService_rangeFilter', this.subscription, this.ring$, undefined,
     (name, message, value) => {
       console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() });
     }
   );
 
   readonly rangeCurrent$ = new BehaviorRingSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }),
-    AppRingOrder.LogTimeDataService_rangeCurrent, 'LogTimeDataService_rangeCurrent',
+    0, 'LogTimeDataService_rangeCurrent',
     this.subscription, this.ring$, undefined,
     (name, message, value) => {
       console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() });
@@ -115,49 +159,57 @@ export class LogTimeDataService {
 
   constructor() {
 
-     this.subscription.add(
-      this.dataService.listLogLine$.pipeAndSubscribe(this.listLogLine$, (subject) => subject));
-
     this.subscription.add(
-      combineLatestRingSubject(
-        {
-          filter: this.listFilterCondition$,
-          listLogLine: this.listLogLine$,
-          listHeader: this.listAllHeader$,
-        }, 
-        AppRingOrder.LogTimeDataService_listLogLineFilteredCondition_calculate,
-        'DataService-FilteredCondition', this.ring$
-      ).pipeAndSubscribe(
-        this.listLogLineFilteredCondition$,
-        (subject) => subject.pipe(
-          map(value => {
-            return filterListLogLine(value.listLogLine, value.listHeader);
-          })
-        )
-      ));
+      this.dataService.listLogLine$.subscribe({
+        next: (value) => {
+          this.listLogLine$.next(value);
+        }
+      }));
 
-    this.listLogLine$.pipeAndSubscribe(
-      this.rangeComplete$,
-      (subject) => subject.pipe(
+
+    combineLatestRingSubject(
+      {
+        filter: this.listFilterCondition$,
+        listLogLine: this.listLogLine$,
+        // listHeader: this.listAllHeader$,
+      },
+      0,
+      'DataService-FilteredCondition', this.ring$
+    ).pipeAndSubscribe(
+      this.subscription,
+      this.listLogLineFilteredCondition$,
+      (obs) => obs.pipe(
         map(value => {
-          if (0 === value.length) {
-            return ({
-              start: epoch0,
-              finish: epoch1,
-            });
-          } else {
-            const first = getLogLineTimestampValue(value[0]);
-            const last = getLogLineTimestampValue(value[value.length - 1]);
-            if (first === null || last === null) { return undefined; }
-            return ({
-              start: first,
-              finish: last,
-            });
-          }
+          return filterListLogLine(value.listLogLine, value.filter);
         })
-      ),
-      (value, target) => setTimeRangeIfChanged(target, value)
+      )
     );
+
+  this.subscription.add(
+    this.listLogLine$
+    .pipe(
+      map(value => {
+        if (0 === value.length) {
+          return <TimeRange>({
+            start: epoch0,
+            finish: epoch1,
+          });
+        } else {
+          const first = getLogLineTimestampValue(value[0]);
+          const last = getLogLineTimestampValue(value[value.length - 1]);
+          if (first === null || last === null) { return undefined; }
+          return <TimeRange>({
+            start: first,
+            finish: last,
+          });
+        }
+      })
+    ).subscribe({
+      next: (value) => {
+        if (undefined === value) { return; }  
+        setTimeRangeIfChanged(this.rangeComplete$, value);
+      }
+    }));
 
     // this.subscription.add(
     //   this.listLogLine$

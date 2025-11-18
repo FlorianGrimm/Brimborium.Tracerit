@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Options;
-
-namespace Brimborium.Tracerit.Collector.Services;
+﻿namespace Brimborium.Tracerit.Service;
 
 public class LogFileService : IDisposable {
     private class ConfigState {
@@ -10,19 +8,21 @@ public class LogFileService : IDisposable {
     private IDisposable? _UnwireAppConfig;
 
     public LogFileService(
-        IOptionsMonitor<AppConfig> appConfig
+        IOptionsMonitor<TracorLogFileServiceOptions> options
         ) {
-        this._UnwireAppConfig = appConfig.OnChange(OnChangeAppConfig);
-        this.OnChangeAppConfig(appConfig.CurrentValue);
+        this._UnwireAppConfig = options.OnChange(this.OnChangeAppConfig);
+        this.OnChangeAppConfig(options.CurrentValue);
     }
 
-    private void OnChangeAppConfig(AppConfig options) {
-        ConfigState configState = new();
-        configState.LogDirectory = options.LogDirectory;
+    private void OnChangeAppConfig(TracorLogFileServiceOptions options) {
+        ConfigState configState = new() {
+            LogDirectory = options.LogDirectory
+        };
 
         this._ConfigState = configState;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA1816:Dispose methods should call SuppressFinalize", Justification = "<Pending>")]
     public void Dispose() {
         using (var unwireAppConfig = this._UnwireAppConfig) {
             this._UnwireAppConfig = null;

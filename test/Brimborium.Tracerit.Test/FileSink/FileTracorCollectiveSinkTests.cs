@@ -58,17 +58,18 @@ public class FileTracorCollectiveSinkTests {
         List<TracorDataRecord> listTracorDataRecord = new();
         var ctsApplicationStopping = new CancellationTokenSource();
 
+        TracorOptions tracorOptions = new TracorOptions() {
+            ApplicationName = "test"
+        };
         TracorFileSinkOptions tracorFileSinkOptions = new TracorFileSinkOptions() {
             BaseDirectory = root,
             Directory = "Log2",
             Period = TimeSpan.FromMinutes(30),
-            FlushPeriod = TimeSpan.FromSeconds(10)            
+            FlushPeriod = TimeSpan.FromSeconds(10)
         };
-        tracorFileSinkOptions.SetOnGetApplicationStopping((_) => ctsApplicationStopping.Token);
+        tracorOptions.SetOnGetApplicationStopping((_) => ctsApplicationStopping.Token);
         using (var sutFileTracorCollectiveSink = new TracorCollectiveFileSink(
-            new TracorOptions() {
-                ApplicationName = "test"
-            },
+            tracorOptions,
             tracorFileSinkOptions)) {
             for (int idx = 0; idx < 1000; idx++) {
                 using (TracorDataRecord tracorDataRecord = tracorDataRecordPool.Rent()) {

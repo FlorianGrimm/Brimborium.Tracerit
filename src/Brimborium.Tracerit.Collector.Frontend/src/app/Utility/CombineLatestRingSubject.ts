@@ -1,10 +1,13 @@
-import { combineLatest, defer, distinctUntilKeyChanged, filter, map, Observable, ObservableInput, ObservedValueOf, Subscriber, Subscription, tap } from "rxjs";
-import { DependecyRingSubject, DependecyRingSubjectStatic } from "./DependecyRingSubject";
+import { combineLatest, Observable, ObservableInput, ObservedValueOf, Subscription, tap } from "rxjs";
+import { DependecyRingSubject } from "./DependecyRingSubject";
 import { MasterRingSubject } from "./MasterRingSubject";
 import { BehaviorRingSubject } from "./BehaviorRingSubject";
+import { getTraceableInformation, TraceableSubjectGraphService } from "./traceable-subject-graph.service";
+import { TraceableInformation, TraceableSubject } from "./TraceableSubject";
+import { inject } from "@angular/core";
 
 
-export function combineLatestRingSubject<T extends Record<string, ObservableInput<any> & DependecyRingSubject>>(
+export function combineLatestRingSubject<T extends Record<string, ObservableInput<any>>>(
     sourcesObject: T,
     ring: number,
     name: string,
@@ -16,11 +19,13 @@ export function combineLatestRingSubject<T extends Record<string, ObservableInpu
     return new CombineLatestRingSubject(sourcesObject, ring, name, ring$);
 }
 
-export class CombineLatestRingSubject<T extends Record<string, ObservableInput<any> & DependecyRingSubject>>
-    implements DependecyRingSubject {
+export class CombineLatestRingSubject<T extends Record<string, ObservableInput<any>>>
+    implements DependecyRingSubject, TraceableSubject {
+    private readonly graph = inject(TraceableSubjectGraphService).getGraph();
     public readonly ring: number;
     public readonly name: string;
     private readonly sourcesObject: T;
+    _TraceableInformation?: TraceableInformation;
 
     constructor(
         sourcesObject: T,
@@ -30,25 +35,24 @@ export class CombineLatestRingSubject<T extends Record<string, ObservableInput<a
         // private readonly fnPaused?: (that: CombineLatestRingSubject<T>, ring: undefined | MasterRingSubject) => void,
         private readonly fnReport?: ((name: string, message: string, value: T | undefined) => void)
     ) {
-        const index = ++DependecyRingSubjectStatic.InstanceIndex;
+        this.name = getTraceableInformation(this, name).toString();
         this.sourcesObject = sourcesObject;
         this.ring = ring;
-        this.name = `${name}-${index}`;
-        for (const key in sourcesObject) {
-            if (!Object.hasOwn(sourcesObject, key)) continue;
+        // for (const key in sourcesObject) {
+        //     if (!Object.hasOwn(sourcesObject, key)) continue;
 
-            const element = sourcesObject[key];
-            element.validateRing(this, key);
-        }
+        //     const element = sourcesObject[key];
+        //     element.validateRing(this, key);
+        // }
     }
 
-    validateRing(target$: DependecyRingSubject<any>, name?:string) {
-        if (this.ring < target$.ring) {
-            // ok
-            this.ring$?.graph?.addSubscription(this, target$);
-        } else {
-            throw new Error(`${this.name}.ring:${this.ring} >= ${target$.name}.ring:${target$.ring} ${name}`);
-        }
+    validateRing(target$: DependecyRingSubject<any>, name?: string) {
+        // if (this.ring <= target$.ring) {
+        //     // ok
+        //     // later? this.ring$?.graph?.addSubscription(this, target$);
+        // } else {
+        //     throw new Error(`${this.name}.ring:${this.ring} >= ${target$.name}.ring:${target$.ring} ${name}`);
+        // }
         return this;
     }
 
@@ -56,7 +60,6 @@ export class CombineLatestRingSubject<T extends Record<string, ObservableInput<a
         const result = combineLatest(this.sourcesObject)
         if (undefined !== this.fnReport) {
             return result.pipe(
-                
                 tap({
                     subscribe: () => {
                         if (undefined !== this.fnReport) {
@@ -91,6 +94,7 @@ export class CombineLatestRingSubject<T extends Record<string, ObservableInput<a
     }
 
     pipeAndSubscribe<R extends Exclude<any, undefined>>(
+        subscription: Subscription | undefined,
         observer: BehaviorRingSubject<R>,
         pipeFn: (subject: Observable<{ [K in keyof T]: ObservedValueOf<T[K]> }>) => Observable<R | undefined>,
         fnNext?: (value: R, observer: BehaviorRingSubject<R>) => void
@@ -98,23 +102,27 @@ export class CombineLatestRingSubject<T extends Record<string, ObservableInput<a
         this.validateRing(observer, observer.name);
         const combineLatest$ = this.combineLatest();
         const pipe$: Observable<R | undefined> = pipeFn(combineLatest$);
-        return pipe$.subscribe({
-            next: (value) => {
-                if (undefined !== value) {
-                    if (undefined !== fnNext) {
-                        fnNext(value, observer);
-                    } else {
-                        observer.next(value);
+        const localSubscription = new Subscription();
+        if (undefined !== subscription) { subscription.add(localSubscription); }
+        localSubscription.add(
+            pipe$.subscribe({
+                next: (value) => {
+                    if (undefined !== value) {
+                        if (undefined !== fnNext) {
+                            fnNext(value, observer);
+                        } else {
+                            observer.next(value);
+                        }
                     }
+                },
+                complete: () => {
+                    localSubscription.unsubscribe();
+                },
+                error: () => {
+                    localSubscription.unsubscribe();
                 }
-            }
-            // complete: () => {
-            //     observer.complete();
-            // },
-            // error: (err) => {
-            //     observer.error(err);
-            // }
-        });
+            }));
+        return localSubscription;
     }
 
     static defaultLog(name: string, message: string, value: any | undefined) {

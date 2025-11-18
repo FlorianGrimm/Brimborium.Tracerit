@@ -247,7 +247,7 @@ public sealed class TracorCollectiveFileSink
                     var logFilePath = this.GetLogFilePath(new DateTime(currentPeriodStarted * statePeriod.Ticks));
                     var logFileFQN = System.IO.Path.Combine(directory, logFilePath);
                     bool created;
-                    (currentFileStream, created) = this.GetLogFileStream(logFileFQN);
+                    (currentFileStream, created) = GetLogFileStream(logFileFQN);
                     this._CurrentFileStream = currentFileStream;
                     this._CurrentFileFQN = logFileFQN;
                     addResource = created;
@@ -281,7 +281,7 @@ public sealed class TracorCollectiveFileSink
 
     }
 
-    private (FileStream stream, bool created) GetLogFileStream(string logFilePath) {
+    private static (FileStream stream, bool created) GetLogFileStream(string logFilePath) {
         if (System.IO.File.Exists(logFilePath)) {
             return (
                 stream: new System.IO.FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read),

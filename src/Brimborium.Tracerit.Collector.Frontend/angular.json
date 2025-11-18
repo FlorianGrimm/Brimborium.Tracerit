@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "../Brimborium.Tracerit.Collector/wwwroot/static",
+            "outputPath": "../Brimborium.Tracerit.Server/wwwroot/static",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [

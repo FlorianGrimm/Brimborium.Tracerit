@@ -1,5 +1,4 @@
-﻿
-using Brimborium.Tracerit.Service;
+﻿using Brimborium.Tracerit.Service;
 
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace Brimborium.Tracerit.Collector;
+namespace Brimborium.Tracerit.API;
 
 // singleton
 public class UIEndpoints : IController {
@@ -39,7 +38,7 @@ public class UIEndpoints : IController {
         group.MapGet("Current", () => {
             var result = this._TracorCollector.GetListTracorDataRecord();
             var outStream = this._MemoryPoolManager.RecyclableMemoryStreamManager.GetStream();
-            byte[] newline = new byte[] { 13, 10 };
+            byte[] newline = "\r\n"u8.ToArray();
             foreach (var tracorDataRecord in result) {
                 System.Text.Json.JsonSerializer.Serialize(outStream, tracorDataRecord, this._JsonSerializerOptions);
                 outStream.Write(newline);

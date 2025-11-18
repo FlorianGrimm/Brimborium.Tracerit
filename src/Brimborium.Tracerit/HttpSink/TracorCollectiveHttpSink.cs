@@ -12,8 +12,8 @@ public sealed class TracorCollectiveHttpSink
         TracorHttpSinkOptions httpSinkOptions,
         TracorMemoryPoolManager tracorRecyclableMemoryStreamManager
         ) : this(
-            tracorOptions, httpSinkOptions, tracorRecyclableMemoryStreamManager, 
-            new()) {        
+            tracorOptions, httpSinkOptions, tracorRecyclableMemoryStreamManager,
+            new()) {
     }
 
     public TracorCollectiveHttpSink(
@@ -47,6 +47,7 @@ public sealed class TracorCollectiveHttpSink
     private readonly TracorMemoryPoolManager _TracorMemoryPoolManager;
 
     protected override async Task WriteAsync(List<ITracorData> listTracorData) {
+        if (this._TargetUrl is not { Length: > 0 }) { return; }
         if (this._HttpClient is { } httpClient) {
         } else {
             this._HttpClient = httpClient = new HttpClient();
@@ -67,7 +68,7 @@ public sealed class TracorCollectiveHttpSink
                         = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json", "utf-8");
                     httpRequestMessage.Content.Headers.ContentEncoding.Add("brotli");
 
-                    using (var response = await httpClient.SendAsync(httpRequestMessage).ConfigureAwait(false)) { 
+                    using (var response = await httpClient.SendAsync(httpRequestMessage).ConfigureAwait(false)) {
                         response.EnsureSuccessStatusCode();
                     }
                 }

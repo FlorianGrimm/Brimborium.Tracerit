@@ -18,6 +18,24 @@ public sealed class TracorOptions {
     /// Get or set ApplicationName
     /// </summary>
     public string? ApplicationName { get; set; }
+
+    private Func<IServiceProvider, CancellationToken>? _OnGetApplicationStopping;
+
+    /// <summary>
+    /// Important allows to retrieve the IHostApplicationLifetime.ApplicationStopping which is essential for periodical flush.
+    /// So that at the end the buffer will be flushed.
+    /// </summary>
+    /// <example>
+    /// fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
+    /// </example>
+    public Func<IServiceProvider, CancellationToken>? GetOnGetApplicationStopping() {
+        return this._OnGetApplicationStopping;
+    }
+
+    public TracorOptions SetOnGetApplicationStopping(Func<IServiceProvider, CancellationToken>? value) {
+        this._OnGetApplicationStopping = value;
+        return this;
+    }
 }
 
 public static class TracorOptionsExtension {

@@ -1,4 +1,6 @@
-﻿namespace Microsoft.Extensions.DependencyInjection;
+﻿#pragma warning disable IDE1006 // Naming Styles
+
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class TracorServiceCollectionExtensions {
     internal const string RequiresDynamicCodeMessage = "Binding TOptions to configuration values may require generating dynamic code at runtime.";
@@ -10,28 +12,31 @@ public static partial class TracorServiceCollectionExtensions {
     /// <param name="serviceBuilder">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
     /// <example>
-    ///    builder.Services.AddTracor(
-    ///        addEnabledServices: tracorEnabled,
+    ///    builder.Services
+    ///        .AddTracor(
+    ///            addEnabledServices: tracorEnabled,
     ///            configureTracor: (tracorOptions) => {
     ///                tracorOptions.ApplicationName = "customized";
-    ///            })
-    ///            .AddFileTracorCollectiveSinkDefault(
-    ///               configuration: builder.Configuration,
-    ///               configure: (fileTracorOptions) => {
-    ///                   fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
-    ///               })
-    ///            .AddTracorActivityListener(tracorEnabled)
-    ///            .AddTracorInstrumentation<SampleInstrumentation>()
-    ///            .AddTracorLogger()
-    ///            ;
+    ///                builder.Configuration.BindTracorOptionsDefault(tracorOptions);
+    ///                tracorOptions.SetOnGetApplicationStopping(
+    ///                    static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+    ///            },
+    ///            configureConvert: default)
+    ///        .AddFileTracorCollectiveSinkDefault(
+    ///           configuration: builder.Configuration,
+    ///           configure: default})
+    ///        .AddTracorActivityListener(tracorEnabled)
+    ///        .AddTracorInstrumentation<SampleInstrumentation>()
+    ///        .AddTracorLogger()
+    ///        ;
     /// </example>
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddTracor(
             this IServiceCollection serviceBuilder,
             bool addEnabledServices,
-            Action<TracorOptions>? configureTracor = default,
-            Action<TracorDataConvertOptions>? configureConvert = default,
+            Action<TracorOptions>? configureTracor,
+            Action<TracorDataConvertOptions>? configureConvert,
             string tracorScopedFilterSection = "") {
         if (addEnabledServices) {
             return serviceBuilder.AddEnabledTracor(
@@ -56,8 +61,8 @@ public static partial class TracorServiceCollectionExtensions {
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddDisabledTracor(
         this IServiceCollection serviceBuilder,
-        Action<TracorOptions>? configureTracor = default,
-        Action<TracorDataConvertOptions>? configureConvert = default,
+        Action<TracorOptions>? configureTracor,
+        Action<TracorDataConvertOptions>? configureConvert,
         string tracorScopedFilterSection = "") {
         serviceBuilder.AddSingleton<TracorEmergencyLogging>();
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
@@ -77,8 +82,14 @@ public static partial class TracorServiceCollectionExtensions {
             builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
         });
 
-        var optionsBuilder = serviceBuilder.AddOptions<TracorDataConvertOptions>();
-        if (configureConvert is { }) { optionsBuilder.Configure(configureConvert); }
+        if (configureTracor is { }) {
+            var optionsBuilder = serviceBuilder.AddOptions<TracorOptions>();
+            optionsBuilder.Configure(configureTracor);
+        }
+        if (configureConvert is { }) {
+            var optionsBuilder = serviceBuilder.AddOptions<TracorDataConvertOptions>();
+            optionsBuilder.Configure(configureConvert); 
+        }
 
         return new TracorBuilder(serviceBuilder);
     }

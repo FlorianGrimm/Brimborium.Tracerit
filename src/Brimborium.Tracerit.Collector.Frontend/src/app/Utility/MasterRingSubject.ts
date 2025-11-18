@@ -1,5 +1,5 @@
 import { BehaviorSubject } from "rxjs";
-import { Graph } from "./master-ring.service";
+import { Graph } from "./Graph";
 
 
 export class MasterRingSubject extends BehaviorSubject<number> {

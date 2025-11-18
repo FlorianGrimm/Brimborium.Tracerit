@@ -68,22 +68,25 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     }
 
     protected virtual void SetTracorOptions(TracorOptions tracorOptions) {
-        if (tracorOptions.ApplicationName is { Length: > 0 } applicationName) {
-            this._ApplicationName = applicationName;
-        } else if (this._ApplicationName is null) {
-            this._ApplicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+        using (this._LockProperties.EnterScope()) {
+            if (tracorOptions.ApplicationName is { Length: > 0 } applicationName) {
+                this._ApplicationName = applicationName;
+            } else if (this._ApplicationName is null) {
+                this._ApplicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+            }
+
+            if (this._ServiceProvider is { } serviceProvider
+                && tracorOptions.GetOnGetApplicationStopping() is { } getApplicationStopping) {
+                // using the callback avoids 
+                this._GetOnApplicationStoppingDisposing = (() => getApplicationStopping(serviceProvider));
+            }
         }
     }
 
     internal void SetBulkSinkOptions(TOptions options) {
         using (this._LockProperties.EnterScope()) {
-            if (this._ServiceProvider is { } serviceProvider
-                && options.GetOnGetApplicationStopping() is { } getApplicationStopping) {
-                // using the callback avoids 
-                this._GetOnApplicationStoppingDisposing = (() => getApplicationStopping(serviceProvider));
-                this._JsonSerializerOptions = new System.Text.Json.JsonSerializerOptions(options.GetJsonSerializerOptions());
-                this.SetBulkSinkOptionsExtended(options);
-            }
+            this._JsonSerializerOptions = new System.Text.Json.JsonSerializerOptions(options.GetJsonSerializerOptions());
+            this.SetBulkSinkOptionsExtended(options);
         }
     }
 
@@ -243,7 +246,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
             }
             propertySinkTarget.Dispose();
         }
-        
+
         listTracorData.Clear();
         await currentStream.FlushAsync();
 

@@ -1,4 +1,4 @@
-﻿namespace Brimborium.Tracerit.Collector.API;
+﻿namespace Brimborium.Tracerit.API;
 
 public class ResponseWrapper { }
 public interface IResponseWrapper { }

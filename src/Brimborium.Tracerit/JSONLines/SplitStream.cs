@@ -1,5 +1,7 @@
-﻿#pragma warning disable IDE0063 // Use simple 'using' statement
+﻿#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable IDE0063 // Use simple 'using' statement
 #pragma warning disable IDE0057 // Use range operator
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 
 namespace Brimborium.JSONLines;
 
@@ -7,8 +9,9 @@ namespace Brimborium.JSONLines;
 /// Split a stream into multiple streams by newline.
 /// </summary>
 public sealed class SplitStream : Stream {
-    private static byte[] ArrWhiteSpace = new byte[] { 9, 10, 13, 32 };
-    private static byte[] ArrNewLines = new byte[] { 10, 13 };
+    // in ascending order
+    private static readonly byte[] _ArrWhiteSpace = "\t\n\r "u8.ToArray();
+    private static readonly byte[] _ArrNewLines = "\n\r"u8.ToArray();
 
     // the size of bytes to read from the stream at once
     private readonly int _ChunkSize;
@@ -23,7 +26,7 @@ public sealed class SplitStream : Stream {
     private Stream? _InnerStream;
 
     // leave the stream open after disposing this instance
-    private bool _LeaveOpen;
+    private readonly bool _LeaveOpen;
 
     // the position in the buffer where the next read should start
     private int _BufferStart;
@@ -81,10 +84,10 @@ public sealed class SplitStream : Stream {
     /// </summary>
     /// <returns>true if there is a next stream.</returns>
     public bool MoveNextStream() {
-        if (this._InnerStream is { } stream) {
+        if (this._InnerStream is { }) {
             this._EndOfSplit = false;
             this._ReadyToRead = this.Prefetch();
-            return _ReadyToRead;
+            return this._ReadyToRead;
         } else {
             return false;
         }
@@ -95,7 +98,7 @@ public sealed class SplitStream : Stream {
     /// </summary>
     /// <returns>true if there is a next stream.</returns>
     public async ValueTask<bool> MoveNextStreamAsync(CancellationToken cancellationToken) {
-        if (this._InnerStream is { } stream) {
+        if (this._InnerStream is { }) {
             this._EndOfSplit = false;
             this._ReadyToRead = (await this.PrefetchAsync(cancellationToken).ConfigureAwait(false));
             return this._ReadyToRead;
@@ -334,7 +337,7 @@ public sealed class SplitStream : Stream {
     // TrimStart at _BufferStart
     private bool SkipWhitespace() {
         if (0 < this._BufferLength) {
-            var diff = this._BufferLength - this._Buffer.AsSpan(this._BufferStart, this._BufferLength).TrimStart(ArrWhiteSpace).Length;
+            var diff = this._BufferLength - this._Buffer.AsSpan(this._BufferStart, this._BufferLength).TrimStart(_ArrWhiteSpace).Length;
             if (0 < diff) {
                 this._LengthNewLine = -1;
                 this.AdvanceBuffer(diff);
@@ -353,7 +356,7 @@ public sealed class SplitStream : Stream {
                 this._LengthNewLine -= diff;
             }
         } else if (this._BufferLength < diff) {
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(diff));
         } else {
             this._BufferLength -= diff;
             this._BufferStart += diff;
@@ -422,7 +425,7 @@ public sealed class SplitStream : Stream {
     }
 
     private bool FindNextBufferEOFPosition() {
-        int diff = this._Buffer.AsSpan(this._BufferStart, this._BufferLength).IndexOfAny(ArrNewLines);
+        int diff = this._Buffer.AsSpan(this._BufferStart, this._BufferLength).IndexOfAny(_ArrNewLines);
         if (0 <= diff) {
             this._LengthNewLine = diff;
             return true;

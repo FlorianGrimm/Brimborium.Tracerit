@@ -32,8 +32,8 @@ public class Program {
         var tracorEnabled = tracorOptions.IsEnabled;
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
-                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options)
-            )
+                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options),
+                configureConvert: default)
             //.AddFileTracorCollectiveSinkDefault(
             //   configuration: builder.Configuration,
             //   configure: (fileTracorOptions) => {
@@ -50,7 +50,7 @@ public class Program {
         builder.Services.AddHostedService<WriterService>();
 
         builder.Services.Add(ServiceDescriptor.Singleton<BackgroundValidatorService, BackgroundValidatorService>());
-        builder.Services.Add(ServiceDescriptor.Singleton<IHostedService>((sp)=>sp.GetRequiredService<BackgroundValidatorService>()));
+        builder.Services.Add(ServiceDescriptor.Singleton<IHostedService>((sp) => sp.GetRequiredService<BackgroundValidatorService>()));
 
         var host = builder.Build();
         //host.Services.GetRequiredService<BackgroundValidatorService>().Init();
@@ -110,7 +110,7 @@ public class WriterService : BackgroundService {
                 }
                 this._Logger.WriterInnerSum(sum);
                 await this._FileTracorCollectiveSink.FlushAsync();
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                await Task.Delay(TimeSpan.FromMilliseconds(100), CancellationToken.None);
             }
         } finally {
             await this._ControlService.WriterDone();

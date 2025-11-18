@@ -14,7 +14,10 @@ public class RestoreRootActivityTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddConsole();
         });
-        serviceBuilder.AddTracor(true)
+        serviceBuilder.AddTracor(
+            addEnabledServices: true,
+            configureTracor: default,
+            configureConvert: default)
             .AddTracorActivityListener(true)
             .AddTracorInstrumentation<SampleTest1Instrumentation>();
             ;

@@ -459,11 +459,11 @@ public static partial class TracorDataUtility {
     }
 
     public static DateTime UnixTimeNanosecondsAndKindToDateTime(long ns, double kind) {
-        DateTimeKind dtKind = (kind) switch {
-            2.0d => DateTimeKind.Local,
-            1.0d => DateTimeKind.Utc,
-            _ => DateTimeKind.Unspecified
-        };
+        //DateTimeKind dtKind = (kind) switch {
+        //    2.0d => DateTimeKind.Local,
+        //    1.0d => DateTimeKind.Utc,
+        //    _ => DateTimeKind.Unspecified
+        //};
         var ticks = (ns / _NanosecondsPerTicks) + _UnixEpochTicks;
 
         return (kind) switch {

@@ -1,36 +1,22 @@
 ﻿#pragma warning disable IDE0018 // Inline variable declaration
 
-using System.Reflection.Metadata.Ecma335;
-
 namespace Brimborium.Tracerit.TracorActivityListener;
 
 internal sealed class EnabledTracorActivityListener
     : BaseTracorActivityListener
     , ITracorActivityListener
     , IDisposable {
-    internal static EnabledTracorActivityListener Create(
-        IServiceProvider serviceProvider
-        ) {
-        var tracorDataRecordPool = serviceProvider.GetRequiredService<TracorDataRecordPool>();
-        var sink = serviceProvider.GetRequiredService<ITracorCollectivePublisher>();
-        var options = serviceProvider.GetRequiredService<IOptionsMonitor<TracorActivityListenerOptions>>();
-        var logger = serviceProvider.GetRequiredService<ILogger<EnabledTracorActivityListener>>();
-        return new EnabledTracorActivityListener(
-            serviceProvider,
-            tracorDataRecordPool,
-            sink,
-            options,
-            logger);
-    }
-
     private ActivityListener? _Listener;
     private readonly TracorDataRecordPool _TracorDataRecordPool;
     private readonly ITracorCollectiveSink _Sink;
+    private readonly ITracorDataConvertService _TracorDataConvertService;
 
+    [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor()]
     public EnabledTracorActivityListener(
         IServiceProvider serviceProvider,
         TracorDataRecordPool tracorDataRecordPool,
         ITracorCollectiveSink sink,
+        ITracorDataConvertService tracorDataConvertService,
         IOptionsMonitor<TracorActivityListenerOptions> options,
         ILogger<EnabledTracorActivityListener> logger) : base(
             serviceProvider,
@@ -38,6 +24,7 @@ internal sealed class EnabledTracorActivityListener
             logger) {
         this._TracorDataRecordPool = tracorDataRecordPool;
         this._Sink = sink;
+        this._TracorDataConvertService = tracorDataConvertService;
     }
 
     protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
@@ -94,6 +81,7 @@ internal sealed class EnabledTracorActivityListener
 
     private bool OnShouldListenTo(ActivitySource activitySource) {
         var activitySourceIdentifier = ActivitySourceIdentifier.Create(activitySource);
+        if (string.IsNullOrEmpty(activitySourceIdentifier.Name)) { return false; }
         bool result;
         if (this._OptionState.AllowAllActivitySource) {
             result = true;
@@ -171,6 +159,7 @@ internal sealed class EnabledTracorActivityListener
     }
 
     private const string _PrefixTag = "tag.";
+    private const string _PrefixLink = "link.";
     private void CopyListProperty(Activity activity, List<TracorDataProperty> listProperty) {
         {
             listProperty.Add(
@@ -211,13 +200,37 @@ internal sealed class EnabledTracorActivityListener
             while (enumeratorTagObjects.MoveNext()) {
                 ref readonly var tag = ref enumeratorTagObjects.Current;
                 if (tag.Value is { } tagValue) {
-                    var tdp = TracorDataProperty.Create(_PrefixTag + tag.Key, tagValue);
-                    if (tdp.TypeValue is TracorDataPropertyTypeValue.Null or TracorDataPropertyTypeValue.Any) {
-                        
+                    if (TracorDataUtility.IsBasicType(tagValue.GetType())) {
+                        var tdp = TracorDataProperty.Create(_PrefixTag + tag.Key, tagValue);
+                        if (tdp.TypeValue is TracorDataPropertyTypeValue.Null or TracorDataPropertyTypeValue.Any) {
+                            //
+                        } else {
+                            listProperty.Add(tdp);
+                        }
                     } else {
-                        listProperty.Add(tdp);
+                        this._TracorDataConvertService.ConvertObjectToListProperty(
+                            true, 1, _PrefixTag + tag.Key, tagValue,
+                            listProperty);
                     }
                 }
+            }
+        }
+        {
+            var enumeratorLinkObjects = activity.EnumerateLinks();
+            int index = 0;
+            while (enumeratorLinkObjects.MoveNext()) {
+                ref readonly var link = ref enumeratorLinkObjects.Current;
+                if (link.Context is { } linkContext) {
+                    listProperty.Add(TracorDataProperty.CreateStringValue(
+                        $"{_PrefixLink}Span[{index}]",
+                        linkContext.SpanId.ToString()
+                        ));
+                    listProperty.Add(TracorDataProperty.CreateStringValue(
+                        $"{_PrefixLink}Trace[{index}]",
+                        linkContext.TraceId.ToString()
+                        ));
+                }
+                index++;
             }
         }
     }

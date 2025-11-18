@@ -14,7 +14,10 @@ public class GroupByRootActivityExpressionTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddTracorLogger();
         });
-        serviceBuilder.AddTracor(true)
+        serviceBuilder.AddTracor(
+            addEnabledServices: true,
+            configureTracor: default,
+            configureConvert: default)
             .AddTracorActivityListener(
                 true,
                 configure: (options) => {

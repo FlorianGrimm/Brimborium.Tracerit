@@ -1,14 +1,12 @@
 import { AsyncPipe } from '@angular/common';
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, Input, OnDestroy, output, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, OnDestroy, ViewChild } from '@angular/core';
 import { DateTimeFormatter, Duration, ZonedDateTime, ZoneId } from '@js-joda/core';
-import { BehaviorSubject, combineLatest, debounce, debounceTime, delay, distinctUntilChanged, filter, map, Subscription } from 'rxjs';
+import { combineLatest, delay, filter, map, Subscription } from 'rxjs';
 import { LogTimeDataService } from '../Utility/log-time-data.service';
 import { getLogLineTimestampValue, LogLine } from '../Api';
 import { setTimeRangeFinishIfChanged, setTimeRangeOrNullIfChanged, setTimeRangeStartIfChanged, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
 import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
-import { MasterRingSubject } from "../Utility/MasterRingSubject";
 import { MasterRingService } from '../Utility/master-ring.service';
-import { AppRingOrder } from '../app-ring-order';
 
 const epoch0 = ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.UTC);
 const epoch1 = ZonedDateTime.of(1970, 1, 1, 1, 1, 1, 1, ZoneId.UTC);
@@ -76,8 +74,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
 
   public rangeFilter$ = new BehaviorRingSubject<TimeRangeOrNull>(
     Object.freeze({ start: null, finish: null }),
-    AppRingOrder.TimeRulerComponent_rangeFilter,
-    'TimeRulerComponent_rangeFilter', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'TimeRulerComponent_rangeFilter', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
   readonly state$ = new BehaviorRingSubject<TimeRulerViewModel>(
     {
@@ -106,7 +103,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
       listTick: [],
       listLogTick: []
     },
-    AppRingOrder.TimeRulerComponent_state, 'TimeRulerComponent_state', this.subscription, this.ring$, undefined,
+    0, 'TimeRulerComponent_state', this.subscription, this.ring$, undefined,
     (name, message, value) => {
       console.log(name, message, {
         displayWidth: value?.displayWidth,
@@ -138,7 +135,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
   @ViewChild('svgElement', { static: true }) svgElement!: ElementRef<SVGSVGElement>;
 
   public readonly displayWidth$ = new BehaviorRingSubject<number>(0, 
-    AppRingOrder.TimeRulerComponent_displayWidth,  "TimeRulerComponent_displayWidth", this.subscription, this.ring$, undefined,
+    0,  "TimeRulerComponent_displayWidth", this.subscription, this.ring$, undefined,
     (name, message, value) => {      console.log(name, message, { displayWidth: value });    }  );
 
   constructor() {

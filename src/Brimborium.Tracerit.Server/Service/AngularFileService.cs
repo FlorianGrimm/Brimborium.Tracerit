@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Routing.Patterns;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
+﻿#pragma warning disable IDE0057 // Use range operator
 
-namespace Brimborium.Tracerit.Collector.Services;
+namespace Brimborium.Tracerit.Service;
 
 public sealed class AngularFileService : EndpointDataSource {
     private readonly IWebHostEnvironment _WebHostEnvironment;
@@ -80,7 +77,7 @@ public sealed class AngularFileService : EndpointDataSource {
                     var pattern = GetPatternFromAngularPath(angularPath, false);
                     if (hsPatterns.Add(pattern)) {
                         var ep = CreateEndpoint(pattern, async context => {
-                            await WriteIndexHtml(context);
+                            await this.WriteIndexHtml(context);
                         });
                         result.Add(ep);
                     }
@@ -89,7 +86,7 @@ public sealed class AngularFileService : EndpointDataSource {
                     var patternRest = GetPatternFromAngularPath(angularPath, true);
                     if (hsPatterns.Add(patternRest)) {
                         var ep = CreateEndpoint(patternRest, async context => {
-                            await WriteIndexHtml(context);
+                            await this.WriteIndexHtml(context);
                         });
                         result.Add(ep);
                     }
@@ -99,12 +96,12 @@ public sealed class AngularFileService : EndpointDataSource {
         }
     }
 
-    private static char[] _GetPatternFromAngularPathChars = new char[] { '/', '?', '{' };
+    private static readonly char[] _GetPatternFromAngularPathChars = new char[] { '/', '?', '{' };
     public static string GetPatternFromAngularPath(string angularPath, bool addRest) {
         if (string.IsNullOrEmpty(angularPath) || "/" == angularPath) {
             return "/";
         }
-        if (!angularPath.StartsWith("/")) { angularPath = "/" + angularPath; }
+        if (!angularPath.StartsWith('/')) { angularPath = "/" + angularPath; }
         var pos = angularPath.IndexOfAny(_GetPatternFromAngularPathChars, 1);
         if (0 < pos) {
             angularPath = angularPath.Substring(0, pos);

@@ -1,4 +1,4 @@
-﻿namespace Brimborium.Tracerit.Collector.API;
+﻿namespace Brimborium.Tracerit.API;
 
 public sealed record class LogFileInformation(
     string Name, DateTime CreationTimeUtc, long Length

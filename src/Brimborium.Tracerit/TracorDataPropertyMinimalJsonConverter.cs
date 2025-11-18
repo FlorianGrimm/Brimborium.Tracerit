@@ -1,4 +1,6 @@
-﻿namespace Brimborium.Tracerit;
+﻿#pragma warning disable IDE0060 // Remove unused parameter
+
+namespace Brimborium.Tracerit;
 
 public sealed class TracorDataPropertyMinimalJsonConverter
     : System.Text.Json.Serialization.JsonConverter<TracorDataProperty> {
@@ -56,11 +58,13 @@ public sealed class TracorDataPropertyMinimalJsonConverter
             if (!reader.Read()) { throw new JsonException("Content expected"); }
             if (reader.TokenType != JsonTokenType.EndArray) { throw new JsonException("EndArray expected"); }
 
-            if (Enum.TryParse<LogLevel>(argValue, out var logLevelValue)) {
-                return TracorDataProperty.CreateLevelValue(propertyName, logLevelValue);
-            } else {
-                throw new JsonException($"Invalid LogLevel value: {argValue}");
-            }
+            var logLevelValue = TracorDataUtility.ConvertStringToLogLevel(argValue ?? string.Empty);
+            return TracorDataProperty.CreateLevelValue(propertyName, logLevelValue);
+            //if (Enum.TryParse<LogLevel>(argValue, out var logLevelValue)) {
+            //    return TracorDataProperty.CreateLevelValue(propertyName, logLevelValue);
+            //} else {
+            //    throw new JsonException($"Invalid LogLevel value: {argValue}");
+            //}
         }
 
         // [ "<propertyName>", "enum", "<value>"

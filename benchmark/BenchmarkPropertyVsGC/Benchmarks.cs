@@ -1,4 +1,5 @@
-﻿#pragma warning disable IDE1006 // Naming Styles
+﻿#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable IDE1006 // Naming Styles
 #pragma warning disable CA1822 // Mark members as static
 
 using BenchmarkDotNet.Attributes;
@@ -94,8 +95,8 @@ public class Benchmarks {
         const bool tracorEnabled = true;
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
-                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options)
-            )
+                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options),
+                configureConvert: default)
             .AddTracorActivityListener(tracorEnabled)
             .AddTracorInstrumentation<BenchmarkInstrumentation>()
             .AddTracorLogger()

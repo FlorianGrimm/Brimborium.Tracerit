@@ -1,6 +1,4 @@
-﻿using Brimborium.Tracerit.FileSink;
-
-namespace Brimborium.Tracerit;
+﻿namespace Brimborium.Tracerit;
 
 public static class TracorBuilderExtension {
 
@@ -91,7 +89,7 @@ public static class TracorBuilderExtension {
         tracorBuilder.Services.AddSingleton<TracorDataRecordPool>();
 
         var configurationSection = configuration;
-        tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>(EnabledTracorActivityListener.Create);
+        tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>();
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>((sp) => sp.GetRequiredService<EnabledTracorActivityListener>());
 
         // options configure
@@ -137,9 +135,11 @@ public static class TracorBuilderExtension {
             if (typeof(TracorCollectiveFileSink).Equals(serviceDescriptor.ServiceType)) {
                 return tracorBuilder;
             }
-        } 
-        tracorBuilder.Services.Add(ServiceDescriptor.Singleton<ITracorCollectiveSink, TracorCollectiveFileSink>());
+        }
+        //tracorBuilder.Services.Add(ServiceDescriptor.Singleton<ITracorCollectiveSink, TracorCollectiveFileSink>());
         tracorBuilder.Services.AddSingleton<TracorCollectiveFileSink>();
+        tracorBuilder.Services.AddSingleton<ITracorCollectiveSink>(
+            (serviceProvider) => serviceProvider.GetRequiredService<TracorCollectiveFileSink>());
         return tracorBuilder;
     }
 
@@ -154,8 +154,8 @@ public static class TracorBuilderExtension {
     /// .AddFileTracorCollectiveSinkDefault(
     ///    configuration: builder.Configuration,
     ///               configure: (fileTracorOptions) => {
-    ///                   fileTracorOptions.GetApplicationStopping = static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
-    ///})
+    ///                   fileTracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+    /// })
     /// </example>
     public static ITracorBuilder AddFileTracorCollectiveSinkDefault(
         this ITracorBuilder tracorBuilder,
@@ -200,4 +200,29 @@ public static class TracorBuilderExtension {
         return tracorBuilder;
     }
 
+    public static ITracorBuilder AddTracorCollectiveHttpSink(
+        this ITracorBuilder tracorBuilder,
+        Action<TracorHttpSinkOptions>? configure) {
+        tracorBuilder.AddTracorCollectiveHttpSinkServices();
+        if (configure is { }) {
+            tracorBuilder.Services.AddOptions<TracorHttpSinkOptions>()
+                .Configure(configure);
+        }
+        return tracorBuilder;
+    }
+
+    internal static ITracorBuilder AddTracorCollectiveHttpSinkServices(
+        this ITracorBuilder tracorBuilder) {
+        foreach (var serviceDescriptor in tracorBuilder.Services) {
+            if (typeof(TracorCollectiveHttpSink).Equals(serviceDescriptor.ServiceType)) {
+                return tracorBuilder;
+            }
+        }
+
+        tracorBuilder.Services.AddSingleton<TracorCollectiveHttpSink>();
+        tracorBuilder.Services.AddSingleton<ITracorCollectiveSink>(
+            (serviceProvider) => serviceProvider.GetRequiredService<TracorCollectiveHttpSink>());
+
+        return tracorBuilder;
+    }
 }

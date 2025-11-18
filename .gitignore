@@ -418,4 +418,4 @@ FodyWeavers.xsd
 *.msp
 
 sample/Sample/wwwroot/static
-src/Brimborium.Tracerit.Collector/wwwroot/static/browser
+src/Brimborium.Tracerit.Server/wwwroot/static/browser

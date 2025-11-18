@@ -13,7 +13,7 @@ public class TracorDataConvertServiceTests {
         sut.AddTracorConvertObjectToListProperty([new SomethingTracorConvertToListProperty()]);
         Something given = new("A", 2);
         TracorDataRecord act = new();
-        
+
         sut.ConvertValueToListProperty(true, 1, string.Empty, given, act.ListProperty);
 
         await Assert.That(act.ListProperty.Count).IsEqualTo(2);
@@ -24,8 +24,8 @@ public class TracorDataConvertServiceTests {
     private record class Something(string A, int B);
     private class SomethingTracorConvertToListProperty : TracorConvertValueToListProperty<Something> {
         public override void ConvertValueToListProperty(bool isPublic, int levelWatchDog, string name, Something value, ITracorDataConvertService dataConvertService, List<TracorDataProperty> listProperty) {
-            if (levelWatchDog < 0) { return; }
-            var prefix = name is { Length: 0 } ? name : $"{name}.";
+            if (TracorExtension.GetComplexPropertyPrefix(levelWatchDog, name) 
+                is not { } prefix) { return; }
 
             listProperty.Add(TracorDataProperty.CreateStringValue($"{prefix}{nameof(value.A)}", value.A));
             listProperty.Add(TracorDataProperty.CreateIntegerValue($"{prefix}{nameof(value.B)}", value.B));
@@ -35,7 +35,7 @@ public class TracorDataConvertServiceTests {
     [Test]
     public async Task ConvertListPropertyForITracorConvertSelfToListProperty() {
         var sut = new TracorDataConvertService(new TracorDataRecordPool(0));
-        
+
         AnotherThing given = new("A", 2);
         TracorDataRecord act = new();
 

@@ -64,9 +64,10 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
     }
 
     public HttpClient CreateClient() {
-        var server = this.GetApplication().Services.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>();
-        var socketsHandler = new SocketsHttpHandler();
-        socketsHandler.Credentials = CredentialCache.DefaultCredentials;
+        // var server = this.GetApplication().Services.GetRequiredService<Microsoft.AspNetCore.Hosting.Server.IServer>();
+        var socketsHandler = new SocketsHttpHandler {
+            Credentials = CredentialCache.DefaultCredentials
+        };
         var result = new HttpClient(socketsHandler, true);
         if (this.GetBaseAddress() is { Length: > 0 } baseAddress) {
             result.BaseAddress = new Uri(baseAddress);
@@ -91,7 +92,11 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                     builder.Configuration.AddJsonFile(GetAppsettingsJson(), optional: false);
                     builder.Services.AddAuthentication(TestAuthHandler.AuthenticationScheme)
                         .AddScheme<TestAuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, null);
-                    builder.Services.AddTracor(true)
+                    builder.Services
+                        .AddTracor(
+                            addEnabledServices: true,
+                            configureTracor: default,
+                            configureConvert: default)
                         .AddTracorActivityListener(true, null, (options) => {
                             options.AllowAllActivitySource = true;
                         }).AddTracorLogger((options) => { 

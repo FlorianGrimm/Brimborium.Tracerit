@@ -1,17 +1,18 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { MasterRingSubject } from "./MasterRingSubject";
-import { DependecyRingSubject as DependecyRingSubject } from "./DependecyRingSubject";
 import { Subscription } from 'rxjs';
+import { TraceableSubjectGraphService } from './traceable-subject-graph.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MasterRingService {
   public readonly ring$ = new MasterRingSubject(100, 'ring$');
-  public readonly graph: Graph = new Graph();
+  public readonly graph = inject(TraceableSubjectGraphService).getGraph();// new Graph();
 
   constructor() {
     this.ring$.graph = this.graph;
+    // only for debug remove later
     (window as any)['__graph'] = this.graph;
   }
 
@@ -31,74 +32,15 @@ export class MasterRingService {
       this.ring$.subscribe({
         next: (value) => {
           result.next(value);
-        },
-        complete: () => {
-          result.complete();
-        },
-        error: (err: any) => {
-          result.error(err);
         }
+        // complete: () => {
+        //   result.complete();
+        // },
+        // error: (err: any) => {
+        //   result.error(err);
+        // }
       })
     );
     return result;
   }
-}
-
-export class GraphNode {
-  public readonly name: string;
-  constructor(
-    subject: DependecyRingSubject
-  ) {
-    this.name = subject.name;
-  }
-  toString() {
-    return this.name;
-  }
-}
-
-export class GraphEdge {
-  public readonly key: string;
-  constructor(
-    from: DependecyRingSubject,
-    to: DependecyRingSubject
-  ) {
-    this.key = `${from.name} -> ${to.name}`;
-  }
-  toString() {
-    return this.key;
-  }
-}
-
-export class Graph {
-  public readonly nodes = new Map<string, GraphNode>();
-  public readonly edges = new Map<string, GraphEdge>();
-  constructor() {
-  }
-  addSubject(subject: DependecyRingSubject) {
-    let node = this.nodes.get(subject.name);
-    if (undefined === node) {
-      node = new GraphNode(subject);
-      this.nodes.set(node.name, node);
-    }
-  }
-
-  addSubscription(from: DependecyRingSubject, to: DependecyRingSubject) {
-    let fromNode = this.nodes.get(from.name);
-    if (undefined === fromNode) {
-      fromNode = new GraphNode(from);
-      this.nodes.set(from.name, fromNode);
-    }
-    let toNode = this.nodes.get(to.name);
-    if (undefined === toNode) {
-      toNode = new GraphNode(to);
-      this.nodes.set(to.name, toNode);
-    }
-    const edge = new GraphEdge(from, to);
-    const edgeKey = edge.toString();
-    if (!this.edges.has(edgeKey)) {
-      this.edges.set(edgeKey, edge);
-    }
-  }
-
-
 }

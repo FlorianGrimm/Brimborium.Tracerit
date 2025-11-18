@@ -1,6 +1,8 @@
-import { BehaviorSubject, Observable, Subscription } from "rxjs";
-import { DependecyRingSubject, DependecyRingSubjectStatic } from "./DependecyRingSubject";
+import { BehaviorSubject, Observable, Observer, Subject, SubjectLike, Subscribable, Subscription } from "rxjs";
+import { DependecyRingSubject } from "./DependecyRingSubject";
 import { MasterRingSubject } from "./MasterRingSubject";
+import type { TraceableSubject } from "./TraceableSubject";
+import { getTraceableInformation } from "./traceable-subject-graph.service";
 
 export function createBehaviorRingSubject<T>(
     subscription: Subscription,
@@ -43,7 +45,7 @@ export class BehaviorRingSubject<T extends Exclude<any, undefined>> extends Beha
     public readonly name: string;
     constructor(
         value: T,
-        public readonly  ring: number,
+        public readonly ring: number,
         name: string,
         public readonly subscriptionRing?: Subscription,
         public readonly ring$?: MasterRingSubject,
@@ -51,10 +53,10 @@ export class BehaviorRingSubject<T extends Exclude<any, undefined>> extends Beha
         private readonly fnReport?: ((name: string, message: string, value: T | undefined) => void)
     ) {
         super(value);
-        const index=++DependecyRingSubjectStatic.InstanceIndex;
-        this.name = `${name}-${index}`;
+        this.name = getTraceableInformation(this, name).toString();
+
         if (undefined !== subscriptionRing && undefined !== ring$) {
-            ring$.graph?.addSubject(this);
+            // later ring$.graph?.addSubject(this);
             this.state.enabled = true;
             this.state.currentRing = ring$.getValue();
             subscriptionRing.add(
@@ -63,13 +65,13 @@ export class BehaviorRingSubject<T extends Exclude<any, undefined>> extends Beha
                         this.setCurrentRing(value);
                     },
                     complete: () => {
-                        this.setCurrentRing(0);
+                        this.setCurrentRing(-1);
                     },
                     error: () => {
-                        this.setCurrentRing(0);
+                        this.setCurrentRing(-1);
                     }
                 }));
-        } 
+        }
     }
     setCurrentRing(value: number) {
         this.state.currentRing = value;
@@ -119,40 +121,48 @@ export class BehaviorRingSubject<T extends Exclude<any, undefined>> extends Beha
         }
     }
 
-    validateRing(target$: BehaviorRingSubject<any>, name?:string) {
+    validateRing(target$: BehaviorRingSubject<any>, name?: string) {
+        /*
         if (this.ring < target$.ring) {
             // ok
-            this.ring$?.graph?.addSubscription(this, target$);
+            // later this.ring$?.graph?.addSubscription(this, target$);
         } else {
             throw new Error(`${this.name}.ring:${this.ring} >= ${target$.name}.ring:${target$.ring} ${name}`);
         }
+        */
         return this;
     }
 
-    pipeAndSubscribe<R extends Exclude<any, undefined>>(
-        observer: BehaviorRingSubject<R>,
-        pipeFn: (subject: BehaviorRingSubject<T>) => Observable<R | undefined>,
-        fnNext?: (value: R, observer: BehaviorRingSubject<R>) => void
+    pipeAndSubscribe<R, O extends SubjectLike<R>>(
+        subscription: Subscription | undefined,
+        observer: O,
+        pipeFn: (subject: Observable<T>) => Observable<R>,
+        fnNext?: (value: R, observer: SubjectLike<R>) => void
     ): Subscription {
-        this.validateRing(observer);
+        //this.validateRing(observer);
         const pipe$: Observable<R | undefined> = pipeFn(this);
-        return pipe$.subscribe({
-            next: (value) => {
-                if (undefined !== value) {
-                    if (undefined !== fnNext) {
-                        fnNext(value, observer);
-                    } else {
-                        observer.next(value);
+        const localSubscription = new Subscription();
+        if (undefined !== subscription) { subscription.add(localSubscription); }
+        localSubscription.add(
+            pipe$.subscribe({
+                next: (value) => {
+                    if (undefined !== value) {
+                        if (undefined !== fnNext) {
+                            fnNext(value, observer);
+                        } else {
+                            if (observer.next === undefined) { return; }
+                            observer.next(value);
+                        }
                     }
+                },
+                complete: () => {
+                    localSubscription.unsubscribe();
+                },
+                error: (err) => {
+                    localSubscription.unsubscribe();
                 }
-            }
-            // complete: () => {
-            //     observer.complete();
-            // },
-            // error: (err) => {
-            //     observer.error(err);
-            // }
-        });
+            }));
+        return localSubscription;
     }
 
     static defaultLog(name: string, message: string, value: any | undefined) {

@@ -1,10 +1,14 @@
-﻿namespace System.Text.Json;
+﻿#pragma warning disable IDE0037 // Use inferred member name
+#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0130 // Namespace does not match folder structure
+
+namespace System.Text.Json;
 
 /// <summary>
 /// Serializes the value as a JSON Lines value and back.
 /// </summary>
 public static class JsonLinesSerializer {
-    private static byte[]? bytesNewLine = null;
+    private static byte[]? _BytesNewLine = null;
 
     /// <summary>
     /// Serializes the value as a JSON Lines value into the provided <see cref="Stream"/>.
@@ -57,11 +61,11 @@ public static class JsonLinesSerializer {
         IEnumerable<T> value,
         JsonSerializerOptions? options = default) {
         var usedOptions = AdjustOptions(options);
-        bytesNewLine ??= Encoding.UTF8.GetBytes(System.Environment.NewLine);
+        _BytesNewLine ??= Encoding.UTF8.GetBytes(System.Environment.NewLine);
 
         foreach (T item in value) {
             System.Text.Json.JsonSerializer.Serialize<T>(utf8Json, item, usedOptions);
-            utf8Json.Write(bytesNewLine);
+            utf8Json.Write(_BytesNewLine);
         }
         utf8Json.Flush();
     }
@@ -105,12 +109,12 @@ public static class JsonLinesSerializer {
         IEnumerable<T> value,
         JsonSerializerOptions? options = default,
         CancellationToken cancellationToken = default) {
-        bytesNewLine ??= Encoding.UTF8.GetBytes(System.Environment.NewLine);
+        _BytesNewLine ??= Encoding.UTF8.GetBytes(System.Environment.NewLine);
         var usedOptions = AdjustOptions(options);
 
         foreach (T item in value) {
             await System.Text.Json.JsonSerializer.SerializeAsync<T>(utf8Json, item, usedOptions, cancellationToken);
-            await utf8Json.WriteAsync(bytesNewLine, cancellationToken);
+            await utf8Json.WriteAsync(_BytesNewLine, cancellationToken);
         }
         await utf8Json.FlushAsync(cancellationToken);
     }
@@ -212,8 +216,9 @@ public static class JsonLinesSerializer {
         }
 
         {
-            JsonSerializerOptions result = new(options);
-            result.WriteIndented = false;
+            JsonSerializerOptions result = new(options) {
+                WriteIndented = false
+            };
             return result;
         }
     }

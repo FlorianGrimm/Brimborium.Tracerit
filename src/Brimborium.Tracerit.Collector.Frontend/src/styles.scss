@@ -133,6 +133,7 @@ table.table-tracerit {
             text-align: left;
             font-weight: 600;
             border-bottom: 2px solid #ddd;
+            z-index: 3;
         }
 
         td {
@@ -143,7 +144,7 @@ table.table-tracerit {
             position: sticky;
             top: 1px;
             background-color: white;
-            z-index: 2;
+            z-index: 3;
 
             th,
             td {
@@ -192,7 +193,13 @@ table.table-tracerit {
         }
     }
 
-    th.sticky,
+    th.sticky{
+        position: sticky;
+        left: 0px;
+        /*$aside-width;*/
+        z-index: 4;
+    }
+
     td.sticky {
         position: sticky;
         left: 0px;

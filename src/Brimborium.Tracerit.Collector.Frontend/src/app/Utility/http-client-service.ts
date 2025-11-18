@@ -66,4 +66,9 @@ export class HttpClientService {
       })
     );
   }
+
+  getCurrentStream() {
+    throw new Error('Method not implemented.');
+  }
+
 }

@@ -48,11 +48,10 @@ public class Program {
             // By default, all incoming requests will be authorized according to the default policy.
             options.FallbackPolicy = options.DefaultPolicy;
         });
-        builder.Services.AddSingleton<IController, UIEndpoints>();
-        builder.Services.AddSingleton<IController, CollectorTracorEndpoints>();
-        builder.Services.AddTraceritCollector();
-
         
+        builder.Services.AddTraceritCollector();
+        builder.Services.AddTraceritServerControllers();
+
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
         builder.Services.AddSingleton<LogFileService>();
 
@@ -74,9 +73,7 @@ public class Program {
         //app.UseAuthentication();
         app.UseAngularFileService();
         app.UseTraceritCollector();
-        foreach (var controller in app.Services.GetServices<IController>()) { 
-            controller.MapEndpoints(app);
-        }
+        app.MapEndpoints();
 
         if (startupActions.ConfigureWebApplication is { } configureWebApplication) { configureWebApplication(app); }
 

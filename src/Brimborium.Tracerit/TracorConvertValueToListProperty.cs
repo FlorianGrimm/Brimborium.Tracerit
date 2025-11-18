@@ -34,8 +34,8 @@ public abstract class TracorConvertValueToListProperty<T>
         T value,
         ITracorDataConvertService dataConvertService,
         List<TracorDataProperty> listProperty);
-
 }
+
 public abstract class TracorConvertValueToListPropertyWithService<T>
     : ITracorConvertValueToListProperty<T> {
     private readonly LateTracorDataConvertService _LateTracorDataConvertService;

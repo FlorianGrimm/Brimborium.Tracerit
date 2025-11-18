@@ -1,6 +1,11 @@
 using Brimborium.Tracerit;
 using Brimborium.Tracerit.Filter;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Sample.WebApp;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
@@ -52,10 +57,12 @@ public partial class Program {
         builder.Services.AddHealthChecks().AddTypeActivatedCheck<>();
         */
 
-#if false
         {
+#if true
             var serviceName = SampleInstrumentation.ActivitySourceName;
             var serviceVersion = SampleInstrumentation.ActivitySourceVersion;
+            builder.Logging.AddOpenTelemetry();
+            
             builder.Services.AddOpenTelemetry()
                 .ConfigureResource(
                     resource => resource
@@ -65,42 +72,71 @@ public partial class Program {
                         .WithTracing(tracing => tracing
                             .AddSource(serviceName)
                             //.AddAspNetCoreInstrumentation()
-                            .AddConsoleExporter())
-                        .WithMetrics(metrics => metrics
-                            .AddMeter(serviceName)
-                            .AddConsoleExporter());
+                            //.AddConsoleExporter()
+                            .AddAspNetCoreInstrumentation()
+                            .AddOtlpExporter((otlpExporterOptions) => {
+                                otlpExporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
+                                otlpExporterOptions.Endpoint = new Uri("http://localhost:4318/v1/traces");
+                                //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/traces");
+                            })
+                            )
+                        .WithLogging(
+                            (loggerProviderBuilder) => {
+                                loggerProviderBuilder.AddOtlpExporter((otlpExporterOptions) => {
+                                    otlpExporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
+                                    otlpExporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
+                                    //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/logs");
+                                    //4318/v1/traces
+                                });
+                        }, (openTelemetryLoggerOptions) => {
+                            openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+                        })
+                        //.WithMetrics(metrics => metrics
+                        //    .AddMeter(serviceName)
+                        //    .AddConsoleExporter())
 
-            builder.Logging.AddOpenTelemetry(
-                options => options
-                    .SetResourceBuilder(
-                        ResourceBuilder.CreateDefault()
-                            .AddService(
-                                serviceName: serviceName,
-                                serviceVersion: serviceVersion))
-                    .AddConsoleExporter());
+                         ;
 
-        }
+            //builder.Logging.AddOpenTelemetry(
+            //    options => options
+            //        .SetResourceBuilder(
+            //            ResourceBuilder.CreateDefault()
+            //                .AddService(
+            //                    serviceName: serviceName,
+            //                    serviceVersion: serviceVersion))
+            //        );
+
 #endif
+        }
         var tracorOptions = builder.Configuration.BindTracorOptionsDefault(new());
         var tracorEnabled = tracorOptions.IsEnabled || startupActions.Testtime;
-        builder.Services.AddTracor(addEnabledServices: tracorEnabled)
-            .AddFileTracorCollectiveSinkDefault(
-               configuration: builder.Configuration,
-               configure: (fileTracorOptions) => {
-                   fileTracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
-               })
+        builder.Services.AddTracor(
+            addEnabledServices: tracorEnabled,
+            configureTracor: (tracorOptions) => { 
+                tracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+            },
+            configureConvert: null,
+            tracorScopedFilterSection: ""
+            )
             .AddTracorActivityListener(tracorEnabled)
             .AddTracorInstrumentation<SampleInstrumentation>()
             .AddTracorLogger()
+            .AddFileTracorCollectiveSinkDefault(
+               configuration: builder.Configuration,
+               configure: (fileTracorOptions) => {
+               })
+            .AddTracorCollectiveHttpSink(
+                configure: (tracorHttpSinkOptions) => {
+                    tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
+                });
             ;
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
         var app = builder.Build();
-
         var logger = app.Services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("Start App {MachineName}", System.Environment.MachineName);
-
+        app.Services.TracorActivityListenerStart();
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment()) {
             app.UseExceptionHandler("/Error");
@@ -124,11 +160,20 @@ public partial class Program {
 
         app.UseAuthorization();
 
-        app.MapGet("/ping", (HttpContext httpContext) => {
-            var now = System.DateTimeOffset.Now;
-            var result = $"pong {now:u}";
-            logger.PingResult(now);
-            return result;
+        app.MapGet("/ping", async (HttpContext httpContext) => {
+            var aspActivity = Activity.Current;
+            using (var activity = httpContext.RequestServices.GetRequiredService<SampleInstrumentation>().StartRoot()) {
+                var now = System.DateTimeOffset.Now;
+                var result = $"pong {now:u}";
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                logger.PingResult(now);
+                if (activity.Activity is { } sysActivity
+                    && aspActivity is { }) {
+                    sysActivity.AddLink(new ActivityLink(aspActivity.Context, null));
+                    sysActivity.AddTag("Tag", "me");
+                }
+                return result;
+            }
         }).AllowAnonymous();
 
         app.MapGet("/hack", (HttpContext httpContext) => {

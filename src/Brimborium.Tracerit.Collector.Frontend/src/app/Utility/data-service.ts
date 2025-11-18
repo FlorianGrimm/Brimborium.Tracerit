@@ -3,8 +3,6 @@ import { BehaviorSubject, Subscription } from 'rxjs';
 import { LogFileInformationList, LogLine, PropertyHeader, TypeValue } from '../Api';
 import { BehaviorRingSubject } from './BehaviorRingSubject';
 import { MasterRingService } from './master-ring.service';
-import { AppRingOrder } from '../app-ring-order';
-
 
 @Injectable({
   providedIn: 'root'
@@ -16,21 +14,21 @@ export class DataService {
   listAllHeader: PropertyHeader[] = [];
 
   listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
-    AppRingOrder.DataService_listAllHeader, 'DataService_listAllHeader', this.subscription, this.ring$, undefined,
+    0, 'DataService_listAllHeader', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
   listFile$ = new BehaviorRingSubject<LogFileInformationList>([],
-    AppRingOrder.DataService_listFile, 'DataService_listFile', this.subscription, this.ring$, undefined,
+    0, 'DataService_listFile', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
   currentFile$ = new BehaviorRingSubject<string | undefined>(undefined,
-    AppRingOrder.DataService_currentFile, 'DataService_currentFile', this.subscription, this.ring$, undefined,
+    0, 'DataService_currentFile', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
   listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
-    AppRingOrder.DataService_listSelectedFileName, 'DataService_listSelectedFileName', this.subscription, this.ring$, undefined,
+    0, 'DataService_listSelectedFileName', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
   // listLogLine 
   listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
-    AppRingOrder.DataService_listLogLine, 'DataService_listLogLine', this.subscription, this.ring$, undefined,
+    0, 'DataService_listLogLine', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
   readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();

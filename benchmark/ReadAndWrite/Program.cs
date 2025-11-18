@@ -35,12 +35,15 @@ public class Program {
         var tracorEnabled = tracorOptions.IsEnabled;
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
-                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options)
-            )
+                configureTracor: (options) => {
+                    builder.Configuration.BindTracorOptionsDefault(options);
+                    options.SetOnGetApplicationStopping(
+                        static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+                },
+                configureConvert: default)
             .AddFileTracorCollectiveSinkDefault(
                configuration: builder.Configuration,
                configure: (fileTracorOptions) => {
-                   fileTracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
                })
             .AddTracorActivityListener(tracorEnabled)
             .AddTracorInstrumentation<ReadAndWriteInstrumentation>()

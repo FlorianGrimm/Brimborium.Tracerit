@@ -1,16 +1,14 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { BehaviorSubject, combineLatest, filter, tap, debounceTime, Subscription, forkJoin, map, take } from 'rxjs';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, filter, debounceTime, Subscription, map, take } from 'rxjs';
 import { DataService } from '../Utility/data-service';
 import { HttpClientService } from '../Utility/http-client-service';
 import { AsyncPipe } from '@angular/common';
 import { FileSizePipe } from '../pipe/file-size.pipe';
 
-import type { LogFileInformationList, LogFileInformation, LogLine } from '../Api';
+import type { LogFileInformationList, LogLine } from '../Api';
 import { Router } from '@angular/router';
 import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
-import { MasterRingSubject } from "../Utility/MasterRingSubject";
 import { MasterRingService } from '../Utility/master-ring.service';
-import { AppRingOrder } from '../app-ring-order';
 
 @Component({
   selector: 'app-directory-list',
@@ -20,28 +18,35 @@ import { AppRingOrder } from '../app-ring-order';
 })
 export class DirectoryListComponent implements OnInit, OnDestroy {
   subscription = new Subscription();
-  
+
   ring$ = inject(MasterRingService).dependendRing('DirectoryListComponent-ring$', this.subscription);
   router = inject(Router);
   dataService = inject(DataService);
   httpClientService = inject(HttpClientService);
 
-  currentFile$ = new BehaviorRingSubject<string | undefined>(undefined, 1, 'currentFile$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
-  listFile$ = new BehaviorRingSubject<LogFileInformationList>([], 1, 'listFile$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
-  error$ = new BehaviorRingSubject<undefined | string>(undefined, 1, 'error$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
-  selected$ = new BehaviorRingSubject<string[]>([], 
-    AppRingOrder.DirectoryListComponent_selected, 'DirectoryListComponent_selected', this.subscription, this.ring$, undefined, 
+  useCurrentStream$ = new BehaviorRingSubject<boolean>(false, 1, 'DirectoryListComponent_useCurrentStream$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
-  
-  loaded$ = new BehaviorRingSubject<boolean>(false, 
-    AppRingOrder.DirectoryListComponent_loaded, 'DirectoryListComponent_loaded', this.subscription, this.ring$, undefined, 
+
+  currentFile$ = new BehaviorRingSubject<string | undefined>(undefined, 1, 'DirectoryListComponent_currentFile$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
+  listFile$ = new BehaviorRingSubject<LogFileInformationList>([], 1, 'DirectoryListComponent_listFile$', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+  error$ = new BehaviorRingSubject<undefined | string>(undefined, 1, 'DirectoryListComponent_error$', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
+  listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
+    0, 'DirectoryListComponent_listSelectedFileName$', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
+
+  loaded$ = new BehaviorRingSubject<boolean>(false,
+    0, 'DirectoryListComponent_loaded', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
+    
   listFileLoading$ = new BehaviorRingSubject<string[]>([], 1, 'listFileLoading$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
   constructor() {
     this.subscription.add(this.dataService.listFile$.subscribe(this.listFile$));
     this.subscription.add(this.dataService.currentFile$.subscribe(this.currentFile$));
-    this.subscription.add(this.dataService.listSelectedFileName$.subscribe(this.selected$));
+    this.subscription.add(this.dataService.listSelectedFileName$.subscribe(this.listSelectedFileName$));
   }
 
   ngOnInit(): void {
@@ -51,7 +56,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
       combineLatest({
         loaded: this.loaded$,
         listSelectedFileName: this.dataService.listSelectedFileName$,
-        selected: this.selected$,
+        selected: this.listSelectedFileName$,
         listFile: this.dataService.listFile$
       }).pipe(
         filter((value) => value.loaded),
@@ -107,7 +112,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   }
 
   load() {
-    const subscription = new Subscription();
+    const subscription = new Subscription();    
     this.subscription.add(subscription);
     subscription.add(
       this.httpClientService.getDirectoryList().subscribe({
@@ -129,6 +134,17 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
           this.error$.next(error.toString());
         }
       }));
+  }
+
+  loadCurrentStream() {
+    this.useCurrentStream$.next(true);
+    this.httpClientService.getCurrentStream();
+    // this.dataService.loadCurrentStream().pipe(take(1)).subscribe({
+    //   next: (value) => {
+    //     this.router.navigate(['tracorit', 'log']);
+    //   }
+    // });
+    return false;
   }
 
   loadFile(name: string) {
@@ -165,8 +181,8 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  onSelectedChange(name: string) {
-    const selected = this.selected$.getValue()
+  onListSelectedFileNameChange(name: string) {
+    const selected = this.listSelectedFileName$.getValue()
     let nextSelected: string[] = [];
     if (selected.includes(name)) {
       nextSelected = selected.filter(item => name != item);
@@ -197,7 +213,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
             }
           }));
     }
-    this.selected$.next(nextSelected);
+    this.listSelectedFileName$.next(nextSelected);
 
     return false;
   }

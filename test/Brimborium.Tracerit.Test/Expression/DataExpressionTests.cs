@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Builder;
 namespace Brimborium.Tracerit.Test.Expression;
 
 public class DataExpressionTests {
-    [Test,Explicit]
+    [Test, Explicit]
     public async Task DataExpressionUsage() {
         var configurationBuilder = new ConfigurationBuilder();
         var configuration = configurationBuilder.Build();
@@ -15,7 +15,10 @@ public class DataExpressionTests {
         serviceBuilder.AddLogging((builder) => {
             builder.AddTracorLogger();
         });
-        serviceBuilder.AddTracor(true)
+        serviceBuilder.AddTracor(
+            addEnabledServices: true,
+            configureTracor: default,
+            configureConvert: default)
             .AddTracorActivityListener(true)
             .AddTracorInstrumentation<SampleTestInstrumentation>();
 
