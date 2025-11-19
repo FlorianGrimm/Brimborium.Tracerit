@@ -11,7 +11,7 @@ export class HttpClientService {
 
   public getDirectoryList(): Observable<DirectoryBrowseResponse> {
     return this.http.get(
-      "/api/DirectoryList",
+      "/api/Tracerit/DirectoryList",
       {
         observe: 'response',
         responseType: 'json',
@@ -39,7 +39,7 @@ export class HttpClientService {
 
   public getFile(name: string): Observable<GetFileResponse> {
     return this.http.get(
-      `/api/File/${encodeURIComponent(name)}`,
+      `/api/Tracerit/File/${encodeURIComponent(name)}`,
       {
         observe: 'response',
         responseType: 'text',
@@ -49,7 +49,8 @@ export class HttpClientService {
       map((response) => {
         if (200 === response.status) {
           const body = response.body || "";
-          const data = parseJsonl(body);
+          const { listLogline:data, nextId } = parseJsonl(body, this.nextCurrentStreamId);
+          this.nextCurrentStreamId = nextId;
           const result: GetFileResponse = {
             mode: "success",
             data: data
@@ -67,9 +68,15 @@ export class HttpClientService {
     );
   }
 
-  getCurrentStream() : Observable<GetFileResponse> {
+  nextCurrentStreamId:number=1;
+
+  getCurrentStream(name:string|null|undefined) : Observable<GetFileResponse> {
     return this.http.get(
-      `/api/Current`,
+      (
+        ((name === null) || (name === undefined) ||(name === ""))
+        ? "/api/Tracerit/CurrentStream" 
+        : `/api/Tracerit/CurrentStream/${encodeURIComponent(name)}`
+      ),
       {
         observe: 'response',
         responseType: 'text',
@@ -79,11 +86,13 @@ export class HttpClientService {
       map((response) => {
         if (200 === response.status) {
           const body = response.body || "";
-          const data = parseJsonl(body);
+          const { listLogline:data, nextId } = parseJsonl(body, this.nextCurrentStreamId);
+          this.nextCurrentStreamId = nextId;
           const result: GetFileResponse = {
             mode: "success",
             data: data
           };
+          console.log("getCurrentStream", name, result.data.length);
           return result;
         }
         {

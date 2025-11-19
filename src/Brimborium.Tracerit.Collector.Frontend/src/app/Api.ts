@@ -1,4 +1,4 @@
-import { ZonedDateTime, Duration, LocalDateTime, ZoneId, ZoneOffset } from '@js-joda/core'
+import { ZonedDateTime, Duration, LocalDateTime, ZoneId, ZoneOffset, Instant } from '@js-joda/core'
 
 /* DirectoryBrowse */
 
@@ -105,11 +105,11 @@ export type LogLineDouble = { name: string, typeValue: "dbl", value: number };
 export type LogLineEnum = { name: string, typeValue: "enum", value: string };
 export type LogLineUuid = { name: string, typeValue: "uuid", value: string };
 
-export function parseJsonl(content: string): LogLine[] {
+export function parseJsonl(content: string, id: number): { listLogline: LogLine[], nextId: number } {
     const result: LogLine[] = [];
-    const lines = content.split(/\r\n|\n/);
-    let id = 1;
+    const lines = content.split(/\r\n|\r|\n/);
     for (const lineText of lines) {
+        if (lineText.length <= 1) { continue; }
         try {
             const lineObj = JSON.parse(lineText);
             if (!Array.isArray(lineObj)) { continue; }
@@ -148,31 +148,55 @@ export function parseJsonl(content: string): LogLine[] {
                     continue;
                 }
                 if ("dt" == typeValue) {
-                    if (("string" === typeof value)) {
-                        let localDateTime: LocalDateTime
-                        if (value.endsWith("Z")) {
-                            const dto = ZonedDateTime.parse(value);
-                            localDateTime = dto.toLocalDateTime();
-                        } else {
-                            localDateTime = LocalDateTime.parse(value);
+                    try {
+                        if (("string" === typeof value)) {
+                            let localDateTime: LocalDateTime
+                            if (value.endsWith("Z")) {
+                                const dto = ZonedDateTime.parse(value);
+                                localDateTime = dto.toLocalDateTime();
+                            } else {
+                                localDateTime = LocalDateTime.parse(value);
+                            }
+                            const dtValue = ZonedDateTime.of(localDateTime, ZoneId.UTC);
+                            itemResult.data.set(name, { name, typeValue, value: dtValue });
                         }
-                        const dtValue = ZonedDateTime.of(localDateTime, ZoneId.UTC);
-                        itemResult.data.set(name, { name, typeValue, value: dtValue });
+                    } catch (err) {
+                        console.error("Error in parseJsonl-dt", lineText, err);
                     }
                     continue;
                 }
                 if ("dto" == typeValue) {
-                    if (("string" === typeof value)) {
-                        const dtoValue = ZonedDateTime.parse(value);
-                        itemResult.data.set(name, { name, typeValue, value: dtoValue });
+                    try {
+                        if (("string" === typeof value)) {
+                            try {
+                                const localDateTime = LocalDateTime.parse(value);
+                                const dtoValue = ZonedDateTime.of(localDateTime, ZoneId.UTC);
+                                itemResult.data.set(name, { name, typeValue, value: dtoValue });
+                                continue;
+                            } catch (err) {
+                            }
+                            try {
+                                const dtoValue = ZonedDateTime.parse(value);
+                                itemResult.data.set(name, { name, typeValue, value: dtoValue });
+                                continue;
+                            } catch (err) {
+                                console.error("Error in parseJsonl-dto", lineText, err);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Error in parseJsonl-dto", lineText, err);
                     }
                     continue;
                 }
                 if ("dur" == typeValue) {
-                    if (("number" === typeof value)) {
-                        const durValue = Duration.ofNanos(value);
-                        itemResult.data.set(name, { name, typeValue, value: durValue });
-                        continue;
+                    try {
+                        if (("number" === typeof value)) {
+                            const durValue = Duration.ofNanos(value);
+                            itemResult.data.set(name, { name, typeValue, value: durValue });
+                            continue;
+                        }
+                    } catch (err) {
+                        console.error("Error in parseJsonl-dur", lineText, err);
                     }
                 }
                 if ("bool" == typeValue) {
@@ -186,10 +210,12 @@ export function parseJsonl(content: string): LogLine[] {
 
             id++;
             result.push(itemResult);
-        } catch { }
+        } catch (err) {
+            console.error("Error in parseJsonl", lineText, err);
+        }
     }
 
-    return result;
+    return { listLogline: result, nextId: id };
 }
 
 export type PropertyHeader = {

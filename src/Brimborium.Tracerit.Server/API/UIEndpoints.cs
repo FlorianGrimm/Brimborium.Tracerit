@@ -1,14 +1,11 @@
-﻿using Brimborium.Tracerit.Service;
+﻿namespace Brimborium.Tracerit.API;
 
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-
-using System.Net.Http.Headers;
-using System.Text.Json;
-
-namespace Brimborium.Tracerit.API;
-
-// singleton
+/// <summary>
+/// /api/Tracerit
+/// </summary>
+/// <remarks>
+/// singleton
+/// </remarks>
 public class UIEndpoints : IController {
     private readonly ITracorCollector _TracorCollector;
     private readonly TracorMemoryPoolManager _MemoryPoolManager;
@@ -23,31 +20,24 @@ public class UIEndpoints : IController {
         this._TracorCollector = tracorCollector;
         this._MemoryPoolManager = memoryPoolManager;
         this._LogFileService = logFileService;
-        this._JsonSerializerOptions = JsonSerializerOptionsExtensions.AddTracorDataMinimalJsonConverter(null, tracorDataRecordPool);
+        this._JsonSerializerOptions = TracorDataSerialization.GetMinimalJsonSerializerOptions(null, tracorDataRecordPool);
     }
+
     public void MapEndpoints(WebApplication app) {
-        var group = app.MapGroup("api");
-        group.Map("ping", () => {
+        var group = app.MapGroup("/api/Tracerit");
+        group.Map("/ping", () => {
             return "pong";
         }).AllowAnonymous();
 
-        group.MapGet("DirectoryList", () => {
+        group.MapGet("/CurrentStream/{name?}", (string? name) => {
+            return GetCurrentStream(name);
+        }).AllowAnonymous();
+
+        group.MapGet("/DirectoryList", () => {
             return this._LogFileService.DirectoryBrowse();
         }).AllowAnonymous();
 
-        group.MapGet("Current", () => {
-            var result = this._TracorCollector.GetListTracorDataRecord();
-            var outStream = this._MemoryPoolManager.RecyclableMemoryStreamManager.GetStream();
-            byte[] newline = "\r\n"u8.ToArray();
-            foreach (var tracorDataRecord in result) {
-                System.Text.Json.JsonSerializer.Serialize(outStream, tracorDataRecord, this._JsonSerializerOptions);
-                outStream.Write(newline);
-            }
-            outStream.Position = 0;
-            return Results.Stream(outStream, "application/jsonl");
-        });
-
-        group.MapGet("File/{name}", (string name) => {
+        group.MapGet("/File/{name}", (string name) => {
             var result = this._LogFileService.FileContentRead(name);
             if (result is ResponseSuccessful<FileContentReadResponse> { Result: { } responseResult }) {
                 return TypedResults.PhysicalFile(
@@ -65,5 +55,23 @@ public class UIEndpoints : IController {
                 return Results.InternalServerError();
             }
         }).AllowAnonymous();
+    }
+
+    public IResult GetCurrentStream(string? name) {
+        ITracorCollector tracorCollector = this._TracorCollector;
+        TracorMemoryPoolManager memoryPoolManager = this._MemoryPoolManager;
+        JsonSerializerOptions jsonSerializerOptions = this._JsonSerializerOptions;
+
+        using (var listTracorDataRecord = tracorCollector.GetListTracorDataRecord(name)) {
+            var outStream = memoryPoolManager.RecyclableMemoryStreamManager.GetStream();
+            byte[] newline = "\r\n"u8.ToArray();
+            foreach (var tracorDataRecord in listTracorDataRecord.ListData) {
+                System.Text.Json.JsonSerializer.Serialize(outStream, tracorDataRecord, jsonSerializerOptions);
+                outStream.Write(newline);
+            }
+            outStream.Position = 0;
+            var resultStream = Results.Stream(outStream, "application/jsonl");
+            return resultStream;
+        }
     }
 }

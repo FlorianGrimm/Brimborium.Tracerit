@@ -92,21 +92,29 @@ export class LogViewComponent implements OnDestroy {
     immediate: true
   });
 
-  readonly filter$ = new BehaviorRingSubject<number>(1, 0, 'LogViewComponent_filter$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  readonly filter$ = new BehaviorRingSubject<number>(1, 0, 'LogViewComponent_filter$', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
 
   readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null,
-    0, 'LogViewComponent_currentLogLineId', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'LogViewComponent_currentLogLineId', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
   readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'LogViewComponent_currentLogLine', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'LogViewComponent_currentLogLine', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value); });
   readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null,
-    0, 'LogViewComponent_currentLogTimestamp', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'LogViewComponent_currentLogTimestamp', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
 
   readonly contextLogLineId$ = new BehaviorRingSubject<number | null>(null,
-    0, 'LogViewComponent_contextLogLineId', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'LogViewComponent_contextLogLineId', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
   readonly contextLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'LogViewComponent_contextLogLine', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'LogViewComponent_contextLogLine', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
 
-  readonly error$ = new BehaviorRingSubject<null | string>(null, 1, 'error$');
+  readonly error$ = new BehaviorRingSubject<null | string>(null,
+    0, 'LogViewComponent_error$', this.subscription, this.ring$, undefined, 
+    (name, message, value) => { console.log(name, message, value); });
 
   readonly triggerFilter$ = combineLatestSubject(
     {

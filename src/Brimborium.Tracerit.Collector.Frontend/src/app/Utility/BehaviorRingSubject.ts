@@ -5,19 +5,35 @@ import type { TraceableSubject } from "./TraceableSubject";
 import { getTraceableInformation } from "./traceable-subject-graph.service";
 
 export function createBehaviorRingSubject<T>(
-    subscription: Subscription,
-    source: (() => Observable<T>),
-    initialValue: T,
-    ring: number,
-    name: string,
-    conditionSubject?: MasterRingSubject,
-    fnPaused?: (that: BehaviorRingSubject<T>, ring: undefined | MasterRingSubject) => void,
-    fnReport?: ((name: string, message: string, value: T | undefined) => void)
+    args: {
+        subscription: Subscription,
+        initialValue: T,
+        ring: number,
+        name: string,
+        conditionSubject: MasterRingSubject,
+        fnPaused?: (that: BehaviorRingSubject<T>, ring: undefined | MasterRingSubject) => void,
+        fnReport?: ((name: string, message: string, value: T | undefined) => void)
+    }
 ): BehaviorRingSubject<T> {
-    const result = new BehaviorRingSubject<T>(initialValue, ring, name, subscription, conditionSubject, fnPaused, fnReport);
-    const observer = source();
+    return new BehaviorRingSubject<T>(args.initialValue, args.ring, args.name, args.subscription, args.conditionSubject, args.fnPaused, args.fnReport);
+}
+
+export function createBehaviorRingObservable<T>(
+    args: {
+        subscription: Subscription,
+        source: (() => Observable<T>),
+        initialValue: T,
+        ring: number,
+        name: string,
+        conditionSubject: MasterRingSubject,
+        fnPaused?: (that: BehaviorRingSubject<T>, ring: undefined | MasterRingSubject) => void,
+        fnReport?: ((name: string, message: string, value: T | undefined) => void)
+    }
+): BehaviorRingSubject<T> {
+    const result = new BehaviorRingSubject<T>(args.initialValue, args.ring, args.name, args.subscription, args.conditionSubject, args.fnPaused, args.fnReport);
+    const observer = args.source();
     const localSubscription = new Subscription();
-    subscription.add(localSubscription);
+    args.subscription.add(localSubscription);
     localSubscription.add(
         observer.subscribe({
             next: (value) => {
@@ -47,8 +63,8 @@ export class BehaviorRingSubject<T extends Exclude<any, undefined>> extends Beha
         value: T,
         public readonly ring: number,
         name: string,
-        public readonly subscriptionRing?: Subscription,
-        public readonly ring$?: MasterRingSubject,
+        public readonly subscriptionRing: Subscription,
+        public readonly ring$: MasterRingSubject,
         private readonly fnPaused?: (that: BehaviorRingSubject<T>, ring: undefined | MasterRingSubject) => void,
         private readonly fnReport?: ((name: string, message: string, value: T | undefined) => void)
     ) {

@@ -39,15 +39,19 @@ public class LogFileService : IDisposable {
         if (!diLogDirectory.Exists) {
             return new ResponseFailed<DirectoryBrowseResponse>() { Error = "logDirectory: Not Exists" };
         }
-        var listFiles = diLogDirectory.EnumerateFiles("*.jsonl", new EnumerationOptions() {
-            RecurseSubdirectories = false,
+        var listFilesJsonl = diLogDirectory.EnumerateFiles("*.jsonl", new EnumerationOptions() {
+            RecurseSubdirectories = true,
             IgnoreInaccessible = true
         });
-        var result = listFiles
+        var diLogDirectoryFullName = diLogDirectory.FullName;
+        var result = listFilesJsonl
+            .Where(
+                (diLogFile) => diLogFile.FullName.StartsWith(diLogDirectoryFullName, StringComparison.OrdinalIgnoreCase)
+            )
             .Select(
-                static diLogFile => {
+                (diLogFile) => {
                     return new LogFileInformation(
-                        diLogFile.Name,
+                        diLogFile.FullName.Substring(diLogDirectoryFullName.Length),
                         diLogFile.CreationTimeUtc,
                         diLogFile.Length);
                 })

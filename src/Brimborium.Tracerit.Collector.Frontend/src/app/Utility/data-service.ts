@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, distinctUntilChanged, filter, Subscription } from 'rxjs';
 import { LogFileInformationList, LogLine, PropertyHeader, TypeValue } from '../Api';
 import { BehaviorRingSubject } from './BehaviorRingSubject';
 import { MasterRingService } from './master-ring.service';
@@ -10,6 +10,8 @@ import { MasterRingService } from './master-ring.service';
 export class DataService {
   readonly subscription = new Subscription();
   readonly ring$ = inject(MasterRingService).dependendRing('DataService-ring$', this.subscription);
+  readonly currentStreamName = (new Date()).valueOf().toString();
+
   mapName = new Map<string, PropertyHeader>();
   listAllHeader: PropertyHeader[] = [];
 
@@ -17,7 +19,7 @@ export class DataService {
     0, 'DataService_listAllHeader', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
-  readonly useCurrentStream$ = new BehaviorRingSubject<boolean>(false, 1, 'DataService_useCurrentStream$', this.subscription, this.ring$, undefined,
+  readonly useCurrentStream$ = new BehaviorRingSubject<boolean>(true, 1, 'DataService_useCurrentStream$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
 
   readonly listFile$ = new BehaviorRingSubject<LogFileInformationList>([],
@@ -41,6 +43,15 @@ export class DataService {
 
   constructor() {
     this.addDefaultMapName();
+
+    this.useCurrentStream$.pipe(
+      distinctUntilChanged(),
+      filter(value => value)
+    ).subscribe({
+      next: (value) => {
+        this.listLogLine$.next([]);
+      }
+    });
   }
 
   public setListFile(value: LogFileInformationList) {
@@ -63,7 +74,11 @@ export class DataService {
     this.extractHeader(data);
     let contentSubject = this.mapLogLineByName.get(name);
     if (undefined === contentSubject) {
-      contentSubject = new BehaviorRingSubject<LogLine[]>(data, 1, `listLogLine$-${name}`);
+      contentSubject = new BehaviorRingSubject<LogLine[]>(
+        data, 
+        1, `listLogLine$-${name}`, this.subscription, this.ring$, undefined,
+        (name, message, value) => { console.log(name, message, value?.length); }
+      );
       this.mapLogLineByName.set(name, contentSubject);
     } else {
       contentSubject.next(data);
@@ -85,6 +100,22 @@ export class DataService {
     }
   }
 
+  addListLogLine(data: LogLine[]) {
+    if (0 === data.length) { return; }
+  
+    this.extractHeader(data);
+    const restMaxLength = 1024-data.length;
+    if (restMaxLength < 0) { 
+      this.listLogLine$.next(data);
+    } else {
+      const currentData = this.listLogLine$.getValue();
+      const currentDataLimited = (restMaxLength < currentData.length) 
+        ? currentData.slice(currentData.length - restMaxLength)
+        : currentData;
+      const nextData = currentDataLimited.concat(data);
+      this.listLogLine$.next(nextData);
+    }
+  }
 
   setListLogLine(data: LogLine[]) {
     this.extractHeader(data);
@@ -156,7 +187,8 @@ export class DataService {
       this.loadCurrentStream();
     }
   }
+
   loadCurrentStream() {
-    
+
   }
 }

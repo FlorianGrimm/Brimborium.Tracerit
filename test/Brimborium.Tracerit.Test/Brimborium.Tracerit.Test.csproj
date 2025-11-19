@@ -21,6 +21,7 @@
     <PackageReference Include="Verify.TUnit" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Brimborium.Tracerit.Server\Brimborium.Tracerit.Server.csproj" />
     <ProjectReference Include="..\..\src\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
   </ItemGroup>
   <ItemGroup>

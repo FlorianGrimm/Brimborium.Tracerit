@@ -21,6 +21,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
 
   ring$ = inject(MasterRingService).dependendRing('DirectoryListComponent-ring$', this.subscription);
   router = inject(Router);
+
   dataService = inject(DataService);
   httpClientService = inject(HttpClientService);
 
@@ -139,16 +140,16 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
     const subscription = new Subscription();
     this.subscription.add(subscription);
     subscription.add(
-    this.httpClientService.getCurrentStream().subscribe({
-      next: (value) => {
-        if ("success" === value.mode) {
-          this.dataService.setListLogLine(value.data);
-          this.router.navigate(['tracorit', 'log']);
-        } else {
-          this.error$.next(value.error);
-        }
-      },
-    }));
+      this.httpClientService.getCurrentStream(this.dataService.currentStreamName).subscribe({
+        next: (value) => {
+          if ("success" === value.mode) {
+            this.dataService.addListLogLine(value.data);
+            this.router.navigate(['tracorit', 'log']);
+          } else {
+            this.error$.next(value.error);
+          }
+        },
+      }));
     return false;
   }
 

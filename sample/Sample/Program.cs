@@ -122,7 +122,7 @@ public partial class Program {
                 enabled: tracorEnabled,
                 configuration: default,
                 configure: (options) => { 
-                    options.AllowAllActivitySource = true;
+                    //options.AllowAllActivitySource = true;
                 })
             .AddTracorInstrumentation<SampleInstrumentation>()
             .AddTracorLogger()

@@ -11,7 +11,7 @@ public class TracorCollectorHttpService {
         ITracorCollector tracorCollector,
         TracorDataRecordPool tracorDataRecordPool
         ) {
-        this._JsonSerializerOptions = JsonSerializerOptionsExtensions.AddTracorDataMinimalJsonConverter(null, tracorDataRecordPool);
+        this._JsonSerializerOptions = TracorDataSerialization.GetMinimalJsonSerializerOptions(null, tracorDataRecordPool);
         this._TracorCollector = tracorCollector;
     }
 

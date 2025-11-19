@@ -39,6 +39,7 @@ public sealed class RecordExpression : ValidatorExpression {
     }
 }
 
+// TODO: unclear api
 public sealed class RecordExpressionResult : IDisposable {
 
     public List<ITracorData> ListData { get; } = new();
