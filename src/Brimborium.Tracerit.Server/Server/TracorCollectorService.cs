@@ -6,7 +6,7 @@ public sealed class TracorCollectorOptions {
     public int Capacity { get; set; } = 2048;
 }
 
-public sealed class TracorCollectorService : ITracorCollector {
+public sealed class TracorCollectorService : ITracorCollector { 
     private readonly Lock _Lock = new();
     private readonly int _Capacity;
 
@@ -96,23 +96,4 @@ public sealed class TracorCollectorService : ITracorCollector {
             }
         }
     }
-
-}
-
-/// <summary>
-/// 
-/// </summary>
-public interface ITracorCollector {
-    /// <summary>
-    /// add the data to the collection
-    /// </summary>
-    /// <param name="tracorDataRecord"></param>
-    void Push(TracorDataRecord tracorDataRecord);
-
-    /// <summary>
-    /// Get the pushed data.
-    /// </summary>
-    /// <param name="name">empty or named</param>
-    /// <returns></returns>
-    TracorDataCollection GetListTracorDataRecord(string? name);
 }

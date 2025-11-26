@@ -83,18 +83,20 @@ public class ControlService {
         this._HostApplicationLifetime = hostApplicationLifetime;
     }
 
-    internal async Task ReaderDone() {
+    internal Task ReaderDone() {
         this._ReaderDone = true;
         if (this._WriterDone) {
             this._HostApplicationLifetime.StopApplication();
         }
+        return Task.CompletedTask;
     }
 
-    internal async Task WriterDone() {
+    internal Task WriterDone() {
         this._WriterDone = true;
         if (this._ReaderDone) {
             this._HostApplicationLifetime.StopApplication();
         }
+        return Task.CompletedTask;
     }
 }
 

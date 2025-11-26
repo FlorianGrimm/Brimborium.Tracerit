@@ -197,7 +197,7 @@ public sealed class TracorDataPropertyMinimalJsonConverter
                 writer.WriteStringValue(dateTimeValue.ToString("o", TracorConstants.TracorCulture.DateTimeFormat));
                 break;
             case TracorDataPropertyTypeValue.DateTimeOffset:
-                value.TryGetDateTimeValue(out var dateTimeOffsetValue);
+                value.TryGetDateTimeOffsetValue(out var dateTimeOffsetValue);
                 writer.WriteStringValue(dateTimeOffsetValue.ToString("o", TracorConstants.TracorCulture.DateTimeFormat));
                 break;
             case TracorDataPropertyTypeValue.Duration:

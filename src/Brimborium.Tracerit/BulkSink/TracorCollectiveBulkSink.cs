@@ -95,7 +95,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     protected virtual System.Text.Json.JsonSerializerOptions GetJsonSerializerOptions() {
         if (this._JsonSerializerOptions == null) {
             this._JsonSerializerOptions =
-                TracorDataSerialization.GetMinimalJsonSerializerOptions(null, null);
+                TracorDataSerialization.AddTracorDataMinimalJsonConverter(null, null);
         }
         return this._JsonSerializerOptions;
     }

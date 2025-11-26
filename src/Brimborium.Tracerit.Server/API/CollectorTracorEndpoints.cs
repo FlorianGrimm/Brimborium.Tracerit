@@ -1,11 +1,11 @@
 ﻿namespace Brimborium.Tracerit.API;
 
 public class CollectorTracorEndpoints : IController {
-    private readonly TracorCollectorHttpService _CollectorHttpService;
+    private readonly ITracorCollectorHttpService _CollectorHttpService;
     //private readonly TracorCollectorWebSocketService _CollectorWebSocketService;
 
     public CollectorTracorEndpoints(
-        TracorCollectorHttpService collectorHttpService
+        ITracorCollectorHttpService collectorHttpService
         //TracorCollectorWebSocketService collectorWebSocketService
         ) {
         this._CollectorHttpService = collectorHttpService;

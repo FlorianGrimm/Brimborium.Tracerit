@@ -49,8 +49,8 @@ public class Program {
             options.FallbackPolicy = options.DefaultPolicy;
         });
         
-        builder.Services.AddTraceritCollector();
-        builder.AddTraceritServerControllers();
+        builder.Services.AddTracorCollector();
+        builder.AddTracorServerControllers();
 
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
         
@@ -72,8 +72,7 @@ public class Program {
         //app.UseAuthorization();
         //app.UseAuthentication();
         app.UseAngularFileService();
-        app.UseTraceritCollector();
-        app.MapEndpoints();
+        app.MapTracorControllerEndpoints();
 
         if (startupActions.ConfigureWebApplication is { } configureWebApplication) { configureWebApplication(app); }
 

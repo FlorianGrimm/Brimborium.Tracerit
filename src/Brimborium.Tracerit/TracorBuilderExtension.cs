@@ -5,7 +5,7 @@ public static class TracorBuilderExtension {
     internal static IConfiguration GetConfigurationTracorSection(IConfigurationRoot configuration) {
         return configuration.GetSection("Tracor");
     }
-    internal static IConfiguration GetConfigurationTracorSinkFileSection(IConfigurationRoot configuration) {
+    internal static IConfiguration GetConfigurationTracorFileSinkSection(IConfigurationRoot configuration) {
         return configuration.GetSection("Tracor").GetSection("SinkFile");
     }
 
@@ -148,7 +148,7 @@ public static class TracorBuilderExtension {
     /// Add a file persistence for tracor
     /// </summary>
     /// <param name="tracorBuilder">that</param>
-    /// <param name="configuration">optional: the configuration root:Tracor:SinkFile will be used</param>
+    /// <param name="configuration">optional: the configuration root:Tracor:FileSink will be used</param>
     /// <param name="configure">optional: additional configuration - allows to set GetApplicationStopping</param>
     /// <returns></returns>
     /// <example>
@@ -164,7 +164,7 @@ public static class TracorBuilderExtension {
         Action<TracorFileSinkOptions>? configure = default) {
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorFileSinkOptions>();
         if (configuration is { }) {
-            optionsBuilder.Bind(GetConfigurationTracorSinkFileSection(configuration));
+            optionsBuilder.Bind(GetConfigurationTracorFileSinkSection(configuration));
         }
         if (configure is { }) {
             optionsBuilder.Configure(configure);
@@ -203,11 +203,17 @@ public static class TracorBuilderExtension {
 
     public static ITracorBuilder AddTracorCollectiveHttpSink(
         this ITracorBuilder tracorBuilder,
+        IConfiguration? configuration,
         Action<TracorHttpSinkOptions>? configure) {
         tracorBuilder.AddTracorCollectiveHttpSinkServices();
-        if (configure is { }) {
-            tracorBuilder.Services.AddOptions<TracorHttpSinkOptions>()
-                .Configure(configure);
+        if (configuration is { } || configure is { }) {
+            var optionBuilder = tracorBuilder.Services.AddOptions<TracorHttpSinkOptions>();
+            if (configuration is { }) {
+                optionBuilder.BindConfiguration("Tracor:HttpSink");
+            }
+            if (configure is { }) {
+                optionBuilder.Configure(configure);
+            }
         }
         return tracorBuilder;
     }

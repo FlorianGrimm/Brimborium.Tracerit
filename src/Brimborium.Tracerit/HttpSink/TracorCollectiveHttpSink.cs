@@ -38,6 +38,7 @@ public sealed class TracorCollectiveHttpSink
     internal override void SetBulkSinkOptionsExtended(TracorHttpSinkOptions options) {
         base.SetBulkSinkOptionsExtended(options);
         this._TargetUrl = options.TargetUrl;
+        //System.Diagnostics.Debugger.Launch();
     }
 
     public override bool IsEnabled()

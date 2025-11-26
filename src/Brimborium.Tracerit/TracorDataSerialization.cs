@@ -1,31 +1,36 @@
-﻿using Brimborium.Tracerit.FileSink;
-using System.IO.Compression;
-
-namespace Brimborium.Tracerit;
+﻿namespace Brimborium.Tracerit;
 
 public static class TracorDataSerialization {
-    public static JsonSerializerOptions GetMinimalJsonSerializerOptions(
-        JsonSerializerOptions? options,
+    public static JsonSerializerOptions AddTracorDataMinimalJsonConverter(
+        this JsonSerializerOptions? options,
         TracorDataRecordPool? tracorDataRecordPool
         ) {
-        options ??= new();
-        options.Converters.Add(new TracorDataJsonMinimalConverterFactory(tracorDataRecordPool));
-        options.Converters.Add(new TracorDataRecordMinimalJsonConverter(tracorDataRecordPool));
-        options.Converters.Add(new TracorDataPropertyMinimalJsonConverter());
+        bool addConverters = options is null;
+        var result = options ?? new();
+
+        if (addConverters || result.Converters.Any(c=>c is TracorDataJsonMinimalConverterFactory)) { 
+            result.Converters.Add(new TracorDataJsonMinimalConverterFactory(tracorDataRecordPool));
+        }
+        if (addConverters || result.Converters.Any(c => c is TracorDataRecordMinimalJsonConverter)) {
+            result.Converters.Add(new TracorDataRecordMinimalJsonConverter(tracorDataRecordPool));
+        }
+        if (addConverters || result.Converters.Any(c => c is TracorDataPropertyMinimalJsonConverter)) {
+            result.Converters.Add(new TracorDataPropertyMinimalJsonConverter());
+        }
 
         /*
         result.Converters.Add(new TracorDataJsonSimpleConverterFactory());
         result.Converters.Add(new TracorDataRecordSimpleJsonConverter());
         result.Converters.Add(new TracorDataPropertySimpleJsonConverter());
         */
-        return options;
+        return result;
     }
 
 
     public static TracorDataRecordCollection DeserializeSimple(
         string json,
         System.Text.Json.JsonSerializerOptions? options = null) {
-        var usedOptions = GetMinimalJsonSerializerOptions(options, null);
+        var usedOptions = AddTracorDataMinimalJsonConverter(options, null);
         var listTracorDataRecord = System.Text.Json.JsonSerializer.Deserialize<List<TracorDataRecord>>(
             json,
             usedOptions);
@@ -39,7 +44,7 @@ public static class TracorDataSerialization {
     public static string SerializeSimple(
         IEnumerable<ITracorData> value,
         System.Text.Json.JsonSerializerOptions? options = null) {
-        var usedOptions = GetMinimalJsonSerializerOptions(options, null);
+        var usedOptions = AddTracorDataMinimalJsonConverter(options, null);
         var json = System.Text.Json.JsonSerializer.Serialize<IEnumerable<ITracorData>>(value, usedOptions);
         return json;
     }

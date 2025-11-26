@@ -3,14 +3,12 @@ namespace Microsoft.AspNetCore.Builder;
 
 public static class TraceritServerAspNetCoreBuilderExtensions {
 
-    public static WebApplication UseTraceritCollector(this WebApplication app) {
-        /*
-        var webSocketOptions = new Microsoft.AspNetCore.Builder.WebSocketOptions {
-            KeepAliveInterval = TimeSpan.FromSeconds(120),
-        };
-        app.UseWebSockets();
-        */
-
-        return app;
+    public static void MapTracorControllerEndpoints(
+        this WebApplication app
+        ) {
+        var listController = app.Services.GetServices<IController>();
+        foreach (var controller in listController) {
+            controller.MapEndpoints(app);
+        }
     }
 }

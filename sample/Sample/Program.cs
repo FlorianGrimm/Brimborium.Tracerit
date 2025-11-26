@@ -7,6 +7,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Sample.WebApp;
+using System.Runtime.CompilerServices;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
 
@@ -37,6 +38,10 @@ public partial class Program {
         StartupActions startupActions
         ) {
         var builder = WebApplication.CreateBuilder(args);
+#if DEBUG
+        Brimborium.Tracerit.Utility.TracorTestingUtility.WireParentTestingProcessForTesting(builder.Configuration);
+#endif
+
         _ = builder.Logging.AddConfiguration(
             builder.Configuration.GetSection("Logging"));
 
@@ -51,7 +56,7 @@ public partial class Program {
             });
         builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
             .AddNegotiate();
-
+        
         builder.Services.AddAuthorization();
         /*
         builder.Services.AddHealthChecks().AddTypeActivatedCheck<>();
@@ -131,8 +136,9 @@ public partial class Program {
                configure: (fileTracorOptions) => {
                })
             .AddTracorCollectiveHttpSink(
-                configure: (tracorHttpSinkOptions) => {
-                    tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
+               configuration: builder.Configuration,
+               configure: (tracorHttpSinkOptions) => {
+                    //tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
                 });
         ;
 
@@ -213,6 +219,13 @@ public partial class Program {
             } else {
                 throw new InvalidOperationException("GetContentRoot failed");
             }
+        }
+    }
+    public static string GetCsproj() {
+        return System.IO.Path.Combine(GetProjectSourceCodeFolder(), "Sample.csproj");
+
+        static string GetProjectSourceCodeFolder([CallerFilePath] string thisFilePath = "") {
+            return System.IO.Path.GetDirectoryName(thisFilePath) ?? throw new Exception("no source code");
         }
     }
 }

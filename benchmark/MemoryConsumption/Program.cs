@@ -83,8 +83,9 @@ public class ControlService {
     }
 
 
-    internal async Task WriterDone() {
+    internal Task WriterDone() {
         this._HostApplicationLifetime.StopApplication();
+        return Task.CompletedTask;
     }
 }
 

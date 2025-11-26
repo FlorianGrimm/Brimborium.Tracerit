@@ -20,7 +20,7 @@ public class UIEndpoints : IController {
         this._TracorCollector = tracorCollector;
         this._MemoryPoolManager = memoryPoolManager;
         this._LogFileService = logFileService;
-        this._JsonSerializerOptions = TracorDataSerialization.GetMinimalJsonSerializerOptions(null, tracorDataRecordPool);
+        this._JsonSerializerOptions = TracorDataSerialization.AddTracorDataMinimalJsonConverter(null, tracorDataRecordPool);
     }
 
     public void MapEndpoints(WebApplication app) {
