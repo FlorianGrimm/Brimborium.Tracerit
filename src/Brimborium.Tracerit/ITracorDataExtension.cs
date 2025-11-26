@@ -4,60 +4,143 @@
 /// Provides extension methods for <see cref="ITracorData"/> to enhance functionality with strongly-typed operations.
 /// </summary>
 public static class ITracorDataExtension {
+    /// <summary>
+    /// Test if the property value is null.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualNull(this ITracorData tracorData, string propertyName)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp)
             && TracorDataPropertyTypeValue.Null == tdp.TypeValue);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <param name="comparisonType">Compare</param>
+    /// <returns>true if equal</returns>
     public static bool IsEqualString(this ITracorData tracorData, string propertyName, string expected, StringComparison comparisonType = StringComparison.Ordinal)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetStringValue(out var currentValue))
         && (string.Equals(currentValue, expected, comparisonType));
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualInteger(this ITracorData tracorData, string propertyName, long expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetIntegerValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualBoolean(this ITracorData tracorData, string propertyName, bool expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetBooleanValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualEnum(this ITracorData tracorData, string propertyName, string expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetEnumValue(out var currentValue))
         && string.Equals(currentValue, expected, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualLevelValue(this ITracorData tracorData, string propertyName, LogLevel expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetLevelValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualDouble(this ITracorData tracorData, string propertyName, double expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetDoubleValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualDateTime(this ITracorData tracorData, string propertyName, DateTime expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetDateTimeValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualDateTimeOffset(this ITracorData tracorData, string propertyName, DateTimeOffset expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetDateTimeOffsetValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Test if the property value is equal.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to test.</param>
+    /// <param name="expected">The expected value.</param>
+    /// <returns>true is equal</returns>
     public static bool IsEqualUuid(this ITracorData tracorData, string propertyName, Guid expected)
         => (tracorData.TryGetDataProperty(propertyName, out var tdp))
         && (tdp.TryGetUuidValue(out var currentValue))
         && (currentValue == expected);
 
+    /// <summary>
+    /// Try to get the property value.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueNull(this ITracorData tracorData, string propertyName) {
         return (tracorData.TryGetDataProperty(propertyName, out var tdp)
             && TracorDataPropertyTypeValue.Null == tdp.TypeValue);
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a string.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueString(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out string value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToStringValue(propertyValue, out value)) {
@@ -67,6 +150,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a long.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueInteger(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out long value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToIntegerValue(propertyValue, out value)) {
@@ -76,6 +166,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a boolean.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueBoolean(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out bool value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToBooleanValue(propertyValue, out value)) {
@@ -85,6 +182,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a enum (a string).
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueEnum(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out string value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToEnumValue(propertyValue, out var textValue)) {
@@ -97,6 +201,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a LogLevel.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueLevelValue(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out LogLevel value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToLogLevelValue(propertyValue, out value)) {
@@ -105,6 +216,14 @@ public static class ITracorDataExtension {
         value = default;
         return false;
     }
+
+    /// <summary>
+    /// Try to get the property value - if it is a double.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
 
     public static bool TryGetPropertyValueDouble(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out double value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
@@ -115,6 +234,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a DateTime.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueDateTime(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out DateTime value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToDateTimeValue(propertyValue, out value)) {
@@ -124,6 +250,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a DateTimeOffset.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueDateTimeOffset(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out DateTimeOffset value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToDateTimeOffsetValue(propertyValue, out value)) {
@@ -133,6 +266,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value - if it is a Guid.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetPropertyValueUuid(this ITracorData tracorData, string propertyName, [MaybeNullWhen(false)] out Guid value) {
         if (tracorData.TryGetPropertyValue(propertyName, out var propertyValue)
             && TracorDataUtility.TryConvertObjectToUuidValue(propertyValue, out value)) {
@@ -142,6 +282,13 @@ public static class ITracorDataExtension {
         return false;
     }
 
+    /// <summary>
+    /// Try to get the property value.
+    /// </summary>
+    /// <param name="tracorData">the data to test.</param>
+    /// <param name="propertyName">The name of the property to get.</param>
+    /// <param name="value">the found value</param>
+    /// <returns>true if property found and matches.</returns>
     public static bool TryGetTracorDataProperty(
         this ITracorData thatTracorData,
         string propertyName,
@@ -177,6 +324,13 @@ public static class ITracorDataExtension {
         return thatTracorData.TryGetDataProperty(propertyName, out result);
     }
 
+    /// <summary>
+    /// Copy the special set of property to a list.
+    /// Helper for serialization
+    /// </summary>
+    /// <typeparam name="TTracorData">current type of ITracorData</typeparam>
+    /// <param name="thatTracorData">the source</param>
+    /// <param name="listProperty">the target</param>
     public static void ConvertPropertiesBase<TTracorData>(
         this ITracorData thatTracorData,
         List<TracorDataProperty> listProperty)
@@ -205,11 +359,18 @@ public static class ITracorDataExtension {
         }
     }
 
+    /// <summary>
+    /// Copy the special set of property to a list.
+    /// Helper for serialization
+    /// </summary>
+    /// <typeparam name="TTracorData">current type of ITracorData</typeparam>
+    /// <param name="thatTracorData">the source</param>
+    /// <param name="listProperty">the target</param>
     public static void CopyPropertiesToSinkBase<TTracorData>(
         ITracorData thatTracorData,
         TracorPropertySinkTarget target)
         where TTracorData : ITracorData {
-        { 
+        {
             ref var targetProperty = ref (target.ListHeader.GetNext());
             targetProperty.Name = TracorConstants.TracorDataPropertyNameTimestamp;
             targetProperty.SetDateTimeValue(thatTracorData.Timestamp);

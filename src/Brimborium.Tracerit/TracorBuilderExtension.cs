@@ -9,7 +9,6 @@ public static class TracorBuilderExtension {
         return configuration.GetSection("Tracor").GetSection("SinkFile");
     }
 
-
     /// <summary>
     /// Adds the Tracor logger provider to the logging builder, enabling integration between logging and tracing.
     /// </summary>
@@ -119,6 +118,12 @@ public static class TracorBuilderExtension {
         return tracorBuilder;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorBuilder"></param>
+    /// <param name="configure"></param>
+    /// <returns></returns>
     public static ITracorBuilder AddTracorScopedFilter(
             this ITracorBuilder tracorBuilder,
             Action<ITracorScopedFilterBuilder>? configure) {
@@ -130,6 +135,11 @@ public static class TracorBuilderExtension {
         return tracorBuilder;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorBuilder"></param>
+    /// <returns></returns>
     internal static ITracorBuilder AddFileTracorCollectiveSinkServices(
         this ITracorBuilder tracorBuilder) {
         foreach (var serviceDescriptor in tracorBuilder.Services) {
@@ -172,7 +182,13 @@ public static class TracorBuilderExtension {
         return tracorBuilder.AddFileTracorCollectiveSinkServices();
     }
 
-
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorBuilder"></param>
+    /// <param name="configuration"></param>
+    /// <param name="configure"></param>
+    /// <returns></returns>
     public static ITracorBuilder AddFileTracorCollectiveSinkCustom(
         this ITracorBuilder tracorBuilder,
         IConfiguration? configuration = default,
@@ -187,7 +203,12 @@ public static class TracorBuilderExtension {
         return tracorBuilder.AddFileTracorCollectiveSinkServices();
     }
 
-
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorBuilder"></param>
+    /// <param name="configure"></param>
+    /// <returns></returns>
     public static ITracorBuilder AddTracorValidatorService(
         this ITracorBuilder tracorBuilder,
         Action<TracorValidatorServiceOptions>? configure = default) {
@@ -201,6 +222,13 @@ public static class TracorBuilderExtension {
         return tracorBuilder;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorBuilder"></param>
+    /// <param name="configuration"></param>
+    /// <param name="configure"></param>
+    /// <returns></returns>
     public static ITracorBuilder AddTracorCollectiveHttpSink(
         this ITracorBuilder tracorBuilder,
         IConfiguration? configuration,

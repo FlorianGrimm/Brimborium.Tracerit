@@ -2,8 +2,21 @@
 
 namespace Brimborium.Tracerit.Server;
 
+/// <summary>
+/// Service interface for receiving trace data over HTTP.
+/// </summary>
 public interface ITracorCollectorHttpService {
+    /// <summary>
+    /// Converts and pushes trace data from the request body stream.
+    /// </summary>
+    /// <param name="body">The request body stream containing trace data.</param>
+    /// <param name="requestAborted">Cancellation token for the request.</param>
     Task ConvertAndPush(Stream body, CancellationToken requestAborted);
+
+    /// <summary>
+    /// Handles an HTTP POST request containing trace data.
+    /// </summary>
+    /// <param name="httpContext">The HTTP context for the request.</param>
     Task HandlePostAsync(HttpContext httpContext);
 }
 

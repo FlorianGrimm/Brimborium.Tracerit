@@ -1,6 +1,14 @@
 namespace Brimborium.Tracerit.Diagnostics;
 
+/// <summary>
+/// Resolves an ActivitySource from a service provider.
+/// </summary>
 public interface IActivitySourceResolver {
+    /// <summary>
+    /// Resolves the ActivitySource using the specified service provider.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider to use for resolution.</param>
+    /// <returns>The resolved ActivitySource, or null if not available.</returns>
     ActivitySource? Resolve(IServiceProvider serviceProvider);
 }
 

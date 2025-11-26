@@ -1,6 +1,15 @@
 ﻿namespace Brimborium.Tracerit;
 
+/// <summary>
+/// TODO
+/// </summary>
 public static class TracorDataSerialization {
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="options"></param>
+    /// <param name="tracorDataRecordPool"></param>
+    /// <returns></returns>
     public static JsonSerializerOptions AddTracorDataMinimalJsonConverter(
         this JsonSerializerOptions? options,
         TracorDataRecordPool? tracorDataRecordPool
@@ -8,7 +17,7 @@ public static class TracorDataSerialization {
         bool addConverters = options is null;
         var result = options ?? new();
 
-        if (addConverters || result.Converters.Any(c=>c is TracorDataJsonMinimalConverterFactory)) { 
+        if (addConverters || result.Converters.Any(c => c is TracorDataJsonMinimalConverterFactory)) {
             result.Converters.Add(new TracorDataJsonMinimalConverterFactory(tracorDataRecordPool));
         }
         if (addConverters || result.Converters.Any(c => c is TracorDataRecordMinimalJsonConverter)) {
@@ -26,7 +35,12 @@ public static class TracorDataSerialization {
         return result;
     }
 
-
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="json"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
     public static TracorDataRecordCollection DeserializeSimple(
         string json,
         System.Text.Json.JsonSerializerOptions? options = null) {
@@ -41,6 +55,12 @@ public static class TracorDataSerialization {
         return result;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
     public static string SerializeSimple(
         IEnumerable<ITracorData> value,
         System.Text.Json.JsonSerializerOptions? options = null) {
@@ -49,6 +69,11 @@ public static class TracorDataSerialization {
         return json;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="srcList"></param>
+    /// <returns></returns>
     public static TracorDataRecordCollection ToTracorDataRecordCollection(
         List<ITracorData> srcList) {
         TracorDataRecordCollection result = new();
@@ -64,6 +89,11 @@ public static class TracorDataSerialization {
         return result;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="logfile"></param>
+    /// <returns></returns>
     public static Stream? GetReadStream(
         string logfile) {
         var compression = TracorCollectiveFileSink.GetCompressionFromFileName(logfile);
@@ -81,6 +111,15 @@ public static class TracorDataSerialization {
         }
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="logfile"></param>
+    /// <param name="callback"></param>
+    /// <param name="options"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public static async Task DeserializeMinimalJsonlCallbackAsync(
         string logfile,
         Action<TracorDataRecord> callback,

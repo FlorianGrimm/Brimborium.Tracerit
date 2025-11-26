@@ -1,7 +1,19 @@
 ﻿namespace Brimborium.Tracerit;
 
+/// <summary>
+/// Collective sink interface that receives and processes all trace events from multiple sources.
+/// </summary>
 public interface ITracorCollectiveSink {
+    /// <summary>
+    /// Determines if tracing is generally enabled at the configuration level.
+    /// </summary>
+    /// <returns>True if tracing is generally enabled; otherwise, false.</returns>
     bool IsGeneralEnabled();
+
+    /// <summary>
+    /// Determines if tracing is currently enabled and active for processing.
+    /// </summary>
+    /// <returns>True if tracing is currently enabled; otherwise, false.</returns>
     bool IsEnabled();
 
     /// <summary>

@@ -23,12 +23,40 @@ public interface ITracorServiceSink {
     /// <returns>True if tracing is currently enabled; otherwise, false.</returns>
     bool IsCurrentlyEnabled();
 
+    /// <summary>
+    /// Checks if private tracing is enabled for the specified scope and log level.
+    /// </summary>
+    /// <param name="scope">The tracing scope.</param>
+    /// <param name="logLevel">The log level to check.</param>
+    /// <returns>True if private tracing is enabled; otherwise, false.</returns>
     bool IsPrivateEnabled(string scope, LogLevel logLevel);
 
+    /// <summary>
+    /// Checks if public tracing is enabled for the specified scope and log level.
+    /// </summary>
+    /// <param name="scope">The tracing scope.</param>
+    /// <param name="logLevel">The log level to check.</param>
+    /// <returns>True if public tracing is enabled; otherwise, false.</returns>
     bool IsPublicEnabled(string scope, LogLevel logLevel);
 
+    /// <summary>
+    /// Traces a private event with the specified scope, level, message, and value.
+    /// </summary>
+    /// <typeparam name="T">The type of the trace value.</typeparam>
+    /// <param name="scope">The tracing scope.</param>
+    /// <param name="level">The log level.</param>
+    /// <param name="message">The trace message.</param>
+    /// <param name="value">The value to trace.</param>
     void TracePrivate<T>(string scope, LogLevel level, string message, T value);
 
+    /// <summary>
+    /// Traces a public event with the specified scope, level, message, and value.
+    /// </summary>
+    /// <typeparam name="T">The type of the trace value.</typeparam>
+    /// <param name="scope">The tracing scope.</param>
+    /// <param name="level">The log level.</param>
+    /// <param name="message">The trace message.</param>
+    /// <param name="value">The value to trace.</param>
     void TracePublic<T>(string scope, LogLevel level, string message, T value);
 }
 

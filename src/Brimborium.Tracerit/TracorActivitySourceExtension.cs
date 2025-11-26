@@ -5,6 +5,18 @@ namespace System.Diagnostics;
 /// Only one overload, all parameter with default so you can use named parameters.
 /// </summary>
 public static class TracorActivitySourceExtension {
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="that"></param>
+    /// <param name="name"></param>
+    /// <param name="kind"></param>
+    /// <param name="parentContext"></param>
+    /// <param name="tags"></param>
+    /// <param name="links"></param>
+    /// <param name="activityTraceId"></param>
+    /// <param name="startTime"></param>
+    /// <returns></returns>
     public static RestoreRootActivity StartRoot(
         this InstrumentationBase? that,
         [CallerMemberName] string name = "",
@@ -22,6 +34,18 @@ public static class TracorActivitySourceExtension {
         }
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="that"></param>
+    /// <param name="name"></param>
+    /// <param name="kind"></param>
+    /// <param name="parentContext"></param>
+    /// <param name="tags"></param>
+    /// <param name="links"></param>
+    /// <param name="activityTraceId"></param>
+    /// <param name="startTime"></param>
+    /// <returns></returns>
     public static RestoreRootActivity StartRoot(
         this ActivitySource? that,
         [CallerMemberName] string name = "",
@@ -93,7 +117,7 @@ public static class TracorActivitySourceExtension {
         if (that is { ActivitySource: { } activitySource }) {
             if (parentContext is { }) {
                 return activitySource.StartActivity(kind, parentContext, tags, links, startTime, name);
-            } else { 
+            } else {
                 return activitySource.StartActivity(name, kind, parentId, tags, links, startTime);
             }
         } else {

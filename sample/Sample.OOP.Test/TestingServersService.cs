@@ -115,61 +115,112 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
             psi.ArgumentList.Add(pathToCsproj);
             psi.ArgumentList.Add("--");
             psi.ArgumentList.Add("--ParentTestingProcess");
-            psi.ArgumentList.Add(System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
+            psi.ArgumentList.Add(System.Environment.ProcessId.ToString());
 
             var process = System.Diagnostics.Process.Start(psi);
             if (process is null) { throw new Exception("Cannot start process"); }
             if (process.HasExited) { throw new Exception("process died"); }
             this._ProcessRunServerToTest = process;
-
-            bool foundStartingMessage = false;
-            var taskStdOut = process.StandardOutput.ReadLineAsync();
-            var taskStdError = process.StandardError.ReadLineAsync();
-            while (!process.HasExited && !foundStartingMessage) {
-                var task = await Task.WhenAny(taskStdOut, taskStdError);
-                if (ReferenceEquals(task, taskStdOut)) {
-                    var message = await task;
-                    var output = TestContext.Current?.Output;
-                    if (message is { }) {
-                        output?.WriteLine(message);
-                        System.Console.Out.WriteLine(message);
+            
+            //var taskReadStdOutError = Task.Run(async () => { await ReadStdOutError(); });
+            process.OutputDataReceived += (sender, args) => {
+                var message = args.Data;
+                var output = TestContext.Current?.Output;
+                if (message is { }) {
+                    output?.WriteLine(message);
+                    //System.Console.Out.WriteLine(message);
+                }
+                if (message is { Length: > 0 }) {
+                    if (message.Contains("Application started. Press Ctrl+C to shut down.")) {
+                        this._TcsRunningServerToTest.TrySetResult(process);
+                        /*
+                        process.CancelOutputRead();
+                        process.CancelErrorRead();
+                        */
                     }
-                    if (message is { Length: > 0 }) {
-                        if (message.Contains("Application started. Press Ctrl+C to shut down.")) {
-                            this._TcsRunningServerToTest.TrySetResult(process);
-                            // foundStartingMessage = true;
-                        }
-                        if (message.Contains("System.IO.IOException: Failed to bind to address")) {
-                            throw new Exception(message);
-                        }
+                    if (message.Contains("System.IO.IOException: Failed to bind to address")) {
+                        throw new Exception(message);
                     }
+                }
+            };
+            process.ErrorDataReceived += (sender, args) => {
+                var message = args.Data;
+                var output = TestContext.Current?.Output;
+                if (message is { }) {
+                    output?.WriteLine(message);
+                    //System.Console.Out.WriteLine(message);
+                }
+            };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
-                    taskStdOut = process.StandardOutput.ReadLineAsync();
-                } else if (ReferenceEquals(task, taskStdOut)) {
-                    var message = await task;
-                    if (message is { }) {
+            //await taskReadStdOutError;
+            await process.WaitForExitAsync();
+
+#if false
+            async Task ReadStdOutError() {
+                bool foundStartingMessage = false;
+                var taskStdOut = process.StandardOutput.ReadLineAsync();
+                var taskStdError = process.StandardError.ReadLineAsync();
+                while (!process.HasExited && !foundStartingMessage) {
+                    var task = await Task.WhenAny(taskStdOut, taskStdError);
+                    if (ReferenceEquals(task, taskStdOut)) {
+                        var message = await task;
                         var output = TestContext.Current?.Output;
-                        output?.WriteLine(message);
-                        System.Console.Error.WriteLine(message);
+                        if (message is { }) {
+                            output?.WriteLine(message);
+                            System.Console.Out.WriteLine(message);
+                        }
+                        if (message is { Length: > 0 }) {
+                            if (message.Contains("Application started. Press Ctrl+C to shut down.")) {
+                                this._TcsRunningServerToTest.TrySetResult(process);
+                                // foundStartingMessage = true;
+                            }
+                            if (message.Contains("System.IO.IOException: Failed to bind to address")) {
+                                throw new Exception(message);
+                            }
+                        }
+
+                        taskStdOut = process.StandardOutput.ReadLineAsync();
+                    } else if (ReferenceEquals(task, taskStdOut)) {
+                        var message = await task;
+                        if (message is { }) {
+                            var output = TestContext.Current?.Output;
+                            output?.WriteLine(message);
+                            System.Console.Error.WriteLine(message);
+                        }
+                        taskStdError = process.StandardError.ReadLineAsync();
+                    } else {
+                        await task;
                     }
-                    taskStdError = process.StandardError.ReadLineAsync();
-                } else {
-                    await task;
                 }
             }
-            await process.WaitForExitAsync();
+#endif
         } catch (Exception ex) {
             this._TcsRunningServerToTest.TrySetException(ex);
         }
     }
 
     public async Task RunServerForReceiving() {
+        await this.RunServerForReceiving((builder) => {
+            var projectSourceCodeFolder = TestUtility.GetProjectSourceCodeFolder();
+            builder.Configuration.AddJsonFile(
+                path:System.IO.Path.Combine(projectSourceCodeFolder, @"appsettings.json"),
+                optional: false);
+            builder.Configuration.AddJsonFile(
+                path:System.IO.Path.Combine(projectSourceCodeFolder, @"appsettings.Development.json"),
+                optional: false);
+        });
+    }
+
+    public async Task RunServerForReceiving(
+        Action<WebApplicationBuilder> configWebApplicationBuilder
+        ) {
         try {
             var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
-            builder.Configuration.AddJsonFile(@"C:\github\FlorianGrimm\Brimborium.Tracerit-3\sample\Sample.OOP.Test\appsettings.json");
-            builder.Configuration.AddJsonFile(@"C:\github\FlorianGrimm\Brimborium.Tracerit-3\sample\Sample.OOP.Test\appsettings.Development.json");
+            configWebApplicationBuilder(builder);
             builder.Services.AddLogging((loggingBuilder) => {
-                loggingBuilder.AddConsole();
+                loggingBuilder.AddSimpleConsole();
             });
             builder.Services.AddTracor(
                 addEnabledServices: true,

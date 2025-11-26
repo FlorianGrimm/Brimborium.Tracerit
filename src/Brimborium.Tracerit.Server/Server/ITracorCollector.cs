@@ -3,7 +3,7 @@
 namespace Brimborium.Tracerit.Server;
 
 /// <summary>
-/// 
+/// Collector interface for storing and retrieving trace data records.
 /// </summary>
 public interface ITracorCollector {
     /// <summary>

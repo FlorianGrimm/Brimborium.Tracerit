@@ -1,11 +1,22 @@
 ﻿namespace Brimborium.Tracerit;
 
+/// <summary>
+/// TODO
+/// </summary>
 public static partial class ITracorSinkExtension {
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorSink"></param>
+    /// <param name="logLevel"></param>
+    /// <param name="message"></param>
+    /// <param name="scope"></param>
+    /// <returns></returns>
     public static OptionalTracorPrivate GetPrivateTracor(
         this ITracorSink tracorSink,
         LogLevel logLevel,
         string message,
-        [CallerMemberName]string scope=""
+        [CallerMemberName] string scope = ""
         ) {
         if (tracorSink.IsPrivateEnabled(scope, logLevel)) {
             return new(true, scope, logLevel, message, tracorSink);
@@ -14,6 +25,14 @@ public static partial class ITracorSinkExtension {
         }
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="tracorSink"></param>
+    /// <param name="logLevel"></param>
+    /// <param name="message"></param>
+    /// <param name="scope"></param>
+    /// <returns></returns>
     public static OptionalTracorPublic GetPublicTracor(
         this ITracorSink tracorSink,
         LogLevel logLevel,
@@ -28,6 +47,9 @@ public static partial class ITracorSinkExtension {
     }
 }
 
+/// <summary>
+/// TODO
+/// </summary>
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public readonly record struct OptionalTracorPrivate {
     private readonly bool _Enabled;
@@ -36,6 +58,14 @@ public readonly record struct OptionalTracorPrivate {
     private readonly string _Message;
     private readonly ITracorSink _TracorSink;
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="enabled"></param>
+    /// <param name="scope"></param>
+    /// <param name="level"></param>
+    /// <param name="message"></param>
+    /// <param name="tracorSink"></param>
     public OptionalTracorPrivate(
         bool enabled,
         string scope,
@@ -49,8 +79,16 @@ public readonly record struct OptionalTracorPrivate {
         this._TracorSink = tracorSink;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     public bool Enabled => this._Enabled;
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="value"></param>
     public void TracePrivate<T>(T value) {
         if (this._Enabled) {
             this._TracorSink.TracePrivate<T>(this._Scope, this._Level, this._Message, value);
@@ -62,6 +100,9 @@ public readonly record struct OptionalTracorPrivate {
     }
 }
 
+/// <summary>
+/// TODO
+/// </summary>
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public readonly record struct OptionalTracorPublic {
     private readonly bool _Enabled;
@@ -70,6 +111,14 @@ public readonly record struct OptionalTracorPublic {
     private readonly string _Message;
     private readonly ITracorSink _TracorSink;
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="enabled"></param>
+    /// <param name="scope"></param>
+    /// <param name="level"></param>
+    /// <param name="message"></param>
+    /// <param name="tracorSink"></param>
     public OptionalTracorPublic(
         bool enabled,
         string scope,
@@ -83,8 +132,16 @@ public readonly record struct OptionalTracorPublic {
         this._TracorSink = tracorSink;
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     public bool Enabled => this._Enabled;
 
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="value"></param>
     public void TracePublic<T>(T value) {
         if (this._Enabled) {
             this._TracorSink.TracePublic<T>(this._Scope, this._Level, this._Message, value);

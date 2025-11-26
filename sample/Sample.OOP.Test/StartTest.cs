@@ -20,7 +20,6 @@ public class StartTest {
         var expression = new SequenceExpression()
             .Add(
                 Predicate((/*ITracorData*/ tracorData, tracorGlobalState) =>
-                    
                     string.Equals(tracorData.TracorIdentifier.Scope, "Sample.WebApp.Program.PingResult", StringComparison.Ordinal)
                     && tracorGlobalState.TryCopyDateTimeOffsetValue("now", tracorData, "now")
                 ).AsMatch()

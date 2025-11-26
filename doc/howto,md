@@ -1,0 +1,245 @@
+# How to Use Brimborium.Tracerit
+
+This guide explains how to configure and use Brimborium.Tracerit in your application.
+
+## Basic Configuration
+
+### 1. Add Tracor Services
+
+In your `Program.cs`, configure Tracor with the following:
+
+```csharp
+using Brimborium.Tracerit;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Read Tracor configuration from appsettings.json
+var tracorOptions = builder.Configuration.BindTracorOptionsDefault(new());
+var tracorEnabled = tracorOptions.IsEnabled;
+
+// Add Tracor services
+builder.Services.AddTracor(
+    addEnabledServices: tracorEnabled,
+    configureTracor: (tracorOptions) => {
+        tracorOptions.SetOnGetApplicationStopping(
+            static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+    },
+    configureConvert: null,
+    tracorScopedFilterSection: ""
+    )
+    .AddTracorActivityListener(
+        enabled: tracorEnabled,
+        configuration: default,
+        configure: (options) => {
+            // options.AllowAllActivitySource = true;
+        })
+    .AddTracorLogger()
+    .AddFileTracorCollectiveSinkDefault(
+        configuration: builder.Configuration,
+        configure: (fileTracorOptions) => { })
+    .AddTracorCollectiveHttpSink(
+        configuration: builder.Configuration,
+        configure: (tracorHttpSinkOptions) => {
+            // tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
+        });
+
+var app = builder.Build();
+
+// Start the activity listener after building the app
+app.Services.TracorActivityListenerStart();
+```
+
+### 2. Configure appsettings.json
+
+Add the Tracor configuration to your `appsettings.json`:
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    },
+    "PublicTracor": {
+      "Default": "Information"
+    },
+    "PrivateTracor": {
+      "Default": "Information"
+    }
+  },
+  "Tracor": {
+    "IsEnabled": true,
+    "ApplicationName": "MyApplication"
+  }
+}
+```
+
+### 3. Create an Instrumentation Class
+
+Create an instrumentation class for your application:
+
+```csharp
+using Brimborium.Tracerit.Diagnostics;
+
+public class MyAppInstrumentation : InstrumentationBase {
+    internal const string ActivitySourceName = "myapp";
+    internal const string ActivitySourceVersion = "1.0.0";
+
+    public MyAppInstrumentation()
+        : base(ActivitySourceName, ActivitySourceVersion) {
+    }
+}
+```
+
+Register the instrumentation:
+
+```csharp
+builder.Services.AddTracor(...)
+    .AddTracorInstrumentation<MyAppInstrumentation>()
+```
+
+## Using ITracorSink
+
+Inject `ITracorSink<T>` to trace data in your services:
+
+```csharp
+public class MyService {
+    private readonly ITracorSink<MyService> _tracor;
+
+    public MyService(ITracorSink<MyService> tracor) {
+        _tracor = tracor;
+    }
+
+    public void DoWork() {
+        // Check if tracing is enabled before creating trace data
+        if (_tracor.GetPrivateTracor(LogLevel.Information, "work") is { Enabled: true } tracorEnabled) {
+            tracorEnabled.TracePrivate(new { Step = "Started", Time = DateTime.UtcNow });
+        }
+
+        // Or use the simpler pattern:
+        _tracor.GetPrivateTracor(LogLevel.Information, "work").TracePrivate(myData);
+    }
+}
+```
+
+### Private vs Public Tracing
+
+- **Private Tracing**: Internal data for debugging (may contain sensitive information)
+- **Public Tracing**: Data safe to expose externally
+
+```csharp
+// Private - internal debugging data
+_tracor.TracePrivate(scope: "action", LogLevel.Debug, "details", sensitiveData);
+
+// Public - safe to expose
+_tracor.TracePublic(scope: "action", LogLevel.Information, "result", publicData);
+```
+
+## Test Configuration
+
+For testing scenarios, configure Tracor with enabled services and validation:
+
+```csharp
+builder.Services.AddTracor(
+    addEnabledServices: true,
+    configureTracor: default,
+    configureConvert: default)
+    .AddTracorActivityListener(true, null, (options) => {
+        options.AllowAllActivitySource = true;
+    })
+    .AddTracorLogger((options) => {
+        options.LogLevel = LogLevel.Trace;
+    });
+```
+
+### Test appsettings.json
+
+For tests, configure detailed logging:
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Trace",
+      "Microsoft.AspNetCore": "Trace"
+    },
+    "Tracor": {
+      "LogLevel": {
+        "Default": "Trace",
+        "Microsoft.AspNetCore": "Warning"
+      }
+    }
+  }
+}
+```
+
+### Using TracorValidator in Tests
+
+Use the `ITracorValidator` to verify expected trace sequences:
+
+```csharp
+using (var validatorPath = tracorValidator.Add(
+    new FilterExpression(
+        "",
+        Wrap((LoggerTracorData data) => {
+            // Capture trace data
+            capturedData.Add(data);
+            return true;
+        }).Predicate(),
+        [
+            new SequenceExpression()
+            + Wrap(static (LoggerTracorData data) => {
+                return data.DoesMatch("MyScope", "ExpectedMessage");
+            }).PredicateTracorData().AsMatch()
+        ]
+    ))) {
+
+    // Run your test code
+    await myService.DoWork();
+
+    // Wait for expected traces
+    await validatorPath.GetFinishedAsync(null, TimeSpan.FromSeconds(10));
+}
+```
+
+## File Sink Configuration
+
+Configure file-based trace output:
+
+```csharp
+.AddFileTracorCollectiveSinkDefault(
+    configuration: builder.Configuration,
+    configure: (options) => {
+        // options.OutputPath = "logs/traces";
+        // options.MaxFileSize = 10_000_000;
+    })
+```
+
+## HTTP Sink Configuration
+
+Send traces to a remote collector:
+
+```csharp
+.AddTracorCollectiveHttpSink(
+    configuration: builder.Configuration,
+    configure: (options) => {
+        options.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
+    })
+```
+
+## OpenTelemetry Integration
+
+Tracor can work alongside OpenTelemetry:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(serviceName: "myapp", serviceVersion: "1.0.0"))
+    .WithTracing(tracing => tracing
+        .AddSource("myapp")
+        .AddAspNetCoreInstrumentation()
+        .AddOtlpExporter());
+
+// Add Tracor after OpenTelemetry
+builder.Services.AddTracor(...)
+    .AddTracorActivityListener(enabled: true, ...);
+```

@@ -18,6 +18,10 @@ new pbr::GeneratedClrTypeInfo(
     }, new[]{ "Value" }, null, null, null),
 */
 
+/// <summary>
+/// Represents a property in trace data, including its name, type, and value.
+/// Supports multiple value types: String, Integer, Boolean, Enum, Level, Double, DateTime, DateTimeOffset, Duration, Uuid, and Any.
+/// </summary>
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public partial struct TracorDataProperty : IEquatable<TracorDataProperty> {
     private TracorDataPropertyTypeValue _TypeValue;

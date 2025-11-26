@@ -1,32 +1,75 @@
 ﻿#pragma warning disable IDE0041 // Use 'is null' check
 
-using System.Net.Quic;
-
 namespace Brimborium.Tracerit.Utility;
 
+/// <summary>
+/// Interface for reference-counted poolable objects. Implements IDisposable for automatic pool return.
+/// </summary>
 public interface IReferenceCountObject : IDisposable {
+    /// <summary>
+    /// Increments the reference count (for sharing ownership).
+    /// </summary>
     void IncrementReferenceCount();
+
+    /// <summary>
+    /// Prepares the object for rent by resetting count to 1. Returns false if not ready.
+    /// </summary>
     bool PrepareRent();
+
+    /// <summary>
+    /// Returns current reference count, or 0 if ready to return to pool, or MaxValue if state not reset.
+    /// </summary>
     long CanBeReturned();
 }
 
+/// <summary>
+/// Generic interface for reference-counted objects wrapping a value of type T.
+/// </summary>
+/// <typeparam name="T">The type of wrapped value.</typeparam>
 public interface IReferenceCountObject<T> {
+    /// <summary>
+    /// Gets the wrapped value. Throws ObjectDisposedException if disposed.
+    /// </summary>
     T GetValue();
+
+    /// <summary>
+    /// Sets the wrapped value. Can only be set once after rent.
+    /// </summary>
     void SetValue(T value);
 }
 
+/// <summary>
+/// Base interface for object pools that accept reference-counted objects.
+/// </summary>
 public interface IReferenceCountPool {
+    /// <summary>
+    /// Returns an object to the pool (called automatically when reference count reaches 0).
+    /// </summary>
     void Return(IReferenceCountObject value);
 }
+
+/// <summary>
+/// Generic pool interface for renting reference-counted objects.
+/// </summary>
+/// <typeparam name="T">The type of poolable object.</typeparam>
 public interface IReferenceCountPool<T> : IReferenceCountPool {
+    /// <summary>
+    /// Rents an object from the pool. Creates new if pool is empty.
+    /// </summary>
     T Rent();
 }
 
+/// <summary>
+/// Abstract base class for reference-counted poolable objects. Starts with count=1, returns to pool when count=0.
+/// </summary>
 public abstract class ReferenceCountObject
     : IReferenceCountObject {
     private long _ReferenceCount;
     private readonly IReferenceCountPool? _Owner;
 
+    /// <summary>
+    /// Initializes with reference count 1 and optional owning pool.
+    /// </summary>
     protected ReferenceCountObject(IReferenceCountPool? owner) {
         this._ReferenceCount = 1;
         this._Owner = owner;
@@ -70,14 +113,24 @@ public abstract class ReferenceCountObject
     }
 }
 
+/// <summary>
+/// Generic reference-counted object that wraps a value of type T.
+/// </summary>
+/// <typeparam name="T">The type of wrapped value (must be a class).</typeparam>
 public abstract class ReferenceCountObject<T>
     : ReferenceCountObject, IReferenceCountObject<T>
     where T : class {
     protected T? _Value;
 
+    /// <summary>
+    /// Initializes with optional owning pool.
+    /// </summary>
     protected ReferenceCountObject(IReferenceCountPool? owner) : base(owner) {
     }
 
+    /// <summary>
+    /// Gets the wrapped value. Throws if disposed.
+    /// </summary>
     public T GetValue() => this._Value ?? throw new ObjectDisposedException(this.GetType().Name);
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -95,11 +148,15 @@ public abstract class ReferenceCountObject<T>
         this._Value = null;
     }
 }
+
+/// <summary>
+/// Thread-safe object pool using lock-free operations. Uses a ring buffer with quick slot for fast rent/return.
+/// </summary>
+/// <typeparam name="T">The poolable object type (must implement IReferenceCountObject).</typeparam>
 public abstract class ReferenceCountPool<T>
     : IReferenceCountPool<T>
     where T : class, IReferenceCountObject {
     public const int DefaultMaxPoolSize = 2048;
-    //public static LoggerTracorDataSharedPool Current = new(DefaultMaxPoolSize);
 
     public readonly int Capacity;
     private readonly T?[] _Pool;
@@ -107,15 +164,24 @@ public abstract class ReferenceCountPool<T>
     private long _ReturnIndex;
     private T? _Quick;
 
+    /// <summary>
+    /// Creates a pool with specified capacity (defaults to 2048).
+    /// </summary>
     public ReferenceCountPool(int capacity = 0) {
         this.Capacity = 0 < capacity ? capacity : DefaultMaxPoolSize;
         this._Pool = new T?[this.Capacity];
     }
 
+    /// <summary>
+    /// Gets the approximate count of objects in the pool.
+    /// </summary>
     public int Count => (int)(Volatile.Read(ref this._ReturnIndex) - Volatile.Read(ref this._RentIndex));
 
+    /// <summary>
+    /// Rents an object from pool. Returns from quick slot or ring buffer, creates new if empty.
+    /// </summary>
     public T Rent() {
-        var quick = System.Threading.Interlocked.Exchange(ref this._Quick, null);
+        var quick = Interlocked.Exchange(ref this._Quick, null);
         if (quick is not null) {
             quick.IncrementReferenceCount();
             return quick;
@@ -156,8 +222,14 @@ public abstract class ReferenceCountPool<T>
         }
     }
 
+    /// <summary>
+    /// Factory method to create new poolable objects. Must pass 'this' as owner.
+    /// </summary>
     protected abstract T Create();
 
+    /// <summary>
+    /// Returns an object to pool. Validates readiness, tries quick slot first, then ring buffer.
+    /// </summary>
     public void Return(IReferenceCountObject value) {
         if (value is not T valueT) {
             return;
@@ -170,7 +242,7 @@ public abstract class ReferenceCountPool<T>
         }
 
         if (ReferenceEquals(
-            System.Threading.Interlocked.CompareExchange(ref this._Quick, valueT, null),
+            Interlocked.CompareExchange(ref this._Quick, valueT, null),
             null)) {
             return;
         }

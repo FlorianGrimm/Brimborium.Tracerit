@@ -85,45 +85,98 @@ public static partial class TracorExtension {
         [CallerArgumentExpression(nameof(fn))] string? doNotPopulateThisValue = null)
         => new(fn, doNotPopulateThisValue);
 
+    /// <summary>
+    /// Wraps a function with three parameters and caller expression information for use in Tracor expressions.
+    /// </summary>
+    /// <typeparam name="T1">The first input type of the function.</typeparam>
+    /// <typeparam name="T2">The second input type of the function.</typeparam>
+    /// <typeparam name="T3">The third input type of the function.</typeparam>
+    /// <typeparam name="TResult">The return type of the function.</typeparam>
+    /// <param name="fn">The function to wrap.</param>
+    /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
+    /// <returns>A wrapped function with expression information.</returns>
     public static WrapFunc<T1, T2, T3, TResult> Wrap<T1, T2, T3, TResult>(
         Func<T1, T2, T3, TResult> fn,
         [CallerArgumentExpression(nameof(fn))] string? doNotPopulateThisValue = null)
         => new(fn, doNotPopulateThisValue);
-
 }
 
 public static partial class TracorExtension {
+    /// <summary>
+    /// Creates a predicate condition from a wrapped function that evaluates trace data.
+    /// </summary>
+    /// <param name="fnCondition">The wrapped function that evaluates trace data and returns a boolean.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         this WrapFunc<ITracorData, bool> fnCondition
     ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
 
+    /// <summary>
+    /// Creates a predicate condition from a wrapped function that evaluates trace data with detailed result.
+    /// </summary>
+    /// <param name="fnCondition">The wrapped function that evaluates trace data and returns a validation result.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         this WrapFunc<ITracorData, TracorValidatorOnTraceResult> fnCondition
         ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
 
+    /// <summary>
+    /// Creates a predicate condition from a function that evaluates trace data.
+    /// </summary>
+    /// <param name="fnCondition">The function that evaluates trace data and returns a boolean.</param>
+    /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         Func<ITracorData, bool> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
         ) => new PredicateCondition(fnCondition, doNotPopulateThisValue);
 
+    /// <summary>
+    /// Creates a predicate condition from a function that evaluates trace data with detailed result.
+    /// </summary>
+    /// <param name="fnCondition">The function that evaluates trace data and returns a validation result.</param>
+    /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         Func<ITracorData, TracorValidatorOnTraceResult> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
         ) => new PredicateCondition(fnCondition, doNotPopulateThisValue);
 
+    /// <summary>
+    /// Creates a predicate condition from a wrapped function that evaluates trace data with global state.
+    /// </summary>
+    /// <param name="fnCondition">The wrapped function that evaluates trace data and global state, returning a boolean.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         this WrapFunc<ITracorData, TracorGlobalState, bool> fnCondition
         ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
 
+    /// <summary>
+    /// Creates a predicate condition from a wrapped function that evaluates trace data with global state and detailed result.
+    /// </summary>
+    /// <param name="fnCondition">The wrapped function that evaluates trace data and global state, returning a validation result.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         this WrapFunc<ITracorData, TracorGlobalState, TracorValidatorOnTraceResult> fnCondition
         ) => new PredicateCondition(fnCondition.Value, fnCondition.ValueDisplay);
 
+    /// <summary>
+    /// Creates a predicate condition from a function that evaluates trace data with global state.
+    /// </summary>
+    /// <param name="fnCondition">The function that evaluates trace data and global state, returning a boolean.</param>
+    /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         Func<ITracorData, TracorGlobalState, bool> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
         ) => new PredicateCondition(fnCondition, doNotPopulateThisValue);
 
+    /// <summary>
+    /// Creates a predicate condition from a function that evaluates trace data with global state and detailed result.
+    /// </summary>
+    /// <param name="fnCondition">The function that evaluates trace data and global state, returning a validation result.</param>
+    /// <param name="doNotPopulateThisValue">Automatically populated with the function expression string.</param>
+    /// <returns>A predicate condition for use in validator expressions.</returns>
     public static PredicateCondition Predicate(
         Func<ITracorData, TracorGlobalState, TracorValidatorOnTraceResult> fnCondition,
         [CallerArgumentExpression(nameof(fnCondition))] string? doNotPopulateThisValue = null
@@ -192,6 +245,14 @@ public static partial class TracorExtension {
 
 public static partial class TracorExtension {
 
+    /// <summary>
+    /// Creates a match expression that tests trace data against a typed condition.
+    /// </summary>
+    /// <typeparam name="TValue">The type of value being matched.</typeparam>
+    /// <param name="expressionCondition">The condition to evaluate against trace data.</param>
+    /// <param name="label">An optional label for identifying this match in validation results.</param>
+    /// <param name="listChild">Child expressions to evaluate when this condition matches.</param>
+    /// <returns>A validator expression representing the match condition.</returns>
     public static IValidatorExpression Match<TValue>(
         IExpressionCondition<TValue> expressionCondition,
         string? label = default,
@@ -203,6 +264,13 @@ public static partial class TracorExtension {
             listChild: listChild);
     }
 
+    /// <summary>
+    /// Creates a match expression that tests trace data against a condition.
+    /// </summary>
+    /// <param name="expressionCondition">The condition to evaluate against trace data.</param>
+    /// <param name="label">An optional label for identifying this match in validation results.</param>
+    /// <param name="listChild">Child expressions to evaluate when this condition matches.</param>
+    /// <returns>A validator expression representing the match condition.</returns>
     public static IValidatorExpression Match(
         IExpressionCondition expressionCondition,
         string? label = default,
@@ -213,6 +281,13 @@ public static partial class TracorExtension {
             listChild: listChild);
     }
 
+    /// <summary>
+    /// Creates a filter expression from a condition that filters trace data before processing.
+    /// </summary>
+    /// <param name="condition">The condition to filter trace data.</param>
+    /// <param name="label">An optional label for identifying this filter in validation results.</param>
+    /// <param name="listChild">Child expressions to evaluate for trace data that passes the filter.</param>
+    /// <returns>A filter expression for use in validators.</returns>
     public static FilterExpression FilterExpression(
         this IExpressionCondition condition,
         string? label = default,
@@ -220,6 +295,13 @@ public static partial class TracorExtension {
         return new(label, condition, listChild);
     }
 
+    /// <summary>
+    /// Creates a filter expression that filters trace data before processing.
+    /// </summary>
+    /// <param name="condition">The condition to filter trace data.</param>
+    /// <param name="label">An optional label for identifying this filter in validation results.</param>
+    /// <param name="listChild">Child expressions to evaluate for trace data that passes the filter.</param>
+    /// <returns>A filter expression for use in validators.</returns>
     public static FilterExpression Filter(
         IExpressionCondition condition,
         string? label = default,
@@ -228,8 +310,15 @@ public static partial class TracorExtension {
     }
 }
 
+#if false
 public static partial class TracorExtension {
 
+    /// <summary>
+    /// Sets a property value in the dictionary, using the property name as the key.
+    /// </summary>
+    /// <param name="that">The dictionary to add the property to.</param>
+    /// <param name="property">The property to add or update in the dictionary.</param>
+    /// <returns>The dictionary for fluent chaining.</returns>
     public static Dictionary<string, TracorDataProperty> SetValue(
         this Dictionary<string, TracorDataProperty> that,
         TracorDataProperty property) {
@@ -237,3 +326,4 @@ public static partial class TracorExtension {
         return that;
     }
 }
+#endif

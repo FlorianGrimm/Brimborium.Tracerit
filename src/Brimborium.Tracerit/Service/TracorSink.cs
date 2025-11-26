@@ -3,7 +3,8 @@
 namespace Brimborium.Tracerit.Service;
 
 /// <summary>
-/// ITracorSink bound to baseScope
+/// Category-scoped tracing service bound to a base scope string.
+/// Routes trace events (private/public) through the <see cref="ITracorServiceSink"/>.
 /// </summary>
 public sealed class TracorSink : ITracorSink {
     private readonly string _BaseScope;
@@ -86,9 +87,11 @@ public sealed class TracorSink : ITracorSink {
 }
 
 /// <summary>
-/// ITracorSink bound to baseScope
+/// Generic category-scoped tracing service bound to a type-derived base scope.
+/// The base scope is derived from the <typeparamref name="TCategoryName"/> type name.
+/// Routes trace events (private/public) through the <see cref="ITracorServiceSink"/>.
 /// </summary>
-/// <typeparam name="TCategoryName">the source for the baseScope</typeparam>
+/// <typeparam name="TCategoryName">The type used to derive the base scope name.</typeparam>
 public sealed class TracorSink<TCategoryName> : ITracorSink<TCategoryName> {
     private readonly string _BaseScope;
     private readonly ITracorServiceSink _TracorServiceSink;

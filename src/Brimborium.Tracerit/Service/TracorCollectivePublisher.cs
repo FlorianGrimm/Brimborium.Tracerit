@@ -1,6 +1,10 @@
 ﻿
 namespace Brimborium.Tracerit.Service;
 
+/// <summary>
+/// Publisher service that manages multiple subscribed sinks and distributes trace events to all of them.
+/// Implements the pub/sub pattern for trace data distribution.
+/// </summary>
 public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     private readonly Lock _LockWrite = new();
     private readonly TracorEmergencyLogging _TracorEmergencyLogging;
@@ -8,6 +12,11 @@ public sealed class TracorCollectivePublisher : ITracorCollectivePublisher {
     // is treated as immutable - no need to Lock when reading
     private ITracorCollectiveSink[] _ListSubscribedSinks = [];
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TracorCollectivePublisher"/> class with the specified sinks.
+    /// </summary>
+    /// <param name="listSinks">The initial collection of sinks to subscribe.</param>
+    /// <param name="tracorEmergencyLogging">The emergency logging service for diagnostics.</param>
     public TracorCollectivePublisher(
         IEnumerable<ITracorCollectiveSink> listSinks,
         TracorEmergencyLogging tracorEmergencyLogging

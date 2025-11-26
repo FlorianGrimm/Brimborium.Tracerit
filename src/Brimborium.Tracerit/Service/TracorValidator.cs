@@ -1,5 +1,10 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
+/// <summary>
+/// Validates trace data against defined expressions and manages validation paths.
+/// Used primarily for testing scenarios to verify expected trace sequences.
+/// Also implements <see cref="ITracorCollectiveSink"/> to receive trace events.
+/// </summary>
 public sealed class TracorValidator : ITracorValidator {
     private ImmutableArray<ITracorValidatorPath> _ListValidatorPath = ImmutableArray<ITracorValidatorPath>.Empty;
     private readonly Lock _LockListTracorStepPath = new();
@@ -8,6 +13,11 @@ public sealed class TracorValidator : ITracorValidator {
     private ILogger? _LoggerCondition;
     private LoggerUtility? _LoggerUtility;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TracorValidator"/> class.
+    /// </summary>
+    /// <param name="tracorDataRecordPool">The pool for trace data records.</param>
+    /// <param name="loggerFactory">The logger factory for creating condition loggers.</param>
     [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
     public TracorValidator(
         TracorDataRecordPool tracorDataRecordPool,
@@ -16,12 +26,15 @@ public sealed class TracorValidator : ITracorValidator {
         this._LoggerFactory = loggerFactory;
     }
 
+    /// <inheritdoc />
     public bool IsGeneralEnabled() => true;
 
+    /// <inheritdoc />
     public bool IsEnabled() {
         return 0 < this._ListValidatorPath.Length;
     }
 
+    /// <inheritdoc />
     public ITracorValidatorPath? GetExisting(IValidatorExpression step) {
         foreach (var validatorPath in this._ListValidatorPath) {
             if (ReferenceEquals(step, validatorPath.Step)) {
@@ -31,6 +44,7 @@ public sealed class TracorValidator : ITracorValidator {
         return default;
     }
 
+    /// <inheritdoc />
     public ITracorValidatorPath Add(IValidatorExpression step, List<TracorDataProperty>? globalState = default) {
         if (this._LoggerCondition is null || this._LoggerUtility is null) {
             this._LoggerCondition ??= this._LoggerFactory.CreateLogger(typeof(AlwaysCondition).Namespace!);
@@ -64,6 +78,7 @@ public sealed class TracorValidator : ITracorValidator {
         }
     }
 
+    /// <inheritdoc />
     public void OnTrace(bool isPublic, ITracorData tracorData) {
         // no need for checking isPublic
         foreach (var validatorPath in this._ListValidatorPath) {

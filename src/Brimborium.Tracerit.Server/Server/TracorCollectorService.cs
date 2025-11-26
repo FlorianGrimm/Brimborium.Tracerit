@@ -2,11 +2,21 @@
 
 namespace Brimborium.Tracerit.Server;
 
+/// <summary>
+/// Configuration options for the <see cref="TracorCollectorService"/>.
+/// </summary>
 public sealed class TracorCollectorOptions {
+    /// <summary>
+    /// Gets or sets the maximum capacity of trace records to store. Default is 2048.
+    /// </summary>
     public int Capacity { get; set; } = 2048;
 }
 
-public sealed class TracorCollectorService : ITracorCollector { 
+/// <summary>
+/// Collector service for storing and retrieving trace data records.
+/// Maintains a bounded queue of trace records with support for partial retrieval by named clients.
+/// </summary>
+public sealed class TracorCollectorService : ITracorCollector {
     private readonly Lock _Lock = new();
     private readonly int _Capacity;
 
