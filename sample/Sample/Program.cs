@@ -1,15 +1,7 @@
-using Brimborium.Tracerit;
-using Brimborium.Tracerit.Filter;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using OpenTelemetry;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using Sample.WebApp;
-using System.Runtime.CompilerServices;
+// MIT - Florian Grimm
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.Test")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("SampleForTesting")]
 
 namespace Sample.WebApp;
 

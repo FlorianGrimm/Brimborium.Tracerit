@@ -14,10 +14,11 @@ using Microsoft.Extensions.Logging;
 namespace Sample.WebApp;
 
 public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IAsyncDisposable {
-    private readonly TaskCompletionSource<Process> _TcsRunningServerToTest = new();
+    private record ProcessServerToTest(Process Process, bool Own);
+    private readonly TaskCompletionSource<ProcessServerToTest> _TcsRunningServerToTest = new();
     private Task _TaskRunServerToTest = Task.CompletedTask;
     private Task _TaskRunServerForReceiving = Task.CompletedTask;
-    private Process? _ProcessRunServerToTest;
+    private ProcessServerToTest? _ProcessRunServerToTest;
 
     private WebApplication? _AppServerForReceiving;
     private readonly TaskCompletionSource<WebApplication> _TcsServerForReceiving = new();
@@ -75,9 +76,9 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
 
 
     public bool IsRunning() {
-        if (this._ProcessRunServerToTest is null) { return false; }
+        if (this._ProcessRunServerToTest?.Process is null) { return false; }
         if (!this._TcsRunningServerToTest.Task.IsCompleted) { return false; }
-        if (this._ProcessRunServerToTest.HasExited) { return false; }
+        if (this._ProcessRunServerToTest.Process.HasExited) { return false; }
         if (this._TaskRunServerToTest.IsCompleted) { return false; }
         return true;
     }
@@ -86,7 +87,7 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
         if (this._ProcessRunServerToTest is not { } process) { return; }
 
         this._ProcessRunServerToTest = null;
-        process.Kill();
+        process.Process.Kill();
 
         await this._TaskRunServerToTest.ConfigureAwait(false);
 
@@ -100,63 +101,69 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
 
     public async Task RunServerToTest(string pathToCsproj) {
         try {
-            await Assert.That(System.IO.File.Exists(pathToCsproj)).IsTrue().Because(pathToCsproj);
-            System.Diagnostics.ProcessStartInfo psi = new() {
-                FileName = @"C:\Program Files\dotnet\dotnet.exe",
-                WorkingDirectory = System.IO.Path.GetDirectoryName(pathToCsproj),
-                UseShellExecute = false,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-            psi.ArgumentList.Add("run");
-            psi.ArgumentList.Add("--no-build"); // this has an dependency to it
-            psi.ArgumentList.Add("--project");
-            psi.ArgumentList.Add(pathToCsproj);
-            psi.ArgumentList.Add("--");
-            psi.ArgumentList.Add("--ParentTestingProcess");
-            psi.ArgumentList.Add(System.Environment.ProcessId.ToString());
+            var listProcess = System.Diagnostics.Process.GetProcessesByName("SampleForTesting");
+            if (listProcess is { Length: > 0 }) {
+                // already running
+                this._TcsRunningServerToTest.SetResult(new(listProcess[0], false));
+            } else {
 
-            var process = System.Diagnostics.Process.Start(psi);
-            if (process is null) { throw new Exception("Cannot start process"); }
-            if (process.HasExited) { throw new Exception("process died"); }
-            this._ProcessRunServerToTest = process;
-            
-            //var taskReadStdOutError = Task.Run(async () => { await ReadStdOutError(); });
-            process.OutputDataReceived += (sender, args) => {
-                var message = args.Data;
-                var output = TestContext.Current?.Output;
-                if (message is { }) {
-                    output?.WriteLine(message);
-                    //System.Console.Out.WriteLine(message);
-                }
-                if (message is { Length: > 0 }) {
-                    if (message.Contains("Application started. Press Ctrl+C to shut down.")) {
-                        this._TcsRunningServerToTest.TrySetResult(process);
-                        /*
-                        process.CancelOutputRead();
-                        process.CancelErrorRead();
-                        */
+                await Assert.That(System.IO.File.Exists(pathToCsproj)).IsTrue().Because(pathToCsproj);
+                System.Diagnostics.ProcessStartInfo psi = new() {
+                    FileName = @"C:\Program Files\dotnet\dotnet.exe",
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(pathToCsproj),
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                };
+                psi.ArgumentList.Add("run");
+                psi.ArgumentList.Add("--no-build"); // this has an dependency to it
+                psi.ArgumentList.Add("--project");
+                psi.ArgumentList.Add(pathToCsproj);
+                psi.ArgumentList.Add("--");
+                psi.ArgumentList.Add("--ParentTestingProcess");
+                psi.ArgumentList.Add(System.Environment.ProcessId.ToString());
+
+                var process = System.Diagnostics.Process.Start(psi);
+                if (process is null) { throw new Exception("Cannot start process"); }
+                if (process.HasExited) { throw new Exception("process died"); }
+                this._ProcessRunServerToTest = new(process,true);
+
+                //var taskReadStdOutError = Task.Run(async () => { await ReadStdOutError(); });
+                process.OutputDataReceived += (sender, args) => {
+                    var message = args.Data;
+                    var output = TestContext.Current?.Output;
+                    if (message is { }) {
+                        output?.WriteLine(message);
+                        //System.Console.Out.WriteLine(message);
                     }
-                    if (message.Contains("System.IO.IOException: Failed to bind to address")) {
-                        throw new Exception(message);
+                    if (message is { Length: > 0 }) {
+                        if (message.Contains("Application started. Press Ctrl+C to shut down.")) {
+                            this._TcsRunningServerToTest.TrySetResult(new(process, true));
+                            /*
+                            process.CancelOutputRead();
+                            process.CancelErrorRead();
+                            */
+                        }
+                        if (message.Contains("System.IO.IOException: Failed to bind to address")) {
+                            throw new Exception(message);
+                        }
                     }
-                }
-            };
-            process.ErrorDataReceived += (sender, args) => {
-                var message = args.Data;
-                var output = TestContext.Current?.Output;
-                if (message is { }) {
-                    output?.WriteLine(message);
-                    //System.Console.Out.WriteLine(message);
-                }
-            };
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+                };
+                process.ErrorDataReceived += (sender, args) => {
+                    var message = args.Data;
+                    var output = TestContext.Current?.Output;
+                    if (message is { }) {
+                        output?.WriteLine(message);
+                        //System.Console.Out.WriteLine(message);
+                    }
+                };
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-            //await taskReadStdOutError;
-            await process.WaitForExitAsync();
-
+                //await taskReadStdOutError;
+                await process.WaitForExitAsync();
+            }
 #if false
             async Task ReadStdOutError() {
                 bool foundStartingMessage = false;
