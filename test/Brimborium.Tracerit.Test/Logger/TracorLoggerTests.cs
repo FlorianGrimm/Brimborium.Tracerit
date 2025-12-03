@@ -17,7 +17,10 @@ public class TracorLoggerTests {
     [Test]
     public async Task TracorValidatorSimpleTest() {
         var serviceCollection = new ServiceCollection();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         serviceCollection.AddLogging(loggingBuilder => {
             loggingBuilder.AddTracorLogger();
         });

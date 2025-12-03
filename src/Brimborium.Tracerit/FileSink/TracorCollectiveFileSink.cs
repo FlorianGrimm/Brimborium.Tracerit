@@ -126,6 +126,15 @@ public sealed class TracorCollectiveFileSink
         {
             if (baseDirectory is { Length: > 0 }) {
                 baseDirectoryNormalized = baseDirectory.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar);
+                if (!System.IO.Path.IsPathFullyQualified(baseDirectoryNormalized)) {
+                    baseDirectoryNormalized = System.IO.Path.GetFullPath(
+                            System.IO.Path.Combine(
+                                System.AppContext.BaseDirectory,
+                                baseDirectoryNormalized.TrimStart(System.IO.Path.DirectorySeparatorChar
+                            )
+                        )
+                    );
+                }
                 if (System.IO.Directory.Exists(baseDirectoryNormalized)) {
                     // ok
                 } else {

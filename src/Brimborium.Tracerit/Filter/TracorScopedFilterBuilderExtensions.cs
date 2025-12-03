@@ -44,7 +44,7 @@ public static class TracorScopedFilterBuilderExtensions {
     /// <param name="builder">The <see cref="ITracorScopedFilterBuilder"/> to register services on.</param>
     public static void AddTracorScopedFilterConfiguration(
         this ITracorScopedFilterBuilder builder,
-        string tracorScopedFilterSection = "") {
+        string tracorScopedFilterSection) {
         builder.Services.TryAddSingleton<ITracorScopedFilterConfigurationFactory, TracorScopedFilterSourceConfigurationFactory>();
         builder.Services.TryAddSingleton(typeof(ITracorScopedFilterSourceConfiguration<>), typeof(TracorScopedFilterSourceConfiguration<>));
 
@@ -69,7 +69,7 @@ public static class TracorScopedFilterBuilderExtensions {
     /// <param name="configuration">The <see cref="IConfiguration" /> to add.</param>
     /// <returns>The builder.</returns>
     public static ITracorScopedFilterBuilder AddTracorScopedFilterConfiguration(this ITracorScopedFilterBuilder builder, IConfiguration configuration) {
-        builder.AddTracorScopedFilterConfiguration();
+        builder.AddTracorScopedFilterConfiguration(string.Empty);
 
         builder.Services.AddSingleton<IConfigureOptions<TracorScopedFilterOptions>>(new TracorScopedFilterConfigureOptions(configuration));
         builder.Services.AddSingleton<IOptionsChangeTokenSource<TracorScopedFilterOptions>>(new ConfigurationChangeTokenSource<TracorScopedFilterOptions>(configuration));

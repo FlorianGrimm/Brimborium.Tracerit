@@ -7,16 +7,16 @@
 /// singleton
 /// </remarks>
 public class UIEndpoints : IController {
-    private readonly ITracorCollector _TracorCollector;
+    private readonly ITracorServerCollectorReadAndWrite _TracorCollector;
     private readonly TracorMemoryPoolManager _MemoryPoolManager;
-    private readonly LogFileService _LogFileService;
+    private readonly IReadLogFileService _LogFileService;
     private readonly JsonSerializerOptions _JsonSerializerOptions;
 
     public UIEndpoints(
-        ITracorCollector tracorCollector,
+        ITracorServerCollectorReadAndWrite tracorCollector,
         TracorMemoryPoolManager memoryPoolManager,
         TracorDataRecordPool tracorDataRecordPool,
-        LogFileService logFileService) {
+        IReadLogFileService logFileService) {
         this._TracorCollector = tracorCollector;
         this._MemoryPoolManager = memoryPoolManager;
         this._LogFileService = logFileService;
@@ -38,6 +38,7 @@ public class UIEndpoints : IController {
         }).AllowAnonymous();
 
         group.MapGet("/File/{name}", (string name) => {
+            var nameNormalize = name.TrimStart('\\', '/');
             var result = this._LogFileService.FileContentRead(name);
             if (result is ResponseSuccessful<FileContentReadResponse> { Result: { } responseResult }) {
                 return TypedResults.PhysicalFile(
@@ -58,7 +59,7 @@ public class UIEndpoints : IController {
     }
 
     public IResult GetCurrentStream(string? name) {
-        ITracorCollector tracorCollector = this._TracorCollector;
+        ITracorServerCollectorReadAndWrite tracorCollector = this._TracorCollector;
         TracorMemoryPoolManager memoryPoolManager = this._MemoryPoolManager;
         JsonSerializerOptions jsonSerializerOptions = this._JsonSerializerOptions;
 

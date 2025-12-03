@@ -2,17 +2,13 @@
 
 namespace Brimborium.Tracerit.Server;
 
-public sealed class TracorCollectorToPublisherService : ITracorCollector {
+public sealed class TracorServerCollectorToPublisherService : ITracorServerCollectorWrite {
     private readonly ITracorCollectivePublisher _TracorCollectivePublisher;
 
-    public TracorCollectorToPublisherService(
+    public TracorServerCollectorToPublisherService(
         ITracorCollectivePublisher tracorCollectivePublisher
         ) {
         this._TracorCollectivePublisher = tracorCollectivePublisher;
-    }
-
-    public TracorDataCollection GetListTracorDataRecord(string? name) {
-        throw new NotSupportedException();
     }
 
     public void Push(TracorDataRecord tracorDataRecord) {

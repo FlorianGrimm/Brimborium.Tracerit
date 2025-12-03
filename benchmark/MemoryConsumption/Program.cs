@@ -33,7 +33,8 @@ public class Program {
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
                 configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options),
-                configureConvert: default)
+                configureConvert: default,
+                tracorScopedFilterSection: default)
             //.AddFileTracorCollectiveSinkDefault(
             //   configuration: builder.Configuration,
             //   configure: (fileTracorOptions) => {

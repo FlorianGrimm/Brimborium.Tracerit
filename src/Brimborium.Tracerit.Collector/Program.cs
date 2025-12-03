@@ -48,12 +48,18 @@ public class Program {
             // By default, all incoming requests will be authorized according to the default policy.
             options.FallbackPolicy = options.DefaultPolicy;
         });
-        
-        builder.Services.AddTracorCollector();
-        builder.AddTracorServerControllers();
+
+        //builder.Services.AddTracor(
+        //    addEnabledServices: true,
+        //    configureTracor: default,
+        //    configureConvert: default,
+        //    tracorScopedFilterSection:);
+        builder
+            .AddTracorCollectorServer(
+                configSectionPath: default,
+                configure: default);
 
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
-        
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 

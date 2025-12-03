@@ -10,7 +10,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -36,7 +39,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -63,7 +69,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -100,7 +109,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -138,7 +150,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -189,7 +204,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -221,7 +239,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 
@@ -262,7 +283,10 @@ public class ExpressionTests {
         // Arrange
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
 

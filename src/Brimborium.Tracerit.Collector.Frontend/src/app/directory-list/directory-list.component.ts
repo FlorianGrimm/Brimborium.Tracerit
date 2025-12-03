@@ -29,7 +29,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
     (name, message, value) => { console.log(name, message, value); });
   listFile$ = new BehaviorRingSubject<LogFileInformationList>([], 1, 'DirectoryListComponent_listFile$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
-  error$ = new BehaviorRingSubject<undefined | string>(undefined, 1, 'DirectoryListComponent_error$', this.subscription, this.ring$, undefined,
+  error$ = new BehaviorRingSubject<undefined | string | object>(undefined, 1, 'DirectoryListComponent_error$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
   listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
     0, 'DirectoryListComponent_listSelectedFileName$', this.subscription, this.ring$, undefined,
@@ -130,7 +130,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.listFile$.next([]);
-          this.error$.next(error.toString());
+          this.error$.next(error);
         }
       }));
   }
@@ -182,7 +182,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
           complete: () => {
           },
           error: (err) => {
-            this.error$.next(err.toString());
+            this.error$.next(err);
           }
         }));
     return false;
@@ -215,7 +215,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
               this.listFileLoading$.next(this.listFileLoading$.getValue().filter(item => item != name));
             },
             error: (err) => {
-              this.error$.next(err.toString());
+              this.error$.next(err);
               this.listFileLoading$.next(this.listFileLoading$.getValue().filter(item => item != name));
             }
           }));
@@ -225,4 +225,13 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
     return false;
   }
 
+  getErrorMessage(value: undefined | string | object | Error): string {
+    if (value instanceof Error) {
+      return value.message;
+    }
+    if (typeof value === 'string') { return value; }
+    if (value == null) { return ""; }
+
+    return JSON.stringify(value);
+  }
 }

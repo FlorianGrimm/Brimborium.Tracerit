@@ -30,7 +30,7 @@ export class LogTimeDataService {
   readonly listLogLineFiles$ = new BehaviorRingSubject<LogLine[]>([],
     0, 'LogTimeDataService_listLogLineFiles', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
-  
+
   readonly listLogLineFilesSubscripe = createObserableSubscripe({
     obs: this.dataService.listLogLine$.pipe(
       tap({
@@ -58,7 +58,7 @@ export class LogTimeDataService {
 
   readonly listLogLineSubscripe = createObserableSubscripe({
     obs: this.useCurrentStream$.pipe(
-      switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$) 
+      switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$)
     ).pipe(
       tap({
         next: (value) => {
@@ -185,31 +185,31 @@ export class LogTimeDataService {
       )
     );
 
-  this.subscription.add(
-    this.listLogLine$
-    .pipe(
-      map(value => {
-        if (0 === value.length) {
-          return <TimeRange>({
-            start: epoch0,
-            finish: epoch1,
-          });
-        } else {
-          const first = getLogLineTimestampValue(value[0]);
-          const last = getLogLineTimestampValue(value[value.length - 1]);
-          if (first === null || last === null) { return undefined; }
-          return <TimeRange>({
-            start: first,
-            finish: last,
-          });
-        }
-      })
-    ).subscribe({
-      next: (value) => {
-        if (undefined === value) { return; }  
-        setTimeRangeIfChanged(this.rangeComplete$, value);
-      }
-    }));
+    this.subscription.add(
+      this.listLogLine$
+        .pipe(
+          map(value => {
+            if (0 === value.length) {
+              return <TimeRange>({
+                start: epoch0,
+                finish: epoch1,
+              });
+            } else {
+              const first = getLogLineTimestampValue(value[0]);
+              const last = getLogLineTimestampValue(value[value.length - 1]);
+              if (first === null || last === null) { return undefined; }
+              return <TimeRange>({
+                start: first,
+                finish: last,
+              });
+            }
+          })
+        ).subscribe({
+          next: (value) => {
+            if (undefined === value) { return; }
+            setTimeRangeIfChanged(this.rangeComplete$, value);
+          }
+        }));
 
     // this.subscription.add(
     //   this.listLogLine$
@@ -291,6 +291,29 @@ export class LogTimeDataService {
             }
             setTimeRangeOrNullIfChanged(this.rangeCurrent$, { start: ts, finish: null });
           }
+        }
+      })
+    );
+
+    this.subscription.add(
+      combineLatest({
+        listLogLineFilteredCondition: this.listLogLineFilteredCondition$,
+        rangeFilter: this.rangeFilter$,
+      }).pipe(
+        debounceToggle(this.ring$.pipe(map(value => 0 < value)))
+      ).subscribe({
+        next: (value) => {
+          const testStart = (epoch0.compareTo(value.rangeFilter.start) !== 0);
+          const testFinish = (epoch1.compareTo(value.rangeFilter.finish) !== 0);
+
+          const result = value.listLogLineFilteredCondition.filter(
+            (item) => {
+              const ts = getLogLineTimestampValue(item);
+              if (ts === null) { return false; }
+              return (testStart ? (value.rangeFilter.start.compareTo(ts) <= 0) : true)
+                && (testFinish ? (ts.compareTo(value.rangeFilter.finish) <= 0) : true);
+            });
+          this.listLogLineFilteredTime$.next(result);
         }
       })
     );

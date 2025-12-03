@@ -22,17 +22,17 @@ public interface ITracorCollectorHttpService {
 
 public sealed class TracorCollectorHttpService : ITracorCollectorHttpService {
     private readonly JsonSerializerOptions _JsonSerializerOptions;
-    private readonly ITracorCollector _TracorCollector;
+    private readonly ITracorServerCollectorWrite[] _ListTracorCollector;
     private readonly ILogger<TracorCollectorHttpService> _Logger;
     private bool _ErrorLogged;
 
     public TracorCollectorHttpService(
-        ITracorCollector tracorCollector,
+        IEnumerable<ITracorServerCollectorWrite> tracorCollector,
         TracorDataRecordPool tracorDataRecordPool,
         ILogger<TracorCollectorHttpService> logger
         ) {
         this._JsonSerializerOptions = TracorDataSerialization.AddTracorDataMinimalJsonConverter(null, tracorDataRecordPool);
-        this._TracorCollector = tracorCollector;
+        this._ListTracorCollector = tracorCollector.ToArray();
         this._Logger = logger;
     }
 
@@ -59,7 +59,9 @@ public sealed class TracorCollectorHttpService : ITracorCollectorHttpService {
                     using (var tracorDataRecord = await System.Text.Json.JsonSerializer.DeserializeAsync<TracorDataRecord>(
                         splitStream, this._JsonSerializerOptions, requestAborted)) {
                         if (tracorDataRecord is { }) {
-                            this._TracorCollector.Push(tracorDataRecord);
+                            foreach (var tracorCollector in _ListTracorCollector) { 
+                                tracorCollector.Push(tracorDataRecord);
+                            }
                         }
                     }
                 }

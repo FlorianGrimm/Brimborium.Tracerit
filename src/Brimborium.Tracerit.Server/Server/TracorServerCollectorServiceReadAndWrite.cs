@@ -3,7 +3,7 @@
 namespace Brimborium.Tracerit.Server;
 
 /// <summary>
-/// Configuration options for the <see cref="TracorCollectorService"/>.
+/// Configuration options for the <see cref="TracorServerCollectorServiceReadAndWrite"/>.
 /// </summary>
 public sealed class TracorCollectorOptions {
     /// <summary>
@@ -16,7 +16,8 @@ public sealed class TracorCollectorOptions {
 /// Collector service for storing and retrieving trace data records.
 /// Maintains a bounded queue of trace records with support for partial retrieval by named clients.
 /// </summary>
-public sealed class TracorCollectorService : ITracorCollector {
+public sealed class TracorServerCollectorServiceReadAndWrite 
+    : ITracorServerCollectorReadAndWrite {
     private readonly Lock _Lock = new();
     private readonly int _Capacity;
 
@@ -27,7 +28,7 @@ public sealed class TracorCollectorService : ITracorCollector {
         public int Missed;
     }
 
-    public TracorCollectorService(IOptions<TracorCollectorOptions> options) {
+    public TracorServerCollectorServiceReadAndWrite(IOptions<TracorCollectorOptions> options) {
         var optionsValue = options.Value;
         this._Capacity = optionsValue.Capacity < 128 ? 128 : optionsValue.Capacity;
         this._QueueTracorDataRecord = new Queue<TracorDataRecord>();

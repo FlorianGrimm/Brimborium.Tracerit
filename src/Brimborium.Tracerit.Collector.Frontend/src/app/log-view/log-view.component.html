@@ -11,7 +11,8 @@
     <div class="log-view-table">
         <table class="table-tracerit">
             <thead>
-                <tr class="header-sticky">
+                <tr class="header-sticky" cdkDropList cdkDropListOrientation="horizontal"
+                    (cdkDropListDropped)="dropHeader($event)">
                     <th class="sticky">
                         <div>
                             Id
@@ -23,8 +24,14 @@
                         }
                     </th>
                     @for(header of listCurrentHeader; track header.id){
-                    <th [style]="header.dataCellStyle" title="{{ header.typeValue }}">
-                        {{ header.name }}
+                    <th cdkDrag [id]="'header-' + (header.id||'')" class="data-header" [style]="header.dataCellStyle"
+                        title="{{ header.typeValue }}" (dblclick)="toggleColumn(header.id, header.name)">
+                        <span>
+                            {{ header.name }}
+                        </span>
+                    </th>
+                    <th style="width: 1px; margin: 0; padding: 0;">
+                        <div class="cell-width"></div>
                     </th>
                     }
                 </tr>
@@ -33,7 +40,7 @@
                         <span-lucide [img]="Funnel" class="my-icon"></span-lucide>TODO
                     </th>
                     @for(header of listCurrentHeader; track header.id){
-                    <td>
+                    <td colspan="2">
                         <span>
                             @switch (header.typeValue) {
                             @case ("null") {
@@ -87,7 +94,7 @@
                 </tr>
             </thead>
             <tbody>
-                @let listLogLineFiltered = (listLogLineFilteredCondition$ | async) ?? [];
+                @let listLogLineFiltered = (listLogLineFilteredTime$ | async) ?? [];
                 @for(logLine of listLogLineFiltered; track logLine.id){
                 <tr (click)="setCurrentLogLine(logLine.id, $event)"
                     (contextmenu)="setContextLogLine(logLine.id, $event)"
@@ -96,12 +103,12 @@
                         <div>
                             {{ logLine.id }}
                         </div>
-                        <div>
+                        <div style="font-size: 0.75rem;">
                             {{ getCurrentDiff(logLine) }}
                         </div>
                     </td>
                     @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
-                    <td [style]="header.dataCellStyle" (contextmenu)="setContextLogLine(logLine.id, $event)">
+                    <td colspan="2" [style]="header.dataCellStyle" (contextmenu)="setContextLogLine(logLine.id, $event)">
                         {{ getContent(logLine, header) }}
                     </td>
                     }
@@ -138,12 +145,21 @@
         @if((null === currentLogLine)||(undefined === currentLogLine)){
         No LogLine selected
         } @else {
-        <div class="log-view-property-item"><label> Id:</label><div class="log-view-property-item-value">{{currentLogLine.id}}</div></div>
+        <div class="log-view-property-item"><label> Id:</label>
+            <div class="log-view-property-item-value">{{currentLogLine.id}}</div>
+        </div>
         @for(item of currentLogLine.data.values(); track item.name){
-        <div class="log-view-property-item"><label>{{item.name}}:</label><div class="log-view-property-item-value">{{item.value}}</div></div>
+        <div class="log-view-property-item">
+            <label (dblclick)="toggleColumn('', item.name)">{{item.name}}:</label>
+            <div class="log-view-property-item-value">{{item.value}}</div>
+        </div>
         }
         }
+<hr/>
+{{  listLogLineFilteredCondition$.getValue().length }}
+{{  listLogLineFilteredTime$.getValue().length }}
+
+{{this.logTimeDataService.rangeFilter$}}        
     </div>
 </div>
-
 }

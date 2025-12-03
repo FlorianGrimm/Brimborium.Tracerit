@@ -37,7 +37,7 @@ public static partial class TracorServiceCollectionExtensions {
             bool addEnabledServices,
             Action<TracorOptions>? configureTracor,
             Action<TracorDataConvertOptions>? configureConvert,
-            string tracorScopedFilterSection = "") {
+            string? tracorScopedFilterSection) {
         if (addEnabledServices) {
             return serviceBuilder.AddEnabledTracor(
                 configureTracor,
@@ -63,7 +63,7 @@ public static partial class TracorServiceCollectionExtensions {
         this IServiceCollection serviceBuilder,
         Action<TracorOptions>? configureTracor,
         Action<TracorDataConvertOptions>? configureConvert,
-        string tracorScopedFilterSection = "") {
+        string? tracorScopedFilterSection) {
         serviceBuilder.AddSingleton<TracorEmergencyLogging>();
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
         serviceBuilder.AddSingleton<TracorDataRecordPool>();
@@ -79,7 +79,8 @@ public static partial class TracorServiceCollectionExtensions {
             typeof(ITracorSink<>), typeof(TracorSink<>)));
 
         serviceBuilder.AddTracorScopedFilter((builder) => {
-            builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
+            builder.AddTracorScopedFilterConfiguration(
+                tracorScopedFilterSection ?? string.Empty);
         });
 
         if (configureTracor is { }) {
@@ -88,7 +89,7 @@ public static partial class TracorServiceCollectionExtensions {
         }
         if (configureConvert is { }) {
             var optionsBuilder = serviceBuilder.AddOptions<TracorDataConvertOptions>();
-            optionsBuilder.Configure(configureConvert); 
+            optionsBuilder.Configure(configureConvert);
         }
 
         return new TracorBuilder(serviceBuilder);
@@ -105,9 +106,9 @@ public static partial class TracorServiceCollectionExtensions {
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddEnabledTracor(
         this IServiceCollection serviceBuilder,
-        Action<TracorOptions>? configureTracor = default,
-        Action<TracorDataConvertOptions>? configureConvert = default,
-        string tracorScopedFilterSection = "") {
+        Action<TracorOptions>? configureTracor,
+        Action<TracorDataConvertOptions>? configureConvert,
+        string? tracorScopedFilterSection) {
         serviceBuilder.AddSingleton<TracorEmergencyLogging>();
         serviceBuilder.AddSingleton<ITracorCollectivePublisher, TracorCollectivePublisher>();
         serviceBuilder.AddSingleton<TracorDataRecordPool>();
@@ -125,7 +126,8 @@ public static partial class TracorServiceCollectionExtensions {
             typeof(ITracorSink<>), typeof(TracorSink<>)));
 
         serviceBuilder.AddTracorScopedFilter((builder) => {
-            builder.AddTracorScopedFilterConfiguration(tracorScopedFilterSection);
+            builder.AddTracorScopedFilterConfiguration(
+                tracorScopedFilterSection ?? string.Empty);
         });
 
         {

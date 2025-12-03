@@ -47,8 +47,9 @@ public class TracorTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddDisabledTracor(
-            configureTracor:default,
-            configureConvert:default);
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -62,7 +63,7 @@ public class TracorTests {
         var validatorPath = validator.Add(
             new MatchExpression(
                 "Test",
-                Predicate((data, state) => { 
+                Predicate((data, state) => {
                     tracorDataReceived = true;
                     receivedData = data;
                     return true;
@@ -84,7 +85,8 @@ public class TracorTests {
         serviceCollection.AddLogging();
         serviceCollection.AddDisabledTracor(
             configureTracor: default,
-            configureConvert: default);
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
@@ -113,7 +115,10 @@ public class TracorTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddSingleton<IConfiguration>(configurationBuilder.Build());
         serviceCollection.AddLogging();
-        serviceCollection.AddEnabledTracor();
+        serviceCollection.AddEnabledTracor(
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default);
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();

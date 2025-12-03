@@ -5,13 +5,15 @@ namespace Brimborium.Tracerit.Server;
 /// <summary>
 /// Collector interface for storing and retrieving trace data records.
 /// </summary>
-public interface ITracorCollector {
+public interface ITracorServerCollectorWrite {
     /// <summary>
     /// add the data to the collection
     /// </summary>
     /// <param name="tracorDataRecord"></param>
     void Push(TracorDataRecord tracorDataRecord);
+}
 
+public interface ITracorServerCollectorReadAndWrite : ITracorServerCollectorWrite {
     /// <summary>
     /// Get the pushed data.
     /// </summary>

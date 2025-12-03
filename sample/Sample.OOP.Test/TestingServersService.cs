@@ -232,13 +232,13 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
             builder.Services.AddTracor(
                 addEnabledServices: true,
                 configureTracor: (tracorOptions) => { },
-                configureConvert: (tracorDataConvertOptions) => { }
+                configureConvert: (tracorDataConvertOptions) => { },
+                tracorScopedFilterSection: default
                 ).
                 AddTracorValidatorService(
                 configure: (tracorValidatorServiceOptions) => {
                     // tracorValidatorServiceOptions.
                 });
-            builder.Services.AddTracorCollector();
             builder.AddTracorCollectorMinimal();
             builder.WebHost.UseKestrel();
             WebApplication app = builder.Build();

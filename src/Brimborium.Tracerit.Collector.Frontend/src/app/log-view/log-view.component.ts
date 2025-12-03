@@ -15,11 +15,15 @@ import { MasterRingService } from '../Utility/master-ring.service';
 import { combineLatestSubject } from '../Utility/CombineLatestSubject';
 import { createObserableSubject } from '../Utility/ObserableSubject';
 import { createObserableSubscripe } from '../Utility/ObservableSubscripe';
+import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
+import { epoch0, epoch1 } from '../Utility/time-range';
 
 @Component({
   selector: 'app-log-view',
   imports: [
     AsyncPipe,
+    CdkDropList,
+    CdkDrag,
     RouterLink,
     LucideAngularModule,
     TimeRulerComponent
@@ -92,7 +96,36 @@ export class LogViewComponent implements OnDestroy {
     immediate: true
   });
 
-  readonly filter$ = new BehaviorRingSubject<number>(1, 0, 'LogViewComponent_filter$', this.subscription, this.ring$, undefined, 
+  readonly listLogLineFilteredTime$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'LogViewComponent_listLogLineFilteredTime', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, value?.length); });
+  readonly listLogLineFilteredTimeSubscripe = createObserableSubscripe({
+    obs:
+      combineLatest({
+        listLogLineFilteredCondition: this.listLogLineFilteredCondition$,
+        rangeFilter: this.logTimeDataService.rangeFilter$,
+      }).pipe(
+        tap({
+          next: (value) => {
+            const testStart = (epoch0.compareTo(value.rangeFilter.start) !== 0);
+            const testFinish = (epoch1.compareTo(value.rangeFilter.finish) !== 0);
+            const resultFilteredTime = value.listLogLineFilteredCondition.filter(
+              (item) => {
+                const ts = getLogLineTimestampValue(item);
+                if (ts === null) { return false; }
+                return (testStart ? (value.rangeFilter.start.compareTo(ts) <= 0) : true)
+                  && (testFinish ? (ts.compareTo(value.rangeFilter.finish) <= 0) : true);
+              });
+            console.log("filter start", value.rangeFilter.start.toString(), "finish", value.rangeFilter.finish.toString(), resultFilteredTime.length);
+            this.listLogLineFilteredTime$.next(resultFilteredTime);
+          }
+        })
+      ),
+    subscribtion: this.subscription,
+    immediate: true
+  });
+
+  readonly filter$ = new BehaviorRingSubject<number>(1, 0, 'LogViewComponent_filter$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
 
   readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null,
@@ -102,42 +135,42 @@ export class LogViewComponent implements OnDestroy {
     0, 'LogViewComponent_currentLogLine', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
   readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null,
-    0, 'LogViewComponent_currentLogTimestamp', this.subscription, this.ring$, undefined, 
+    0, 'LogViewComponent_currentLogTimestamp', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
 
   readonly contextLogLineId$ = new BehaviorRingSubject<number | null>(null,
-    0, 'LogViewComponent_contextLogLineId', this.subscription, this.ring$, undefined, 
+    0, 'LogViewComponent_contextLogLineId', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
   readonly contextLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'LogViewComponent_contextLogLine', this.subscription, this.ring$, undefined, 
+    0, 'LogViewComponent_contextLogLine', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
 
   readonly error$ = new BehaviorRingSubject<null | string>(null,
-    0, 'LogViewComponent_error$', this.subscription, this.ring$, undefined, 
+    0, 'LogViewComponent_error$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
 
   readonly triggerFilter$ = combineLatestSubject(
     {
-      dictObservable:{
+      dictObservable: {
         filter: this.filter$,
         listCurrentHeader: this.listCurrentHeader$
       },
-      name:'LogViewComponent_triggerFilter$'
+      name: 'LogViewComponent_triggerFilter$'
     }
   );
-  
+
   copyToLogTimeDataService = createObserableSubscripe({
     obs: this.triggerFilter$.combineLatest().pipe(
       map(value => value.listCurrentHeader.slice()),
       tap({
         next: (value) => {
-         this.logTimeDataService.listFilterCondition$.next(value);
+          this.logTimeDataService.listFilterCondition$.next(value);
         }
       })
     ),
     subscribtion: this.subscription,
     immediate: true
-});
+  });
 
   constructor() {
 
@@ -150,26 +183,29 @@ export class LogViewComponent implements OnDestroy {
         }
       }));
 
-    // this.subscription.add(
-    //   combineLatest({
-    //     listLogLineFilteredCondition: this.logTimeDataService.listLogLineFilteredCondition$,
-    //     rangeFilter: this.logTimeDataService.rangeFilter$,
-    //   }).pipe(
-    //     delay(0)
-    //   ).subscribe({
-    //     next: (value) => {
-    //       /*
-    //       const resultFilteredTime = value.listLogLineFilteredCondition.filter(
-    //         (item) => {
-    //           const ts = getLogLineTimestampValue(item);
-    //           if (ts === null) { return false; }
-    //           return (value.rangeFilter.start.compareTo(ts) <= 0) && (ts.compareTo(value.rangeFilter.finish) <= 0);
-    //         });
-    //       */
-    //       this.logTimeDataService.listLogLineFilteredTime$.next(value.listLogLineFilteredCondition);
-    //     }
-    //   })
-    // );
+    /*
+    this.subscription.add(
+      combineLatest({
+        listLogLineFilteredCondition: this.listLogLineFilteredCondition$,
+        rangeFilter: this.logTimeDataService.rangeFilter$,
+      }).subscribe({
+        next: (value) => {
+          const testStart = (epoch0.compareTo(value.rangeFilter.start) !== 0);
+          const testFinish = (epoch0.compareTo(value.rangeFilter.finish) !== 0);
+          const resultFilteredTime = value.listLogLineFilteredCondition.filter(
+            (item) => {
+              const ts = getLogLineTimestampValue(item);
+              if (ts === null) { return false; }
+              return (testStart ? (value.rangeFilter.start.compareTo(ts) <= 0) : true)
+                && (testFinish ? (ts.compareTo(value.rangeFilter.finish) <= 0) : true);
+            });
+          console.log("filter start", value.rangeFilter.start.toString(), "finish", value.rangeFilter.finish.toString(), resultFilteredTime.length);
+          this.listLogLineFilteredTime$.next(resultFilteredTime);
+        }
+      })
+    );
+    */
+
     this.subscription.add(this.logTimeDataService.currentLogLineId$.subscribe(this.currentLogLineId$));
     this.subscription.add(this.logTimeDataService.currentLogLine$.subscribe(this.currentLogLine$));
     this.subscription.add(this.logTimeDataService.currentLogTimestamp$.subscribe(this.currentLogTimestamp$));
@@ -232,7 +268,17 @@ export class LogViewComponent implements OnDestroy {
     const timestamp = getLogLineTimestampValue(logLine);
     if (undefined === timestamp || null === timestamp) { return ""; }
 
-    const dur = Duration.between(timestamp, currentLogTimestamp);
+    const dur = Duration.between(currentLogTimestamp,timestamp);
+    {
+      const mili = dur.toMillis();
+      if (-1000<=mili && mili<=1000){ return mili.toFixed(2)+' ms'; }
+    }
+    {
+      const seconds = dur.seconds();
+      if (-1000<=seconds && seconds<=1000){ return seconds.toFixed(2)+' sec'; }
+      const minutes = seconds / 60;
+      if (-24<=minutes && minutes<=24){ return minutes.toFixed(2)+' min'; }
+    }
     return dur.toString();
   }
 
@@ -279,5 +325,42 @@ export class LogViewComponent implements OnDestroy {
     this.filter$.next(1 + this.filter$.getValue());
     return false;
   }
+
+  getHeaderStyle(propertyHeader: PropertyHeader) {
+    const dataCellStyle = (propertyHeader.dataCellStyle == null)
+      ? 'data-header'
+      : `data-header ${propertyHeader.dataCellStyle || ''}`;
+    return dataCellStyle;
+  }
+
+  dropHeader($event: CdkDragDrop<any, any, any>) {
+    const listCurrentHeader = this.listCurrentHeader$.getValue();
+    const { currentIndex, previousIndex } = $event;
+    if (currentIndex === previousIndex) { return; }
+    const lowerIndex = Math.min(currentIndex, previousIndex);
+    const higherIndex = Math.max(currentIndex, previousIndex);
+    moveItemInArray(listCurrentHeader, previousIndex, currentIndex);
+    for (let idx = lowerIndex; idx <= higherIndex; idx++) {
+      listCurrentHeader[idx].visualIndex = idx;
+    }
+    const listAllHeader = this.listAllHeader$.getValue();
+    this.listCurrentHeader$.next(getVisualHeader(listAllHeader));
+  }
+
+  toggleColumn(headerId: string, headerName: string) {
+    const listAllHeader = this.listAllHeader$.getValue();
+
+    const listMatchingHeader = (headerId === "")
+      ? listAllHeader.filter((header) => (headerName === header.name))
+      : listAllHeader.filter((header) => (headerId === header.id) && (headerName === header.name));
+
+    for (const header of listMatchingHeader) {
+      header.show = !header.show;
+    }
+    this.listCurrentHeader$.next(getVisualHeader(listAllHeader));
+
+    return false;
+  }
+
 
 }

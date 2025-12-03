@@ -24,7 +24,8 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                         .AddTracor(
                             addEnabledServices: true,
                             configureTracor: default,
-                            configureConvert: default)
+                            configureConvert: default,
+                            tracorScopedFilterSection: default)
                         .AddTracorActivityListener(true, null, (options) => {
                             options.AllowAllActivitySource = true;
                         })

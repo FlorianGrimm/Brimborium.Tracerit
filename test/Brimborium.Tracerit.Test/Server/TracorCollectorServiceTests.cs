@@ -7,7 +7,7 @@ namespace Brimborium.Tracerit.Test.Server;
 public class TracorCollectorServiceTests {
     [Test]
     public async Task PushMaxItemsTest() {
-        var tracorCollectorService = new TracorCollectorService(
+        var tracorCollectorService = new TracorServerCollectorServiceReadAndWrite(
             Options.Create<TracorCollectorOptions>(new TracorCollectorOptions() {
                 Capacity = 128
             }));
@@ -25,7 +25,7 @@ public class TracorCollectorServiceTests {
 
     [Test]
     public async Task PushMoreItemsTest() {
-        var tracorCollectorService = new TracorCollectorService(
+        var tracorCollectorService = new TracorServerCollectorServiceReadAndWrite(
             Options.Create<TracorCollectorOptions>(new TracorCollectorOptions() {
                 Capacity = 128
             }));
@@ -79,7 +79,7 @@ public class TracorCollectorServiceTests {
 
     [Test]
     public async Task GetListTracorDataRecordNamedTest() {
-        var tracorCollectorService = new TracorCollectorService(
+        var tracorCollectorService = new TracorServerCollectorServiceReadAndWrite(
             Options.Create<TracorCollectorOptions>(new TracorCollectorOptions() {
                 Capacity = 128
             }));

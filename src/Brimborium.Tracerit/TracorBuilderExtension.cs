@@ -2,11 +2,14 @@
 
 public static class TracorBuilderExtension {
 
-    internal static IConfiguration GetConfigurationTracorSection(IConfigurationRoot configuration) {
+    internal static IConfiguration GetConfigurationTracorSection(IConfiguration configuration) {
         return configuration.GetSection("Tracor");
     }
-    internal static IConfiguration GetConfigurationTracorFileSinkSection(IConfigurationRoot configuration) {
-        return configuration.GetSection("Tracor").GetSection("SinkFile");
+    internal static IConfiguration GetConfigurationTracorFileSinkSection(IConfiguration configuration) {
+        return configuration.GetSection("Tracor").GetSection("FileSink");
+    }
+    internal static IConfiguration GetConfigurationTracorHttpSinkSection(IConfiguration configuration) {
+        return configuration.GetSection("Tracor").GetSection("HttpSink");
     }
 
     /// <summary>
@@ -170,8 +173,8 @@ public static class TracorBuilderExtension {
     /// </example>
     public static ITracorBuilder AddFileTracorCollectiveSinkDefault(
         this ITracorBuilder tracorBuilder,
-        IConfigurationRoot? configuration = default,
-        Action<TracorFileSinkOptions>? configure = default) {
+        IConfigurationRoot? configuration,
+        Action<TracorFileSinkOptions>? configure) {
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorFileSinkOptions>();
         if (configuration is { }) {
             optionsBuilder.Bind(GetConfigurationTracorFileSinkSection(configuration));
@@ -237,7 +240,8 @@ public static class TracorBuilderExtension {
         if (configuration is { } || configure is { }) {
             var optionBuilder = tracorBuilder.Services.AddOptions<TracorHttpSinkOptions>();
             if (configuration is { }) {
-                optionBuilder.BindConfiguration("Tracor:HttpSink");
+                //optionBuilder.BindConfiguration("Tracor:HttpSink");
+                optionBuilder.Bind(GetConfigurationTracorHttpSinkSection(configuration));
             }
             if (configure is { }) {
                 optionBuilder.Configure(configure);

@@ -40,7 +40,8 @@ public class Program {
                     options.SetOnGetApplicationStopping(
                         static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
                 },
-                configureConvert: default)
+                configureConvert: default,
+                tracorScopedFilterSection: default)
             .AddFileTracorCollectiveSinkDefault(
                configuration: builder.Configuration,
                configure: (fileTracorOptions) => {

@@ -1,13 +1,18 @@
 ﻿namespace Brimborium.Tracerit.Service;
 
-public class LogFileService : IDisposable {
+public interface IReadLogFileService {
+    ResponseWrapper<DirectoryBrowseResponse> DirectoryBrowse();
+    ResponseWrapper<FileContentReadResponse> FileContentRead(string name);
+}
+
+public sealed class ReadLogFileService : IReadLogFileService, IDisposable {
     private class ConfigState {
         public string? LogDirectory { get; internal set; }
     }
     private ConfigState _ConfigState = new();
     private IDisposable? _UnwireAppConfig;
 
-    public LogFileService(
+    public ReadLogFileService(
         IOptionsMonitor<TracorLogFileServiceOptions> options
         ) {
         this._UnwireAppConfig = options.OnChange(this.OnChangeAppConfig);
@@ -16,7 +21,7 @@ public class LogFileService : IDisposable {
 
     private void OnChangeAppConfig(TracorLogFileServiceOptions options) {
         ConfigState configState = new() {
-            LogDirectory = options.LogDirectory
+            LogDirectory = PathTrimEnd(options.LogDirectory ?? string.Empty)
         };
 
         this._ConfigState = configState;
@@ -33,17 +38,18 @@ public class LogFileService : IDisposable {
         var configState = this._ConfigState;
         var logDirectory = configState.LogDirectory;
         if (string.IsNullOrEmpty(logDirectory)) {
-            return new ResponseFailed<DirectoryBrowseResponse>() { Error = "Configuration" };
+            return new ResponseFailed<DirectoryBrowseResponse>() { Error = "Configuration: LogDirectory is empty." };
         }
         System.IO.DirectoryInfo diLogDirectory = new(logDirectory);
         if (!diLogDirectory.Exists) {
-            return new ResponseFailed<DirectoryBrowseResponse>() { Error = "logDirectory: Not Exists" };
+            return new ResponseFailed<DirectoryBrowseResponse>() { Error = "LogDirectory: Not Exists" };
         }
         var listFilesJsonl = diLogDirectory.EnumerateFiles("*.jsonl", new EnumerationOptions() {
             RecurseSubdirectories = true,
             IgnoreInaccessible = true
         });
-        var diLogDirectoryFullName = diLogDirectory.FullName;
+        var diLogDirectoryFullName = PathTrimEnd(diLogDirectory.FullName);
+        var length = 1 + diLogDirectoryFullName.Length;
         var result = listFilesJsonl
             .Where(
                 (diLogFile) => diLogFile.FullName.StartsWith(diLogDirectoryFullName, StringComparison.OrdinalIgnoreCase)
@@ -51,7 +57,7 @@ public class LogFileService : IDisposable {
             .Select(
                 (diLogFile) => {
                     return new LogFileInformation(
-                        diLogFile.FullName.Substring(diLogDirectoryFullName.Length),
+                        diLogFile.FullName.Substring(length).Replace(System.IO.Path.PathSeparator, '/'),
                         diLogFile.CreationTimeUtc,
                         diLogFile.Length);
                 })
@@ -61,6 +67,23 @@ public class LogFileService : IDisposable {
                 Files = result
             }
         };
+    }
+
+    private static char[] _ArraySlash = new char[] { '/', '\\' };
+    private static string PathTrimEnd(string value) {
+        return value.TrimEnd(_ArraySlash);
+    }
+
+    private static int _SlashPathMode = 0;
+    private static string SlashPath(string value) {
+        if (_SlashPathMode == 0) {
+            _SlashPathMode = ('\\' == System.IO.Path.PathSeparator) ? 1 : 2;
+        }
+        if (_SlashPathMode == 1) {
+            return value.Replace('\\', '/');
+        } else {
+            return value;
+        }
     }
 
     public ResponseWrapper<FileContentReadResponse> FileContentRead(string name) {

@@ -17,7 +17,8 @@ public class GroupByRootActivityExpressionTests {
         serviceBuilder.AddTracor(
             addEnabledServices: true,
             configureTracor: default,
-            configureConvert: default)
+            configureConvert: default,
+            tracorScopedFilterSection: default)
             .AddTracorActivityListener(
                 enabled:true,
                 configuration: configuration,

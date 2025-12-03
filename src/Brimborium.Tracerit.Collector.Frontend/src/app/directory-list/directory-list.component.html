@@ -1,7 +1,7 @@
 <div tuiAppearance="floating">
     @if (error$|async; as error) {
     <div>
-        {{error}}
+        {{getErrorMessage(error)}}
     </div>
     } @else {
         <div>
