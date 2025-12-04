@@ -134,6 +134,7 @@ export class DataService {
   }
 
   addDefaultMapName() {
+    this.addMapName("id", "int", false);
     this.addMapName("timestamp", "dt", true);
     this.addMapName("logLevel", "lvl", true);
     this.addMapName("source", "str", true);
@@ -173,7 +174,9 @@ export class DataService {
           typeValue: typeValue,
           index: index,
           visualIndex: index,
-          show: show
+          show: show,
+          headerCellStyle: { width: '100px' },
+          dataCellStyle: { width: '100px' }
         }
         this.mapName.set(name, result);
         this.listAllHeader.push(result);

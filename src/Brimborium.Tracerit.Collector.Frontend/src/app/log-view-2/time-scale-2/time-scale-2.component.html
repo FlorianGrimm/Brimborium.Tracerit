@@ -1,0 +1,132 @@
+<div #containerElement class="time-scale-2" 
+     (mouseup)="onMouseUp($event, 'inner')" 
+     (mousemove)="onMouseMove($event, 'inner')">
+  @let state = state$ | async;
+  @if (state && state.displayWidth > 0 && state.viewBox !== '') {
+    <svg #svgElement [attr.viewBox]="state.viewBox" class="time-scale-svg">
+      <!-- Log tick marks (visualizing log entries) -->
+      @for (logTick of state.listLogTick; track logTick.id) {
+        <rect 
+          [attr.x]="logTick.positionX" 
+          [attr.y]="logTick.positionY" 
+          [attr.width]="logTick.width" 
+          [attr.height]="4"
+          [attr.fill]="logTick.color"
+          [class.highlighted]="logTick.isHighlighted"
+          [class.selected]="logTick.isSelected"
+          class="log-tick"
+          (click)="onLogTickClick(logTick)"
+          (mouseenter)="onLogTickHover(logTick)"
+          (mouseleave)="onLogTickHover(null)" />
+      }
+
+      <!-- Timeline ticks -->
+      @for (tick of state.listTick; track tick.id) {
+        <line 
+          [attr.x1]="tick.position" 
+          [attr.y1]="tick.isMajor ? 60 : 70" 
+          [attr.x2]="tick.position" 
+          [attr.y2]="80"
+          stroke="#666" 
+          [attr.stroke-width]="tick.isMajor ? 2 : 1" />
+        @if (tick.isMajor && tick.label) {
+          <text 
+            [attr.transform]="'translate(' + tick.position + ', 55) rotate(-90)'" 
+            fill="#000" 
+            text-anchor="end" 
+            font-size="10">
+            {{ tick.label }}
+          </text>
+        }
+      }
+
+      <!-- Timeline baseline -->
+      <line x1="15" y1="80" [attr.x2]="state.displayWidth - 15" y2="80" stroke="#333" stroke-width="1" />
+
+      <!-- Start/End time labels -->
+      <text fill="#000" x="15" y="95" font-size="10">
+        {{ toTimeString(state.rangeZoom.start) }}
+      </text>
+      <text fill="#000" [attr.x]="state.displayWidth - 15" y="95" font-size="10" text-anchor="end">
+        {{ toTimeString(state.rangeZoom.finish) }}
+      </text>
+
+      <!-- Selected log line marker -->
+      @if (selectedLogLineId() !== null) {
+        @let selectedTick = getSelectedLogTick(state);
+        @if (selectedTick) {
+          <line 
+            [attr.x1]="selectedTick.positionX" 
+            y1="0" 
+            [attr.x2]="selectedTick.positionX" 
+            y2="100" 
+            stroke="#007bff" 
+            stroke-width="2" 
+            stroke-dasharray="4,2" />
+        }
+      }
+
+      <!-- Filter range overlays (draggable) -->
+      @if (state.startFilterPositionX !== null && state.startFilterPositionX > 15) {
+        <a (mousedown)="onMouseDown($event, 'start')" 
+           (dblclick)="onMouseDblClick('start')"
+           class="filter-handle">
+          <rect 
+            x="15" 
+            y="0" 
+            [attr.width]="state.startFilterPositionX - 15" 
+            height="100"
+            fill="rgba(0, 123, 255, 0.2)" 
+            stroke="rgba(0, 123, 255, 0.5)" 
+            stroke-width="1" />
+          <line 
+            [attr.x1]="state.startFilterPositionX" 
+            y1="0" 
+            [attr.x2]="state.startFilterPositionX" 
+            y2="100"
+            stroke="#007bff" 
+            stroke-width="3" 
+            class="filter-edge" />
+        </a>
+      }
+
+      @if (state.finishFilterPositionX !== null && state.finishFilterWidth !== null && state.finishFilterWidth > 0) {
+        <a (mousedown)="onMouseDown($event, 'finish')" 
+           (dblclick)="onMouseDblClick('finish')"
+           class="filter-handle">
+          <rect 
+            [attr.x]="state.finishFilterPositionX" 
+            y="0" 
+            [attr.width]="state.finishFilterWidth" 
+            height="100"
+            fill="rgba(0, 123, 255, 0.2)" 
+            stroke="rgba(0, 123, 255, 0.5)" 
+            stroke-width="1" />
+          <line 
+            [attr.x1]="state.finishFilterPositionX" 
+            y1="0" 
+            [attr.x2]="state.finishFilterPositionX" 
+            y2="100"
+            stroke="#007bff" 
+            stroke-width="3" 
+            class="filter-edge" />
+        </a>
+      }
+
+      <!-- Visible range indicator (shows what's visible in the grid) -->
+      @let visibleRangeRect = getVisibleRangeRect(state);
+      @if (visibleRangeRect) {
+        <rect 
+          [attr.x]="visibleRangeRect.x" 
+          y="82" 
+          [attr.width]="visibleRangeRect.width" 
+          height="8"
+          fill="rgba(40, 167, 69, 0.4)" 
+          stroke="#28a745" 
+          stroke-width="1"
+          rx="2" />
+      }
+    </svg>
+  }
+</div>
+

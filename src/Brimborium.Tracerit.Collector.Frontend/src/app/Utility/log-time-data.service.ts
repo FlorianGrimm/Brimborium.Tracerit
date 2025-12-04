@@ -96,10 +96,10 @@ export class LogTimeDataService {
     (name, message, value) => { console.log(name, message, value); });
   // depended listLogLineFiltered$ currentLogLineId$
   readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'currentLogLine$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+    0, 'LogTimeDataService_currentLogLine$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
   readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null,
-    0, 'currentLogTimestamp$', this.subscription, this.ring$, undefined,
+    0, 'LogTimeDataService_currentLogTimestamp$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.toString()); });
 
   // input
@@ -111,7 +111,7 @@ export class LogTimeDataService {
       start: epoch0,
       finish: epoch1,
     }),
-    0, 'rangeComplete$', this.subscription, this.ring$, undefined,
+    0, 'LogTimeDataService_rangeComplete$', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() }); });
 
   // input
@@ -149,8 +149,8 @@ export class LogTimeDataService {
     }
   );
 
-  readonly rangeCurrent$ = new BehaviorRingSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }),
-    0, 'LogTimeDataService_rangeCurrent',
+  readonly rangeCurrentSelected$ = new BehaviorRingSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }),
+    0, 'LogTimeDataService_rangeCurrentSelected',
     this.subscription, this.ring$, undefined,
     (name, message, value) => {
       console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() });
@@ -289,7 +289,7 @@ export class LogTimeDataService {
             if (!(this.currentLogTimestamp$.getValue()?.isEqual(ts))) {
               this.currentLogTimestamp$.next(ts);
             }
-            setTimeRangeOrNullIfChanged(this.rangeCurrent$, { start: ts, finish: null });
+            setTimeRangeOrNullIfChanged(this.rangeCurrentSelected$, { start: ts, finish: null });
           }
         }
       })

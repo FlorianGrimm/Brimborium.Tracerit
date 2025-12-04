@@ -160,9 +160,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
         listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
         currentLogLineId: this.logTimeDataService.currentLogLineId$,
         currentLogLine: this.logTimeDataService.currentLogLine$,
-      }).pipe(
-        delay(0)
-      ).subscribe({
+      }).subscribe({
         next: (value) => {
           if (0 < value.listLogLineFiltered.length
             && ((null === value.currentLogLineId) || (undefined === value.currentLogLineId))
@@ -177,9 +175,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
         listLogLineFiltered: this.logTimeDataService.listLogLineFilteredCondition$,
         rangeZoom: this.logTimeDataService.rangeZoom$,
         rangeFilter: this.logTimeDataService.rangeFilter$,
-      }).pipe(
-        delay(0)
-      ).subscribe({
+      }).subscribe({
         next: (value) => {
           if ((null === value.rangeFilter.start) && (null === value.rangeFilter.finish)) {
             if (1 < value.listLogLineFiltered.length) {
@@ -215,7 +211,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
     );
     this.displayWidth$.validateRing(this.state$);
     this.logTimeDataService.rangeZoom$.validateRing(this.state$);
-    this.logTimeDataService.rangeCurrent$.validateRing(this.state$);
+    this.logTimeDataService.rangeCurrentSelected$.validateRing(this.state$);
     this.rangeFilter$.validateRing(this.state$);
     this.logTimeDataService.listLogLineFilteredCondition$.validateRing(this.state$);
 
@@ -225,7 +221,7 @@ export class TimeRulerComponent implements AfterViewInit, OnDestroy {
 
         rangeZoom: this.logTimeDataService.rangeZoom$,
 
-        rangeCurrent: this.logTimeDataService.rangeCurrent$,
+        rangeCurrent: this.logTimeDataService.rangeCurrentSelected$,
 
         rangeFilter: this.rangeFilter$,
 
