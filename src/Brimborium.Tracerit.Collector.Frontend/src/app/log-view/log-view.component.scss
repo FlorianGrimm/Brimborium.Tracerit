@@ -5,13 +5,29 @@ th{
         background-color: red;
         box-sizing: border-box
     }
-    div.cell-width{
+}
+
+th.resize-handle {
+    position: relative;
+    width: 5px !important;
+    min-width: 5px;
+    max-width: 5px;
+    margin: 0;
+    padding: 0;
+    cursor: col-resize;
+
+    div.cell-width {
         position: absolute;
         cursor: col-resize;
         top: 0px;
+        left: 0;
         height: 100%;
-        background-color: gray;
-        width: 1px;
+        background-color: #ccc;
+        width: 5px;
+
+        &:hover {
+            background-color: #007bff;
+        }
     }
 }
 .cdk-drag{

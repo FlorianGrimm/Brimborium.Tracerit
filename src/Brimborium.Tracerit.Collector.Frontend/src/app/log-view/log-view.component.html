@@ -24,13 +24,13 @@
                         }
                     </th>
                     @for(header of listCurrentHeader; track header.id){
-                    <th cdkDrag [id]="'header-' + (header.id||'')" class="data-header" [style]="header.dataCellStyle"
+                    <th cdkDrag [id]="'header-' + (header.id||'')" class="data-header" [style]="header.headerCellStyle"
                         title="{{ header.typeValue }}" (dblclick)="toggleColumn(header.id, header.name)">
                         <span>
                             {{ header.name }}
                         </span>
                     </th>
-                    <th style="width: 1px; margin: 0; padding: 0;">
+                    <th class="resize-handle" (mousedown)="mouseDownResize($event, header.id)">
                         <div class="cell-width"></div>
                     </th>
                     }
@@ -40,7 +40,7 @@
                         <span-lucide [img]="Funnel" class="my-icon"></span-lucide>TODO
                     </th>
                     @for(header of listCurrentHeader; track header.id){
-                    <td colspan="2">
+                    <td>
                         <span>
                             @switch (header.typeValue) {
                             @case ("null") {
@@ -48,7 +48,8 @@
                             }
                             @case ("str") {
                             <input type="text" [value]="header.filter?.value"
-                                (input)="setFilterStrValue(header,$event.target.value)" />
+                                (input)="setFilterStrValue(header,$event.target.value)"
+                                style="width: 99%; " />
                             }
                             @case ("int") {
                             int {{header.filter?.value}}
@@ -90,6 +91,7 @@
                             }
                         </span>
                     </td>
+                    <td></td>
                     }
                 </tr>
             </thead>
@@ -108,9 +110,10 @@
                         </div>
                     </td>
                     @for(header of listCurrentHeader; track header.id; let indexHeader = $index){
-                    <td colspan="2" [style]="header.dataCellStyle" (contextmenu)="setContextLogLine(logLine.id, $event)">
+                    <td [style]="header.dataCellStyle" (contextmenu)="setContextLogLine(logLine.id, $event)">
                         {{ getContent(logLine, header) }}
                     </td>
+                    <td></td>
                     }
                 </tr>
                 @if(contextLogLineId === logLine.id){
@@ -121,7 +124,8 @@
                         <button type="button" (click)="addFilter(logLine.id, header.id)">
                             <span-lucide [img]="FunnelPlus" class="my-icon"></span-lucide>
                         </button>
-                    </td>
+                    </td>                    
+                    <td></td>
                     }
                 </tr>
                 }
@@ -155,11 +159,11 @@
         </div>
         }
         }
-<hr/>
-{{  listLogLineFilteredCondition$.getValue().length }}
-{{  listLogLineFilteredTime$.getValue().length }}
+        <hr />
+        {{ listLogLineFilteredCondition$.getValue().length }}
+        {{ listLogLineFilteredTime$.getValue().length }}
 
-{{this.logTimeDataService.rangeFilter$}}        
+        {{this.logTimeDataService.rangeFilter$}}
     </div>
 </div>
 }

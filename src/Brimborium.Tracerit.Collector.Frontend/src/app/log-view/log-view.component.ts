@@ -32,6 +32,85 @@ import { epoch0, epoch1 } from '../Utility/time-range';
   styleUrl: './log-view.component.scss',
 })
 export class LogViewComponent implements OnDestroy {
+  resizeScreenX: number = 0;
+  resizeClientWidth: number = 0;
+  resizeHeaderId: string = '';
+  overlay: HTMLDivElement | undefined = undefined;
+  private boundResizeMouseMove = this.onResizeMouseMove.bind(this);
+  private boundResizeMouseUp = this.onResizeMouseUp.bind(this);
+
+  mouseDownResize(e: MouseEvent, headerId: string) {
+    //e.preventDefault();
+    const allHeader = this.listAllHeader$.getValue();
+    const header = allHeader.find((item) => (headerId === item.id));
+    if (undefined === header) { return; }
+
+    this.resizeHeaderId = headerId;
+    this.resizeScreenX = e.screenX;
+    const elementHeader = window.document.getElementById("header-" + headerId);
+    if (elementHeader == null) { return; }
+    this.resizeClientWidth = elementHeader.clientWidth;
+
+    // Add document-level listeners to track mouse outside the element
+    const overlay = document.createElement('div');
+    this.overlay = overlay;
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.zIndex = '500';
+    overlay.addEventListener('mousemove', this.boundResizeMouseMove);
+    overlay.addEventListener('mouseup', this.boundResizeMouseUp);
+    overlay.style.cursor = 'col-resize';
+    overlay.style.userSelect = 'none';
+    window.document.body.appendChild(overlay);
+    console.log("mouseDownResize", headerId, e);
+  }
+
+  private onResizeMouseMove(e: MouseEvent) {
+    if (0 === this.resizeScreenX || !this.resizeHeaderId) { return; }
+    const allHeader = this.listAllHeader$.getValue();
+    const header = allHeader.find((item) => (this.resizeHeaderId === item.id));
+    if (undefined === header) { return; }
+    const diff = e.screenX - this.resizeScreenX;
+    const newWidth = Math.max(50, this.resizeClientWidth + diff); // Minimum width of 50px
+    header.headerCellStyle = { 'width': `${newWidth}px` };
+    header.dataCellStyle = { 'width': `${newWidth}px` };
+    console.log("mouseMoveResize", this.resizeHeaderId, diff, e);
+  }
+
+  private onResizeMouseUp(e: MouseEvent) {
+    if (this.resizeHeaderId) {
+      const allHeader = this.listAllHeader$.getValue();
+      const header = allHeader.find((item) => (this.resizeHeaderId === item.id));
+      if (header) {
+        const diff = e.screenX - this.resizeScreenX;
+        const newWidth = Math.max(50, this.resizeClientWidth + diff);
+        header.headerCellStyle = { 'width': `${newWidth}px` };
+        header.dataCellStyle = { 'width': `${newWidth}px` };
+        console.log("mouseUpResize", this.resizeHeaderId, diff, e);
+      }
+    }
+
+    // Clean up
+    const overlay = this.overlay;
+    this.overlay = undefined;
+    if (overlay != null) {
+      window.document.body.removeChild(overlay);
+      overlay.removeEventListener('mousemove', this.boundResizeMouseMove);
+      overlay.removeEventListener('mouseup', this.boundResizeMouseUp);
+      overlay.style.cursor = '';
+      overlay.style.userSelect = '';
+    }
+    this.resizeScreenX = 0;
+    this.resizeClientWidth = 0;
+    this.resizeHeaderId = '';
+  }
+
+  // Keep these for backward compatibility, but they're no longer needed
+  mouseMoveResize(_e: MouseEvent, _headerId: string) { }
+  mouseUpResize(_e: MouseEvent, _headerId: string) { }
   readonly FileStack = FileStack;
   readonly ChevronLeft = ChevronLeft;
   readonly ChevronRight = ChevronRight;
@@ -116,7 +195,7 @@ export class LogViewComponent implements OnDestroy {
                 return (testStart ? (value.rangeFilter.start.compareTo(ts) <= 0) : true)
                   && (testFinish ? (ts.compareTo(value.rangeFilter.finish) <= 0) : true);
               });
-            console.log("filter start", value.rangeFilter.start.toString(), "finish", value.rangeFilter.finish.toString(), resultFilteredTime.length);
+            // console.log("filter start", value.rangeFilter.start.toString(), "finish", value.rangeFilter.finish.toString(), resultFilteredTime.length);
             this.listLogLineFilteredTime$.next(resultFilteredTime);
           }
         })
@@ -268,16 +347,18 @@ export class LogViewComponent implements OnDestroy {
     const timestamp = getLogLineTimestampValue(logLine);
     if (undefined === timestamp || null === timestamp) { return ""; }
 
-    const dur = Duration.between(currentLogTimestamp,timestamp);
+    const dur = Duration.between(currentLogTimestamp, timestamp);
     {
       const mili = dur.toMillis();
-      if (-1000<=mili && mili<=1000){ return mili.toFixed(2)+' ms'; }
+      if (-2000 <= mili && mili <= 2000) { return mili.toFixed(2) + ' ms'; }
     }
     {
       const seconds = dur.seconds();
-      if (-1000<=seconds && seconds<=1000){ return seconds.toFixed(2)+' sec'; }
+      if (-100 <= seconds && seconds <= 100) { return seconds.toFixed(2) + ' sec'; }
       const minutes = seconds / 60;
-      if (-24<=minutes && minutes<=24){ return minutes.toFixed(2)+' min'; }
+      if (-240 <= minutes && minutes <= 240) { return minutes.toFixed(2) + ' min'; }
+      const hours = seconds / 3600;
+      if (-24 <= hours && hours <= 24) { return hours.toFixed(2) + ' hrs'; }
     }
     return dur.toString();
   }
