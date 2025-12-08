@@ -5,6 +5,7 @@ import {
 } from '@angular/core';
 import { DateTimeFormatter, Duration, ZonedDateTime, ZoneId } from '@js-joda/core';
 import { BehaviorSubject, combineLatest, delay, filter, Subscription } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { getLogLineTimestampValue, LogLine } from '../../Api';
 import { BehaviorRingSubject } from '../../Utility/BehaviorRingSubject';
 import { MasterRingService } from '../../Utility/master-ring.service';
@@ -28,6 +29,7 @@ export type TimeScale2ViewModel = {
   majorTickEvery: number;
   listTick: TimescaleTick[];
   listLogTick: LogTick[];
+  selectedLogTick: LogTick | null;
 };
 
 export type TimescaleTick = {
@@ -72,6 +74,14 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
   readonly highlightedLogLineId = input<number | null>(null);
   readonly visibleRange = input<VisibleRange | null>(null);
 
+  readonly rangeZoom$ = toObservable(this.rangeZoom);
+  readonly rangeFilter$ = toObservable(this.rangeFilter);
+  readonly listLogLine$ = toObservable(this.listLogLine);
+  readonly selectedLogLineId$ = toObservable(this.selectedLogLineId);
+  readonly highlightedLogLineId$ = toObservable(this.highlightedLogLineId);
+  readonly visibleRange$ = toObservable(this.visibleRange);
+
+
   // Outputs
   readonly rangeFilterChange = output<TimeRangeOrNull>();
   readonly logLineClick = output<LogLine>();
@@ -107,13 +117,16 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
       tickUnit: 'ms',
       majorTickEvery: 10,
       listTick: [],
-      listLogTick: []
+      listLogTick: [],
+      selectedLogTick: null
     };
   }
 
   ngAfterViewInit(): void {
     this.updateViewBox();
-    this.setupStateSubscription();
+    window.requestAnimationFrame(() => {
+      this.setupStateSubscription();
+    });
   }
 
   ngOnDestroy(): void {
@@ -134,11 +147,14 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
     this.subscription.add(
       combineLatest({
         displayWidth: this.displayWidth$.pipe(filter(w => w > 0)),
+        rangeZoom:            this.rangeZoom$,
+        rangeFilter:          this.rangeFilter$,
+        listLogLine:          this.listLogLine$,
+        selectedLogLineId:    this.selectedLogLineId$,
+        highlightedLogLineId: this.highlightedLogLineId$,
+        visibleRange:         this.visibleRange$
       }).subscribe({
-        next: ({ displayWidth }) => {
-          const rangeZoom = this.rangeZoom();
-          const rangeFilter = this.rangeFilter();
-          const listLogLine = this.listLogLine();
+        next: ({ displayWidth, rangeZoom, rangeFilter, listLogLine, selectedLogLineId, highlightedLogLineId, visibleRange }) => {
 
           const { tickInterval, tickUnit, majorTickEvery } = this.calculateTicksBaseInfo(displayWidth, rangeZoom);
 
@@ -149,11 +165,21 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
 
           if (rangeFilter.start && rangeZoom.start.compareTo(rangeFilter.start) < 0) {
             startFilterPositionX = this.calcPositionX(rangeFilter.start, rangeZoom, displayWidth);
+          } else {
+            startFilterPositionX = 15;
           }
           if (rangeFilter.finish && rangeFilter.finish.compareTo(rangeZoom.finish) < 0) {
             finishFilterPositionX = this.calcPositionX(rangeFilter.finish, rangeZoom, displayWidth);
             finishFilterWidth = displayWidth - 15 - finishFilterPositionX;
+          } else {
+            finishFilterPositionX = displayWidth - 15;
+            finishFilterWidth = 15;
           }
+
+          const listTick = this.generateTicks(rangeZoom, displayWidth, tickInterval, tickUnit, majorTickEvery);
+          const listLogTick = this.generateLogTicks(listLogLine, rangeZoom, displayWidth, selectedLogLineId, highlightedLogLineId);
+
+          const selectedLogTick = listLogTick.find(t => t.id === selectedLogLineId) ?? null;
 
           const state: TimeScale2ViewModel = {
             displayWidth,
@@ -166,8 +192,9 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
             tickInterval,
             tickUnit,
             majorTickEvery,
-            listTick: this.generateTicks(rangeZoom, displayWidth, tickInterval, tickUnit, majorTickEvery),
-            listLogTick: this.generateLogTicks(listLogLine, rangeZoom, displayWidth)
+            listTick: listTick,
+            listLogTick: listLogTick,
+            selectedLogTick: selectedLogTick
           };
 
           this.state$.next(state);
@@ -236,9 +263,9 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
     return ticks;
   }
 
-  private generateLogTicks(listLogLine: LogLine[], rangeZoom: TimeRangeDuration, displayWidth: number): LogTick[] {
-    const selectedId = this.selectedLogLineId();
-    const highlightedId = this.highlightedLogLineId();
+  private generateLogTicks(listLogLine: LogLine[], rangeZoom: TimeRangeDuration, displayWidth: number, selectedId: number | null, highlightedId: number | null): LogTick[] {
+    //const selectedId = this.selectedLogLineId();
+    //const highlightedId = this.highlightedLogLineId();
     const ticks: LogTick[] = [];
 
     for (let i = 0; i < listLogLine.length; i++) {
@@ -272,11 +299,6 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
     if (!value) return '';
     try { return value.format(dateTimeFormatterHHmmssSSS); }
     catch { return ''; }
-  }
-
-  getSelectedLogTick(state: TimeScale2ViewModel): LogTick | null {
-    const selectedId = this.selectedLogLineId();
-    return state.listLogTick.find(t => t.id === selectedId) ?? null;
   }
 
   getVisibleRangeRect(state: TimeScale2ViewModel): { x: number; width: number } | null {

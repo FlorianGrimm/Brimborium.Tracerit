@@ -1,15 +1,10 @@
 <div class="log-view-2-container">
   <!-- TimeScale Panel -->
   <section class="timescale-panel">
-    <app-time-scale-2
-      [listLogLine]="(listLogLineFiltered$ | async) ?? []"
-      [rangeZoom]="(rangeZoom$ | async)!"
-      [rangeFilter]="(rangeFilter$ | async)!"
-      [selectedLogLineId]="selectedLogLineId()"
-      [highlightedLogLineId]="highlightedLogLineId()"
-      [visibleRange]="visibleRange()"
-      (rangeFilterChange)="onRangeFilterChange($event)"
-      (logLineClick)="onSelectLogLine($event)"
+    <app-time-scale-2 [listLogLine]="(listLogLineAll$ | async) ?? []" [rangeZoom]="(rangeZoom$ | async)!"
+      [rangeFilter]="(rangeFilter$ | async)!" [selectedLogLineId]="selectedLogLineId()"
+      [highlightedLogLineId]="highlightedLogLineId()" [visibleRange]="visibleRange()"
+      (rangeFilterChange)="onRangeFilterChange($event)" (logLineClick)="onSelectLogLine($event)"
       (logLineHover)="onHighlightLogLine($event)" />
   </section>
 
@@ -22,50 +17,43 @@
 
       <!-- Header Row -->
       <div class="grid-header" cdkDropList cdkDropListOrientation="horizontal"
-           (cdkDropListDropped)="onDropHeader($event)">
+        (cdkDropListDropped)="onDropHeader($event)">
         <div class="header-cell sticky-col" id="header-id" [style]="headerId()?.headerCellStyle ?? {}">
           <div>Id</div>
           <div class="resize-handle" (mousedown)="onResizeStart($event, headerId())"></div>
         </div>
         @for (header of listHeaders; track header.id) {
-          <div class="header-cell"
-               [id]="'header-' + header.id"
-               [style]="header.headerCellStyle"
-               >
-            <div class="header-content" cdkDrag>
-              <lucide-icon [img]="GripVertical" size="14" class="drag-handle" cdkDragHandle />
-              <span class="header-name">{{ header.name }}</span>
-              @if (header.filter) {
-                <button class="filter-btn active" (click)="removeFilter(header)" title="Remove filter">
-                  <lucide-icon [img]="FunnelX" size="14" />
-                </button>
-              }
-            </div>
-            <div class="resize-handle" (mousedown)="onResizeStart($event, header)"></div>
+        <div class="header-cell" [id]="'header-' + header.id" [style]="header.headerCellStyle">
+          <div class="header-content" cdkDrag>
+            <lucide-icon [img]="GripVertical" size="14" class="drag-handle" cdkDragHandle />
+            <span class="header-name">{{ header.name }}</span>
+            @if (header.filter) {
+            <button class="filter-btn active" (click)="removeFilter(header)" title="Remove filter">
+              <lucide-icon [img]="FunnelX" size="14" />
+            </button>
+            }
           </div>
+          <div class="resize-handle" (mousedown)="onResizeStart($event, header)"></div>
+        </div>
         }
       </div>
 
       <!-- Virtual Scroll Body -->
       <cdk-virtual-scroll-viewport [itemSize]="rowHeight" class="grid-body"
-                                    (scrolledIndexChange)="onScrollIndexChange()">
-        <div *cdkVirtualFor="let logLine of listLogLines; trackBy: trackByLogLine"
-             class="grid-row"
-             [class.selected]="isSelected(logLine)"
-             [class.highlighted]="isHighlighted(logLine)"
-             (click)="onSelectLogLine(logLine)"
-             (mouseenter)="onHighlightLogLine(logLine)"
-             (mouseleave)="onHighlightLogLine(null)">
-          <div class="data-cell sticky-col"  [style]="headerId()?.headerCellStyle ?? {}">
+        (scrolledIndexChange)="onScrollIndexChange()">
+        <div *cdkVirtualFor="let logLine of listLogLines; trackBy: trackByLogLine" class="grid-row"
+          [class.selected]="isSelected(logLine)" [class.highlighted]="isHighlighted(logLine)"
+          (click)="onSelectLogLine(logLine)" (mouseenter)="onHighlightLogLine(logLine)"
+          (mouseleave)="onHighlightLogLine(null)">
+          <div class="data-cell sticky-col" [style]="headerId()?.headerCellStyle ?? {}">
             <span class="log-id">{{ logLine.id }}</span>
             <span class="time-diff">{{ getTimeDiff(logLine) }}</span>
           </div>
           @for (header of listHeaders; track header.id) {
-            <div class="data-cell"
-                 [style]="header.dataCellStyle"
-                 (contextmenu)="addFilter(logLine, header); $event.preventDefault()">
-              {{ getContent(logLine, header) }}
-            </div>
+          <div class="data-cell" [style]="header.dataCellStyle"
+            (contextmenu)="addFilter(logLine, header); $event.preventDefault()">
+            {{ getContent(logLine, header) }}
+          </div>
           }
         </div>
       </cdk-virtual-scroll-viewport>
@@ -73,39 +61,39 @@
 
   </div>
   <div>
-    
+
     <!-- Details Panel -->
     <section class="details-panel">
       @let selected = selectedLogLine();
       @if (selected) {
-        <div class="header-content">
-            <h3>Log Details (ID: {{ selected.id }})</h3>
-            @for (item of getHeaderContent(selected); track item.name) {
-            <div class="detail-item">
-              <label (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:</label>
-              <span class="detail-value">{{ item.value }}</span>
-            </div>
-          }
+      <div class="header-content">
+        <h3>Log Details (ID: {{ selected.id }})</h3>
+        @for (item of getHeaderContent(selected); track item.name) {
+        <div class="detail-item">
+          <label (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:</label>
+          <span class="detail-value">{{ item.value }}</span>
         </div>
-        <div class="details-content">
-          @for (item of getDetailsContent(selected); track item.name) {
-            <div class="detail-item">
-              <label (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:</label>
-              <span class="detail-value">{{ item.value }}</span>
-            </div>
-          }
+        }
+      </div>
+      <div class="details-content">
+        @for (item of getDetailsContent(selected); track item.name) {
+        <div class="detail-item">
+          <label (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:</label>
+          <span class="detail-value">{{ item.value }}</span>
         </div>
+        }
+      </div>
       } @else {
-        <div class="no-selection">
-          <p>Select a log entry to view details</p>
-        </div>
+      <div class="no-selection">
+        <p>Select a log entry to view details</p>
+      </div>
       }
     </section>
   </div>
-    
+
   <!-- Stats Bar -->
   <footer class="stats-bar">
-    <span>Total: {{ (listLogLine$ | async)?.length ?? 0 }}</span>
-    <span>Filtered: {{ (listLogLineFiltered$ | async)?.length ?? 0 }}</span>
+    <span>Total: {{ (logTimeDataService.listLogLineAll$ | async)?.length ?? 0 }}</span>
+    <span>Filtered: {{ (logTimeDataService.listLogLineFilteredCondition$ | async)?.length ?? 0 }}</span>
   </footer>
 </div>

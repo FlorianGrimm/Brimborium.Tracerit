@@ -35,8 +35,8 @@ export class DataService {
     (name, message, value) => { console.log(name, message, value?.length); });
 
   // listLogLine 
-  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'DataService_listLogLine', this.subscription, this.ring$, undefined,
+  readonly listLogLineSource$ = new BehaviorRingSubject<LogLine[]>([],
+    0, 'DataService_listLogLineSource', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
 
   readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
@@ -49,7 +49,7 @@ export class DataService {
       filter(value => value)
     ).subscribe({
       next: (value) => {
-        this.listLogLine$.next([]);
+        this.listLogLineSource$.next([]);
       }
     });
   }
@@ -106,20 +106,20 @@ export class DataService {
     this.extractHeader(data);
     const restMaxLength = 1024-data.length;
     if (restMaxLength < 0) { 
-      this.listLogLine$.next(data);
+      this.listLogLineSource$.next(data);
     } else {
-      const currentData = this.listLogLine$.getValue();
+      const currentData = this.listLogLineSource$.getValue();
       const currentDataLimited = (restMaxLength < currentData.length) 
         ? currentData.slice(currentData.length - restMaxLength)
         : currentData;
       const nextData = currentDataLimited.concat(data);
-      this.listLogLine$.next(nextData);
+      this.listLogLineSource$.next(nextData);
     }
   }
 
   setListLogLine(data: LogLine[]) {
     this.extractHeader(data);
-    this.listLogLine$.next(data);
+    this.listLogLineSource$.next(data);
   }
 
   extractHeader(data: LogLine[]) {

@@ -11,7 +11,7 @@ import { LogTimeDataService } from '../Utility/log-time-data.service';
 import { MasterRingService } from '../Utility/master-ring.service';
 import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
 import { getVisualHeader } from '../Utility/propertyHeaderUtility';
-import { epoch0, epoch1, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
+import { epoch0, epoch1, getEffectiveRange, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
 import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader } from '../Api';
 
 import { TimeScale2Component, VisibleRange } from './time-scale-2/time-scale-2.component';
@@ -52,10 +52,10 @@ export class LogView2Component implements OnDestroy {
   readonly GripVertical = GripVertical;
 
   // Services
-  private readonly subscription = new Subscription();
-  private readonly ring$ = inject(MasterRingService).dependendRing('LogView2-ring$', this.subscription);
-  private readonly dataService = inject(DataService);
-  private readonly logTimeDataService = inject(LogTimeDataService);
+  readonly subscription = new Subscription();
+  readonly ring$ = inject(MasterRingService).dependendRing('LogView2-ring$', this.subscription);
+  readonly dataService = inject(DataService);
+  readonly logTimeDataService = inject(LogTimeDataService);
 
   // Virtual scroll viewport reference
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
@@ -65,7 +65,9 @@ export class LogView2Component implements OnDestroy {
   readonly listCurrentHeader$ = new BehaviorRingSubject<PropertyHeader[]>([], 0, 'LogView2_listCurrentHeader', this.subscription, this.ring$);
 
   // State - Log lines
-  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLine', this.subscription, this.ring$);
+  readonly listLogLineAll$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineAl', this.subscription, this.ring$);
+  readonly listLogLineTimeFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
+  readonly listLogLineTimeZoomed$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
   readonly listLogLineFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineFiltered', this.subscription, this.ring$);
 
   // State - Selection & Highlighting
@@ -74,7 +76,7 @@ export class LogView2Component implements OnDestroy {
   readonly selectedLogLine = computed(() => {
     const id = this.selectedLogLineId();
     if (id === null) return null;
-    return this.listLogLineFiltered$.getValue().find(l => l.id === id) ?? null;
+    return this.listLogLineAll$.getValue().find(l => l.id === id) ?? null;
   });
   readonly headerId = signal<PropertyHeader | undefined>(undefined);
 
@@ -99,9 +101,12 @@ export class LogView2Component implements OnDestroy {
   private overlay: HTMLDivElement | null = null;
 
   constructor() {
-    this.setupSubscriptions();
   }
-
+  ngOnInit(): void {
+    window.requestAnimationFrame(() => {
+      this.setupSubscriptions();
+    });
+  }
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
     this.cleanupResize();
@@ -125,9 +130,24 @@ export class LogView2Component implements OnDestroy {
 
     // Subscribe to log lines
     this.subscription.add(
-      this.logTimeDataService.listLogLineFilteredTime$.subscribe({
+      this.logTimeDataService.listLogLineAll$.subscribe({
         next: (value) => {
-          this.listLogLine$.next(value.slice());
+          this.listLogLineAll$.next(value);
+        }
+      })
+    );
+    this.subscription.add(
+      this.logTimeDataService.listLogLineTimeZoomed$.subscribe({
+        next: (value) => {
+          this.listLogLineTimeZoomed$.next(value);
+        }
+      })
+    );
+    
+    this.subscription.add(
+      this.logTimeDataService.listLogLineFilteredCondition$.subscribe({
+        next: (value) => {
+          this.listLogLineFiltered$.next(value);
         }
       })
     );
@@ -143,30 +163,6 @@ export class LogView2Component implements OnDestroy {
     this.subscription.add(
       this.logTimeDataService.rangeFilter$.subscribe({
         next: (value) => this.rangeFilter$.next(value)
-      })
-    );
-
-    // Filter log lines by time range
-    this.subscription.add(
-      combineLatest({
-        listLogLine: this.listLogLine$,
-        rangeFilter: this.rangeFilter$
-      }).subscribe({
-        next: ({ listLogLine, rangeFilter }) => {
-          const rangeFilterStart = rangeFilter.start ?? epoch0;
-          const rangeFilterFinish = rangeFilter.finish ?? epoch1;
-
-          const testStart = (epoch0.compareTo(rangeFilterStart) !== 0);
-          const testFinish = (epoch1.compareTo(rangeFilterFinish) !== 0);
-
-          const listFiltered = listLogLine.filter(item => {
-            const ts = getLogLineTimestampValue(item);
-            if (!ts) return false;
-            return (testStart ? (rangeFilterStart.compareTo(ts) <= 0) : true)
-              && (testFinish ? (ts.compareTo(rangeFilterFinish) <= 0) : true);
-          });
-          this.listLogLineFiltered$.next(listFiltered);
-        }
       })
     );
 
@@ -221,11 +217,17 @@ export class LogView2Component implements OnDestroy {
   }
 
   onRangeFilterChange(range: TimeRangeOrNull): void {
-    this.rangeFilter$.next(range);
-    this.logTimeDataService.rangeFilter$.next({
+    const rangeNormalized = {
       start: range.start ?? epoch0,
       finish: range.finish ?? epoch1
-    });
+    };
+    const rangeComplete = this.logTimeDataService.rangeComplete$.getValue();
+    const nextRange = getEffectiveRange([rangeComplete, rangeNormalized]);
+    console.log("onRangeFilterChange-rangeComplete", rangeComplete.start.toString(), rangeComplete.finish.toString());
+    console.log("onRangeFilterChange-rangeNormalized", rangeNormalized.start.toString(), rangeNormalized.finish.toString());
+    console.log("onRangeFilterChange-nextRange", nextRange.start.toString(), nextRange.finish.toString());
+    this.logTimeDataService.rangeFilter$.next(nextRange);
+    //this.rangeFilter$.next(range);
   }
 
   onScrollIndexChange(): void {

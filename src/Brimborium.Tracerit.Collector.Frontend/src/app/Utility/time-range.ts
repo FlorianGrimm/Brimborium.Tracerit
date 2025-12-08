@@ -167,3 +167,27 @@ export function setTimeRangeOrNullIfChanged(
     subject.next(Object.freeze(value));
   }
 }
+
+export function getEffectiveRange(list: TimeRange[]) {
+  let start: ZonedDateTime | null = null;
+  let finish: ZonedDateTime | null = null;
+
+  for (const item of list) {
+    if (epoch0.isEqual(item.start) ) {
+      //
+    } else if (start === null || start.compareTo(item.start) < 0) {
+      start = item.start;
+    }
+
+    if (epoch1.isEqual(item.finish) ) {
+      //
+    } else if (finish === null || item.finish.compareTo(finish)<0) {
+      finish = item.finish;
+    }
+  }
+
+  return {
+    start: start ?? epoch0,
+    finish: finish ?? epoch1,
+  };
+}
