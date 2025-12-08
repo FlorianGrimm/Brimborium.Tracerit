@@ -49,17 +49,31 @@ public class Program {
             options.FallbackPolicy = options.DefaultPolicy;
         });
 
-        //builder.Services.AddTracor(
-        //    addEnabledServices: true,
-        //    configureTracor: default,
-        //    configureConvert: default,
-        //    tracorScopedFilterSection:);
+        builder.Services.AddTracor(
+            addEnabledServices: true,
+            configureTracor: default,
+            configureConvert: default,
+            tracorScopedFilterSection: default)
+            .AddFileTracorCollectiveSinkDefault(
+                configuration: builder.Configuration,
+                configure: (options) => {
+                });
+
         builder
             .AddTracorCollectorServer(
                 configSectionPath: default,
-                configure: default);
+                configure: default)
+            .AddTracorCollectorToTracor();
 
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
+
+        AppConfig appConfig = new();
+        builder.Configuration.Bind(appConfig);
+        if (appConfig.ServiceName is { Length: > 0 } serviceName) {
+            builder.Services.AddWindowsService(options => {
+                options.ServiceName = serviceName;
+            });
+        }
 
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 

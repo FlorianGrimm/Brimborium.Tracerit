@@ -36,7 +36,7 @@ public sealed class TracorServerCollectorServiceReadAndWrite
         this._PartialCountByName = new();
     }
 
-    public void Push(TracorDataRecord tracorDataRecord) {
+    public void Push(TracorDataRecord tracorDataRecord, string? resourceName) {
         using (this._Lock.EnterScope()) {
             while (this._Capacity <= this._QueueTracorDataRecord.Count) {
                 if (this._QueueTracorDataRecord.Dequeue() is ReferenceCountObject referenceCountObject) {

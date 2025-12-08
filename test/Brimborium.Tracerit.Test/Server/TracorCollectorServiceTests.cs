@@ -15,7 +15,7 @@ public class TracorCollectorServiceTests {
         for (int index = 0; index < 128; index++) {
             var tracorDataRecord = tracorDataRecordPool.Rent();
             tracorDataRecord.Add(TracorDataProperty.CreateIntegerValue("test", index));
-            tracorCollectorService.Push(tracorDataRecord);
+            tracorCollectorService.Push(tracorDataRecord, null);
         }
 
         var list = tracorCollectorService.GetListTracorDataRecord(null);
@@ -38,7 +38,7 @@ public class TracorCollectorServiceTests {
         }
 
         tracorDataRecord0.Add(TracorDataProperty.CreateIntegerValue("test", -1));
-        tracorCollectorService.Push(tracorDataRecord0);
+        tracorCollectorService.Push(tracorDataRecord0, null);
         {
             var canBeReturned0AfterPush = ((IReferenceCountObject)tracorDataRecord0).CanBeReturned();
             await Assert.That(canBeReturned0AfterPush).IsEqualTo(2);
@@ -47,13 +47,13 @@ public class TracorCollectorServiceTests {
         for (int index = 0; index < 127; index++) {
             using (var tracorDataRecord = tracorDataRecordPool.Rent()) {
                 tracorDataRecord.Add(TracorDataProperty.CreateIntegerValue("test", index));
-                tracorCollectorService.Push(tracorDataRecord);
+                tracorCollectorService.Push(tracorDataRecord, null);
             }
         }
 
         var tracorDataRecord127 = tracorDataRecordPool.Rent();
         tracorDataRecord127.Add(TracorDataProperty.CreateIntegerValue("test", 127));
-        tracorCollectorService.Push(tracorDataRecord127);
+        tracorCollectorService.Push(tracorDataRecord127, null);
 
         {
             var canBeReturned127a = ((IReferenceCountObject)tracorDataRecord127).CanBeReturned();
@@ -95,7 +95,7 @@ public class TracorCollectorServiceTests {
         for (int index = 0; index < 16; index++) {
             var tracorDataRecord = tracorDataRecordPool.Rent();
             tracorDataRecord.Add(TracorDataProperty.CreateIntegerValue("test", index));
-            tracorCollectorService.Push(tracorDataRecord);
+            tracorCollectorService.Push(tracorDataRecord, null);
         }
         {
             var list = tracorCollectorService.GetListTracorDataRecord("a");
@@ -108,7 +108,7 @@ public class TracorCollectorServiceTests {
         for (int index = 16; index < 32; index++) {
             var tracorDataRecord = tracorDataRecordPool.Rent();
             tracorDataRecord.Add(TracorDataProperty.CreateIntegerValue("test", index));
-            tracorCollectorService.Push(tracorDataRecord);
+            tracorCollectorService.Push(tracorDataRecord, null);
         }
         { 
             var list = tracorCollectorService.GetListTracorDataRecord(null);

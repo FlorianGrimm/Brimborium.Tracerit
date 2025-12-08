@@ -9,7 +9,8 @@ public class FileTracorCollectiveSinkTests {
         var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: root,
             getBaseDirectory: null,
-            directory: null);
+            directory: null,
+            applicationName: "application");
         await Assert.That(act).IsEqualTo(root);
     }
 
@@ -19,7 +20,8 @@ public class FileTracorCollectiveSinkTests {
         var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: null,
             getBaseDirectory: () => root,
-            directory: null);
+            directory: null,
+            applicationName: "application");
         await Assert.That(act).IsEqualTo(root);
     }
 
@@ -31,7 +33,8 @@ public class FileTracorCollectiveSinkTests {
         var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: root,
             getBaseDirectory: null,
-            directory: "Log2");
+            directory: "Log2",
+            applicationName: "application");
         await Assert.That(act).IsEqualTo(rootLog2);
     }
 
@@ -43,7 +46,8 @@ public class FileTracorCollectiveSinkTests {
         var act = TracorCollectiveFileSink.GetDirectory(
             baseDirectory: null,
             getBaseDirectory: () => root,
-            directory: "Log2");
+            directory: "Log2",
+            applicationName: "application");
         await Assert.That(act).IsEqualTo(rootLog2);
     }
 

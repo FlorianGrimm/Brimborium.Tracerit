@@ -11,7 +11,7 @@ public sealed class TracorServerCollectorToPublisherService : ITracorServerColle
         this._TracorCollectivePublisher = tracorCollectivePublisher;
     }
 
-    public void Push(TracorDataRecord tracorDataRecord) {
+    public void Push(TracorDataRecord tracorDataRecord, string? resourceName) {
         this._TracorCollectivePublisher.OnTrace(
             isPublic: true,
             tracorData: tracorDataRecord);

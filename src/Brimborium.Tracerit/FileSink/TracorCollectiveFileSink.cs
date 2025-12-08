@@ -64,7 +64,8 @@ public sealed class TracorCollectiveFileSink
         string? directory = GetDirectory(
             options.BaseDirectory,
             options.GetBaseDirectory,
-            options.Directory);
+            options.Directory,
+            this._ApplicationName ?? "Application");
         if (string.IsNullOrWhiteSpace(directory)) {
             this._Directory = null;
             this._FileName = null;
@@ -106,13 +107,16 @@ public sealed class TracorCollectiveFileSink
 
     public DateTimeOffset PeriodStarted() => new DateTimeOffset(this._PeriodStarted * this._Period.Ticks, TimeSpan.Zero);
 
-
     public static string? GetDirectory(
         string? baseDirectory,
         Func<string?>? getBaseDirectory,
-        string? directory) {
+        string? directory,
+        string applicationName
+        ) {
         var directoryNormalized = (directory is { Length: > 0 })
-            ? directory.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar)
+            ? directory
+                .Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar)
+                .Replace("{ApplicationName}", applicationName)
             : null;
 
         /// if directory is FullyQualified use this
@@ -125,7 +129,8 @@ public sealed class TracorCollectiveFileSink
         string? baseDirectoryNormalized;
         {
             if (baseDirectory is { Length: > 0 }) {
-                baseDirectoryNormalized = baseDirectory.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar);
+                baseDirectoryNormalized = HandleReplacements(baseDirectory, applicationName);
+
                 if (!System.IO.Path.IsPathFullyQualified(baseDirectoryNormalized)) {
                     baseDirectoryNormalized = System.IO.Path.GetFullPath(
                             System.IO.Path.Combine(
@@ -142,7 +147,7 @@ public sealed class TracorCollectiveFileSink
                 }
             } else if (getBaseDirectory is { }
                 && getBaseDirectory() is { Length: > 0 } gottenBaseDirectory) {
-                baseDirectoryNormalized = gottenBaseDirectory.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar);
+                baseDirectoryNormalized = HandleReplacements(gottenBaseDirectory, applicationName);
                 if (System.IO.Directory.Exists(baseDirectoryNormalized)) {
                     // ok
                 } else {
@@ -157,7 +162,16 @@ public sealed class TracorCollectiveFileSink
             ? System.IO.Path.Combine(baseDirectoryNormalized, directoryNormalized)
             : baseDirectoryNormalized;
 
-        return directoryCombined;
+        return (directoryCombined is { Length: > 0 })
+            ? System.IO.Path.GetFullPath(directoryCombined)
+            : directoryCombined;
+
+        static string HandleReplacements(string value, string applicationName) {
+            value = System.Environment.ExpandEnvironmentVariables(value);
+            value = value.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar);
+            value = value.Replace("{ApplicationName}", applicationName);
+            return value;
+        }
     }
 
     public string GetLogFilePath(DateTime utcNow) {

@@ -9,8 +9,9 @@ public interface ITracorServerCollectorWrite {
     /// <summary>
     /// add the data to the collection
     /// </summary>
-    /// <param name="tracorDataRecord"></param>
-    void Push(TracorDataRecord tracorDataRecord);
+    /// <param name="tracorDataRecord">tracored record</param>
+    /// <param name="resourceName">the source application</param>
+    void Push(TracorDataRecord tracorDataRecord, string? resourceName);
 }
 
 public interface ITracorServerCollectorReadAndWrite : ITracorServerCollectorWrite {

@@ -72,7 +72,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
             if (tracorOptions.ApplicationName is { Length: > 0 } applicationName) {
                 this._ApplicationName = applicationName;
             } else if (this._ApplicationName is null) {
-                this._ApplicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+                this._ApplicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Application";
             }
 
             if (this._ServiceProvider is { } serviceProvider

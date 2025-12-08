@@ -10,14 +10,15 @@ public interface ITracorCollectorHttpService {
     /// Converts and pushes trace data from the request body stream.
     /// </summary>
     /// <param name="body">The request body stream containing trace data.</param>
+    /// <param name="applicationName">the resource</param>
     /// <param name="requestAborted">Cancellation token for the request.</param>
-    Task ConvertAndPush(Stream body, CancellationToken requestAborted);
+    Task ConvertAndPush(Stream body, string? applicationName, CancellationToken requestAborted);
 
     /// <summary>
     /// Handles an HTTP POST request containing trace data.
     /// </summary>
     /// <param name="httpContext">The HTTP context for the request.</param>
-    Task HandlePostAsync(HttpContext httpContext);
+    Task HandlePostAsync(HttpContext httpContext, string? applicationName);
 }
 
 public sealed class TracorCollectorHttpService : ITracorCollectorHttpService {
@@ -36,11 +37,11 @@ public sealed class TracorCollectorHttpService : ITracorCollectorHttpService {
         this._Logger = logger;
     }
 
-    public async Task HandlePostAsync(Microsoft.AspNetCore.Http.HttpContext httpContext) {
+    public async Task HandlePostAsync(Microsoft.AspNetCore.Http.HttpContext httpContext, string? applicationName) {
         httpContext.Response.StatusCode = 200;
         try {
             Stream body = httpContext.Request.Body;
-            await this.ConvertAndPush(body, httpContext.RequestAborted).ConfigureAwait(false);
+            await this.ConvertAndPush(body, applicationName, httpContext.RequestAborted).ConfigureAwait(false);
             this._ErrorLogged = false;
         } catch (Exception error) {
             if (this._ErrorLogged) {
@@ -52,7 +53,7 @@ public sealed class TracorCollectorHttpService : ITracorCollectorHttpService {
         }
     }
 
-    public async Task ConvertAndPush(Stream body, CancellationToken requestAborted) {
+    public async Task ConvertAndPush(Stream body, string? applicationName, CancellationToken requestAborted) {
         using (BrotliStream utf8Stream = new BrotliStream(body, CompressionMode.Decompress)) {
             using (SplitStream splitStream = new(utf8Stream, leaveOpen: true, chunkSize: 4096)) {
                 while (await splitStream.MoveNextStreamAsync(requestAborted)) {
@@ -60,7 +61,7 @@ public sealed class TracorCollectorHttpService : ITracorCollectorHttpService {
                         splitStream, this._JsonSerializerOptions, requestAborted)) {
                         if (tracorDataRecord is { }) {
                             foreach (var tracorCollector in _ListTracorCollector) { 
-                                tracorCollector.Push(tracorDataRecord);
+                                tracorCollector.Push(tracorDataRecord, applicationName);
                             }
                         }
                     }

@@ -37,8 +37,26 @@ public sealed class TracorCollectiveHttpSink
 
     internal override void SetBulkSinkOptionsExtended(TracorHttpSinkOptions options) {
         base.SetBulkSinkOptionsExtended(options);
-        this._TargetUrl = options.TargetUrl;
-        //System.Diagnostics.Debugger.Launch();
+        // this._TargetUrl = options.TargetUrl;
+        if (options.TargetUrl is { Length: > 8 } targetUrl) {
+            //var absolutePath = uri.AbsolutePath;
+            // /_api/tracerit/v1/collector.http
+
+            // TODO
+            //if (uri.AbsolutePath is { Length: > 10 } absolutePath
+            //    && absolutePath.Split('/') is { } listParts ) {
+            //if (listParts.Length == 4) {
+            //} else if (listParts.Length == 5) {
+            //} else {
+            //}
+            //}
+            var uri = new Uri(targetUrl, UriKind.Absolute);
+            var resource = Uri.EscapeDataString(this._ApplicationName ?? "Application");
+            var uritargetUrl = new Uri(uri, $"/_api/tracerit/v1/collector.http/{resource}");
+            this._TargetUrl = uritargetUrl.AbsoluteUri;
+        } else {
+            this._TargetUrl = null;
+        }
     }
 
     public override bool IsEnabled()

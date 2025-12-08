@@ -60,7 +60,8 @@ public static class TraceritServerServiceBuilderExtensions {
         
         return webApplicationBuilder;
     }
-    public static WebApplicationBuilder AddTracorCollectorClient(
+
+    public static WebApplicationBuilder AddTracorCollectorToTracor(
         this WebApplicationBuilder webApplicationBuilder
         ) {
         webApplicationBuilder.Services.AddSingleton<TracorServerCollectorToPublisherService>();

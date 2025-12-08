@@ -15,8 +15,8 @@ public class CollectorTracorEndpoints : IController {
     public void MapEndpoints(WebApplication app) {
         // /_api/tracerit/v1/collector.http
         var group = app.MapGroup("/_api/tracerit/v1");
-        group.MapPost("collector.http", async (HttpContext httpContext) => {
-            await this._CollectorHttpService.HandlePostAsync(httpContext);
+        group.MapPost("collector.http/{*applicationName}", async (HttpContext httpContext, string? applicationName) => {
+            await this._CollectorHttpService.HandlePostAsync(httpContext, applicationName);
             return Results.Ok();
         }).AllowAnonymous();
         //group.MapPost("collector.ws", async (HttpContext httpContext) => {
