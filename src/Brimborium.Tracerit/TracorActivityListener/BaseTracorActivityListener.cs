@@ -1,6 +1,4 @@
-﻿using Brimborium.Tracerit.Diagnostics;
-
-namespace Brimborium.Tracerit.TracorActivityListener;
+﻿namespace Brimborium.Tracerit.TracorActivityListener;
 
 internal abstract class BaseTracorActivityListener
     : IDisposable {
@@ -61,7 +59,7 @@ internal abstract class BaseTracorActivityListener
     protected readonly ILogger _Logger;
     protected IDisposable? _OptionsDispose;
 
-    protected TracorActivityListenerOptions _LastOptions = new();
+    protected TracorActivityListenerOptions _NextOrCurrentOptions = new();
     protected TracorActivityListenerOptions _DirectModifications = new();
     protected OptionState _OptionState = new() {
         ActivitySourceStartEventEnabled = false,
@@ -76,14 +74,14 @@ internal abstract class BaseTracorActivityListener
         this._ServiceProvider = serviceProvider;
         this._Options = options;
         this._Logger = logger;
-        this._LastOptions = this._Options.CurrentValue;
+        this._NextOrCurrentOptions = this._Options.CurrentValue;
         this._OptionsDispose = this._Options.OnChange(this.OnChangeOptions);
     }
 
     protected virtual void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
         using (this._Lock.EnterScope()) {
             var nextOptionState = OptionState.Create(options, this._DirectModifications);
-            this._LastOptions = options;
+            this._NextOrCurrentOptions = options;
             this.SetOptionState(nextOptionState);
         }
     }

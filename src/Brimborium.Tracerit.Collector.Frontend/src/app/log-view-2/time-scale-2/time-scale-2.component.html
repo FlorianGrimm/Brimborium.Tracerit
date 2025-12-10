@@ -35,14 +35,6 @@
       {{ toTimeString(state.rangeZoom.finish) }}
     </text>
 
-    <!-- Selected log line marker -->    
-    @if (state.selectedLogTick; as selectedTick) {
-    <line [attr.x1]="selectedTick.positionX" y1="0" [attr.x2]="selectedTick.positionX" y2="100" stroke="#007bff"
-      stroke-width="2" stroke-dasharray="4,2" />
-      <text fill="#000" [attr.x]="selectedTick.positionX" y="95" font-size="12" text-anchor="left">
-      {{ toTimeString(selectedTick.timestamp) }}      
-    </text>
-    }
 
     <!-- Filter range overlays (draggable) -->
     @if (state.startFilterPositionX !== null && state.startFilterPositionX >= 15) {
@@ -68,6 +60,16 @@
     @if (visibleRangeRect) {
     <rect [attr.x]="visibleRangeRect.x" y="82" [attr.width]="visibleRangeRect.width" height="8"
       fill="rgba(40, 167, 69, 0.4)" stroke="#28a745" stroke-width="1" rx="2" />
+    }
+
+    
+    <!-- Selected log line marker -->    
+    @if (state.selectedLogTick; as selectedTick) {
+    <line [attr.x1]="selectedTick.positionX" y1="0" [attr.x2]="selectedTick.positionX" y2="100" stroke="#007bff"
+      stroke-width="2" stroke-dasharray="4,2" />
+      <text fill="#fff" [attr.x]="selectedTick.positionX" y="95" font-size="12" text-anchor="left">
+      {{ toTimeString(selectedTick.timestamp) }}      
+    </text>
     }
   </svg>
   }

@@ -52,18 +52,34 @@ public partial class Program {
         */
 
         var tracorOptions = builder.Configuration.BindTracorOptionsDefault(new());
-
         {
             // TODO: find any non internal configuration methods
 
             var openTelemetryIsEnabled = builder.Configuration
                 .GetSection("OpenTelemetry")
                 .GetSection("IsEnabled")
-                .Value is "true" or "1";
+                .Value is "True";
             if (openTelemetryIsEnabled) {
-                builder.Logging.AddOpenTelemetry();
+                var loggerOtlpEndPoint = builder.Configuration
+                              .GetSection("OpenTelemetry")
+                              .GetSection("Logging")
+                              .GetSection("Exporter")
+                              .GetSection("Otlp")
+                              .GetSection("Endpoint")
+                              .Value;
+                var tracingOtlpEndPoint = builder.Configuration
+                               .GetSection("OpenTelemetry")
+                               .GetSection("Tracing")
+                               .GetSection("Exporter")
+                               .GetSection("Otlp")
+                               .GetSection("Endpoint")
+                               .Value;
+                if (loggerOtlpEndPoint is { Length: > 0 }) {
+                    builder.Logging.AddOpenTelemetry();
+                }
 
-                builder.Services.AddOpenTelemetry()
+                var openTelemetryBuilder = builder.Services
+                    .AddOpenTelemetry()
                     .ConfigureResource(
                         configure: (resource) => {
                             resource
@@ -71,21 +87,13 @@ public partial class Program {
                                     serviceName: tracorOptions.GetApplicationName(),
                                     serviceVersion: tracorOptions.ApplicationVersion ?? string.Empty
                                     );
-                        })
+                        });
+                {
+                    openTelemetryBuilder
                         .WithTracing(tracing => {
                             tracing
                                 .AddSource(SampleInstrumentation.ActivitySourceName)
-                                //.AddAspNetCoreInstrumentation()
-                                //.AddConsoleExporter()
                                 .AddAspNetCoreInstrumentation();
-
-                            var tracingOtlpEndPoint = builder.Configuration
-                                .GetSection("OpenTelemetry")
-                                .GetSection("Tracing")
-                                .GetSection("Exporter")
-                                .GetSection("Otlp")
-                                .GetSection("Endpoint")
-                                .Value;
 
                             if (tracingOtlpEndPoint is { Length: > 0 }) {
                                 tracing
@@ -96,61 +104,59 @@ public partial class Program {
                                         //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/traces");
                                     });
                             }
-                        })
-                        .WithLogging(
-                            (loggerProviderBuilder) => {
-                                var loggerOtlpEndPoint = builder.Configuration
-                                    .GetSection("OpenTelemetry")
-                                    .GetSection("Logging")
-                                    .GetSection("Exporter")
-                                    .GetSection("Otlp")
-                                    .GetSection("Endpoint")
-                                    .Value;
-                                if (loggerOtlpEndPoint is { Length: > 0 }) {
-                                    loggerProviderBuilder.AddOtlpExporter((otlpExporterOptions) => {
-                                        otlpExporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
-                                        otlpExporterOptions.Endpoint = new Uri(loggerOtlpEndPoint, UriKind.Absolute);
-                                        //otlpExporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
-                                        //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/logs");
-                                        //4318/v1/traces
-                                    });
-                                }
-                            }, (openTelemetryLoggerOptions) => {
-                                openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+                        });
+                }
+                {
+                    if (loggerOtlpEndPoint is { Length: > 0 }) {
+                        openTelemetryBuilder.WithLogging(
+                        (loggerProviderBuilder) => {
+                            loggerProviderBuilder.AddOtlpExporter((otlpExporterOptions) => {
+                                otlpExporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
+                                otlpExporterOptions.Endpoint = new Uri(loggerOtlpEndPoint, UriKind.Absolute);
+                                //otlpExporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
+                                //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/logs");
+                                //4318/v1/traces
                             });
+                        }, (openTelemetryLoggerOptions) => {
+                            openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+                        });
+                    }
+                }
             }
         }
-        var tracorEnabled = tracorOptions.IsEnabled || startupActions.Testtime;
-        builder.Services.AddTracor(
-            addEnabledServices: tracorEnabled,
-            configuration: builder.Configuration,
-            configureTracor: (tracorOptions) => {
-                tracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
-            },
-            configureConvert: null,
-            tracorScopedFilterSection: ""
-            )
-            .AddTracorActivityListener(
-                enabled: tracorEnabled,
-                configuration: default,
-                configure: (options) => {
-                    //options.AllowAllActivitySource = true;
-                    options.ListActivitySourceIdenifier.Add(new ActivitySourceIdentifier("Microsoft.AspNetCore"));
-                    options.ListActivitySourceIdenifier.Add(new ActivitySourceIdentifier("System.Net.Http"));
-                })
-            .AddTracorInstrumentation<SampleInstrumentation>()
-            .AddTracorLogger()
-            .AddFileTracorCollectiveSinkDefault(
-               configuration: builder.Configuration,
-               configure: (fileTracorOptions) => {
-               })
-            .AddTracorCollectiveHttpSink(
-               configuration: builder.Configuration,
-               configure: (tracorHttpSinkOptions) => {
-                   //tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
-               });
-        ;
-
+        {
+            var tracorEnabled = tracorOptions.IsEnabled || startupActions.Testtime;
+            builder.Services.AddTracor(
+                addEnabledServices: tracorEnabled,
+                configuration: builder.Configuration,
+                configureTracor: (tracorOptions) => {
+                    tracorOptions.SetOnGetApplicationStopping(static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+                },
+                configureConvert: null,
+                tracorScopedFilterSection: ""
+                )
+                .AddTracorActivityListener(
+                    enabled: tracorEnabled,
+                    configuration: builder.Configuration,
+                    configure: (options) => {
+                        //options.AllowAllActivitySource = true;
+                        options.ListActivitySourceIdenifier.Add(new ActivitySourceIdentifier("Microsoft.AspNetCore"));
+                        options.ListActivitySourceIdenifier.Add(new ActivitySourceIdentifier("System.Net.Http"));
+                    })
+                .AddTracorInstrumentation<SampleInstrumentation>()
+                .AddTracorLogger()
+                .AddFileTracorCollectiveSinkDefault(
+                   configuration: builder.Configuration,
+                   configure: (fileTracorOptions) => {
+                   })
+                .AddTracorCollectiveHttpSink(
+                   configuration: builder.Configuration,
+                   configure: (tracorHttpSinkOptions) => {
+                       //tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
+                   });
+            ;
+        }
+        
         if (startupActions.ConfigureWebApplicationBuilder is { } configureWebApplicationBuilder) { configureWebApplicationBuilder(builder); }
 
         var app = builder.Build();

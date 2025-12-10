@@ -43,11 +43,11 @@ public class UIEndpoints : IController {
             if (result is ResponseSuccessful<FileContentReadResponse> { Result: { } responseResult }) {
                 httpContext.Response.StatusCode = 200;
                 httpContext.Response.ContentType = responseResult.ContentType;
-                httpContext.Response.Headers.ContentLength = responseResult.ContentLength;
+                    httpContext.Response.Headers.ContentLength = responseResult.ContentLength;
                 if (responseResult.ContentEncoding is { Length: > 0 } contentEncoding) { 
                     httpContext.Response.Headers.ContentEncoding = contentEncoding;
                 }
-                await httpContext.Response.SendFileAsync(responseResult.FileFQ);
+                await httpContext.Response.SendFileAsync(responseResult.FileFQ, 0, responseResult.ContentLength, httpContext.RequestAborted);
             } else if (result is IResponseFailed responseFailed) {
                 await Results.BadRequest(responseFailed.Error).ExecuteAsync(httpContext);
 

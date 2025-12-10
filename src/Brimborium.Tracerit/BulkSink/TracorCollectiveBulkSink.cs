@@ -225,22 +225,20 @@ public abstract class TracorCollectiveBulkSink<TOptions>
 
     protected virtual async Task ConvertAndWriteAsync(
         IEnumerable<ITracorData> listTracorData,
-        bool addNewLine,
-        bool addResource,
+        bool reuseStream,
+        TracorDataRecord? addResource,
         Stream currentStream
         ) {
         var jsonSerializerOptions = this.GetJsonSerializerOptions();
 
         byte[] newLine = this._ArrayNewLine;
 
-        if (addNewLine) {
+        if (reuseStream) {
             currentStream.Write(newLine, 0, newLine.Length);
         }
-        if (addResource) {
-            if (this._Resource is { } resource) {
-                System.Text.Json.JsonSerializer.Serialize(currentStream, resource, jsonSerializerOptions);
-                currentStream.Write(newLine, 0, newLine.Length);
-            }
+        if (addResource is { } ) {
+            System.Text.Json.JsonSerializer.Serialize(currentStream, addResource, jsonSerializerOptions);
+            currentStream.Write(newLine, 0, newLine.Length);
         }
 
         foreach (var tracorData in listTracorData) {

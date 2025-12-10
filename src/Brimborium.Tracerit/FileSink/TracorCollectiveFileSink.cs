@@ -182,8 +182,10 @@ public sealed class TracorCollectiveFileSink
             var resourceName = groupListTracorData.Key;
             TracorCollectiveFileSinkOfResourceName? sinkByResource;
             while (!this._ByResourceName.TryGetValue(resourceName, out sinkByResource)) {
+                bool self = (resourceName == this._ApplicationName);
                 sinkByResource = new TracorCollectiveFileSinkOfResourceName(
                     this,
+                    self?this._Resource:default,
                     resourceName,
                     this._ConfigurationDirectory ?? string.Empty);
                 this._ByResourceName.TryAdd(resourceName, sinkByResource);
@@ -265,6 +267,7 @@ public sealed class TracorCollectiveFileSink
 
     internal sealed class TracorCollectiveFileSinkOfResourceName {
         private readonly TracorCollectiveFileSink _Parent;
+        private readonly TracorDataRecord? _Resource;
         private readonly string _ResourceName;
         private readonly string _Directory;
         private bool _DirectoryExists;
@@ -277,9 +280,11 @@ public sealed class TracorCollectiveFileSink
 
         public TracorCollectiveFileSinkOfResourceName(
             TracorCollectiveFileSink parent,
+            TracorDataRecord? resource,
             string resourceName,
             string directory) {
             this._Parent = parent;
+            this._Resource = resource;
             this._ResourceName = resourceName;
             var directoryForResource =
                 directory.Contains("{Resource}")
@@ -387,7 +392,8 @@ public sealed class TracorCollectiveFileSink
                 await this._Parent.ConvertAndWriteAsync(
                     listTracorData,
                     addNewLine,
-                    addResource, currentStream);
+                    addResource?this._Resource:default,
+                    currentStream);
 
                 await currentStream.FlushAsync();
 

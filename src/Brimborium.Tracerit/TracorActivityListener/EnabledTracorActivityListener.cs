@@ -32,7 +32,7 @@ internal sealed class EnabledTracorActivityListener
 
     protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
         if (this._Listener is null) {
-            this._LastOptions = options;
+            this._NextOrCurrentOptions = options;
         } else {
             base.OnChangeOptions(options, name);
         }
@@ -47,7 +47,7 @@ internal sealed class EnabledTracorActivityListener
         using (this._Lock.EnterScope()) {
             if (this._Listener is { }) { return; }
 
-            var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+            var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
             this.SetOptionState(nextOptionState);
             this.Restart();
         }
@@ -167,17 +167,40 @@ internal sealed class EnabledTracorActivityListener
     private const string _PrefixTag = "tag.";
     private const string _PrefixLink = "link.";
     private void CopyListProperty(Activity activity, List<TracorDataProperty> listProperty) {
+        string activityTraceId;
+        string activitySpanId;
+        string activityTraceFlags;
+            if (activity.IdFormat == ActivityIdFormat.W3C) {
+                activityTraceId = activity.TraceId.ToHexString();
+                activitySpanId = activity.SpanId.ToHexString();
+                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+            } else {
+                activityTraceId = activity.TraceId.ToHexString();
+                activitySpanId = activity.SpanId.ToHexString();
+                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+            }
+       
         {
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameActivitySpanId,
-                    activity.Id ?? string.Empty));
+                    //activity.Id ?? string.Empty
+                    activityTraceId
+                    ));
 
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameActivityTraceId,
-                    activity.TraceId.ToString()));
-
+                    activitySpanId
+                    //activity.TraceId.ToString()
+                    ));
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameActivityTraceFlags,
+                    activityTraceFlags
+                    //activity.TraceId.ToString()
+                    ));
+            
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameOperationName,
@@ -299,7 +322,7 @@ internal sealed class EnabledTracorActivityListener
             if (this._Listener is null) {
                 //
             } else {
-                var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+                var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
                 this.SetOptionState(nextOptionState);
                 this.Restart();
             }
@@ -312,7 +335,7 @@ internal sealed class EnabledTracorActivityListener
                 if (this._Listener is null) {
                     //
                 } else {
-                    var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+                    var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
                     this.SetOptionState(nextOptionState);
                     this.Restart();
                 }
@@ -326,7 +349,7 @@ internal sealed class EnabledTracorActivityListener
             if (this._Listener is null) {
                 //
             } else {
-                var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+                var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
                 this.SetOptionState(nextOptionState);
                 this.Restart();
             }
@@ -339,7 +362,7 @@ internal sealed class EnabledTracorActivityListener
                 if (this._Listener is null) {
                     //
                 } else {
-                    var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+                    var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
                     this.SetOptionState(nextOptionState);
                     this.Restart();
                 }

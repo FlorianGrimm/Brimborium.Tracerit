@@ -82,7 +82,7 @@ public sealed class TracorCollectiveHttpSink
                 this._TargetUrl)) {
                 using (var stream = this._TracorMemoryPoolManager.RecyclableMemoryStreamManager.GetStream()) {
                     using (var brotliStream = new BrotliStream(stream, CompressionMode.Compress, true)) {
-                        await this.ConvertAndWriteAsync(listTracorData, false, true, brotliStream);
+                        await this.ConvertAndWriteAsync(listTracorData, false, this._Resource, brotliStream);
                         brotliStream.Flush();
                     }
 
@@ -98,7 +98,7 @@ public sealed class TracorCollectiveHttpSink
                 }
             }
             this._BlockDelay = 0;
-        } catch {
+        } catch (System.Exception error){
             this._HttpClient?.Dispose();
             this._HttpClient = null;
             this._BlockDelay = System.Math.Min(
@@ -106,6 +106,9 @@ public sealed class TracorCollectiveHttpSink
                     System.Math.Max(1,
                         2 + (this._BlockDelay * 3) / 2));
             this._BlockUntil = utcNow.AddSeconds(this._BlockDelay + 30);
+            if (this._TracorEmergencyLogging.IsEnabled) {
+                this._TracorEmergencyLogging.Log($"TracorCollectiveHttpSink error while transport {error.Message}.");
+            }
         }
     }
 }

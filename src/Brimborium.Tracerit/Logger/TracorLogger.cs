@@ -80,10 +80,16 @@ internal sealed class TracorLogger : ILogger {
             string activityTraceId;
             string activitySpanId;
             string activityTraceFlags;
-            if (activity != null && activity.IdFormat == ActivityIdFormat.W3C) {
-                activityTraceId = activity.TraceId.ToHexString();
-                activitySpanId = activity.SpanId.ToHexString();
-                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+            if (activity != null ) {
+                if (activity.IdFormat == ActivityIdFormat.W3C) {
+                    activityTraceId = activity.TraceId.ToHexString();
+                    activitySpanId = activity.SpanId.ToHexString();
+                    activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+                } else {
+                    activityTraceId = activity.TraceId.ToHexString();
+                    activitySpanId = activity.SpanId.ToHexString();
+                    activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+                }
             } else {
                 activityTraceId = string.Empty;
                 activitySpanId = string.Empty;

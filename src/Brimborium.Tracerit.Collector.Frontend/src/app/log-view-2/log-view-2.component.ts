@@ -19,14 +19,16 @@ import { TimeScale2Component, VisibleRange } from './time-scale-2/time-scale-2.c
 const headerContentNames: string[] = [
   "timestamp",
   "logLevel",
+  "resource",
   "source",
   "scope",
 ];
 const headerContentNamesPosition = new Map<string, number>([
   ["timestamp", 1],
   ["logLevel", 2],
-  ["source", 3],
-  ["scope", 4],
+  ["resource", 3],
+  ["source", 4],
+  ["scope", 5],
 ]);
 
 @Component({

@@ -137,6 +137,7 @@ export class DataService {
     this.addMapName("id", "int", false);
     this.addMapName("timestamp", "dt", true);
     this.addMapName("logLevel", "lvl", true);
+    this.addMapName("resource", "str", true);
     this.addMapName("source", "str", true);
     this.addMapName("scope", "str", true);
     this.addMapName("message", "str", true);

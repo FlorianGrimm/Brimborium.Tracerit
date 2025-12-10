@@ -2,13 +2,19 @@
 
 public static class TracorBuilderExtension {
 
-    internal static IConfiguration GetConfigurationTracorSection(IConfiguration configuration) {
+    public static IConfiguration GetConfigurationTracorSection(IConfiguration configuration) {
         return configuration.GetSection("Tracor");
     }
-    internal static IConfiguration GetConfigurationTracorFileSinkSection(IConfiguration configuration) {
+
+    public static IConfiguration GetConfigurationTracorActivityListenerSection(IConfiguration configuration) {
+        return configuration.GetSection("Tracor").GetSection("ActivityListener");
+    }
+
+    public static IConfiguration GetConfigurationTracorFileSinkSection(IConfiguration configuration) {
         return configuration.GetSection("Tracor").GetSection("FileSink");
     }
-    internal static IConfiguration GetConfigurationTracorHttpSinkSection(IConfiguration configuration) {
+
+    public static IConfiguration GetConfigurationTracorHttpSinkSection(IConfiguration configuration) {
         return configuration.GetSection("Tracor").GetSection("HttpSink");
     }
 
@@ -99,7 +105,12 @@ public static class TracorBuilderExtension {
         // options configure
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>();
         if (configuration is { }) {
-            optionsBuilder.Bind(configuration);
+            if (configuration is IConfigurationRoot configurationRoot) {
+                optionsBuilder.Bind(
+                    TracorBuilderExtension.GetConfigurationTracorActivityListenerSection(configurationRoot));
+            } else { 
+                optionsBuilder.Bind(configuration);
+            }
         }
         if (configure is { }) {
             optionsBuilder.Configure(configure);

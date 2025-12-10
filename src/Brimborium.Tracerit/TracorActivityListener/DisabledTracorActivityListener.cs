@@ -30,7 +30,7 @@ internal sealed class DisabledTracorActivityListener
     public void AddActivitySourceName(string name) {
         using (this._Lock.EnterScope()) {
             this._DirectModifications.ListActivitySourceName.Add(name);
-            var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+            var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
             this.SetOptionState(nextOptionState);
         }
     }
@@ -39,7 +39,7 @@ internal sealed class DisabledTracorActivityListener
     public void RemoveActivitySourceName(string name) {
         using (this._Lock.EnterScope()) {
             if (this._DirectModifications.ListActivitySourceName.Remove(name)) {
-                var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+                var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
                 this.SetOptionState(nextOptionState);
             }
         }
@@ -48,7 +48,7 @@ internal sealed class DisabledTracorActivityListener
     public void AddActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier) {
         using (this._Lock.EnterScope()) {
             this._DirectModifications.ListActivitySourceIdenifier.Add(activitySourceIdentifier);
-            var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+            var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
             this.SetOptionState(nextOptionState);
         }
     }
@@ -56,7 +56,7 @@ internal sealed class DisabledTracorActivityListener
     public void RemoveActivitySourceIdentifier(ActivitySourceIdentifier activitySourceIdentifier) {
         using (this._Lock.EnterScope()) {
             if (this._DirectModifications.ListActivitySourceIdenifier.Remove(activitySourceIdentifier)) {
-                var nextOptionState = OptionState.Create(this._LastOptions, this._DirectModifications);
+                var nextOptionState = OptionState.Create(this._NextOrCurrentOptions, this._DirectModifications);
                 this.SetOptionState(nextOptionState);
             }
         }
