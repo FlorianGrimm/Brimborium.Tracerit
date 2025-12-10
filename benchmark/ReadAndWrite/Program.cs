@@ -35,8 +35,8 @@ public class Program {
         var tracorEnabled = tracorOptions.IsEnabled;
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
+                configuration: builder.Configuration,
                 configureTracor: (options) => {
-                    builder.Configuration.BindTracorOptionsDefault(options);
                     options.SetOnGetApplicationStopping(
                         static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
                 },

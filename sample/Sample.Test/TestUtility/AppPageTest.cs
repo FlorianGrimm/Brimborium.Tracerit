@@ -1,8 +1,8 @@
 ﻿namespace Sample.WebApp.TestUtility;
 
 public class AppPageTest : PageTest {
-    [ClassDataSource<WebApplicationFactoryIntegration>(Shared = SharedType.PerTestSession)]
-    public required WebApplicationFactoryIntegration WebApplicationFactory { get; init; }
+    [ClassDataSource<WebAppIntegration>(Shared = SharedType.PerTestSession)]
+    public required WebAppIntegration WebApplicationFactory { get; init; }
 
     protected override BrowserTypeLaunchOptions ConfigureBrowserTypeLaunchOptions(BrowserTypeLaunchOptions options) {
 #if false

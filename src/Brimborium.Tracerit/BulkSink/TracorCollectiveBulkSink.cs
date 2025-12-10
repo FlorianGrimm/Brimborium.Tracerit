@@ -162,13 +162,26 @@ public abstract class TracorCollectiveBulkSink<TOptions>
             int watchDog = 0;
             while (!this._TaskLoopEnds.IsCancellationRequested) {
                 if (watchDog < 10) {
+                    if (this._TracorEmergencyLogging.IsEnabled) {
+                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} Delay");
+                    }
                     await Task.Delay(this._FlushPeriod);
                     watchDog++;
                 } else {
+                    if (this._TracorEmergencyLogging.IsEnabled) {
+                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} Wait");
+                    }
                     await reader.WaitToReadAsync(this._TaskLoopEnds.Token);
                 }
                 if (await this.FlushAsync(reader, listTracorData)) {
                     watchDog = 0;
+                    if (this._TracorEmergencyLogging.IsEnabled) {
+                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} entries writen.");
+                    }
+                } else {
+                    if (this._TracorEmergencyLogging.IsEnabled) {
+                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} no entries to write.");
+                    }
                 }
             }
             await this.FlushAsync(reader, listTracorData);
@@ -192,9 +205,6 @@ public abstract class TracorCollectiveBulkSink<TOptions>
                 listTracorData.Add(tracorData);
             }
             if (0 == listTracorData.Count) {
-                if (this._TracorEmergencyLogging.IsEnabled) {
-                    this._TracorEmergencyLogging.Log($"{this.GetType().Name} no entries to write.");
-                }
                 return false;
             }
 

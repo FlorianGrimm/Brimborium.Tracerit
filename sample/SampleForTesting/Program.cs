@@ -1,5 +1,7 @@
 // MIT - Florian Grimm
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Sample.OOP.Test")]
+
 namespace SampleForTesting;
 
 public class Program {
@@ -10,15 +12,21 @@ public class Program {
             string pathStaticAssets = GetPathStaticAssets();
             var contentRoot = global::Sample.WebApp.Program.GetContentRoot();
             var extendedArgs = new string[] {
-                    @"--environment=Development",
-                    $"--contentRoot={contentRoot}",
-                    @"--applicationName=Sample",
                     $"--StaticAssets={pathStaticAssets}"
                 };
             var nextArgs = args.Concat(extendedArgs).ToArray();
+            WebApplicationOptions webApplicationOptions = new() {
+                ApplicationName = "Sample",
+                EnvironmentName = "Development",
+                ContentRootPath = contentRoot,
+                Args = nextArgs
+            };
+            var builder = WebApplication.CreateBuilder(webApplicationOptions);
+            Brimborium.Tracerit.Utility.TracorTestingUtility.WireParentTestingProcessForTesting(builder.Configuration);
+
             await global::Sample.WebApp.Program.RunAsync(
-                nextArgs,
-                new()
+                builder: builder,
+                startupActions: new()
                 ).ConfigureAwait(false);
             return 0;
         } catch (Microsoft.Extensions.Hosting.HostAbortedException) {
@@ -44,5 +52,13 @@ public class Program {
             assemblyLocation,
             "Sample.staticwebassets.endpoints.json");
         return result;
+    }
+
+    internal static string GetSampleForTestingCsproj() {
+        return System.IO.Path.Combine(GetProjectSourceCodeFolder(), "SampleForTesting.csproj");
+
+        static string GetProjectSourceCodeFolder([System.Runtime.CompilerServices.CallerFilePath] string thisFilePath = "") {
+            return System.IO.Path.GetDirectoryName(thisFilePath) ?? throw new Exception("no source code");
+        }
     }
 }

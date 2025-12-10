@@ -116,6 +116,7 @@ public class TracorTests {
         serviceCollection.AddSingleton<IConfiguration>(configurationBuilder.Build());
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);

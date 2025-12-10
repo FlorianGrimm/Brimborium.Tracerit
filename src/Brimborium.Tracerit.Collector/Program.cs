@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.ResponseCompression;
 
 [assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.Test")]
 
@@ -51,6 +52,7 @@ public class Program {
 
         builder.Services.AddTracor(
             addEnabledServices: true,
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default)
@@ -64,6 +66,15 @@ public class Program {
                 configSectionPath: default,
                 configure: default)
             .AddTracorCollectorToTracor();
+
+        /*
+        builder.Services.AddResponseCompression(options => {
+            options.EnableForHttps = true;
+            options.MimeTypes =
+               ResponseCompressionDefaults.MimeTypes.Concat(
+                   new[] { "application/jsonl" });
+        });
+        */
 
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
 
@@ -91,6 +102,7 @@ public class Program {
 
         //app.UseAuthorization();
         //app.UseAuthentication();
+        /* app.UseResponseCompression(); */
         app.UseAngularFileService();
         app.MapTracorControllerEndpoints();
 

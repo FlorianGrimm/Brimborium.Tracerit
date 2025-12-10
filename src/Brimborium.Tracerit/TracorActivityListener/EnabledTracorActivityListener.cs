@@ -10,6 +10,7 @@ internal sealed class EnabledTracorActivityListener
     private readonly TracorDataRecordPool _TracorDataRecordPool;
     private readonly ITracorCollectiveSink _Sink;
     private readonly ITracorDataConvertService _TracorDataConvertService;
+    private readonly TracorEmergencyLogging _TracorEmergencyLogging;
 
     [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor()]
     public EnabledTracorActivityListener(
@@ -18,13 +19,15 @@ internal sealed class EnabledTracorActivityListener
         ITracorCollectiveSink sink,
         ITracorDataConvertService tracorDataConvertService,
         IOptionsMonitor<TracorActivityListenerOptions> options,
-        ILogger<EnabledTracorActivityListener> logger) : base(
+        ILogger<EnabledTracorActivityListener> logger,
+        TracorEmergencyLogging tracorEmergencyLogging) : base(
             serviceProvider,
             options,
             logger) {
         this._TracorDataRecordPool = tracorDataRecordPool;
         this._Sink = sink;
         this._TracorDataConvertService = tracorDataConvertService;
+        this._TracorEmergencyLogging = tracorEmergencyLogging;
     }
 
     protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
@@ -89,6 +92,9 @@ internal sealed class EnabledTracorActivityListener
             result = this.OnShouldListenTo(activitySourceIdentifier);
         }
         this._Logger.OnShouldListenToReturns(activitySourceIdentifier, result);
+        if (this._TracorEmergencyLogging.IsEnabled) {
+            this._TracorEmergencyLogging.Log($"OnShouldListenTo({activitySource.Name}):{result}");
+        }
         return result;
     }
 

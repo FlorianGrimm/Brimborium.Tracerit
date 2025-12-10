@@ -11,6 +11,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -31,7 +32,7 @@ public class ExpressionTests {
         });
 
         // Assert
-        await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListFinished()).Count().EqualTo(1);
     }
 
     [Test]
@@ -40,6 +41,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -61,7 +63,7 @@ public class ExpressionTests {
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).Count().EqualTo(1);
     }
 
     [Test]
@@ -70,6 +72,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -100,7 +103,7 @@ public class ExpressionTests {
             });
 
             // Assert
-            await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+            await Assert.That(validatorPath.GetListFinished()).Count().EqualTo(1);
         }
     }
 
@@ -110,6 +113,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -134,7 +138,7 @@ public class ExpressionTests {
                     ListProperty = [new TracorDataProperty("value", "first")]
                 });
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).Count().EqualTo(1);
 
         validatorPath.OnTrace(new TracorDataRecord() {
             TracorIdentifier = callee,
@@ -142,7 +146,7 @@ public class ExpressionTests {
         });
 
         // Assert
-        await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListFinished()).Count().EqualTo(1);
     }
 
     [Test]
@@ -151,6 +155,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -196,7 +201,7 @@ public class ExpressionTests {
         var newSequence = sequence + secondExpression;
 
         // Assert
-        await Assert.That(newSequence.ListChild).HasCount().EqualTo(2);
+        await Assert.That(newSequence.ListChild).Count().EqualTo(2);
     }
 
     [Test]
@@ -205,6 +210,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -231,7 +237,7 @@ public class ExpressionTests {
         });
 
         // Assert
-        await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListFinished()).Count().EqualTo(1);
     }
 
     [Test]
@@ -240,6 +246,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -274,7 +281,7 @@ public class ExpressionTests {
             }); 
 
             // Assert
-            await Assert.That(validatorPath.GetListFinished()).HasCount().EqualTo(1);
+            await Assert.That(validatorPath.GetListFinished()).Count().EqualTo(1);
         }
     }
 
@@ -284,6 +291,7 @@ public class ExpressionTests {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging();
         serviceCollection.AddEnabledTracor(
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default);
@@ -307,7 +315,7 @@ public class ExpressionTests {
 
         // Assert
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
-        await Assert.That(validatorPath.GetListRunning()).HasCount().EqualTo(1);
+        await Assert.That(validatorPath.GetListRunning()).Count().EqualTo(1);
     }
 
     [Test]

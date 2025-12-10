@@ -2,31 +2,14 @@
 
 public sealed class TracorCollectiveFileSink
     : TracorCollectiveBulkSink<TracorFileSinkOptions> {
-    //private IDisposable? _TracorOptionsMonitorDisposing;
-    //private IDisposable? _FileTracorOptionsMonitorDisposing;
-    //private readonly IServiceProvider? _ServiceProvider;
-    //private CancellationTokenRegistration? _OnApplicationStoppingDisposing;
-    //private Func<CancellationToken?> _GetOnApplicationStoppingDisposing = () => null;
-
-    //private readonly Lock _LockProperties = new Lock();
     private string? _Directory;
     private DateTime _DirectoryRecheck = new DateTime(0);
     private string? _FileName;
     private TimeSpan _Period = TimeSpan.Zero;
-    //private TimeSpan _FlushPeriod = TimeSpan.Zero;
     private TracorCompression _Compression = TracorCompression.None;
-    //private TracorDataRecord? _Resource;
     private System.IO.Stream? _CurrentFileStream;
     private string? _CurrentFileFQN;
     private long _PeriodStarted;
-
-    //private readonly System.Threading.Channels.Channel<ITracorData> _Channel;
-    //private readonly ChannelWriter<ITracorData> _ChannelWriter;
-    //private Task? _TaskLoop;
-    //private readonly CancellationTokenSource _TaskLoopEnds = new();
-    //private readonly SemaphoreSlim _AsyncLockWriteFile = new(initialCount: 1, maxCount: 1);
-    //private readonly TracorEmergencyLogging _TracorEmergencyLogging;
-    //private string? _ApplicationName;
     private bool _DirectoryExists;
     private bool _CleanupEnabled;
     private TimeSpan _CleanupPeriod = TimeSpan.FromDays(31);
@@ -80,7 +63,7 @@ public sealed class TracorCollectiveFileSink
             this._FileName = options.FileName;
             this._Period = options.Period;
             this._FlushPeriod = options.FlushPeriod;
-            this._Compression = options.Compression switch {
+            this._Compression = options.Compression?.ToLowerInvariant() switch {
                 "brotli" => TracorCompression.Brotli,
                 "gzip" => TracorCompression.Gzip,
                 _ => TracorCompression.None
@@ -350,13 +333,10 @@ public sealed class TracorCollectiveFileSink
     public const string FileExtensionGzip = ".gzip";
 
     public static TracorCompression? GetCompressionFromFileName(string currentFileFQN) {
-        if (currentFileFQN.EndsWith(FileExtensionJsonl)) {
-            if (currentFileFQN.EndsWith(FileExtensionJsonlBrotli)) { return TracorCompression.Brotli; }
-            if (currentFileFQN.EndsWith(FileExtensionJsonlGzip)) { return TracorCompression.Gzip; }
-            return TracorCompression.None;
-        } else {
-            return null;
-        }
+        if (currentFileFQN.EndsWith(FileExtensionJsonl)) { return TracorCompression.None; }
+        if (currentFileFQN.EndsWith(FileExtensionJsonlBrotli)) { return TracorCompression.Brotli; }
+        if (currentFileFQN.EndsWith(FileExtensionJsonlGzip)) { return TracorCompression.Gzip; } 
+        return null;
     }
 
     public static async Task CompressFileAsync(string currentFileFQN, TracorCompression compression) {

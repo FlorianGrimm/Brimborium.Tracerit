@@ -1,21 +1,24 @@
 ﻿// MIT - Florian Grimm
 
 using Brimborium.Tracerit;
+using Microsoft.Extensions.DependencyInjection;
+
 using Brimborium.Tracerit.Condition;
 using Brimborium.Tracerit.Expression;
-using static Brimborium.Tracerit.TracorExtension;
 
-using Microsoft.Extensions.DependencyInjection;
+using Sample.OOP.Test.TestUtility;
+
+using static Brimborium.Tracerit.TracorExtension;
 
 [assembly: NotInParallel]
 namespace Sample.WebApp;
 public class StartTest {
-    [ClassDataSource<TestingServersService>(Shared = SharedType.PerTestSession)]
-    public required TestingServersService TestingServers { get; init; }
+    [ClassDataSource<WebAppIntegration>(Shared = SharedType.PerTestSession)]
+    public required WebAppIntegration WebAppIntegration { get; init; }
 
     [Test]
     public async Task StartWebTest() {
-        await Assert.That(this.TestingServers.IsRunning()).IsTrue();
+        await Assert.That(this.WebAppIntegration.IsRunning()).IsTrue();
         
         var expression = new SequenceExpression()
             .Add(
@@ -24,7 +27,7 @@ public class StartTest {
                     && tracorGlobalState.TryCopyDateTimeOffsetValue("now", tracorData, "now")
                 ).AsMatch()
             );
-        using (var validatorPath = this.TestingServers.GetTracorValidator().Add(
+        using (var validatorPath = this.WebAppIntegration.GetTracorValidator().Add(
             expression
             )) {
             { 

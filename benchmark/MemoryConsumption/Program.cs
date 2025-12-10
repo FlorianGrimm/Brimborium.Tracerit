@@ -32,7 +32,8 @@ public class Program {
         var tracorEnabled = tracorOptions.IsEnabled;
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
-                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options),
+                configuration: builder.Configuration,
+                configureTracor: default, /* (options) => builder.Configuration.BindTracorOptionsDefault(options), */
                 configureConvert: default,
                 tracorScopedFilterSection: default)
             //.AddFileTracorCollectiveSinkDefault(

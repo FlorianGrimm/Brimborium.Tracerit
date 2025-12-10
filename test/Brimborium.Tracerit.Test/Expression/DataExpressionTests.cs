@@ -17,6 +17,7 @@ public class DataExpressionTests {
         });
         serviceBuilder.AddTracor(
             addEnabledServices: true,
+            configuration: default,
             configureTracor: default,
             configureConvert: default,
             tracorScopedFilterSection: default)

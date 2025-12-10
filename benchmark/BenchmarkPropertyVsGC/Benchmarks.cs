@@ -95,7 +95,8 @@ public class Benchmarks {
         const bool tracorEnabled = true;
         builder.Services.AddTracor(
                 addEnabledServices: tracorEnabled,
-                configureTracor: (options) => builder.Configuration.BindTracorOptionsDefault(options),
+                configuration: builder.Configuration,
+                configureTracor: default, /* (options) => builder.Configuration.BindTracorOptionsDefault(options), */
                 configureConvert: default,
                 tracorScopedFilterSection: default)
             .AddTracorActivityListener(

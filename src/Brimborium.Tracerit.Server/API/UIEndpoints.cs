@@ -37,23 +37,22 @@ public class UIEndpoints : IController {
             return this._LogFileService.DirectoryBrowse();
         }).AllowAnonymous();
 
-        group.MapGet("/File/{name}", (string name) => {
+        group.MapGet("/File/{name}", async (HttpContext httpContext, string name) => {
             var nameNormalize = name.TrimStart('\\', '/');
             var result = this._LogFileService.FileContentRead(name);
             if (result is ResponseSuccessful<FileContentReadResponse> { Result: { } responseResult }) {
-                return TypedResults.PhysicalFile(
-                    path: responseResult.FileFQ,
-                    contentType: responseResult.ContentType,
-                    fileDownloadName: responseResult.FileDownloadName,
-                    lastModified: responseResult.LastModified,
-                    entityTag: responseResult.EntityTag,
-                    enableRangeProcessing: responseResult.EnableRangeProcessing);
-
+                httpContext.Response.StatusCode = 200;
+                httpContext.Response.ContentType = responseResult.ContentType;
+                httpContext.Response.Headers.ContentLength = responseResult.ContentLength;
+                if (responseResult.ContentEncoding is { Length: > 0 } contentEncoding) { 
+                    httpContext.Response.Headers.ContentEncoding = contentEncoding;
+                }
+                await httpContext.Response.SendFileAsync(responseResult.FileFQ);
             } else if (result is IResponseFailed responseFailed) {
-                return Results.BadRequest(responseFailed.Error);
+                await Results.BadRequest(responseFailed.Error).ExecuteAsync(httpContext);
 
             } else {
-                return Results.InternalServerError();
+                await Results.InternalServerError().ExecuteAsync(httpContext);
             }
         }).AllowAnonymous();
     }

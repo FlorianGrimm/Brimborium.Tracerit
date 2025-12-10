@@ -35,11 +35,13 @@ public static partial class TracorServiceCollectionExtensions {
     public static ITracorBuilder AddTracor(
             this IServiceCollection serviceBuilder,
             bool addEnabledServices,
+            IConfiguration? configuration,
             Action<TracorOptions>? configureTracor,
             Action<TracorDataConvertOptions>? configureConvert,
             string? tracorScopedFilterSection) {
         if (addEnabledServices) {
             return serviceBuilder.AddEnabledTracor(
+                configuration,
                 configureTracor,
                 configureConvert,
                 tracorScopedFilterSection);
@@ -106,6 +108,7 @@ public static partial class TracorServiceCollectionExtensions {
     [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
     public static ITracorBuilder AddEnabledTracor(
         this IServiceCollection serviceBuilder,
+        IConfiguration? configuration,
         Action<TracorOptions>? configureTracor,
         Action<TracorDataConvertOptions>? configureConvert,
         string? tracorScopedFilterSection) {
@@ -132,6 +135,12 @@ public static partial class TracorServiceCollectionExtensions {
 
         {
             var optionsBuilder = serviceBuilder.AddOptions<TracorOptions>();
+            if (configuration is IConfigurationRoot configurationRoot) {
+                optionsBuilder.Bind(
+                    TracorBuilderExtension.GetConfigurationTracorSection(configurationRoot));
+            } else if (configuration is { }) {
+                optionsBuilder.Bind(configuration);
+            }
             if (configureTracor is { }) { optionsBuilder.Configure(configureTracor); }
         }
         {

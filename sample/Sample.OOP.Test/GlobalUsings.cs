@@ -27,7 +27,6 @@ global using global::Microsoft.Playwright;
 global using global::TUnit.Playwright;
 
 global using global::Sample.WebApp;
-global using global::Sample.WebApp.TestUtility;
 
 global using global::Brimborium.Tracerit;
 global using global::Brimborium.Tracerit.Condition;

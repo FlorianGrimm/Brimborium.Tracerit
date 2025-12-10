@@ -48,6 +48,7 @@ export type LogTick = {
   isHighlighted: boolean;
   isSelected: boolean;
   logLine: LogLine;
+  timestamp: ZonedDateTime;
 };
 
 export type VisibleRange = {
@@ -282,7 +283,8 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
         color: LogLineColors[i % LogLineColors.length],
         isHighlighted: logLine.id === highlightedId,
         isSelected: logLine.id === selectedId,
-        logLine
+        logLine:logLine,
+        timestamp: ts
       });
     }
     return ticks;

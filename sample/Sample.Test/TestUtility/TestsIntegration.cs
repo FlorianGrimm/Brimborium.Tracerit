@@ -1,8 +1,8 @@
 ﻿namespace Sample.WebApp.TestUtility;
 
 public class TestsIntegration {
-    [ClassDataSource<WebApplicationFactoryIntegration>(Shared = SharedType.PerTestSession)]
-    public required WebApplicationFactoryIntegration WebApplicationFactory { get; init; }
+    [ClassDataSource<WebAppIntegration>(Shared = SharedType.PerTestSession)]
+    public required WebAppIntegration WebApplicationFactory { get; init; }
 
     [Test]
     public async Task PingTest() {

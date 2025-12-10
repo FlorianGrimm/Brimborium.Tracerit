@@ -6,6 +6,10 @@
     <UserSecretsId>aa9f3986-5a2a-4552-ae2c-ae2d470ce49a</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="wwwroot\static\3rdpartylicenses.txt" />
+    <Content Remove="wwwroot\static\prerendered-routes.json" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
@@ -15,6 +19,7 @@
     <ProjectReference Include="..\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="wwwroot\" />
+    <None Include="wwwroot\static\3rdpartylicenses.txt" />
+    <None Include="wwwroot\static\prerendered-routes.json" />
   </ItemGroup>
 </Project>

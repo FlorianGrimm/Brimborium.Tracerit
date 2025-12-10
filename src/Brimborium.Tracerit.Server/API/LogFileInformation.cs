@@ -10,10 +10,12 @@ public sealed class DirectoryBrowseResponse {
 
 public sealed record class FileContentReadResponse(
     LogFileInformation LogFileInformation,
-    string FileFQ,    
-    string? ContentType = null,
-    string? FileDownloadName = null,
-    bool EnableRangeProcessing = false,
-    DateTimeOffset? LastModified = null,
-    Microsoft.Net.Http.Headers.EntityTagHeaderValue? EntityTag = null
+    string FileFQ,
+    string ContentType,
+    string? ContentEncoding,
+    long ContentLength,
+    //string? FileDownloadName = null,
+    //bool EnableRangeProcessing = false,
+    DateTimeOffset? LastModified = null
+    //Microsoft.Net.Http.Headers.EntityTagHeaderValue? EntityTag = null
     );

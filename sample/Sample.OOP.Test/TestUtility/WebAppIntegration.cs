@@ -10,10 +10,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sample.WebApp;
 
-namespace Sample.WebApp;
+namespace Sample.OOP.Test.TestUtility;
 
-public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IAsyncDisposable {
+public class WebAppIntegration : TUnit.Core.Interfaces.IAsyncInitializer, IAsyncDisposable {
     private record ProcessServerToTest(Process Process, bool Own);
     private readonly TaskCompletionSource<ProcessServerToTest> _TcsRunningServerToTest = new();
     private Task _TaskRunServerToTest = Task.CompletedTask;
@@ -95,7 +96,8 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
     }
 
     public Task RunServerToTest() {
-        var pathToCsproj = Sample.WebApp.Program.GetCsproj();
+        //var pathToCsproj = Sample.WebApp.Program.GetSampleCsproj();
+        var pathToCsproj = SampleForTesting.Program.GetSampleForTestingCsproj();
         return this.RunServerToTest(pathToCsproj);
     }
 
@@ -210,7 +212,7 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
 
     public async Task RunServerForReceiving() {
         await this.RunServerForReceiving((builder) => {
-            var projectSourceCodeFolder = TestUtility.GetProjectSourceCodeFolder();
+            var projectSourceCodeFolder = TestPathUtility.GetProjectSourceCodeFolder();
             builder.Configuration.AddJsonFile(
                 path:System.IO.Path.Combine(projectSourceCodeFolder, @"appsettings.json"),
                 optional: false);
@@ -231,6 +233,7 @@ public class TestingServersService : TUnit.Core.Interfaces.IAsyncInitializer, IA
             });
             builder.Services.AddTracor(
                 addEnabledServices: true,
+                configuration: default,
                 configureTracor: (tracorOptions) => { },
                 configureConvert: (tracorDataConvertOptions) => { },
                 tracorScopedFilterSection: default

@@ -228,6 +228,7 @@ export type PropertyHeader = {
     show: boolean;
     filter?: LogLineValue;
 
+    width: number;
     headerCellStyle?: any;
     dataCellStyle?: any;
 };

@@ -75,7 +75,7 @@ export class DataService {
     let contentSubject = this.mapLogLineByName.get(name);
     if (undefined === contentSubject) {
       contentSubject = new BehaviorRingSubject<LogLine[]>(
-        data, 
+        data,
         1, `listLogLine$-${name}`, this.subscription, this.ring$, undefined,
         (name, message, value) => { console.log(name, message, value?.length); }
       );
@@ -102,14 +102,14 @@ export class DataService {
 
   addListLogLine(data: LogLine[]) {
     if (0 === data.length) { return; }
-  
+
     this.extractHeader(data);
-    const restMaxLength = 1024-data.length;
-    if (restMaxLength < 0) { 
+    const restMaxLength = 1024 - data.length;
+    if (restMaxLength < 0) {
       this.listLogLineSource$.next(data);
     } else {
       const currentData = this.listLogLineSource$.getValue();
-      const currentDataLimited = (restMaxLength < currentData.length) 
+      const currentDataLimited = (restMaxLength < currentData.length)
         ? currentData.slice(currentData.length - restMaxLength)
         : currentData;
       const nextData = currentDataLimited.concat(data);
@@ -168,6 +168,7 @@ export class DataService {
     if (result === undefined) {
       if (!this.mapName.has(name)) {
         const index = 1 + this.mapName.size;
+        const width = ("id"===name) ? 100:99;
         result = {
           id: `${name}-${typeValue}`,
           name: name,
@@ -175,8 +176,9 @@ export class DataService {
           index: index,
           visualIndex: index,
           show: show,
-          headerCellStyle: { width: '100px' },
-          dataCellStyle: { width: '100px' }
+          width: width,
+          headerCellStyle: { width: `${width}px` },
+          dataCellStyle: { width: `${width}px` }
         }
         this.mapName.set(name, result);
         this.listAllHeader.push(result);

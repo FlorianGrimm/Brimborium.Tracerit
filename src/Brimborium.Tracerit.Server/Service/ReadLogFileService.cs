@@ -9,6 +9,10 @@ public sealed class ReadLogFileService : IReadLogFileService, IDisposable {
     private class ConfigState {
         public string? LogDirectory { get; internal set; }
     }
+
+    private const string PatternJsonl = "*" + Brimborium.Tracerit.FileSink.TracorCollectiveFileSink.FileExtensionJsonl;
+    private const string PatternJsonlGzip = "*" + Brimborium.Tracerit.FileSink.TracorCollectiveFileSink.FileExtensionJsonlGzip;
+    private const string PatternJsonlBrotli = "*" + Brimborium.Tracerit.FileSink.TracorCollectiveFileSink.FileExtensionJsonlBrotli;
     private ConfigState _ConfigState = new();
     private IDisposable? _UnwireAppConfig;
 
@@ -44,23 +48,30 @@ public sealed class ReadLogFileService : IReadLogFileService, IDisposable {
         if (!diLogDirectory.Exists) {
             return new ResponseFailed<DirectoryBrowseResponse>() { Error = "LogDirectory: Not Exists" };
         }
-        var listFilesJsonl = diLogDirectory.EnumerateFiles("*.jsonl", new EnumerationOptions() {
+        var enumerationOptions = new EnumerationOptions() {
             RecurseSubdirectories = true,
             IgnoreInaccessible = true
-        });
+        };
+        var listFilesJsonl = diLogDirectory.EnumerateFiles(PatternJsonl, enumerationOptions);
+        var listFilesJsonlGzip = diLogDirectory.EnumerateFiles(PatternJsonlGzip, enumerationOptions);
+        var listFilesJsonlBrotli = diLogDirectory.EnumerateFiles(PatternJsonlBrotli, enumerationOptions);
+        var listFiles = listFilesJsonl
+            .Concat(listFilesJsonlGzip)
+            .Concat(listFilesJsonlBrotli);
         var diLogDirectoryFullName = PathTrimEnd(diLogDirectory.FullName);
         var length = 1 + diLogDirectoryFullName.Length;
-        var result = listFilesJsonl
+        var result = listFiles
             .Where(
                 (diLogFile) => diLogFile.FullName.StartsWith(diLogDirectoryFullName, StringComparison.OrdinalIgnoreCase)
             )
             .Select(
                 (diLogFile) => {
                     return new LogFileInformation(
-                        diLogFile.FullName.Substring(length).Replace(System.IO.Path.PathSeparator, '/'),
+                        SlashPath(diLogFile.FullName[length..]),
                         diLogFile.CreationTimeUtc,
                         diLogFile.Length);
                 })
+            .OrderBy(l => l.Name)
             .ToList();
         return new ResponseSuccessful<DirectoryBrowseResponse>() {
             Result = new DirectoryBrowseResponse() {
@@ -92,6 +103,10 @@ public sealed class ReadLogFileService : IReadLogFileService, IDisposable {
         if (string.IsNullOrEmpty(logDirectory)) {
             return new ResponseFailed<FileContentReadResponse>() { Error = "Configuration" };
         }
+
+        //name = name.Replace("%5C", System.IO.Path.DirectorySeparatorChar);
+        name = name.Replace("%5C", "/");
+
         if (name.Contains("..") || System.IO.Path.IsPathFullyQualified(name)) {
             return new ResponseFailed<FileContentReadResponse>() { Error = "logDirectory: No" };
         }
@@ -122,16 +137,59 @@ public sealed class ReadLogFileService : IReadLogFileService, IDisposable {
 
         {
             var (fullName, lastModified, logFileInformation) = listLogFileInformation[0];
-            //var fileStream = System.IO.File.Open(fullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            return new ResponseSuccessful<FileContentReadResponse>() {
-                Result = new FileContentReadResponse(
-                    LogFileInformation: logFileInformation,
-                    FileFQ: fullName,
-                    ContentType: "application/jsonl",
-                    EnableRangeProcessing: true,
-                    LastModified: lastModified
-                    )
-            };
+            var compression = Brimborium.Tracerit.FileSink.TracorCollectiveFileSink.GetCompressionFromFileName(fullName);
+            if (compression == null) {
+                return new ResponseFailed<FileContentReadResponse>() {
+                    Error = "Not found"
+                };
+            }
+
+            if (compression == TracorCompression.None) {
+                return new ResponseSuccessful<FileContentReadResponse>() {
+                    Result = new FileContentReadResponse(
+                        LogFileInformation: logFileInformation,
+                        FileFQ: fullName,
+                        ContentType: "application/jsonl",
+                        ContentEncoding: null,
+                        ContentLength: logFileInformation.Length,
+                        //EnableRangeProcessing: true,
+                        LastModified: lastModified
+                        )
+                };
+            } else {
+                //var fileStream = System.IO.File.Open(fullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                if (compression == TracorCompression.Gzip) {
+                    // var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+                    return new ResponseSuccessful<FileContentReadResponse>() {
+                        Result = new FileContentReadResponse(
+                            LogFileInformation: logFileInformation,
+                            FileFQ: fullName,
+                            ContentType: "application/jsonl",
+                            ContentEncoding: "gzip",
+                            ContentLength: logFileInformation.Length,
+                            //EnableRangeProcessing: true,
+                            LastModified: lastModified
+                            )
+                    };
+                }
+                if (compression == TracorCompression.Brotli) {
+                    //var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+                    return new ResponseSuccessful<FileContentReadResponse>() {
+                        Result = new FileContentReadResponse(
+                            LogFileInformation: logFileInformation,
+                            FileFQ: fullName,
+                            ContentType: "application/jsonl",
+                            ContentEncoding: "br",
+                            ContentLength: logFileInformation.Length,
+                            //EnableRangeProcessing: true,
+                            LastModified: lastModified
+                            )
+                    };
+                }
+                return new ResponseFailed<FileContentReadResponse>() {
+                    Error = "Not found"
+                };
+            }
         }
     }
 }

@@ -2,18 +2,26 @@
 
 namespace Sample.WebApp.TestUtility;
 
-public class WebApplicationFactoryIntegration : IAsyncInitializer {
+public class WebAppIntegration : IAsyncInitializer {
     public async Task InitializeAsync() {
         string pathStaticAssets = GetPathStaticAssets();
         var contentRoot = Program.GetContentRoot();
         var tsc = new TaskCompletionSource<WebApplication>();
+
+        var extendedArgs = new string[] {
+                    $"--StaticAssets={pathStaticAssets}"
+                };
+        WebApplicationOptions webApplicationOptions = new () {
+            ApplicationName = "Sample",
+            EnvironmentName = "Development",
+            ContentRootPath = contentRoot,
+            Args = extendedArgs
+        };
+        var builder = WebApplication.CreateBuilder(webApplicationOptions);
+        Brimborium.Tracerit.Utility.TracorTestingUtility.WireParentTestingProcessForTesting(builder.Configuration);
+
         var taskServer = Program.RunAsync(
-            args: new string[] {
-                @"--environment=Development",
-                $"--contentRoot={contentRoot}",
-                @"--applicationName=Sample.Test",
-                $"--StaticAssets={pathStaticAssets}"
-            },
+            builder: builder,
             new StartupActions() {
                 Testtime = true,
                 ConfigureWebApplicationBuilder = (builder) => {
@@ -23,6 +31,7 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                     builder.Services
                         .AddTracor(
                             addEnabledServices: true,
+                            configuration: default,
                             configureTracor: default,
                             configureConvert: default,
                             tracorScopedFilterSection: default)
@@ -119,7 +128,7 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
 
     private static string GetPathStaticAssets() {
         var assemblyLocation = Path.GetDirectoryName(
-                typeof(WebApplicationFactoryIntegration).Assembly.Location ?? throw new Exception("")
+                typeof(WebAppIntegration).Assembly.Location ?? throw new Exception("")
             ) ?? throw new Exception("");
         var result = Path.Combine(
             assemblyLocation,
@@ -127,11 +136,14 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
         return result;
     }
 
-    private static string GetAppsettingsJson([CallerFilePath] string callerFilePath = "") {
-        var testUtilityDir = System.IO.Path.GetDirectoryName(callerFilePath) ?? throw new Exception();
+    private static string GetAppsettingsJson() {
+        var testUtilityDir = GetTestUtilityFolder();
         var projectDir = System.IO.Path.GetDirectoryName(testUtilityDir) ?? throw new Exception();
         var result = System.IO.Path.Combine(projectDir, "appsettings.json");
         return result;
-        //return @"C:\github\FlorianGrimm\Brimborium.Tracerit\sample\Sample.Test\appsettings.json";
+
+        static string GetTestUtilityFolder([System.Runtime.CompilerServices.CallerFilePath] string thisFilePath = "") {
+            return System.IO.Path.GetDirectoryName(thisFilePath) ?? throw new Exception("no source code");
+        }
     }
 }

@@ -95,6 +95,7 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
                     builder.Services
                         .AddTracor(
                             addEnabledServices: true,
+                            configuration: default,
                             configureTracor: default,
                             configureConvert: default,
                             tracorScopedFilterSection: default)

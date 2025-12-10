@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Sample.WebApp;
 
-public static class TestUtility {
+public static class TestPathUtility {
     private static string? _GetProjectSourceCodeFolder;
     public static string GetProjectSourceCodeFolder() {
         return _GetProjectSourceCodeFolder ??= Intern();
@@ -18,8 +18,6 @@ public static class TestUtility {
     public static string GetProjectAssemblyFolder() {
         return _GetProjectAssemblyFolder ??= Intern();
         static string Intern()
-            => (System.IO.Path.GetDirectoryName(typeof(TestUtility).Assembly.Location) ?? throw new Exception());
+            => (System.IO.Path.GetDirectoryName(typeof(TestPathUtility).Assembly.Location) ?? throw new Exception());
     }
-
-
 }

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, OnDestroy, signal, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -43,7 +43,7 @@ const headerContentNamesPosition = new Map<string, number>([
   templateUrl: './log-view-2.component.html',
   styleUrl: './log-view-2.component.scss',
 })
-export class LogView2Component implements OnDestroy {
+export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   // Icons
   readonly Funnel = Funnel;
   readonly FunnelX = FunnelX;
@@ -97,8 +97,15 @@ export class LogView2Component implements OnDestroy {
   readonly rowHeight = 32;
 
   // Resize state
-  private resizeState: { headerId: string; startX: number; startWidth: number } | null = null;
-  private overlay: HTMLDivElement | null = null;
+  private resizeState: {
+    headerId: string;
+    startX: number;
+    startWidth: number;
+    overlay: HTMLDivElement;
+    subscription: Subscription;
+  } | null = null;
+  // private overlay: HTMLDivElement | null = null;
+
 
   constructor() {
   }
@@ -106,6 +113,14 @@ export class LogView2Component implements OnDestroy {
     window.requestAnimationFrame(() => {
       this.setupSubscriptions();
     });
+  }
+  ngAfterViewInit(): void {
+    if (!this.viewport) { return; }
+
+    const onScrollViewport = (ev: Event) => this.onScrollViewport(ev);
+    const nativeElement = this.viewport.elementRef.nativeElement;
+    nativeElement.addEventListener('scroll', onScrollViewport);
+    this.subscription.add(() => { nativeElement.removeEventListener('scroll', onScrollViewport); });
   }
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
@@ -128,6 +143,32 @@ export class LogView2Component implements OnDestroy {
       })
     );
 
+    const localSubscription = new Subscription();
+    this.subscription.add(localSubscription);
+    localSubscription.add(
+      combineLatest({
+        listCurrentHeader: this.listCurrentHeader$,
+        listLogLineFiltered: this.listLogLineFiltered$
+      }).subscribe({
+        next: ({ listCurrentHeader, listLogLineFiltered }) => {
+          if (0 === listLogLineFiltered.length) {
+            return;
+          }
+          if (listCurrentHeader.length < 2) {
+            return;
+          }
+          for (const header of listCurrentHeader) {
+            if (header.width < 100) {
+              this.measureHeader(header, listLogLineFiltered);
+            }
+          }
+          this.updateGridHeader();
+          localSubscription.unsubscribe();
+        }
+      })
+
+    );
+
     // Subscribe to log lines
     this.subscription.add(
       this.logTimeDataService.listLogLineAll$.subscribe({
@@ -143,11 +184,14 @@ export class LogView2Component implements OnDestroy {
         }
       })
     );
-    
+
     this.subscription.add(
       this.logTimeDataService.listLogLineFilteredCondition$.subscribe({
         next: (value) => {
           this.listLogLineFiltered$.next(value);
+          window.requestAnimationFrame(() => {
+            this.onScrollIndexChange();
+          });
         }
       })
     );
@@ -155,14 +199,18 @@ export class LogView2Component implements OnDestroy {
     // Subscribe to range zoom
     this.subscription.add(
       this.logTimeDataService.rangeZoom$.subscribe({
-        next: (value) => this.rangeZoom$.next(value)
+        next: (value) => {
+          this.rangeZoom$.next(value);
+        }
       })
     );
 
     // Subscribe to range filter
     this.subscription.add(
       this.logTimeDataService.rangeFilter$.subscribe({
-        next: (value) => this.rangeFilter$.next(value)
+        next: (value) => {
+          this.rangeFilter$.next(value);
+        }
       })
     );
 
@@ -231,9 +279,13 @@ export class LogView2Component implements OnDestroy {
   }
 
   onScrollIndexChange(): void {
-    if (!this.viewport) return;
+    if (!this.viewport) {
+      console.log("onScrollIndexChange-viewport", this.viewport);
+      return;
+    }
     const start = this.viewport.getRenderedRange().start;
     const end = this.viewport.getRenderedRange().end;
+    console.log("onScrollIndexChange-viewport", start, end);
     this.visibleRange.set({ startIndex: start, endIndex: end });
   }
 
@@ -263,38 +315,52 @@ export class LogView2Component implements OnDestroy {
 
   // Column resize
   onResizeStart(event: MouseEvent, header: PropertyHeader | undefined): void {
+    console.log("onResizeStart", event);
     if (header == null) { return; }
     event.preventDefault();
     event.stopPropagation();
     const element = document.getElementById(`header-${header.id}`);
     if (!element) return;
 
+    const overlay = document.createElement('div');
+    const subscription = new Subscription();
     this.resizeState = {
       headerId: header.id,
       startX: event.screenX,
-      startWidth: element.clientWidth
+      startWidth: element.clientWidth,
+      overlay: overlay,
+      subscription: subscription
     };
 
-    this.overlay = document.createElement('div');
-    Object.assign(this.overlay.style, {
+    Object.assign(overlay.style, {
       position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
       zIndex: '1000', cursor: 'col-resize', userSelect: 'none'
     });
-    this.overlay.addEventListener('mousemove', this.onResizeMove);
-    this.overlay.addEventListener('mouseup', this.onResizeEnd);
-    document.body.appendChild(this.overlay);
+    overlay.addEventListener('mousemove', this.onResizeMove);
+    overlay.addEventListener('mouseup', this.onResizeEnd);
+    overlay.addEventListener('mouseleave', this.onResizeEnd);
+    document.body.appendChild(overlay);
+    subscription.add(() => {
+      overlay.removeEventListener('mousemove', this.onResizeMove);
+      overlay.removeEventListener('mouseup', this.onResizeEnd);
+      overlay.removeEventListener('mouseleave', this.onResizeEnd);
+      document.body.removeChild(overlay);
+      this.resizeState = null;
+    });
   }
 
   private onResizeMove = (event: MouseEvent): void => {
     if (!this.resizeState) return;
     const diff = event.screenX - this.resizeState.startX;
-    const newWidth = Math.max(50, this.resizeState.startWidth + diff);
+    const nextWidth = Math.max(50, this.resizeState.startWidth + diff);
 
     const headers = this.listAllHeader$.getValue();
     const header = headers.find(h => h.id === this.resizeState!.headerId);
     if (header) {
-      header.headerCellStyle = { width: `${newWidth}px` };
-      header.dataCellStyle = { width: `${newWidth}px` };
+      header.width = nextWidth;
+      header.headerCellStyle = { width: `${nextWidth}px` };
+      header.dataCellStyle = { width: `${nextWidth}px` };
+      this.updateGridHeader();
     }
   };
 
@@ -304,13 +370,79 @@ export class LogView2Component implements OnDestroy {
   };
 
   private cleanupResize(): void {
-    if (this.overlay) {
-      this.overlay.removeEventListener('mousemove', this.onResizeMove);
-      this.overlay.removeEventListener('mouseup', this.onResizeEnd);
-      document.body.removeChild(this.overlay);
-      this.overlay = null;
+    if (this.resizeState != null) {
+      this.resizeState.subscription.unsubscribe();
+      this.resizeState = null;
     }
-    this.resizeState = null;
+  }
+
+  onAutoSize(header: PropertyHeader) {
+    this.cleanupResize();
+    const listLogLine = this.listLogLineFiltered$.getValue();
+    this.measureHeader(header, listLogLine);
+    this.updateGridHeader();
+    this.dataService.listAllHeader$.next(this.listAllHeader$.getValue());
+  }
+
+  private measureCanvas?: HTMLCanvasElement | undefined;
+  measureHeader(header: PropertyHeader, listLogLine: LogLine[]) {
+    let nextWidth = 100;
+    let nextMaxContent = '';
+    for (const logLine of listLogLine) {
+      const value = logLine.data.get(header.name);
+      if (value) {
+        const content = this.getContent(logLine, header);
+        if (nextMaxContent.length < content.length) { nextMaxContent = content; }
+        const width = this.getContent(logLine, header).length * 6;
+        if (nextWidth < width) { nextWidth = width; }
+      }
+    }
+    {
+      let measureCanvas: HTMLCanvasElement
+      if (this.measureCanvas == null) {
+        measureCanvas = window.document.createElement('canvas');
+        measureCanvas.style.fontFamily = 'monospace';
+        measureCanvas.style.fontSize = '12px';
+        this.measureCanvas = measureCanvas;
+        this.subscription.add(() => {
+          if (this.measureCanvas) {
+            this.measureCanvas.remove();
+            this.measureCanvas = undefined;
+          }
+        });
+      } else {
+        measureCanvas = this.measureCanvas;
+      }
+      const ctxt = measureCanvas.getContext('2d');
+      if (ctxt != null) {
+        ctxt.font = '12px monospace';
+        const width = ctxt.measureText(nextMaxContent).width + 40;
+        console.log("onAutoSize", header.name, nextWidth, width);
+        if (nextWidth < width) { nextWidth = width; }
+      }
+    }
+
+    header.width = nextWidth;
+    header.headerCellStyle = { width: `${nextWidth}px` };
+    header.dataCellStyle = { width: `${nextWidth}px` };
+    return nextWidth;
+  }
+
+  readonly gridHeaderWidth = signal<number | null>(null);
+  updateGridHeader() {
+    const headers = this.listCurrentHeader$.getValue();
+    const width = headers.reduce((acc, header) => acc + header.width, 0) + 100 + 50;
+    this.gridHeaderWidth.set(width);
+  }
+
+  readonly gridHeaderTransform = signal<string | null>(null);
+  onScrollViewport(ev: Event): void {
+    const scrollLeft = (ev.target as (HTMLDivElement | null))?.scrollLeft;
+    if (scrollLeft) {
+      this.gridHeaderTransform.set(`translateX(${(-scrollLeft)}px)`);
+    } else {
+      this.gridHeaderTransform.set(null);
+    }
   }
 
   // Filter management

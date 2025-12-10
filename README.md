@@ -4,6 +4,9 @@ Utility for testing.
 
 This library is not production ready.
 
+Using Brimborium.Tracerit you can await for logs within your tests.
+Their is no garantee, that the log does what it says
+
 ## Goal
 
 Provide a way to validate the execution of code - in development, integration tests and production, if needed - e.g. to find a bug.
@@ -49,8 +52,21 @@ Samples.
 Collector-Server/Service
 Web-UI to analyze traces and generate rules
 
-```powershell
+# Szenario WebApp
 
-&{ $ticks=[System.DateTime]::UtcNow.Ticks; (($ticks / [int]::MaxValue) -bxor ($ticks % [int]::MaxValue)).ToString() | Set-Clipboard }
+Test Implementation: A ASP.net core web app - with Angular frontend and TUnit.
 
-```
+- samplefrontend - The Angular frontend
+- Sample - The server
+- Sample.Test - testing with playwright; using one process for the test and the server.
+- Sample.OOP.Test - testing with playwright in another process
+- SampleForTesting - used by Sample.OOP.Test; implements dangerous things for production - usefull for testing, like another authentication.
+
+Goal
+Run the test with the test explorer.
+Run the test with the console.
+Debug the test and debug the server in one process.
+Debug the test and debug the server in two processes.
+Debug the test and run the server in two processes.
+
+Using Brimborium.Tracerit you can await for Logs

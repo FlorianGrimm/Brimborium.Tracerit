@@ -25,13 +25,16 @@
 
   <ItemGroup>
       <FrameworkReference Include="Microsoft.AspNetCore.App" />
+      <PackageReference Include="Flurl" />
     <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="TUnit" />
+    <PackageReference Include="Verify.TUnit" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Brimborium.Tracerit.Server\Brimborium.Tracerit.Server.csproj" />
     <ProjectReference Include="..\..\src\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
+    <ProjectReference Include="..\SampleForTesting\SampleForTesting.csproj" />
     <ProjectReference Include="..\Sample\Sample.csproj" />
   </ItemGroup>
 
