@@ -128,7 +128,7 @@ internal sealed class EnabledTracorActivityListener
             return;
         }
 
-        TracorIdentifier tracorIdentifier = new(TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Start");
+        TracorIdentifier tracorIdentifier = new(string.Empty, TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Start");
         using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
             this.CopyListProperty(activity, tracorDataRecord.ListProperty);
             tracorDataRecord.TracorIdentifier = tracorIdentifier;
@@ -155,7 +155,7 @@ internal sealed class EnabledTracorActivityListener
             return;
         }
 
-        TracorIdentifier tracorIdentifier = new(TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Stop");
+        TracorIdentifier tracorIdentifier = new(string.Empty, TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Stop");
         using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
             this.CopyListProperty(activity, tracorDataRecord.ListProperty);
             tracorDataRecord.TracorIdentifier = tracorIdentifier;

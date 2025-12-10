@@ -44,9 +44,9 @@ internal sealed class TracorLogger : ILogger {
         this._MinimumLogLevel = minimumLogLevel;
         this._ExternalScopeProvider = externalScopeProvider;
         if (name is { Length: > 0 }) {
-            this._Id = new TracorIdentifier("Logger", name);
+            this._Id = new TracorIdentifier(string.Empty, "Logger", name, string.Empty);
         } else {
-            this._Id = new TracorIdentifier("Logger", "");
+            this._Id = new TracorIdentifier(string.Empty, "Logger", "", string.Empty);
         }
         this._IdChildCache = new TracorIdentifierCache(this._Id);
     }
@@ -125,7 +125,7 @@ internal sealed class TracorLogger : ILogger {
         string formatted,
         Exception? exception) {
         // TODO: key from otel
-        loggerTracorData.TracorIdentifier = new(tracorIdentifier.SourceProvider, tracorIdentifier.Scope, formatted);
+        loggerTracorData.TracorIdentifier = new(tracorIdentifier.RescourceName, tracorIdentifier.SourceProvider, tracorIdentifier.Scope, formatted);
 
         if (activityTraceId is { Length: > 0 }) {
             loggerTracorData.ListProperty.Add(

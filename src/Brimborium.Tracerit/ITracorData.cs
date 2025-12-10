@@ -40,7 +40,7 @@ public interface ITracorData {
     /// <summary>
     /// Convert to <paramref name="listProperty"/>.
     /// </summary>
-    void ConvertProperties(List<TracorDataProperty> listProperty);
+    void ConvertPropertiesToSinkList(List<TracorDataProperty> listProperty);
 
     void CopyPropertiesToSink(TracorPropertySinkTarget target);
 }

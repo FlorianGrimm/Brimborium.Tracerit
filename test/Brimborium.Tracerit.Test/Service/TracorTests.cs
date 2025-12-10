@@ -54,7 +54,7 @@ public class TracorTests {
 
         var tracor = serviceProvider.GetRequiredService<ITracorServiceSink>();
         var validator = serviceProvider.GetRequiredService<ITracorValidator>();
-        var callee = new TracorIdentifier("Test", "Method");
+        var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
         bool tracorDataReceived = false;
         ITracorData? receivedData = null;

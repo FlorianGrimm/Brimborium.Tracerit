@@ -2,6 +2,11 @@
 
 public static class TracorConstants {
     /// <summary>
+    /// resource.maschine
+    /// </summary>
+    public const string ResourceMaschine = "resource.maschine";
+
+    /// <summary>
     /// TracorPrivate
     /// </summary>
     public const string SourceProviderTracorPrivate = "TracorPrivate";
@@ -19,6 +24,7 @@ public static class TracorConstants {
     public const string MessageActivityStop = "Stop";
 
     public const string TracorDataPropertyNameTimestamp = "timestamp";
+    public const string TracorDataPropertyNameResourceName = "resource";
     public const string TracorDataPropertyNameSource = "source";
     public const string TracorDataPropertyNameScope = "scope";
     public const string TracorDataPropertyNameMessage = "message";

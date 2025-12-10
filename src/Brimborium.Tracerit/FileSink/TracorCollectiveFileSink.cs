@@ -2,18 +2,16 @@
 
 public sealed class TracorCollectiveFileSink
     : TracorCollectiveBulkSink<TracorFileSinkOptions> {
-    private string? _Directory;
-    private DateTime _DirectoryRecheck = new DateTime(0);
-    private string? _FileName;
-    private TimeSpan _Period = TimeSpan.Zero;
-    private TracorCompression _Compression = TracorCompression.None;
-    private System.IO.Stream? _CurrentFileStream;
-    private string? _CurrentFileFQN;
-    private long _PeriodStarted;
-    private bool _DirectoryExists;
-    private bool _CleanupEnabled;
-    private TimeSpan _CleanupPeriod = TimeSpan.FromDays(31);
-    private Task _CleanupTask = Task.CompletedTask;
+    private string? _ConfigurationDirectory;
+    private string? _ConfigurationFileName;
+    private TimeSpan _ConfigurationPeriod = TimeSpan.Zero;
+    private TracorCompression _ConfigurationCompression = TracorCompression.None;
+    // private System.IO.Stream? _CurrentFileStream;
+    // private string? _CurrentFileFQN;
+    // private long _PeriodStarted;
+    //private bool _DirectoryExists;
+    private bool _ConfigurationCleanupEnabled;
+    private TimeSpan _ConfigurationCleanupPeriod = TimeSpan.FromDays(31);
 
     public TracorCollectiveFileSink(
         TracorOptions tracorOptions,
@@ -38,57 +36,76 @@ public sealed class TracorCollectiveFileSink
 
     internal override void SetBulkSinkOptionsExtended(TracorFileSinkOptions options) {
 
-        this._CleanupEnabled = options.CleanupEnabled;
-        this._CleanupPeriod = options.CleanupPeriod;
+        this._ConfigurationCleanupEnabled = options.CleanupEnabled;
+        this._ConfigurationCleanupPeriod = options.CleanupPeriod;
 
         // reset PeriodStarted since _Period may have change
-        this._PeriodStarted = 0;
+        foreach (var sinkOfResourceName in this._ByResourceName.Values) {
+            sinkOfResourceName.ResetForOptionsChange();
+        }
 
         string? directory = GetDirectory(
             options.BaseDirectory,
             options.GetBaseDirectory,
             options.Directory,
-            this._ApplicationName ?? "Application");
+            this._ApplicationName ?? string.Empty);
         if (string.IsNullOrWhiteSpace(directory)) {
-            this._Directory = null;
-            this._FileName = null;
-            this._Period = TimeSpan.Zero;
+            this._ConfigurationDirectory = null;
+            this._ConfigurationFileName = null;
+            this._ConfigurationPeriod = TimeSpan.Zero;
             this._FlushPeriod = TimeSpan.Zero;
-            this._Compression = TracorCompression.None;
+            this._ConfigurationCompression = TracorCompression.None;
             if (this._TracorEmergencyLogging.IsEnabled) {
                 this._TracorEmergencyLogging.Log("FileTracorCollectiveSink directory is empty");
             }
         } else {
-            this._Directory = directory;
-            this._FileName = options.FileName;
-            this._Period = options.Period;
+            this._ConfigurationDirectory = directory;
+            this._ConfigurationFileName = options.FileName;
+            this._ConfigurationPeriod = options.Period;
             this._FlushPeriod = options.FlushPeriod;
-            this._Compression = options.Compression?.ToLowerInvariant() switch {
+            this._ConfigurationCompression = options.Compression?.ToLowerInvariant() switch {
                 "brotli" => TracorCompression.Brotli,
                 "gzip" => TracorCompression.Gzip,
                 _ => TracorCompression.None
             };
             if (options.GetResource() is { } resource) {
                 this._Resource = new TracorDataRecord() {
-                    TracorIdentifier = new("Resource", resource.TracorIdentifier.Scope),
+                    TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", resource.TracorIdentifier.Scope, string.Empty),
                     Timestamp = DateTime.UtcNow
                 };
                 this._Resource.ListProperty.AddRange(resource.ListProperty);
             } else {
                 this._Resource = new TracorDataRecord() {
-                    TracorIdentifier = new("Resource", this._ApplicationName ?? string.Empty),
+                    TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", this._ApplicationName ?? string.Empty, string.Empty),
                     Timestamp = DateTime.UtcNow
                 };
             }
+
+            if (this._Resource.ListProperty.Any(p => TracorConstants.ResourceMaschine == p.Name))
+                this._Resource.ListProperty.Add(TracorDataProperty.CreateStringValue(TracorConstants.ResourceMaschine, System.Environment.MachineName));
             if (this._TracorEmergencyLogging.IsEnabled) {
                 this._TracorEmergencyLogging.Log($"{this.GetType().Name} directory:{directory}");
             }
         }
     }
 
-    public string? GetCurrentFileFQN() => this._CurrentFileFQN;
+    public string? GetCurrentFileFQN() {
+        if (this._ApplicationName is { Length: > 0 } applicationName
+            && this._ByResourceName.TryGetValue(this._ApplicationName, out var sinkOfResourceName)
+            ) {
+            return sinkOfResourceName._CurrentFileFQN;
+        }
+        return default;
+    }
 
-    public DateTimeOffset PeriodStarted() => new DateTimeOffset(this._PeriodStarted * this._Period.Ticks, TimeSpan.Zero);
+    public DateTimeOffset PeriodStarted() {
+        if (this._ApplicationName is { Length: > 0 } applicationName
+            && this._ByResourceName.TryGetValue(this._ApplicationName, out var sinkOfResourceName)
+            ) {
+            return sinkOfResourceName.PeriodStarted();
+        }
+        return default;
+    }
 
     public static string? GetDirectory(
         string? baseDirectory,
@@ -157,134 +174,22 @@ public sealed class TracorCollectiveFileSink
         }
     }
 
-    public string GetLogFilePath(DateTime utcNow) {
-        var timestamp = utcNow.ToString("yyyy-MM-dd-HH-mm-ss", TracorConstants.TracorCulture.DateTimeFormat);
-        if (this._FileName is { Length: > 0 } fileName) {
-            return fileName
-                .Replace("{ApplicationName}", this._ApplicationName)
-                .Replace("{TimeStamp}", timestamp)
-                ;
-        } else {
-            return @$"log-{this._ApplicationName}-{timestamp}.jsonl";
-        }
-    }
-
-    public string GetLogFilePattern() {
-        if (this._FileName is { Length: > 0 } fileName) {
-            return fileName
-                .Replace("{ApplicationName}", this._ApplicationName)
-                .Replace("{TimeStamp}", "*")
-                ;
-        } else {
-            return @$"log-{this._ApplicationName}-*.jsonl";
-        }
-    }
-
+    private readonly ConcurrentDictionary<string, TracorCollectiveFileSinkOfResourceName> _ByResourceName = new();
     protected override async Task WriteAsync(List<ITracorData> listTracorData) {
         DateTime utcNow = DateTime.UtcNow;
-        TimeSpan statePeriod;
-        long statePeriodStarted;
-        Stream? currentFileStream;
-        long currentPeriodStarted;
-        using (this._LockProperties.EnterScope()) {
-            statePeriod = this._Period;
-            statePeriodStarted = this._PeriodStarted;
-            currentFileStream = this._CurrentFileStream;
-            currentPeriodStarted = utcNow.Ticks / statePeriod.Ticks;
-        }
-
-        {
-            if (currentFileStream is not null) {
-                if (1 <= statePeriod.TotalSeconds) {
-                    if (statePeriodStarted != currentPeriodStarted) {
-                        currentFileStream.Close();
-                        currentFileStream = null;
-                        if (this._CurrentFileFQN is { Length: > 0 } currentFileFQN) {
-                            if (this._Compression != TracorCompression.None) {
-                                if (this._CleanupTask.IsCompleted) {
-                                    this._CleanupTask = CompressFileAsync(currentFileFQN, this._Compression);
-                                } else {
-                                    this._CleanupTask = this._CleanupTask.ContinueWith(async (_) => {
-                                        await CompressFileAsync(currentFileFQN, this._Compression);
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
+        var listTracorDataGrouped = listTracorData.GroupBy(i => i.TracorIdentifier.RescourceName);
+        foreach (var groupListTracorData in listTracorDataGrouped) {
+            var resourceName = groupListTracorData.Key;
+            TracorCollectiveFileSinkOfResourceName? sinkByResource;
+            while (!this._ByResourceName.TryGetValue(resourceName, out sinkByResource)) {
+                sinkByResource = new TracorCollectiveFileSinkOfResourceName(
+                    this,
+                    resourceName,
+                    this._ConfigurationDirectory ?? string.Empty);
+                this._ByResourceName.TryAdd(resourceName, sinkByResource);
             }
+            await sinkByResource.WriteAsync(groupListTracorData, utcNow);
         }
-        bool addNewLine;
-        bool addResource;
-
-        if (currentFileStream is null && this._Directory is { Length: > 0 } directory) {
-            if (utcNow < this._DirectoryRecheck) {
-                // no need to check                
-            } else {
-                this._DirectoryRecheck = utcNow.AddHours(1);
-                if (System.IO.Directory.Exists(directory)) {
-                    this._DirectoryExists = true;
-                    if (this._CleanupEnabled) {
-                        if (12 < this._CleanupPeriod.TotalHours) {
-                            var limit = utcNow.Subtract(this._CleanupPeriod);
-                            if (this._CleanupTask.IsCompleted) {
-                                this._CleanupTask = this.DeleteOldLogFilesAsync(limit, directory);
-                            }
-                        }
-                    }
-                } else {
-                    try {
-                        System.IO.Directory.CreateDirectory(directory);
-                        this._DirectoryExists = true;
-                        if (this._TracorEmergencyLogging.IsEnabled) {
-                            this._TracorEmergencyLogging.Log($"{this.GetType().Name} created directory:{directory}");
-                        }
-                    } catch (Exception error) {
-                        if (this._TracorEmergencyLogging.IsEnabled) {
-                            this._TracorEmergencyLogging.Log($"{this.GetType().Name} cannot create directory:{directory} {error.Message}");
-                        }
-                    }
-                }
-            }
-            if (!this._DirectoryExists) {
-                return;
-            } else {
-                using (this._LockProperties.EnterScope()) {
-                    var logFilePath = this.GetLogFilePath(new DateTime(currentPeriodStarted * statePeriod.Ticks));
-                    var logFileFQN = System.IO.Path.Combine(directory, logFilePath);
-                    bool created;
-                    (currentFileStream, created) = GetLogFileStream(logFileFQN);
-                    this._CurrentFileStream = currentFileStream;
-                    this._CurrentFileFQN = logFileFQN;
-                    addResource = created;
-                    addNewLine = !created;
-
-                    this._PeriodStarted = currentPeriodStarted;
-
-                    if (this._TracorEmergencyLogging.IsEnabled) {
-                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} new file:{logFileFQN}");
-                    }
-                }
-            }
-        } else {
-            addNewLine = false;
-            addResource = false;
-        }
-
-        if (currentFileStream is { } currentStream) {
-            await this.ConvertAndWriteAsync(
-                listTracorData,
-                addNewLine,
-                addResource, currentStream);
-
-            listTracorData.Clear();
-            await currentStream.FlushAsync();
-
-            if (this._TracorEmergencyLogging.IsEnabled) {
-                this._TracorEmergencyLogging.Log($"{this.GetType().Name} entries flushed.");
-            }
-        }
-
     }
 
     private static (FileStream stream, bool created) GetLogFileStream(string logFilePath) {
@@ -299,33 +204,6 @@ public sealed class TracorCollectiveFileSink
         }
     }
 
-    private async Task DeleteOldLogFilesAsync(DateTime limit, string directory) {
-        try {
-            System.IO.DirectoryInfo di = new(directory);
-            var pattern = this.GetLogFilePattern();
-            var enumerateFiles = di.EnumerateFiles(pattern, new EnumerationOptions() {
-                RecurseSubdirectories = false,
-                IgnoreInaccessible = true,
-            });
-
-            foreach (var fileInfo in enumerateFiles) {
-                if (fileInfo.CreationTimeUtc < limit) {
-                    try {
-                        fileInfo.Delete();
-                    } catch (Exception error) {
-                        System.Console.Error.WriteLine(error.ToString());
-                    }
-                } else {
-                    if (this._Compression is TracorCompression.Brotli or TracorCompression.Gzip) {
-                        await CompressFileAsync(fileInfo.FullName, this._Compression);
-                    }
-                }
-            }
-        } catch (Exception error) {
-            System.Console.Error.WriteLine(error.ToString());
-        }
-    }
-
     public const string FileExtensionJsonl = ".jsonl";
     public const string FileExtensionJsonlBrotli = ".jsonl.brotli";
     public const string FileExtensionJsonlGzip = ".jsonl.gzip";
@@ -335,7 +213,7 @@ public sealed class TracorCollectiveFileSink
     public static TracorCompression? GetCompressionFromFileName(string currentFileFQN) {
         if (currentFileFQN.EndsWith(FileExtensionJsonl)) { return TracorCompression.None; }
         if (currentFileFQN.EndsWith(FileExtensionJsonlBrotli)) { return TracorCompression.Brotli; }
-        if (currentFileFQN.EndsWith(FileExtensionJsonlGzip)) { return TracorCompression.Gzip; } 
+        if (currentFileFQN.EndsWith(FileExtensionJsonlGzip)) { return TracorCompression.Gzip; }
         return null;
     }
 
@@ -382,6 +260,196 @@ public sealed class TracorCollectiveFileSink
             }
             System.IO.File.Delete(currentFileFQN);
             return;
+        }
+    }
+
+    internal sealed class TracorCollectiveFileSinkOfResourceName {
+        private readonly TracorCollectiveFileSink _Parent;
+        private readonly string _ResourceName;
+        private readonly string _Directory;
+        private bool _DirectoryExists;
+        private DateTime _DirectoryRecheck = new DateTime(0);
+        private long _PeriodStarted;
+        
+        private System.IO.Stream? _CurrentFileStream;
+        internal string? _CurrentFileFQN;
+        private Task _CleanupTask = Task.CompletedTask;
+
+        public TracorCollectiveFileSinkOfResourceName(
+            TracorCollectiveFileSink parent,
+            string resourceName,
+            string directory) {
+            this._Parent = parent;
+            this._ResourceName = resourceName;
+            var directoryForResource =
+                directory.Contains("{Resource}")
+                ? directory.Replace("{Resource}", resourceName)
+                : System.IO.Path.Combine(directory, resourceName);
+            this._Directory = directoryForResource;
+        }
+        
+        internal void ResetForOptionsChange() {
+            this._PeriodStarted = 0;
+        }
+
+        public async Task WriteAsync(IEnumerable<ITracorData> listTracorData, DateTime utcNow) {
+            TimeSpan statePeriod;
+            long statePeriodStarted;
+            Stream? currentFileStream;
+            long currentPeriodStarted;
+            using (this._Parent._LockProperties.EnterScope()) {
+                statePeriod = this._Parent._ConfigurationPeriod;
+                statePeriodStarted = this._PeriodStarted;
+                currentFileStream = this._CurrentFileStream;
+                currentPeriodStarted = utcNow.Ticks / statePeriod.Ticks;
+            }
+
+            {
+                if (currentFileStream is not null) {
+                    if (1 <= statePeriod.TotalSeconds) {
+                        if (statePeriodStarted != currentPeriodStarted) {
+                            currentFileStream.Close();
+                            currentFileStream = null;
+                            if (this._CurrentFileFQN is { Length: > 0 } currentFileFQN) {
+                                if (this._Parent._ConfigurationCompression != TracorCompression.None) {
+                                    if (this._CleanupTask.IsCompleted) {
+                                        this._CleanupTask = CompressFileAsync(currentFileFQN, this._Parent._ConfigurationCompression);
+                                    } else {
+                                        this._CleanupTask = this._CleanupTask.ContinueWith(async (_) => {
+                                            await CompressFileAsync(currentFileFQN, this._Parent._ConfigurationCompression);
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            bool addNewLine;
+            bool addResource;
+
+            if (currentFileStream is null && this._Directory is { Length: > 0 } directory) {
+                if (utcNow < this._DirectoryRecheck) {
+                    // no need to check                
+                } else {
+                    this._DirectoryRecheck = utcNow.AddHours(1);
+                    if (System.IO.Directory.Exists(directory)) {
+                        this._DirectoryExists = true;
+                        if (this._Parent._ConfigurationCleanupEnabled) {
+                            if (12 < this._Parent._ConfigurationCleanupPeriod.TotalHours) {
+                                var limit = utcNow.Subtract(this._Parent._ConfigurationCleanupPeriod);
+                                if (this._CleanupTask.IsCompleted) {
+                                    this._CleanupTask = this.DeleteOldLogFilesAsync(limit, directory);
+                                }
+                            }
+                        }
+                    } else {
+                        try {
+                            System.IO.Directory.CreateDirectory(directory);
+                            this._DirectoryExists = true;
+                            if (this._Parent._TracorEmergencyLogging.IsEnabled) {
+                                this._Parent._TracorEmergencyLogging.Log($"{this.GetType().Name} created directory:{directory}");
+                            }
+                        } catch (Exception error) {
+                            if (this._Parent._TracorEmergencyLogging.IsEnabled) {
+                                this._Parent._TracorEmergencyLogging.Log($"{this.GetType().Name} cannot create directory:{directory} {error.Message}");
+                            }
+                        }
+                    }
+                }
+                if (!this._DirectoryExists) {
+                    return;
+                } else {
+                    using (this._Parent._LockProperties.EnterScope()) {
+                        var logFilePath = this.GetLogFilePath(
+                            new DateTime(currentPeriodStarted * statePeriod.Ticks));
+                        var logFileFQN = System.IO.Path.Combine(directory, logFilePath);
+                        bool created;
+                        (currentFileStream, created) = GetLogFileStream(logFileFQN);
+                        this._CurrentFileStream = currentFileStream;
+                        this._CurrentFileFQN = logFileFQN;
+                        addResource = created;
+                        addNewLine = !created;
+
+                        this._PeriodStarted = currentPeriodStarted;
+
+                        if (this._Parent._TracorEmergencyLogging.IsEnabled) {
+                            this._Parent._TracorEmergencyLogging.Log($"{this.GetType().Name} new file:{logFileFQN}");
+                        }
+                    }
+                }
+            } else {
+                addNewLine = false;
+                addResource = false;
+            }
+
+            if (currentFileStream is { } currentStream) {
+                await this._Parent.ConvertAndWriteAsync(
+                    listTracorData,
+                    addNewLine,
+                    addResource, currentStream);
+
+                await currentStream.FlushAsync();
+
+                if (this._Parent._TracorEmergencyLogging.IsEnabled) {
+                    this._Parent._TracorEmergencyLogging.Log($"{this.GetType().Name} entries flushed.");
+                }
+            }
+        }
+
+        public string GetLogFilePath(DateTime utcNow) {
+            var timestamp = utcNow.ToString("yyyy-MM-dd-HH-mm-ss", TracorConstants.TracorCulture.DateTimeFormat);
+            if (this._Parent._ConfigurationFileName is { Length: > 0 } fileName) {
+                return fileName
+                    .Replace("{ResourceName}", this._ResourceName)
+                    .Replace("{ApplicationName}", this._Parent._ApplicationName)
+                    .Replace("{TimeStamp}", timestamp)
+                    ;
+            } else {
+                return @$"log-{this._ResourceName}-{timestamp}.jsonl";
+            }
+        }
+
+        public string GetLogFilePattern() {
+            if (this._Parent._ConfigurationFileName is { Length: > 0 } fileName) {
+                return fileName
+                    .Replace("{ResourceName}", this._ResourceName)
+                    .Replace("{ApplicationName}", this._Parent._ApplicationName)
+                    .Replace("{TimeStamp}", "*")
+                    ;
+            } else {
+                //return @$"log-{this._ApplicationName}-*.jsonl";
+                return @$"log-{this._ResourceName}-*.jsonl";
+            }
+        }
+
+        public DateTimeOffset PeriodStarted() => new DateTimeOffset(this._PeriodStarted * this._Parent._ConfigurationPeriod.Ticks, TimeSpan.Zero);
+
+        private async Task DeleteOldLogFilesAsync(DateTime limit, string directory) {
+            try {
+                System.IO.DirectoryInfo di = new(directory);
+                var pattern = this.GetLogFilePattern();
+                var enumerateFiles = di.EnumerateFiles(pattern, new EnumerationOptions() {
+                    RecurseSubdirectories = false,
+                    IgnoreInaccessible = true,
+                });
+
+                foreach (var fileInfo in enumerateFiles) {
+                    if (fileInfo.CreationTimeUtc < limit) {
+                        try {
+                            fileInfo.Delete();
+                        } catch (Exception error) {
+                            System.Console.Error.WriteLine(error.ToString());
+                        }
+                    } else {
+                        if (this._Parent._ConfigurationCompression is TracorCompression.Brotli or TracorCompression.Gzip) {
+                            await CompressFileAsync(fileInfo.FullName, this._Parent._ConfigurationCompression);
+                        }
+                    }
+                }
+            } catch (Exception error) {
+                System.Console.Error.WriteLine(error.ToString());
+            }
         }
     }
 }

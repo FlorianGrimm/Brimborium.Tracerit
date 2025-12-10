@@ -11,6 +11,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     private readonly ITracorDataConvertService _TracorDataConvertService;
     private readonly ILogger _Logger;
     private readonly TracorEmergencyLogging _TracorEmergencyLogging;
+    private string _ResoucreName = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorServiceSink"/> class.
@@ -22,12 +23,19 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
         ITracorScopedFilterFactory tracorScopedFilterFactory,
         ITracorDataConvertService tracorDataConvertService,
         LazyCreatedLogger<TracorServiceSink> logger,
+        IOptionsMonitor<TracorOptions> tracorOptions,
         TracorEmergencyLogging tracorEmergencyLogging) {
         this._Publisher = publisher;
         this._TracorScopedFilterFactory = tracorScopedFilterFactory;
         this._TracorDataConvertService = tracorDataConvertService;
         this._Logger = logger;
         this._TracorEmergencyLogging = tracorEmergencyLogging;
+        tracorOptions.OnChange(this.onChangeTracorOptions);
+        this.onChangeTracorOptions(tracorOptions.CurrentValue);
+    }
+
+    private void onChangeTracorOptions(TracorOptions options) {
+        this._ResoucreName = options.GetApplicationName();
     }
 
     public ITracorScopedFilterFactory GetTracorScopedFilterFactory() {
@@ -69,7 +77,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
     public void TracePrivate<T>(string scope, LogLevel level, string message, T value) {
         try {
             var timestamp = DateTime.UtcNow;
-            TracorIdentifier callee = new(TracorConstants.SourceProviderTracorPrivate, scope, message);
+            TracorIdentifier callee = new(this._ResoucreName, TracorConstants.SourceProviderTracorPrivate, scope, message);
             ITracorData tracorData;
             bool disposeTracorData;
 
@@ -97,7 +105,7 @@ internal sealed class TracorServiceSink : ITracorServiceSink {
             bool disposeTracorData;
 
             DateTime timestamp = DateTime.UtcNow;
-            TracorIdentifier callee = new(TracorConstants.SourceProviderTracorPublic, scope, message);
+            TracorIdentifier callee = new(this._ResoucreName, TracorConstants.SourceProviderTracorPublic, scope, message);
             if (value is ITracorData valueTracorData) {
                 tracorData = valueTracorData;
                 disposeTracorData = false;

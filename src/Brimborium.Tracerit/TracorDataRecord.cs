@@ -68,7 +68,7 @@ public sealed class TracorDataRecord
 
 
     /// <inheritdoc/>
-    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+    public void ConvertPropertiesToSinkList(List<TracorDataProperty> listProperty) {
         listProperty.AddRange(this.ListProperty);
     }
 
@@ -133,7 +133,7 @@ public sealed class TracorDataRecord
 
             result.TracorIdentifier = src.TracorIdentifier;
             result.Timestamp = src.Timestamp;
-            src.ConvertProperties(result.ListProperty);
+            src.ConvertPropertiesToSinkList(result.ListProperty);
 
             return result;
         }

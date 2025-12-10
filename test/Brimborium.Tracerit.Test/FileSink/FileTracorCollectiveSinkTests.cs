@@ -57,7 +57,7 @@ public class FileTracorCollectiveSinkTests {
         var root = GetLogRootDirectory();
         var rootLog2 = System.IO.Path.Combine(root, "Log2");
         System.IO.Directory.CreateDirectory(rootLog2);
-        TracorIdentifier callee = new("test", "a", "b");
+        TracorIdentifier callee = new(string.Empty, "test", "a", "b");
         TracorDataRecordPool tracorDataRecordPool = new TracorDataRecordPool(0);
         List<TracorDataRecord> listTracorDataRecord = new();
         var ctsApplicationStopping = new CancellationTokenSource();

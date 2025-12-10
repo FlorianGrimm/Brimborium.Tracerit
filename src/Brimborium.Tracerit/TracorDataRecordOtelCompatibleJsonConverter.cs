@@ -44,7 +44,7 @@ public static class ITracorDataJsonConverterUtility {
         int state = 0;
         while (reader.TokenType != JsonTokenType.EndArray) {
             var tracorDataProperty = converterTracorDataProperty.Read(ref reader, typeTracorDataProperty, options);
-            if (state < 4) {
+            if (state < 5) {
                 if (state == 0) {
                     if ("timestamp" == tracorDataProperty.Name) {
                         state = 1;
@@ -58,10 +58,22 @@ public static class ITracorDataJsonConverterUtility {
                     }
                 }
                 if (state is 0 or 1) {
-                    if ("source" == tracorDataProperty.Name) {
+                    if ("applicationName" == tracorDataProperty.Name) {
                         state = 2;
+                        if (tracorDataProperty.TryGetStringValue(out var applicationNameValue)) {
+                            tracorIdentifier.ApplicationName = applicationNameValue ?? string.Empty;
+                            continue;
+                        } else {
+                            result.ListProperty.Add(tracorDataProperty);
+                            continue;
+                        }
+                    }
+                }
+                if (state is 0 or 1 or 2) {
+                    if ("source" == tracorDataProperty.Name) {
+                        state = 3;
                         if (tracorDataProperty.TryGetStringValue(out var sourceValue)) {
-                            tracorIdentifier.Source = sourceValue ?? string.Empty;
+                            tracorIdentifier.SourceProvider = sourceValue ?? string.Empty;
                             continue;
                         } else {
                             result.ListProperty.Add(tracorDataProperty);
@@ -70,9 +82,9 @@ public static class ITracorDataJsonConverterUtility {
                     }
                 }
 
-                if (state is 0 or 1 or 2) {
+                if (state is 0 or 1 or 2 or 3) {
                     if ("scope" == tracorDataProperty.Name) {
-                        state = 3;
+                        state = 4;
                         if (tracorDataProperty.TryGetStringValue(out var scopeValue)) {
                             tracorIdentifier.Scope = scopeValue ?? string.Empty;
                             continue;
@@ -83,9 +95,9 @@ public static class ITracorDataJsonConverterUtility {
                     }
                 }
 
-                if (state is 0 or 1 or 2 or 3) {
+                if (state is 0 or 1 or 2 or 3 or 4) {
                     if ("message" == tracorDataProperty.Name) {
-                        state = 4;
+                        state = 5;
                         if (tracorDataProperty.TryGetStringValue(out var messageValue)) {
                             tracorIdentifier.Message = messageValue ?? string.Empty;
                             continue;

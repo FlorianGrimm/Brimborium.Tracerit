@@ -19,7 +19,7 @@ public sealed class NullTypeData : ITracorData {
         return false;
     }
 
-    public void ConvertProperties(List<TracorDataProperty> listProperty) {
+    public void ConvertPropertiesToSinkList(List<TracorDataProperty> listProperty) {
     }
 
     public void CopyPropertiesToSink(TracorPropertySinkTarget target) {

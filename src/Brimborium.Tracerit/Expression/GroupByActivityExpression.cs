@@ -35,8 +35,8 @@ public sealed class GroupByActivityExpression : ValidatorExpression {
         throw new NotSupportedException();
     }
 
-    private static TracorIdentifier _TidMessageActivityStart = new TracorIdentifier(TracorConstants.SourceActivity, string.Empty, TracorConstants.MessageActivityStart);
-    private static TracorIdentifier _TidMessageActivityStop = new TracorIdentifier(TracorConstants.SourceActivity, string.Empty, TracorConstants.MessageActivityStop);
+    private static TracorIdentifier _TidMessageActivityStart = new TracorIdentifier(string.Empty, TracorConstants.SourceActivity, string.Empty, TracorConstants.MessageActivityStart);
+    private static TracorIdentifier _TidMessageActivityStop = new TracorIdentifier(string.Empty, TracorConstants.SourceActivity, string.Empty, TracorConstants.MessageActivityStop);
 
     public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,

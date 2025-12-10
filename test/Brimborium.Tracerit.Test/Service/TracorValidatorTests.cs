@@ -72,7 +72,7 @@ public class TracorValidatorTests {
                 data.IsEqualString("Value", "second"))));
 
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentifier("Test", "Method");
+        var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
         // Act
         validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "first")) );
@@ -101,7 +101,7 @@ public class TracorValidatorTests {
                 data => data.IsEqualString("value", "test")));
 
         using (var validatorPath = validator.Add(expression)) {
-            var callee = new TracorIdentifier("Test", "Method");
+            var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
             // Act
             validatorPath.OnTrace(new TracorDataRecord(){ TracorIdentifier = callee }.Add(new ("value", "test")));
@@ -132,7 +132,7 @@ public class TracorValidatorTests {
             setGlobalState: "TestProperty"));
 
         using (var validatorPath = validator.Add(expression)) {
-            var callee = new TracorIdentifier("Test", "Method");
+            var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
             // Act
             validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new ("value","test value")) );
@@ -165,7 +165,7 @@ public class TracorValidatorTests {
 
         var expression = new MatchExpression();
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentifier("Test", "Method");
+        var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
         // Act
         validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));
@@ -216,7 +216,7 @@ public class TracorValidatorTests {
 
         var validatorPath1 = validator.Add(expression1);
         var validatorPath2 = validator.Add(expression2);
-        var callee = new TracorIdentifier("Test", "Method");
+        var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
         var tracorData = (new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));
 
         // Act
@@ -242,7 +242,7 @@ public class TracorValidatorTests {
 
         var expression = new MatchExpression();
         var validatorPath = validator.Add(expression);
-        var callee = new TracorIdentifier("Test", "Method");
+        var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
         // Act
         var traceTask = Task.Run(() => {
@@ -275,7 +275,7 @@ public class TracorValidatorTests {
             .Add(new MatchExpression(condition: new PredicateTracorDataCondition(data => false))); // Never matches
 
         using (var validatorPath = validator.Add(expression)) {
-            var callee = new TracorIdentifier("Test", "Method");
+            var callee = new TracorIdentifier(string.Empty, "Test", "Method", string.Empty);
 
             // Act
             validatorPath.OnTrace(new TracorDataRecord() { TracorIdentifier = callee }.Add(new("value", "test")));

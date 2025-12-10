@@ -1,6 +1,4 @@
-﻿using Microsoft.IO;
-
-namespace Brimborium.Tracerit.HttpSink;
+﻿namespace Brimborium.Tracerit.HttpSink;
 
 public sealed class TracorCollectiveHttpSink
     : TracorCollectiveBulkSink<TracorHttpSinkOptions> {
@@ -65,8 +63,15 @@ public sealed class TracorCollectiveHttpSink
     private HttpClient? _HttpClient;
     private readonly TracorMemoryPoolManager _TracorMemoryPoolManager;
 
+    private DateTime _BlockUntil = DateTime.MinValue;
+    private long _BlockDelay = 0;
+
     protected override async Task WriteAsync(List<ITracorData> listTracorData) {
         if (this._TargetUrl is not { Length: > 0 }) { return; }
+
+        DateTime utcNow = System.DateTime.UtcNow;
+        if (utcNow < this._BlockUntil) { return; }
+
         if (this._HttpClient is { } httpClient) {
         } else {
             this._HttpClient = httpClient = new HttpClient();
@@ -92,9 +97,15 @@ public sealed class TracorCollectiveHttpSink
                     }
                 }
             }
+            this._BlockDelay = 0;
         } catch {
             this._HttpClient?.Dispose();
             this._HttpClient = null;
+            this._BlockDelay = System.Math.Min(
+                    60 * 15,
+                    System.Math.Max(1,
+                        2 + (this._BlockDelay * 3) / 2));
+            this._BlockUntil = utcNow.AddSeconds(this._BlockDelay + 30);
         }
     }
 }

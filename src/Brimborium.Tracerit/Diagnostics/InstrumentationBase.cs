@@ -47,7 +47,7 @@ public class InstrumentationBase : IInstrumentation, IDisposable {
     public ActivitySource GetActivitySource() => this._ActivitySource ?? throw new ObjectDisposedException(this.GetType().Name ?? nameof(InstrumentationBase));
 
     public TracorIdentifier GetTracorIdentifier() {
-        return new TracorIdentifier("Activity", this.GetActivitySource().Name);
+        return new TracorIdentifier(string.Empty, "Activity", this.GetActivitySource().Name, string.Empty);
     }
 
 #pragma warning disable CA1816 // Dispose methods should call SuppressFinalize

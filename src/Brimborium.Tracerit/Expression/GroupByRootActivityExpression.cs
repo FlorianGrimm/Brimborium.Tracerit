@@ -35,8 +35,8 @@ public sealed class GroupByRootActivityExpression : ValidatorExpression {
         throw new NotSupportedException();
     }
 
-    private static TracorIdentifier _TidMessageActivityStart = new TracorIdentifier(TracorConstants.SourceProviderActivity, string.Empty, TracorConstants.MessageActivityStart);
-    private static TracorIdentifier _TidMessageActivityStop = new TracorIdentifier(TracorConstants.SourceProviderActivity, string.Empty, TracorConstants.MessageActivityStop);
+    private static TracorIdentifier _TidMessageActivityStart = new TracorIdentifier(string.Empty, TracorConstants.SourceProviderActivity, string.Empty, TracorConstants.MessageActivityStart);
+    private static TracorIdentifier _TidMessageActivityStop = new TracorIdentifier(string.Empty, TracorConstants.SourceProviderActivity, string.Empty, TracorConstants.MessageActivityStop);
 
     public override TracorValidatorOnTraceResult OnTrace(
         ITracorData tracorData,
@@ -90,7 +90,7 @@ public sealed class GroupByRootActivityExpression : ValidatorExpression {
                 bool isCurrentTraceSpan = isCurrentTrace
                     && string.Equals(spanId, state.SpanId, StringComparison.Ordinal);
                 bool isStop = tracorData.TracorIdentifier.DoesMatch(
-                    new TracorIdentifier(TracorConstants.SourceProviderActivity, state.Scope ?? string.Empty, TracorConstants.MessageActivityStop));
+                    new TracorIdentifier(string.Empty, TracorConstants.SourceProviderActivity, state.Scope ?? string.Empty, TracorConstants.MessageActivityStop));
                 if (!(isCurrentTraceSpan && isStop)) {
                     if (this.OnItem is { } onItem) {
                         var traceResult = onItem.OnTrace(tracorData, currentContext.GetChildContext(1));

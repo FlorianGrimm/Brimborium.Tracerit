@@ -8,7 +8,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifier_ShouldCreateWithSourceAndCallee() {
         // Arrange & Act
-        var identifier = new TracorIdentifier("TestSource", "TestCallee");
+        var identifier = new TracorIdentifier(string.Empty, "TestSource", "TestCallee", string.Empty);
 
         // Assert
         await Assert.That(identifier.SourceProvider).IsEqualTo("TestSource");
@@ -28,7 +28,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifier_Child_ShouldCreateChildWithAppendedPath() {
         // Arrange
-        var parent = new TracorIdentifier("TestSource", "Parent");
+        var parent = new TracorIdentifier(string.Empty, "TestSource", "Parent", string.Empty);
 
         // Act
         var child = parent.Child("Child");
@@ -41,7 +41,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifier_Child_ShouldCreateNestedChildren() {
         // Arrange
-        var root = new TracorIdentifier("TestSource", "Root");
+        var root = new TracorIdentifier(string.Empty, "TestSource", "Root", string.Empty);
 
         // Act
         var child1 = root.Child("Child1");
@@ -55,7 +55,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifier_OperatorSlash_ShouldCreateCalleeCondition() {
         // Arrange
-        var identifier = new TracorIdentifier("TestSource", "TestCallee");
+        var identifier = new TracorIdentifier(string.Empty, "TestSource", "TestCallee", string.Empty);
         var condition = AlwaysCondition.Instance;
 
         // Act
@@ -70,8 +70,8 @@ public class TracorIdentifierTests {
     public async Task EqualityComparerTracorIdentifier_ShouldReturnTrueForEqualIdentifiers() {
         // Arrange
         var comparer = EqualityComparerTracorIdentifier.Default;
-        var id1 =new TracorIdentifier("source", "scope");
-        var id2 =new TracorIdentifier("source", "scope");
+        var id1 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -82,8 +82,8 @@ public class TracorIdentifierTests {
     public async Task EqualityComparerTracorIdentifier_ShouldBeCaseInsensitive() {
         // Arrange
         var comparer = EqualityComparerTracorIdentifier.Default;
-        var id1 =new TracorIdentifier("source", "scope");
-        var id2 =new TracorIdentifier("source", "scope");
+        var id1 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -93,8 +93,8 @@ public class TracorIdentifierTests {
     public async Task EqualityComparerTracorIdentifier_ShouldReturnFalseForDifferentSources() {
         // Arrange
         var comparer = EqualityComparerTracorIdentifier.Default;
-        var id1 = new TracorIdentifier("Source1", "Scope");
-        var id2 = new TracorIdentifier("Source2", "Scope");
+        var id1 = new TracorIdentifier(string.Empty, "Source1", "Scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "Source2", "Scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsFalse();
@@ -104,8 +104,8 @@ public class TracorIdentifierTests {
     public async Task EqualityComparerTracorIdentifier_ShouldReturnFalseForDifferentCallees() {
         // Arrange
         var comparer = EqualityComparerTracorIdentifier.Default;
-        var id1 = new TracorIdentifier("source", "Callee1");
-        var id2 = new TracorIdentifier("source", "Callee2");
+        var id1 = new TracorIdentifier(string.Empty, "source", "Callee1", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "source", "Callee2", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsFalse();
@@ -115,7 +115,7 @@ public class TracorIdentifierTests {
     public async Task EqualityComparerTracorIdentifier_ShouldReturnTrueForSameReference() {
         // Arrange
         var comparer = EqualityComparerTracorIdentifier.Default;
-        var id =new TracorIdentifier("source", "scope");
+        var id = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id, id)).IsTrue();
@@ -125,8 +125,8 @@ public class TracorIdentifierTests {
     public async Task MatchEqualityComparerTracorIdentifier_ShouldIgnoreEmptySources() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentifier.Default;
-        var id1 = new TracorIdentifier("source", "scope");
-        var id2 = new TracorIdentifier("source", "");
+        var id1 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "source", "", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -136,8 +136,8 @@ public class TracorIdentifierTests {
     public async Task MatchEqualityComparerTracorIdentifier_ShouldCompareNonEmptySources() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentifier.Default;
-        var id1 = new TracorIdentifier("Source1", "Scope");
-        var id2 = new TracorIdentifier("Source2", "Scope");
+        var id1 = new TracorIdentifier(string.Empty, "Source1", "Scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "Source2", "Scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsFalse();
@@ -147,8 +147,8 @@ public class TracorIdentifierTests {
     public async Task MatchEqualityComparerTracorIdentifier_ShouldMatchWhenBothSourcesNonEmptyAndEqual() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentifier.Default;
-        var id1 =new TracorIdentifier("source", "scope");
-        var id2 =new TracorIdentifier("source", "scope");
+        var id1 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -158,8 +158,8 @@ public class TracorIdentifierTests {
     public async Task MatchEqualityComparerTracorIdentifier_ShouldBeCaseInsensitive() {
         // Arrange
         var comparer = MatchEqualityComparerTracorIdentifier.Default;
-        var id1 =new TracorIdentifier("source", "scope");
-        var id2 =new TracorIdentifier("source", "scope");
+        var id1 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
+        var id2 = new TracorIdentifier(string.Empty, "source", "scope", string.Empty);
 
         // Act & Assert
         await Assert.That(comparer.Equals(id1, id2)).IsTrue();
@@ -168,7 +168,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifierCache_ShouldReturnRootIdentifier() {
         // Arrange
-        var rootId = new TracorIdentifier("TestSource", "Root");
+        var rootId = new TracorIdentifier(string.Empty, "TestSource", "Root", string.Empty);
         var cache = new TracorIdentifierCache(rootId);
 
         // Act & Assert
@@ -178,7 +178,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifierCache_Child_ShouldCreateAndCacheChildIdentifier() {
         // Arrange
-        var rootId = new TracorIdentifier("TestSource", "Root");
+        var rootId = new TracorIdentifier(string.Empty, "TestSource", "Root", string.Empty);
         var cache = new TracorIdentifierCache(rootId);
 
         // Act
@@ -194,7 +194,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifierCache_Child_ShouldCacheDifferentChildren() {
         // Arrange
-        var rootId = new TracorIdentifier("TestSource", "Root");
+        var rootId = new TracorIdentifier(string.Empty, "TestSource", "Root", string.Empty);
         var cache = new TracorIdentifierCache(rootId);
 
         // Act
@@ -212,7 +212,7 @@ public class TracorIdentifierTests {
     [Test]
     public async Task TracorIdentifierCache_ShouldBeThreadSafe() {
         // Arrange
-        var rootId = new TracorIdentifier("TestSource", "Root");
+        var rootId = new TracorIdentifier(string.Empty, "TestSource", "Root", string.Empty);
         var cache = new TracorIdentifierCache(rootId);
         var tasks = new List<Task<TracorIdentifier>>();
 

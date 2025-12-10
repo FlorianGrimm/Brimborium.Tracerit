@@ -331,7 +331,7 @@ public static class ITracorDataExtension {
     /// <typeparam name="TTracorData">current type of ITracorData</typeparam>
     /// <param name="thatTracorData">the source</param>
     /// <param name="listProperty">the target</param>
-    public static void ConvertPropertiesBase<TTracorData>(
+    public static void ConvertTracorIdentifierToSinkList<TTracorData>(
         this ITracorData thatTracorData,
         List<TracorDataProperty> listProperty)
         where TTracorData : ITracorData {
@@ -339,6 +339,12 @@ public static class ITracorDataExtension {
             TracorDataProperty.CreateDateTimeValue(
                 TracorConstants.TracorDataPropertyNameTimestamp,
                 thatTracorData.Timestamp));
+        if (thatTracorData.TracorIdentifier.RescourceName is { Length: > 0 } applicationName) {
+            listProperty.Add(
+                TracorDataProperty.CreateStringValue(
+                    TracorConstants.TracorDataPropertyNameResourceName,
+                    applicationName));
+        }
         if (thatTracorData.TracorIdentifier.SourceProvider is { Length: > 0 } source) {
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
@@ -365,15 +371,41 @@ public static class ITracorDataExtension {
     /// </summary>
     /// <typeparam name="TTracorData">current type of ITracorData</typeparam>
     /// <param name="thatTracorData">the source</param>
-    /// <param name="listProperty">the target</param>
+    /// <param name="target">the target</param>
     public static void CopyPropertiesToSinkBase<TTracorData>(
         ITracorData thatTracorData,
         TracorPropertySinkTarget target)
+        where TTracorData : ITracorData {
+        CopyPropertiesToSinkBase<TTracorData>(thatTracorData, target, defaultRescourceName: null);
+    }
+
+    /// <summary>
+    /// Copy the special set of property to a list.
+    /// Helper for serialization
+    /// </summary>
+    /// <typeparam name="TTracorData">current type of ITracorData</typeparam>
+    /// <param name="thatTracorData">the source</param>
+    /// <param name="target">the target</param>
+    /// <param name="defaultRescourceName">the default application name to use if the source has no application name</param>
+    public static void CopyPropertiesToSinkBase<TTracorData>(
+        ITracorData thatTracorData,
+        TracorPropertySinkTarget target,
+        string? defaultRescourceName)
         where TTracorData : ITracorData {
         {
             ref var targetProperty = ref (target.ListHeader.GetNext());
             targetProperty.Name = TracorConstants.TracorDataPropertyNameTimestamp;
             targetProperty.SetDateTimeValue(thatTracorData.Timestamp);
+        }
+        {
+            var rescourceNameNormalized = thatTracorData.TracorIdentifier.RescourceName is { Length: > 0 } rescourceName
+                ? rescourceName
+                : defaultRescourceName;
+            if (rescourceNameNormalized is { Length: > 0 }) {
+                ref var targetProperty = ref (target.ListHeader.GetNext());
+                targetProperty.Name = TracorConstants.TracorDataPropertyNameResourceName;
+                targetProperty.SetStringValue(rescourceNameNormalized);
+            }
         }
         if (thatTracorData.TracorIdentifier.SourceProvider is { Length: > 0 } source) {
             ref var targetProperty = ref (target.ListHeader.GetNext());
@@ -389,6 +421,26 @@ public static class ITracorDataExtension {
             ref var targetProperty = ref (target.ListHeader.GetNext());
             targetProperty.Name = TracorConstants.TracorDataPropertyNameMessage;
             targetProperty.SetStringValue(message);
+        }
+    }
+
+    /// <summary>
+    /// Copy properties to sink with a default application name.
+    /// This is used by sinks to fill in the application name if it's not set on the source.
+    /// </summary>
+    /// <param name="tracorData">the source</param>
+    /// <param name="target">the target</param>
+    /// <param name="defaultApplicationName">the default application name to use if the source has no application name</param>
+    public static void CopyPropertiesToSink(
+        this ITracorData tracorData,
+        TracorPropertySinkTarget target,
+        string? defaultApplicationName) {
+        if (tracorData is TracorDataRecord tracorDataRecord) {
+            ITracorDataExtension.CopyPropertiesToSinkBase<TracorDataRecord>(tracorDataRecord, target, defaultApplicationName);
+            target.ListPropertyFromTracorData = tracorDataRecord.ListProperty;
+        } else {
+            ITracorDataExtension.CopyPropertiesToSinkBase<ITracorData>(tracorData, target, defaultApplicationName);
+            tracorData.ConvertPropertiesToSinkList(target.ListProperty);
         }
     }
 }

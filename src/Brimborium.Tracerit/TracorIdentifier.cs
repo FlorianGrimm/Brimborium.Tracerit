@@ -9,17 +9,18 @@ https://github.com/martinothamar/Mediator
 /// <summary>
 /// Represents a unique identifier for a trace point or caller in the tracing system.
 /// </summary>
+/// <param name="RescourceName">The application name identifier.</param>
 /// <param name="SourceProvider">The source provider identifier, typically representing the component or module.</param>
 /// <param name="Scope">The string identifier of the caller or trace point.</param>
 /// <param name="Message">The Message</param>
-public record struct TracorIdentifier(string SourceProvider = "", string Scope = "", string Message = "") {
+public record struct TracorIdentifier(string RescourceName, string SourceProvider, string Scope, string Message) {
     /// <summary>
     /// Creates a <see cref="TracorIdentifier"/> with an empty source for matching purposes.
     /// </summary>
     /// <param name="scope">The callee identifier.</param>
     /// <returns>A new <see cref="TracorIdentifier"/> with empty source.</returns>
     public static TracorIdentifier Create(string scope)
-        => new(string.Empty, scope, string.Empty);
+        => new(string.Empty, string.Empty, scope, string.Empty);
 
     /// <summary>
     /// Creates a child <see cref="TracorIdentifier"/> by appending the specified callee to the current callee path.
@@ -27,21 +28,24 @@ public record struct TracorIdentifier(string SourceProvider = "", string Scope =
     /// <param name="child">The child callee identifier to append.</param>
     /// <returns>A new <see cref="TracorIdentifier"/> representing the child path.</returns>
     public readonly TracorIdentifier Child(string child)
-        => new(this.SourceProvider, $"{this.Scope}.{child}", string.Empty);
+        => new(this.RescourceName, this.SourceProvider, $"{this.Scope}.{child}", string.Empty);
 
     public readonly void ConvertProperties(List<TracorDataProperty> listTracorDataProperties) {
+        listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameResourceName, this.RescourceName));
         listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameSource, this.SourceProvider));
         listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameScope, this.Scope));
         listTracorDataProperties.Add(TracorDataProperty.CreateStringValue(TracorConstants.TracorDataPropertyNameMessage, this.Message));
     }
 
-    public readonly bool IsEmpty() 
-        => string.IsNullOrEmpty(this.SourceProvider) 
-        && string.IsNullOrEmpty(this.Scope) 
+    public readonly bool IsEmpty()
+        => string.IsNullOrEmpty(this.RescourceName)
+        && string.IsNullOrEmpty(this.SourceProvider)
+        && string.IsNullOrEmpty(this.Scope)
         && string.IsNullOrEmpty(this.Message);
 
     public readonly bool DoesMatch(in TracorIdentifier match) {
-        return string.IsNullOrEmpty(match.SourceProvider) ? true : string.Equals(this.SourceProvider, match.SourceProvider, StringComparison.OrdinalIgnoreCase)
+        return string.IsNullOrEmpty(match.RescourceName) ? true : string.Equals(this.RescourceName, match.RescourceName, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrEmpty(match.SourceProvider) ? true : string.Equals(this.SourceProvider, match.SourceProvider, StringComparison.OrdinalIgnoreCase)
             && string.IsNullOrEmpty(match.Scope) ? true : string.Equals(this.Scope, match.Scope, StringComparison.OrdinalIgnoreCase)
             && string.IsNullOrEmpty(match.Message) ? true : string.Equals(this.Message, match.Message, StringComparison.OrdinalIgnoreCase)
             ;
@@ -76,6 +80,9 @@ public sealed class EqualityComparerTracorIdentifier : EqualityComparer<TracorId
     /// <param name="y">The second TracorIdentifier to compare.</param>
     /// <returns>True if the instances are equal; otherwise, false.</returns>
     public override bool Equals(TracorIdentifier x, TracorIdentifier y) {
+        if (!string.Equals(x.RescourceName, y.RescourceName, StringComparison.OrdinalIgnoreCase)) {
+            return false;
+        }
         if (!string.Equals(x.SourceProvider, y.SourceProvider, StringComparison.OrdinalIgnoreCase)) {
             return false;
         }
@@ -94,7 +101,7 @@ public sealed class EqualityComparerTracorIdentifier : EqualityComparer<TracorId
     /// <param name="obj">The TracorIdentifier for which to get a hash code.</param>
     /// <returns>A hash code for the specified object.</returns>
     public override int GetHashCode([DisallowNull] TracorIdentifier obj)
-        => HashCode.Combine(obj.SourceProvider, obj.Scope, obj.Message);
+        => HashCode.Combine(obj.RescourceName, obj.SourceProvider, obj.Scope, obj.Message);
 }
 
 
@@ -119,6 +126,11 @@ public sealed class MatchEqualityComparerTracorIdentifier : EqualityComparer<Tra
     /// <param name="y">The second (expected / partial) TracorIdentifier to compare.</param>
     /// <returns>True if the instances match; otherwise, false.</returns>
     public override bool Equals(TracorIdentifier x, TracorIdentifier y) {
+        if (y.RescourceName is { Length: > 0 } yApplicationName) {
+            if (!string.Equals(x.RescourceName, yApplicationName, StringComparison.Ordinal)) {
+                return false;
+            }
+        }
         if (y.SourceProvider is { Length: > 0 } ySource) {
             if (!string.Equals(x.SourceProvider, ySource, StringComparison.Ordinal)) {
                 return false;
@@ -143,7 +155,7 @@ public sealed class MatchEqualityComparerTracorIdentifier : EqualityComparer<Tra
     /// <param name="obj">The TracorIdentifier for which to get a hash code.</param>
     /// <returns>A hash code for the specified object.</returns>
     public override int GetHashCode([DisallowNull] TracorIdentifier obj)
-        => HashCode.Combine(obj.SourceProvider, obj.Scope);
+        => HashCode.Combine(obj.RescourceName, obj.SourceProvider, obj.Scope);
 }
 
 /// <summary>

@@ -70,9 +70,14 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     protected virtual void SetTracorOptions(TracorOptions tracorOptions) {
         using (this._LockProperties.EnterScope()) {
             if (tracorOptions.ApplicationName is { Length: > 0 } applicationName) {
-                this._ApplicationName = applicationName;
+                string machineName = System.Environment.MachineName;
+                this._ApplicationName = applicationName
+                    .Replace("{MaschineName}", machineName);
             } else if (this._ApplicationName is null) {
-                this._ApplicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Application";
+                string machineName = System.Environment.MachineName;
+                applicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Application";
+                applicationName = $"{applicationName}-{machineName}";
+                this._ApplicationName = applicationName;
             }
 
             if (this._ServiceProvider is { } serviceProvider
@@ -159,28 +164,25 @@ public abstract class TracorCollectiveBulkSink<TOptions>
         var reader = this._Channel.Reader;
         List<ITracorData> listTracorData = new(1000);
         try {
-            int watchDog = 0;
             while (!this._TaskLoopEnds.IsCancellationRequested) {
-                if (watchDog < 10) {
+                bool entriesWritten = await this.FlushAsync(reader, listTracorData);
+                if (entriesWritten) {
                     if (this._TracorEmergencyLogging.IsEnabled) {
-                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} Delay");
+                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} {listTracorData.Count} entries written.");
                     }
-                    await Task.Delay(this._FlushPeriod);
-                    watchDog++;
+                    listTracorData.Clear();
+                    // this will take normally a litte time - so loop after wait.
+                    if (TimeSpan.Zero != this._FlushPeriod) {
+                        await Task.Delay(this._FlushPeriod);
+                    }
+                    continue;
                 } else {
-                    if (this._TracorEmergencyLogging.IsEnabled) {
-                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} Wait");
+                    if (TimeSpan.Zero != this._FlushPeriod) {
+                        await Task.Delay(this._FlushPeriod);
                     }
-                    await reader.WaitToReadAsync(this._TaskLoopEnds.Token);
-                }
-                if (await this.FlushAsync(reader, listTracorData)) {
-                    watchDog = 0;
-                    if (this._TracorEmergencyLogging.IsEnabled) {
-                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} entries writen.");
-                    }
-                } else {
-                    if (this._TracorEmergencyLogging.IsEnabled) {
-                        this._TracorEmergencyLogging.Log($"{this.GetType().Name} no entries to write.");
+                    {
+                        await reader.WaitToReadAsync(this._TaskLoopEnds.Token);
+                        continue;
                     }
                 }
             }
@@ -222,7 +224,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     private readonly byte[] _ArrayNewLine = Encoding.UTF8.GetBytes(System.Environment.NewLine);
 
     protected virtual async Task ConvertAndWriteAsync(
-        List<ITracorData> listTracorData,
+        IEnumerable<ITracorData> listTracorData,
         bool addNewLine,
         bool addResource,
         Stream currentStream
@@ -247,7 +249,8 @@ public abstract class TracorCollectiveBulkSink<TOptions>
             // System.Text.Json.JsonSerializer.Serialize(currentStream, tracorData, jsonSerializerOptions);
             // currentStream.Write(newLine, 0, newLine.Length);
 
-            tracorData.CopyPropertiesToSink(propertySinkTarget);
+            // Use the extension method that fills in the default application name if not set
+            tracorData.CopyPropertiesToSink(propertySinkTarget, this._ApplicationName);
             System.Text.Json.JsonSerializer.Serialize(currentStream, propertySinkTarget, jsonSerializerOptions);
             currentStream.Write(newLine, 0, newLine.Length);
 
@@ -257,12 +260,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
             propertySinkTarget.Dispose();
         }
 
-        listTracorData.Clear();
         await currentStream.FlushAsync();
-
-        if (this._TracorEmergencyLogging.IsEnabled) {
-            this._TracorEmergencyLogging.Log($"{this.GetType().Name} entries written.");
-        }
     }
 
     protected void Flush() {

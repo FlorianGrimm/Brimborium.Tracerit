@@ -6,7 +6,7 @@ public class TracorDataPropertyMinimalJsonConverterTests {
     private static TracorDataRecord getTestData() {
         TracorDataRecord given = new TracorDataRecord();
         given.Timestamp = new DateTime(2001, 2, 3, 4, 5, 6, DateTimeKind.Utc);
-        given.TracorIdentifier = new TracorIdentifier("test", "test");
+        given.TracorIdentifier = new TracorIdentifier(string.Empty, "test", "test", string.Empty);
         given.ListProperty.Add(TracorDataProperty.CreateString("stringProp", "test value"));
         given.ListProperty.Add(TracorDataProperty.CreateInteger("intProp", -42));
         given.ListProperty.Add(TracorDataProperty.CreateLevelValue("levelProp", LogLevel.Critical));

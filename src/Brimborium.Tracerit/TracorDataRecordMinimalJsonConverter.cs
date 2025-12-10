@@ -116,7 +116,7 @@ public static class ITracorDataJsonMinimalConverterUtility {
             }
 
             var tracorDataProperty = converterTracorDataProperty.Read(ref reader, typeTracorDataProperty, options);
-            if (state < 4) {
+            if (state < 5) {
                 if (state == 0) {
                     if (TracorConstants.TracorDataPropertyNameTimestamp == tracorDataProperty.Name) {
                         state = 1;
@@ -127,8 +127,17 @@ public static class ITracorDataJsonMinimalConverterUtility {
                     }
                 }
                 if (state is 0 or 1) {
-                    if (TracorConstants.TracorDataPropertyNameSource == tracorDataProperty.Name) {
+                    if (TracorConstants.TracorDataPropertyNameResourceName == tracorDataProperty.Name) {
                         state = 2;
+                        if (tracorDataProperty.TryGetStringValue(out var resourceNameValue)) {
+                            tracorIdentifier.RescourceName = resourceNameValue ?? string.Empty;
+                            continue;
+                        }
+                    }
+                }
+                if (state is 0 or 1 or 2) {
+                    if (TracorConstants.TracorDataPropertyNameSource == tracorDataProperty.Name) {
+                        state = 3;
                         if (tracorDataProperty.TryGetStringValue(out var sourceValue)) {
                             tracorIdentifier.SourceProvider = sourceValue ?? string.Empty;
                             continue;
@@ -136,9 +145,9 @@ public static class ITracorDataJsonMinimalConverterUtility {
                     }
                 }
 
-                if (state is 0 or 1 or 2) {
+                if (state is 0 or 1 or 2 or 3) {
                     if (TracorConstants.TracorDataPropertyNameScope == tracorDataProperty.Name) {
-                        state = 3;
+                        state = 4;
                         if (tracorDataProperty.TryGetStringValue(out var scopeValue)) {
                             tracorIdentifier.Scope = scopeValue ?? string.Empty;
                             continue;
@@ -146,9 +155,9 @@ public static class ITracorDataJsonMinimalConverterUtility {
                     }
                 }
 
-                if (state is 0 or 1 or 2 or 3) {
+                if (state is 0 or 1 or 2 or 3 or 4) {
                     if (TracorConstants.TracorDataPropertyNameMessage == tracorDataProperty.Name) {
-                        state = 4;
+                        state = 5;
                         if (tracorDataProperty.TryGetStringValue(out var messageValue)) {
                             tracorIdentifier.Message = messageValue ?? string.Empty;
                             continue;
@@ -180,7 +189,7 @@ public static class ITracorDataJsonMinimalConverterUtility {
 
             writer.WriteStartArray();
 
-            ITracorDataExtension.ConvertPropertiesBase<TracorDataRecord>(value, listTracorDataProperty);
+            ITracorDataExtension.ConvertTracorIdentifierToSinkList<TracorDataRecord>(value, listTracorDataProperty);
             foreach (var property in listTracorDataProperty) {
                 converterTracorDataProperty.Write(writer, property, options);
             }
@@ -201,8 +210,8 @@ public static class ITracorDataJsonMinimalConverterUtility {
                 ?? new(128);
 
             writer.WriteStartArray();
-            ITracorDataExtension.ConvertPropertiesBase<TracorDataRecord>(value, listTracorDataProperty);
-            value.ConvertProperties(listTracorDataProperty);
+            ITracorDataExtension.ConvertTracorIdentifierToSinkList<TracorDataRecord>(value, listTracorDataProperty);
+            value.ConvertPropertiesToSinkList(listTracorDataProperty);
             foreach (var property in listTracorDataProperty) {
                 converterTracorDataProperty.Write(writer, property, options);
             }
