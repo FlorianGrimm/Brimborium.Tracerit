@@ -6,20 +6,16 @@ public sealed class TracorCollectiveFileSink
     private string? _ConfigurationFileName;
     private TimeSpan _ConfigurationPeriod = TimeSpan.Zero;
     private TracorCompression _ConfigurationCompression = TracorCompression.None;
-    // private System.IO.Stream? _CurrentFileStream;
-    // private string? _CurrentFileFQN;
-    // private long _PeriodStarted;
-    //private bool _DirectoryExists;
     private bool _ConfigurationCleanupEnabled;
     private TimeSpan _ConfigurationCleanupPeriod = TimeSpan.FromDays(31);
 
-    public TracorCollectiveFileSink(
+    internal TracorCollectiveFileSink(
         TracorOptions tracorOptions,
         TracorFileSinkOptions fileTracorOptions
         ) : this(tracorOptions, fileTracorOptions, new()) {
     }
 
-    public TracorCollectiveFileSink(
+    internal TracorCollectiveFileSink(
         TracorOptions tracorOptions,
         TracorFileSinkOptions fileTracorOptions,
         TracorEmergencyLogging tracorEmergencyLogging)
@@ -91,7 +87,7 @@ public sealed class TracorCollectiveFileSink
 
     public string? GetCurrentFileFQN() {
         if (this._ApplicationName is { Length: > 0 } applicationName
-            && this._ByResourceName.TryGetValue(this._ApplicationName, out var sinkOfResourceName)
+            && this._ByResourceName.TryGetValue(applicationName, out var sinkOfResourceName)
             ) {
             return sinkOfResourceName._CurrentFileFQN;
         }
@@ -100,7 +96,7 @@ public sealed class TracorCollectiveFileSink
 
     public DateTimeOffset PeriodStarted() {
         if (this._ApplicationName is { Length: > 0 } applicationName
-            && this._ByResourceName.TryGetValue(this._ApplicationName, out var sinkOfResourceName)
+            && this._ByResourceName.TryGetValue(applicationName, out var sinkOfResourceName)
             ) {
             return sinkOfResourceName.PeriodStarted();
         }
@@ -175,17 +171,31 @@ public sealed class TracorCollectiveFileSink
     }
 
     private readonly ConcurrentDictionary<string, TracorCollectiveFileSinkOfResourceName> _ByResourceName = new();
+
+    private string GetGroupKey(ITracorData tracorData) {
+        var result = tracorData.TracorIdentifier.RescourceName;
+        if (result is { Length: > 0 }) {
+            return result;
+        } else {
+            return this._ApplicationName;
+        }
+    }
+    private Func<ITracorData, string>? _GetGroupKey;
+
     protected override async Task WriteAsync(List<ITracorData> listTracorData) {
         DateTime utcNow = DateTime.UtcNow;
-        var listTracorDataGrouped = listTracorData.GroupBy(i => i.TracorIdentifier.RescourceName);
+        Func<ITracorData, string> getGroupKey = (this._GetGroupKey ??= ((tracorData) => this.GetGroupKey(tracorData)));
+        var listTracorDataGrouped = listTracorData.GroupBy(getGroupKey);
         foreach (var groupListTracorData in listTracorDataGrouped) {
             var resourceName = groupListTracorData.Key;
             TracorCollectiveFileSinkOfResourceName? sinkByResource;
+
+            // TryGetValue or TryAdd
             while (!this._ByResourceName.TryGetValue(resourceName, out sinkByResource)) {
                 bool self = (resourceName == this._ApplicationName);
                 sinkByResource = new TracorCollectiveFileSinkOfResourceName(
                     this,
-                    self?this._Resource:default,
+                    self ? this._Resource : default,
                     resourceName,
                     this._ConfigurationDirectory ?? string.Empty);
                 this._ByResourceName.TryAdd(resourceName, sinkByResource);
@@ -273,7 +283,7 @@ public sealed class TracorCollectiveFileSink
         private bool _DirectoryExists;
         private DateTime _DirectoryRecheck = new DateTime(0);
         private long _PeriodStarted;
-        
+
         private System.IO.Stream? _CurrentFileStream;
         internal string? _CurrentFileFQN;
         private Task _CleanupTask = Task.CompletedTask;
@@ -292,7 +302,7 @@ public sealed class TracorCollectiveFileSink
                 : System.IO.Path.Combine(directory, resourceName);
             this._Directory = directoryForResource;
         }
-        
+
         internal void ResetForOptionsChange() {
             this._PeriodStarted = 0;
         }
@@ -392,7 +402,7 @@ public sealed class TracorCollectiveFileSink
                 await this._Parent.ConvertAndWriteAsync(
                     listTracorData,
                     addNewLine,
-                    addResource?this._Resource:default,
+                    addResource ? this._Resource : default,
                     currentStream);
 
                 await currentStream.FlushAsync();

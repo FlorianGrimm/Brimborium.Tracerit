@@ -422,7 +422,7 @@ export class LogViewComponent implements OnDestroy {
     const higherIndex = Math.max(currentIndex, previousIndex);
     moveItemInArray(listCurrentHeader, previousIndex, currentIndex);
     for (let idx = lowerIndex; idx <= higherIndex; idx++) {
-      listCurrentHeader[idx].visualIndex = idx;
+      listCurrentHeader[idx].visualHeaderIndex = idx;
     }
     const listAllHeader = this.listAllHeader$.getValue();
     this.listCurrentHeader$.next(getVisualHeader(listAllHeader));

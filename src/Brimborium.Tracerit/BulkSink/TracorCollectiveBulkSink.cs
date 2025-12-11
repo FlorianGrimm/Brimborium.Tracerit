@@ -1,6 +1,4 @@
-﻿using System.IO.Compression;
-
-namespace Brimborium.Tracerit.BulkSink;
+﻿namespace Brimborium.Tracerit.BulkSink;
 
 public abstract class TracorCollectiveBulkSink<TOptions>
     : ITracorCollectiveSink, IDisposable
@@ -21,9 +19,10 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     protected Task? _TaskLoop;
     protected readonly CancellationTokenSource _TaskLoopEnds = new();
     protected readonly TracorEmergencyLogging _TracorEmergencyLogging;
-    protected string? _ApplicationName;
+    protected string _ApplicationName = string.Empty;
 
     protected readonly TracorPropertySinkTargetPool _Pool;
+    protected readonly TraceritBreakLoopInstrumentation _TraceritBreakLoopInstrumentation;
     protected System.Text.Json.JsonSerializerOptions? _JsonSerializerOptions;
     protected System.IO.Stream? _CurrentStream;
 
@@ -41,6 +40,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
         this._ChannelWriter = this._Channel.Writer;
         this._TracorEmergencyLogging = tracorEmergencyLogging;
         this._Pool = new();
+        this._TraceritBreakLoopInstrumentation = TraceritBreakLoopInstrumentation.Instance;
 
         this.SetTracorOptions(tracorOptions);
         this.SetBulkSinkOptions(bulkSinkOptions);
@@ -56,6 +56,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
         this._ChannelWriter = this._Channel.Writer;
         this._TracorEmergencyLogging = tracorEmergencyLogging;
         this._Pool = new();
+        this._TraceritBreakLoopInstrumentation = serviceProvider.GetRequiredService<TraceritBreakLoopInstrumentation>();
 
         this._TracorOptionsMonitorDisposing = tracorOptions.OnChange(this.SetTracorOptions);
         this._FileTracorOptionsMonitorDisposing = bulkSinkOptions.OnChange(this.SetTracorBulkSinkOptions);
@@ -140,6 +141,11 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     public virtual bool IsEnabled() => true;
 
     public void OnTrace(bool isPublic, ITracorData tracorData) {
+        if (string.IsNullOrEmpty(tracorData.TracorIdentifier.RescourceName)) {
+            tracorData.TracorIdentifier = tracorData.TracorIdentifier with { 
+                RescourceName = this._ApplicationName
+            };
+        }
         if (tracorData is IReferenceCountObject referenceCountObject) {
             referenceCountObject.IncrementReferenceCount();
         }
@@ -210,10 +216,22 @@ public abstract class TracorCollectiveBulkSink<TOptions>
                 return false;
             }
 
-            {
+            using (SuppressInstrumentationScope.Begin()) {
                 await this.WriteAsync(listTracorData);
                 return true;
             }
+            /*
+            using (var restoreRootActivity = this._TraceritBreakLoopInstrumentation.StartRoot()) { 
+                try {
+                    restoreRootActivity.Activity?.SetCustomProperty(TracorConstants.DisablePropertyName, TracorConstants.DisablePropertyValue);
+                    await this.WriteAsync(listTracorData);
+                    return true;
+                } finally {
+                    restoreRootActivity.Activity?.SetCustomProperty(TracorConstants.DisablePropertyName, null);
+                }
+            }
+            */
+            
         } finally {
             this._AsyncLockWriteFile.Release();
         }
@@ -236,7 +254,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
         if (reuseStream) {
             currentStream.Write(newLine, 0, newLine.Length);
         }
-        if (addResource is { } ) {
+        if (addResource is { }) {
             System.Text.Json.JsonSerializer.Serialize(currentStream, addResource, jsonSerializerOptions);
             currentStream.Write(newLine, 0, newLine.Length);
         }

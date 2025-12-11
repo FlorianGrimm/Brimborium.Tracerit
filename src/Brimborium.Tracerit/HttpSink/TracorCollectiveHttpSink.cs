@@ -5,7 +5,7 @@ public sealed class TracorCollectiveHttpSink
 
     private string? _TargetUrl;
 
-    public TracorCollectiveHttpSink(
+    internal TracorCollectiveHttpSink(
         TracorOptions tracorOptions,
         TracorHttpSinkOptions httpSinkOptions,
         TracorMemoryPoolManager tracorRecyclableMemoryStreamManager
@@ -14,7 +14,7 @@ public sealed class TracorCollectiveHttpSink
             new()) {
     }
 
-    public TracorCollectiveHttpSink(
+    internal TracorCollectiveHttpSink(
         TracorOptions tracorOptions,
         TracorHttpSinkOptions httpSinkOptions,
         TracorMemoryPoolManager tracorRecyclableMemoryStreamManager,

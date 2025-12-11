@@ -306,6 +306,22 @@ export class LogTimeDataService {
       })
     );
   }
+
+  setRangeFilter(range: TimeRangeOrNull) {
+    const rangeNormalized = {
+      start: range.start ?? epoch0,
+      finish: range.finish ?? epoch1
+    };
+    const rangeComplete = this.rangeComplete$.getValue();
+    const nextRange = getEffectiveRange([rangeComplete, rangeNormalized]);
+    /*
+    console.log("setRangeFilter-rangeComplete", rangeComplete.start.toString(), rangeComplete.finish.toString());
+    console.log("setRangeFilter-rangeNormalized", rangeNormalized.start.toString(), rangeNormalized.finish.toString());
+    console.log("setRangeFilter-nextRange", nextRange.start.toString(), nextRange.finish.toString());
+    */
+    this.rangeFilter$.next(nextRange);
+  }
+
 }
 
 function calcStartFinish(value: LogLine[]) {

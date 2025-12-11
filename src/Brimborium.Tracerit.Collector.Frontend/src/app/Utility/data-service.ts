@@ -55,7 +55,11 @@ export class DataService {
   }
 
   public setListFile(value: LogFileInformationList) {
-    value.sort((a, b) => a.creationTimeUtc.compareTo(b.creationTimeUtc));
+    value.sort((a, b) => {
+          const cmp = b.creationTimeUtc.compareTo(a.creationTimeUtc);
+          if (0 !== cmp) { return cmp; }
+          return a.name.localeCompare(b.name);
+        });
     this.listFile$.next(value);
     return value;
   }
@@ -100,6 +104,7 @@ export class DataService {
     }
   }
 
+  /** the data comes from the current stream (from the webserver) */
   addListLogLine(data: LogLine[]) {
     if (0 === data.length) { return; }
 
@@ -109,6 +114,10 @@ export class DataService {
       this.listLogLineSource$.next(data);
     } else {
       const currentData = this.listLogLineSource$.getValue();
+      // TODO: adjust the rangeZoom/rangeFilter if appended to the end and the last timestamp of rangeComplete and rangeZoom were equal
+      // if (0<currentData.length){
+      //   const lastId = currentData[currentData.length - 1].id;
+      // }
       const currentDataLimited = (restMaxLength < currentData.length)
         ? currentData.slice(currentData.length - restMaxLength)
         : currentData;
@@ -117,11 +126,12 @@ export class DataService {
     }
   }
 
+  /** the data comes from a file (from the webserver) */
   setListLogLine(data: LogLine[]) {
     this.extractHeader(data);
     this.listLogLineSource$.next(data);
   }
-
+  
   extractHeader(data: LogLine[]) {
     for (const line of data) {
       for (const prop of line.data.values()) {
@@ -175,7 +185,8 @@ export class DataService {
           name: name,
           typeValue: typeValue,
           index: index,
-          visualIndex: index,
+          visualHeaderIndex: index,
+          visualDetailIndex: index,
           show: show,
           width: width,
           headerCellStyle: { width: `${width}px` },

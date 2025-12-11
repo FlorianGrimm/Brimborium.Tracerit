@@ -8,33 +8,38 @@ internal sealed class EnabledTracorActivityListener
     , IDisposable {
     private ActivityListener? _Listener;
     private readonly TracorDataRecordPool _TracorDataRecordPool;
-    private readonly ITracorCollectiveSink _Sink;
+    private readonly ITracorCollectiveSink _Publisher;
     private readonly ITracorDataConvertService _TracorDataConvertService;
     private readonly TracorEmergencyLogging _TracorEmergencyLogging;
+    private readonly TraceritBreakLoopInstrumentation _TraceritBreakLoopInstrumentation;
 
     [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor()]
     public EnabledTracorActivityListener(
         IServiceProvider serviceProvider,
         TracorDataRecordPool tracorDataRecordPool,
-        ITracorCollectiveSink sink,
+        ITracorCollectivePublisher publisher,
         ITracorDataConvertService tracorDataConvertService,
-        IOptionsMonitor<TracorActivityListenerOptions> options,
+        //TraceritBreakLoopInstrumentation traceritBreakLoopInstrumentation,
+        IOptionsMonitor<TracorOptions> tracorOptions,
+        IOptionsMonitor<TracorActivityListenerOptions> tracorActivityListenerOptions,
         ILogger<EnabledTracorActivityListener> logger,
         TracorEmergencyLogging tracorEmergencyLogging) : base(
-            serviceProvider,
-            options,
-            logger) {
+            serviceProvider: serviceProvider,
+            tracorOptions: tracorOptions,
+            tracorActivityListenerOptions: tracorActivityListenerOptions,
+            logger: logger) {
         this._TracorDataRecordPool = tracorDataRecordPool;
-        this._Sink = sink;
+        this._Publisher = publisher;
         this._TracorDataConvertService = tracorDataConvertService;
         this._TracorEmergencyLogging = tracorEmergencyLogging;
+        this._TraceritBreakLoopInstrumentation = serviceProvider.GetRequiredService<TraceritBreakLoopInstrumentation>();
     }
 
-    protected override void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
+    protected override void OnChangeTracorActivityListenerOptions(TracorActivityListenerOptions options, string? name) {
         if (this._Listener is null) {
             this._NextOrCurrentOptions = options;
         } else {
-            base.OnChangeOptions(options, name);
+            base.OnChangeTracorActivityListenerOptions(options, name);
         }
     }
 
@@ -113,54 +118,88 @@ internal sealed class EnabledTracorActivityListener
     private void OnActivityStarted(Activity activity) {
         if (this._Listener is null || this.IsDisposed) { return; }
 
-        // no locking needed since this._OptionState does not mutate
-        var currentOptionState = this._OptionState;
+        if (SuppressInstrumentationScope.IncrementIfTriggered() == 0) {
+            // no locking needed since this._OptionState does not mutate
+            var currentOptionState = this._OptionState;
 
-        if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
+            if (!currentOptionState.ActivitySourceStartEventEnabled) { return; }
 
-        if (!this._Sink.IsGeneralEnabled()) { return; }
-        if (!this._Sink.IsEnabled()) { return; }
+            if (!this._Publisher.IsGeneralEnabled()) { return; }
+            if (!this._Publisher.IsEnabled()) { return; }
 
-        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
-        if (currentOptionState.AllowAllActivitySource) {
-            // no check needed
-        } else if (!this.OnShouldListenTo(activitySourceIdentifier)) {
-            return;
-        }
+            /*
+            {
+                var disablePropertyValue = activity.GetCustomProperty(TracorConstants.DisablePropertyName);
+                if (disablePropertyValue is not null
+                    && TracorConstants.DisablePropertyValue == (disablePropertyValue as string)) {
+                    return;
+                }            
+            }
+            */
 
-        TracorIdentifier tracorIdentifier = new(string.Empty, TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Start");
-        using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
-            this.CopyListProperty(activity, tracorDataRecord.ListProperty);
-            tracorDataRecord.TracorIdentifier = tracorIdentifier;
-            tracorDataRecord.Timestamp = activity.StartTimeUtc;
-            this._Sink.OnTrace(true, tracorDataRecord);
+            var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
+            if (activitySourceIdentifier.Name == this._TraceritBreakLoopInstrumentation.GetActivitySource().Name) {
+                return;
+            }
+
+
+            if (currentOptionState.AllowAllActivitySource) {
+                // no check needed
+            } else if (!this.OnShouldListenTo(activitySourceIdentifier)) {
+                return;
+            }
+
+            TracorIdentifier tracorIdentifier = new(this._ApplicationName, TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Start");
+            using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
+                this.CopyListProperty(activity, tracorDataRecord.ListProperty);
+                tracorDataRecord.TracorIdentifier = tracorIdentifier;
+                tracorDataRecord.Timestamp = activity.StartTimeUtc;
+                this._Publisher.OnTrace(true, tracorDataRecord);
+            }
         }
     }
 
     private void OnActivityStopped(Activity activity) {
         if (this._Listener is null || this.IsDisposed) { return; }
 
-        // no locking needed since this._OptionState does not mutate
-        var currentOptionState = this._OptionState;
+        if (SuppressInstrumentationScope.DecrementIfTriggered() == 0) {
 
-        if (!currentOptionState.ActivitySourceStopEventEnabled) { return; }
+            // no locking needed since this._OptionState does not mutate
+            var currentOptionState = this._OptionState;
 
-        if (!this._Sink.IsGeneralEnabled()) { return; }
-        if (!this._Sink.IsEnabled()) { return; }
+            if (!currentOptionState.ActivitySourceStopEventEnabled) { return; }
 
-        var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
-        if (currentOptionState.AllowAllActivitySource) {
-            // no check needed
-        } else if (!this.OnShouldListenTo(activitySourceIdentifier)) {
-            return;
-        }
+            if (!this._Publisher.IsGeneralEnabled()) { return; }
+            if (!this._Publisher.IsEnabled()) { return; }
 
-        TracorIdentifier tracorIdentifier = new(string.Empty, TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Stop");
-        using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
-            this.CopyListProperty(activity, tracorDataRecord.ListProperty);
-            tracorDataRecord.TracorIdentifier = tracorIdentifier;
-            tracorDataRecord.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
-            this._Sink.OnTrace(true, tracorDataRecord);
+            /*
+            {
+                var disablePropertyValue = activity.GetCustomProperty(TracorConstants.DisablePropertyName);
+                if (disablePropertyValue is not null
+                    && TracorConstants.DisablePropertyValue == (disablePropertyValue as string)) {
+                    return;
+                }
+            }
+            */
+
+            var activitySourceIdentifier = ActivitySourceIdentifier.Create(activity.Source);
+            if (activitySourceIdentifier.Name == this._TraceritBreakLoopInstrumentation.GetActivitySource().Name) {
+                return;
+            }
+            if (currentOptionState.AllowAllActivitySource) {
+                // no check needed
+            } else if (!this.OnShouldListenTo(activitySourceIdentifier)) {
+                return;
+            }
+
+            TracorIdentifier tracorIdentifier = new(this._ApplicationName, TracorConstants.SourceProviderActivity, activitySourceIdentifier.Name, "Stop");
+
+            using (var tracorDataRecord = this._TracorDataRecordPool.Rent()) {
+                this.CopyListProperty(activity, tracorDataRecord.ListProperty);
+                tracorDataRecord.TracorIdentifier = tracorIdentifier;
+                tracorDataRecord.Timestamp = activity.StartTimeUtc.Add(activity.Duration);
+                this._Publisher.OnTrace(true, tracorDataRecord);
+            }
         }
     }
 
@@ -170,16 +209,16 @@ internal sealed class EnabledTracorActivityListener
         string activityTraceId;
         string activitySpanId;
         string activityTraceFlags;
-            if (activity.IdFormat == ActivityIdFormat.W3C) {
-                activityTraceId = activity.TraceId.ToHexString();
-                activitySpanId = activity.SpanId.ToHexString();
-                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
-            } else {
-                activityTraceId = activity.TraceId.ToHexString();
-                activitySpanId = activity.SpanId.ToHexString();
-                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
-            }
-       
+        if (activity.IdFormat == ActivityIdFormat.W3C) {
+            activityTraceId = activity.TraceId.ToHexString();
+            activitySpanId = activity.SpanId.ToHexString();
+            activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+        } else {
+            activityTraceId = activity.TraceId.ToHexString();
+            activitySpanId = activity.SpanId.ToHexString();
+            activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+        }
+
         {
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
@@ -200,7 +239,7 @@ internal sealed class EnabledTracorActivityListener
                     activityTraceFlags
                     //activity.TraceId.ToString()
                     ));
-            
+
             listProperty.Add(
                 TracorDataProperty.CreateStringValue(
                     TracorConstants.TracorDataPropertyNameOperationName,

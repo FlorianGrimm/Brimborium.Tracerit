@@ -66,4 +66,6 @@ public static class TracorConstants {
     public const string TypeNameUuid = "uuid";
     public const string TypeNameAny = "any";
 
+    // public const string DisablePropertyName = "Tracorit";
+    // public static readonly string DisablePropertyValue = "Disabled";
 }

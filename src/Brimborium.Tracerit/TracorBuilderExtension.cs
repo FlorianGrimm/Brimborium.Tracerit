@@ -101,9 +101,13 @@ public static class TracorBuilderExtension {
         var configurationSection = configuration;
         tracorBuilder.Services.AddSingleton<EnabledTracorActivityListener>();
         tracorBuilder.Services.AddSingleton<ITracorActivityListener>((sp) => sp.GetRequiredService<EnabledTracorActivityListener>());
-
+        
         // options configure
+        tracorBuilder.Services.AddSingleton<TraceritBreakLoopInstrumentation>(TraceritBreakLoopInstrumentation.Instance);
         var optionsBuilder = tracorBuilder.Services.AddOptions<TracorActivityListenerOptions>();
+        optionsBuilder.Configure(options => {
+            options.ListActivitySourceName.Add(TraceritBreakLoopInstrumentation.ActivitySourceName);
+        });
         if (configuration is { }) {
             if (configuration is IConfigurationRoot configurationRoot) {
                 optionsBuilder.Bind(
@@ -162,6 +166,7 @@ public static class TracorBuilderExtension {
             }
         }
         //tracorBuilder.Services.Add(ServiceDescriptor.Singleton<ITracorCollectiveSink, TracorCollectiveFileSink>());
+        tracorBuilder.Services.AddSingleton<TraceritBreakLoopInstrumentation>(TraceritBreakLoopInstrumentation.Instance);
         tracorBuilder.Services.AddSingleton<TracorCollectiveFileSink>();
         tracorBuilder.Services.AddSingleton<ITracorCollectiveSink>(
             (serviceProvider) => serviceProvider.GetRequiredService<TracorCollectiveFileSink>());
@@ -269,6 +274,7 @@ public static class TracorBuilderExtension {
             }
         }
 
+        tracorBuilder.Services.AddSingleton<TraceritBreakLoopInstrumentation>(TraceritBreakLoopInstrumentation.Instance);
         tracorBuilder.Services.AddSingleton<TracorCollectiveHttpSink>();
         tracorBuilder.Services.AddSingleton<ITracorCollectiveSink>(
             (serviceProvider) => serviceProvider.GetRequiredService<TracorCollectiveHttpSink>());

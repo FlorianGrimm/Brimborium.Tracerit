@@ -15,6 +15,7 @@ internal sealed class TracorLogger : ILogger {
     private readonly TracorIdentifierCache _IdChildCache;
 
     public TracorLogger(
+        string applicationName,
         string name,
         TracorDataRecordPool tracorDataRecordPool,
         ITracorDataConvertService tracorDataConvertService,
@@ -43,12 +44,16 @@ internal sealed class TracorLogger : ILogger {
         }
         this._MinimumLogLevel = minimumLogLevel;
         this._ExternalScopeProvider = externalScopeProvider;
-        if (name is { Length: > 0 }) {
-            this._Id = new TracorIdentifier(string.Empty, "Logger", name, string.Empty);
-        } else {
-            this._Id = new TracorIdentifier(string.Empty, "Logger", "", string.Empty);
-        }
+        
+        string nameNormalized = (name is { Length: > 0 }) ? name : string.Empty;
+        this._Id = new TracorIdentifier(applicationName, "Logger", nameNormalized, string.Empty);
         this._IdChildCache = new TracorIdentifierCache(this._Id);
+        //if (name is { Length: > 0 }) {
+        //    this._Id = new TracorIdentifier(string.Empty, "Logger", name, string.Empty);
+        //} else {
+        //    this._Id = new TracorIdentifier(string.Empty, "Logger", "", string.Empty);
+        //}
+        //this._IdChildCache = new TracorIdentifierCache(this._Id);
     }
 
     public bool IsEnabled(LogLevel logLevel) {
@@ -74,43 +79,50 @@ internal sealed class TracorLogger : ILogger {
             if (!this._IsAllowed) {
                 return;
             }
-            DateTime utcNow = DateTime.UtcNow;
 
-            var activity = Activity.Current;
-            string activityTraceId;
-            string activitySpanId;
-            string activityTraceFlags;
-            if (activity != null ) {
-                if (activity.IdFormat == ActivityIdFormat.W3C) {
-                    activityTraceId = activity.TraceId.ToHexString();
-                    activitySpanId = activity.SpanId.ToHexString();
-                    activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
-                } else {
-                    activityTraceId = activity.TraceId.ToHexString();
-                    activitySpanId = activity.SpanId.ToHexString();
-                    activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+            if (SuppressInstrumentationScope.IncrementIfTriggered() == 0) {
+                try {
+                    DateTime utcNow = DateTime.UtcNow;
+
+                    var activity = Activity.Current;
+                    string activityTraceId;
+                    string activitySpanId;
+                    string activityTraceFlags;
+                    if (activity != null) {
+                        if (activity.IdFormat == ActivityIdFormat.W3C) {
+                            activityTraceId = activity.TraceId.ToHexString();
+                            activitySpanId = activity.SpanId.ToHexString();
+                            activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+                        } else {
+                            activityTraceId = activity.TraceId.ToHexString();
+                            activitySpanId = activity.SpanId.ToHexString();
+                            activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None ? "0" : "1";
+                        }
+                    } else {
+                        activityTraceId = string.Empty;
+                        activitySpanId = string.Empty;
+                        activityTraceFlags = string.Empty;
+                    }
+
+                    string formatted = formatter(state, exception);
+                    using (TracorDataRecord loggerTracorData = this._Pool.Rent()) {
+                        this.ConvertProperties(
+                            loggerTracorData,
+                            this._IdChildCache.Child(eventId.ToString()),
+                            activityTraceId,
+                            activitySpanId,
+                            activityTraceFlags,
+                            logLevel,
+                            eventId,
+                            state,
+                            formatted,
+                            exception);
+                        loggerTracorData.Timestamp = utcNow;
+                        this._Publisher.OnTrace(true, loggerTracorData);
+                    }
+                } finally {
+                    SuppressInstrumentationScope.DecrementIfTriggered();
                 }
-            } else {
-                activityTraceId = string.Empty;
-                activitySpanId = string.Empty;
-                activityTraceFlags = string.Empty;
-            }
-
-            string formatted = formatter(state, exception);
-            using (TracorDataRecord loggerTracorData = this._Pool.Rent()) {
-                this.ConvertProperties(
-                    loggerTracorData,
-                    this._IdChildCache.Child(eventId.ToString()),
-                    activityTraceId,
-                    activitySpanId,
-                    activityTraceFlags,
-                    logLevel,
-                    eventId,
-                    state,
-                    formatted,
-                    exception);
-                loggerTracorData.Timestamp = utcNow;
-                this._Publisher.OnTrace(true, loggerTracorData);
             }
         } catch {
         }

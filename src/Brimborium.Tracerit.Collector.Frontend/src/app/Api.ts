@@ -72,7 +72,8 @@ export type GetFileResponse = {
 }
 
 export type LogLine = {
-    id: number
+    id: number;
+    ts: ZonedDateTime | null;
     data: Map<string, LogLineValue>;
 };
 export type LogLineValue = LogLineNull
@@ -115,7 +116,8 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
             if (!Array.isArray(lineObj)) { continue; }
 
             const itemResult: LogLine = {
-                id: id,
+                id: 0,
+                ts: null,
                 data: new Map<string, LogLineValue>(),
             };
             for (const itemObj of lineObj) {
@@ -207,14 +209,29 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
                 }
                 continue;
             }
-
-            id++;
+            itemResult.ts = getLogLineTimestampValue(itemResult);
+            if (itemResult.ts == null) {
+                debugger;
+                itemResult.ts = getLogLineTimestampValue(itemResult);
+                continue;
+            }
             result.push(itemResult);
         } catch (err) {
             console.error("Error in parseJsonl", lineText, err);
         }
+        result.sort((a, b) => {
+            const tsA = a.ts;
+            const tsB = b.ts;
+            if (tsA === null && tsB === null) { return 0; }
+            if (tsA === null) { return 1; }
+            if (tsB === null) { return -1; }
+            return tsA.compareTo(tsB);
+        });
+        for (const logLine of result) {
+            logLine.id = id++;
+        }
     }
-
+    //console.log("parseJsonl", result.map(i=>({id:i.id, ts:i.ts})));
     return { listLogline: result, nextId: id };
 }
 
@@ -224,7 +241,8 @@ export type PropertyHeader = {
     typeValue: TypeValue;
     index: number;
 
-    visualIndex: number;
+    visualHeaderIndex: number;
+    visualDetailIndex: number;
     show: boolean;
     filter?: LogLineValue;
 
@@ -247,7 +265,8 @@ export function getLogLinePropertyByName(
 export function getLogLineTimestampValue(
     logLine: LogLine | null | undefined
 ): (ZonedDateTime | null) {
-    if (undefined === logLine || null === logLine) { return null; }
+    if (logLine == null) { return null; }
+    if (logLine.ts != null) { return logLine.ts; }
     const property = logLine.data.get("timestamp");
     if ((undefined !== property)
         && (("dt" === property.typeValue) || ("dto" === property.typeValue))) {

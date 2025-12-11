@@ -14,7 +14,7 @@ import { getVisualHeader } from '../Utility/propertyHeaderUtility';
 import { epoch0, epoch1, getEffectiveRange, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
 import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader } from '../Api';
 
-import { TimeScale2Component, VisibleRange } from './time-scale-2/time-scale-2.component';
+import { TimeScale2Component } from './time-scale-2/time-scale-2.component';
 
 const headerContentNames: string[] = [
   "timestamp",
@@ -68,8 +68,8 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
 
   // State - Log lines
   readonly listLogLineAll$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineAl', this.subscription, this.ring$);
-  readonly listLogLineTimeFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
   readonly listLogLineTimeZoomed$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
+  readonly listLogLineTimeFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
   readonly listLogLineFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineFiltered', this.subscription, this.ring$);
 
   // State - Selection & Highlighting
@@ -93,7 +93,7 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   );
 
   // State - Visible range in viewport (for timescale sync)
-  readonly visibleRange = signal<VisibleRange | null>(null);
+  readonly visibleRange = signal<TimeRangeOrNull | null>(null);
 
   // Row height for virtual scroll
   readonly rowHeight = 32;
@@ -260,24 +260,14 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   onSelectLogLine(logLine: LogLine): void {
     this.selectedLogLineId.set(logLine.id);
     this.logTimeDataService.currentLogLineId$.next(logLine.id);
+    const listLogLineFiltered = this.listLogLineFiltered$.getValue();
+    const index = listLogLineFiltered.findIndex(l => l.id === logLine.id);
+    if (index < 0) { return; }
+    this.viewport.scrollToIndex(index);
   }
 
   onHighlightLogLine(logLine: LogLine | null): void {
     this.highlightedLogLineId.set(logLine?.id ?? null);
-  }
-
-  onRangeFilterChange(range: TimeRangeOrNull): void {
-    const rangeNormalized = {
-      start: range.start ?? epoch0,
-      finish: range.finish ?? epoch1
-    };
-    const rangeComplete = this.logTimeDataService.rangeComplete$.getValue();
-    const nextRange = getEffectiveRange([rangeComplete, rangeNormalized]);
-    console.log("onRangeFilterChange-rangeComplete", rangeComplete.start.toString(), rangeComplete.finish.toString());
-    console.log("onRangeFilterChange-rangeNormalized", rangeNormalized.start.toString(), rangeNormalized.finish.toString());
-    console.log("onRangeFilterChange-nextRange", nextRange.start.toString(), nextRange.finish.toString());
-    this.logTimeDataService.rangeFilter$.next(nextRange);
-    //this.rangeFilter$.next(range);
   }
 
   onScrollIndexChange(): void {
@@ -285,17 +275,26 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
       console.log("onScrollIndexChange-viewport", this.viewport);
       return;
     }
-    const start = this.viewport.getRenderedRange().start;
-    const end = this.viewport.getRenderedRange().end;
-    console.log("onScrollIndexChange-viewport", start, end);
-    this.visibleRange.set({ startIndex: start, endIndex: end });
+    const { start, end } = this.viewport.getRenderedRange()
+    const listLogLineFiltered = this.listLogLineFiltered$.getValue();
+    const startIndex = Math.max(0, Math.min(start, listLogLineFiltered.length - 1));
+    const endIndex = Math.max(0, Math.min(end, listLogLineFiltered.length - 1));
+    const startTS = listLogLineFiltered[startIndex].ts;
+    const finishTS = listLogLineFiltered[endIndex].ts;
+    //console.log("onScrollIndexChange-viewport", startTS?.toString(), finishTS?.toString());
+    this.visibleRange.set(
+      {
+        start: startTS,
+        finish: finishTS
+      }
+    );
   }
 
   // Column management
   onDropHeader(event: CdkDragDrop<PropertyHeader[]>): void {
     const headers = this.listCurrentHeader$.getValue();
     moveItemInArray(headers, event.previousIndex, event.currentIndex);
-    headers.forEach((h, i) => h.visualIndex = i);
+    headers.forEach((h, i) => h.visualHeaderIndex = i);
     this.listCurrentHeader$.next([...headers]);
   }
 
@@ -311,8 +310,16 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   onToggleColumnByName(name: string): void {
     const allHeaders = this.listAllHeader$.getValue();
     const targets = allHeaders.filter(h => h.name === name);
-    targets.forEach(h => h.show = !h.show);
-    this.listCurrentHeader$.next(getVisualHeader(allHeaders));
+    const listLogLine = this.listLogLineFiltered$.getValue();
+    for (const header of targets) {
+      header.show = !header.show;
+      if (header.show) {
+        this.measureHeader(header, listLogLine);
+      }
+    }
+    this.dataService.listAllHeader$.next(this.listAllHeader$.getValue());
+    this.updateGridHeader();
+
   }
 
   // Column resize
@@ -504,14 +511,21 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   }
   getDetailsContent(logLine: LogLine) {
     const iter = logLine.data.values();
-    const result: LogLineValue[] = [];
+    const result: (LogLineValue & { header: PropertyHeader })[] = [];
+    const mapName = this.dataService.mapName;
     for (const value of iter) {
       if (headerContentNames.includes(value.name)) {
         // ignore
       } else {
-        result.push(value);
+        result.push({ ...value, header: mapName.get(value.name)! });
       }
     }
+    result.sort((a, b) => {
+      let cmp = a.header.visualDetailIndex - b.header.visualDetailIndex;
+      if (cmp !== 0) { return cmp; }
+      cmp = (a.name).localeCompare(b.name);
+      return cmp;
+    });
     return result;
   }
 

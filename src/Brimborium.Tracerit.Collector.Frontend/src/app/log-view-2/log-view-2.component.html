@@ -1,10 +1,10 @@
 <div class="log-view-2-container">
   <!-- TimeScale Panel -->
   <section class="timescale-panel">
-    <app-time-scale-2 [listLogLine]="(listLogLineAll$ | async) ?? []" [rangeZoom]="(rangeZoom$ | async)!"
-      [rangeFilter]="(rangeFilter$ | async)!" [selectedLogLineId]="selectedLogLineId()"
+    <app-time-scale-2 
+      [selectedLogLineId]="selectedLogLineId()"
       [highlightedLogLineId]="highlightedLogLineId()" [visibleRange]="visibleRange()"
-      (rangeFilterChange)="onRangeFilterChange($event)" (logLineClick)="onSelectLogLine($event)"
+      (logLineClick)="onSelectLogLine($event)"
       (logLineHover)="onHighlightLogLine($event)" />
   </section>
 
@@ -78,7 +78,7 @@
       <div class="details-content">
         @for (item of getDetailsContent(selected); track item.name) {
         <div class="detail-item">
-          <label (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:</label>
+          <label (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:{{item.header.show?'*':''}}</label>
           <span class="detail-value">{{ item.value }}</span>
         </div>
         }

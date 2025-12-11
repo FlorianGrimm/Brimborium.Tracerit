@@ -55,7 +55,9 @@ internal abstract class BaseTracorActivityListener
     private string? _IsDisposed;
     protected readonly Lock _Lock = new();
     protected readonly IServiceProvider _ServiceProvider;
-    protected readonly IOptionsMonitor<TracorActivityListenerOptions> _Options;
+    //protected readonly IOptionsMonitor<TracorOptions> _TracorOptions;
+    //protected readonly IOptionsMonitor<TracorActivityListenerOptions> _TracorActivityListenerOptions;
+    protected string _ApplicationName = string.Empty;
     protected readonly ILogger _Logger;
     protected IDisposable? _OptionsDispose;
 
@@ -69,16 +71,24 @@ internal abstract class BaseTracorActivityListener
 
     public BaseTracorActivityListener(
         IServiceProvider serviceProvider,
-        IOptionsMonitor<TracorActivityListenerOptions> options,
+        IOptionsMonitor<TracorOptions> tracorOptions,
+        IOptionsMonitor<TracorActivityListenerOptions> tracorActivityListenerOptions,
         ILogger logger) {
         this._ServiceProvider = serviceProvider;
-        this._Options = options;
+        //this._TracorOptions = tracorOptions;
+        //this._TracorActivityListenerOptions = tracorActivityListenerOptions;
         this._Logger = logger;
-        this._NextOrCurrentOptions = this._Options.CurrentValue;
-        this._OptionsDispose = this._Options.OnChange(this.OnChangeOptions);
+        tracorOptions.OnChange(this.OnChangeTracorOptions);
+        this.OnChangeTracorOptions(tracorOptions.CurrentValue, string.Empty);
+        this._NextOrCurrentOptions = tracorActivityListenerOptions.CurrentValue;
+        this._OptionsDispose = tracorActivityListenerOptions.OnChange(this.OnChangeTracorActivityListenerOptions);
     }
 
-    protected virtual void OnChangeOptions(TracorActivityListenerOptions options, string? name) {
+    protected virtual void OnChangeTracorOptions(TracorOptions options, string? name) {
+        this._ApplicationName = options.GetApplicationName();
+    }
+
+    protected virtual void OnChangeTracorActivityListenerOptions(TracorActivityListenerOptions options, string? name) {
         using (this._Lock.EnterScope()) {
             var nextOptionState = OptionState.Create(options, this._DirectModifications);
             this._NextOrCurrentOptions = options;

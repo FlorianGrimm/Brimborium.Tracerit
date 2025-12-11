@@ -10,11 +10,13 @@ internal sealed class DisabledTracorActivityListener
 
     public DisabledTracorActivityListener(
         IServiceProvider serviceProvider,
-        IOptionsMonitor<TracorActivityListenerOptions> options,
+        IOptionsMonitor<TracorOptions> tracorOptions,
+        IOptionsMonitor<TracorActivityListenerOptions> tracorActivityListenerOptions,
         ILogger<DisabledTracorActivityListener> logger) : base(
-            serviceProvider,
-            options,
-            logger) {
+            serviceProvider: serviceProvider,
+            tracorOptions: tracorOptions,
+            tracorActivityListenerOptions: tracorActivityListenerOptions,
+            logger: logger) {
     }
 
     public void Start() {

@@ -1,4 +1,5 @@
-﻿namespace Brimborium.Tracerit.Logger;
+﻿
+namespace Brimborium.Tracerit.Logger;
 
 /// <summary>
 /// Provides logger instances that integrate with the Tracor tracing system.
@@ -12,6 +13,7 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
     private readonly LogLevel? _MinimumLogLevel;
     private IExternalScopeProvider? _ExternalScopeProvider;
     private TracorDataRecordPool? _TracorDataRecordPool;
+    private string _ApplicationName = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TracorLoggerProvider"/> class.
@@ -19,9 +21,17 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
     /// <param name="serviceProvider">The service provider used to resolve the <see cref="ITracorServiceSink"/> instance.</param>
     public TracorLoggerProvider(
         IServiceProvider serviceProvider,
+        IOptionsMonitor<TracorOptions> tracorOptions,
         IOptions<TracorLoggerOptions> options) {
         this._ServiceProvider = serviceProvider;
         this._MinimumLogLevel = options.Value.LogLevel;
+
+        tracorOptions.OnChange(this.OnChangeTracorOptions);
+        this.OnChangeTracorOptions(tracorOptions.CurrentValue);
+    }
+
+    private void OnChangeTracorOptions(TracorOptions options) {
+        this._ApplicationName = options.GetApplicationName();
     }
 
     /// <inheritdoc />
@@ -43,6 +53,7 @@ public sealed class TracorLoggerProvider : ILoggerProvider, ISupportExternalScop
         }
         if (publisher.IsEnabled()) {
             return new TracorLogger(
+                this._ApplicationName,
                 name,
                 tracorDataRecordPool, dataConvertService, publisher,
                 this._MinimumLogLevel, this._ExternalScopeProvider);

@@ -38,7 +38,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   loaded$ = new BehaviorRingSubject<boolean>(false,
     0, 'DirectoryListComponent_loaded', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value); });
-    
+
   listFileLoading$ = new BehaviorRingSubject<string[]>([], 1, 'listFileLoading$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
   constructor() {
@@ -111,13 +111,13 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
 
   load() {
     this.dataService.useCurrentStream$.next(false);
-    const subscription = new Subscription();    
+    const subscription = new Subscription();
     this.subscription.add(subscription);
     subscription.add(
       this.httpClientService.getDirectoryList().subscribe({
         next: (value) => {
           if ('success' === value.mode) {
-            this.loaded$.next(true);
+            this.loaded$.next(true);            
             this.dataService.setListFile(value.files);
             this.error$.next(undefined);
           } else if ("error" === value.mode) {
