@@ -75,7 +75,16 @@ export type LogLine = {
     id: number;
     ts: ZonedDateTime | null;
     data: Map<string, LogLineValue>;
+    traceInformation: TraceInformation | null;
 };
+
+export type TraceInformation = {
+    traceId: string;
+    spanId: string;
+    parentSpanId: string;
+    listLogLineId: number[];
+};
+
 export type LogLineValue = LogLineNull
     | LogLineString
     | LogLineInteger
@@ -119,6 +128,7 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
                 id: 0,
                 ts: null,
                 data: new Map<string, LogLineValue>(),
+                traceInformation: null
             };
             for (const itemObj of lineObj) {
                 if (!Array.isArray(itemObj)) { continue; }
@@ -211,7 +221,6 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
             }
             itemResult.ts = getLogLineTimestampValue(itemResult);
             if (itemResult.ts == null) {
-                debugger;
                 itemResult.ts = getLogLineTimestampValue(itemResult);
                 continue;
             }
@@ -242,7 +251,8 @@ export type PropertyHeader = {
     index: number;
 
     visualHeaderIndex: number;
-    visualDetailIndex: number;
+    visualDetailHeaderIndex: number;
+    visualDetailBodyIndex: number;
     show: boolean;
     filter?: LogLineValue;
 
@@ -274,6 +284,19 @@ export function getLogLineTimestampValue(
     }
     return null;
 }
+
+export function getLogLineTraceId(
+    logLine: LogLine | null | undefined
+): (string | null) {
+    if (logLine == null) { return null; }
+    const property = logLine.data.get("activity.traceid");
+    if ((undefined !== property)
+        && (("str" === property.typeValue))) {
+        return property.value;
+    }
+    return null;
+}
+
 
 export function filterListLogLine(
     listLogLine: LogLine[] | null | undefined,

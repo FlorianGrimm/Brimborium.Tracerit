@@ -8,7 +8,7 @@ public sealed class TraceritBreakLoopInstrumentation : InstrumentationBase {
     
     private static TraceritBreakLoopInstrumentation? _Instance;
     public static TraceritBreakLoopInstrumentation Instance
-        => _Instance ?? new();
+        => _Instance ??= new();
 
     public TraceritBreakLoopInstrumentation() 
         : base(ActivitySourceName) {

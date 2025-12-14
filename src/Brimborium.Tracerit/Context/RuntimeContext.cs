@@ -44,13 +44,13 @@ public static class RuntimeContext {
         //Guard.ThrowIfNullOrEmpty(slotName);
         ArgumentNullException.ThrowIfNullOrEmpty(slotName, nameof(slotName));
 
-        RuntimeContextSlot<T>? slot = null;
 
         lock (Slots) {
             if (Slots.ContainsKey(slotName)) {
                 throw new InvalidOperationException($"Context slot already registered: '{slotName}'");
             }
 
+            RuntimeContextSlot<T> slot;
             if (ContextSlotType == typeof(AsyncLocalRuntimeContextSlot<>)) {
                 slot = new AsyncLocalRuntimeContextSlot<T>(slotName);
             } else if (ContextSlotType == typeof(ThreadLocalRuntimeContextSlot<>)) {

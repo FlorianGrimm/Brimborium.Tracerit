@@ -2,9 +2,10 @@
 
 public sealed class TracorCollectiveFileSink
     : TracorCollectiveBulkSink<TracorFileSinkOptions> {
+    private bool _ConfigurationDirectoryAllowCreation;
     private string? _ConfigurationDirectory;
     private string? _ConfigurationFileName;
-    private TimeSpan _ConfigurationPeriod = TimeSpan.Zero;
+    private TimeSpan _ConfigurationPeriod = TimeSpan.FromDays(1);
     private TracorCompression _ConfigurationCompression = TracorCompression.None;
     private bool _ConfigurationCleanupEnabled;
     private TimeSpan _ConfigurationCleanupPeriod = TimeSpan.FromDays(31);
@@ -31,7 +32,7 @@ public sealed class TracorCollectiveFileSink
     }
 
     internal override void SetBulkSinkOptionsExtended(TracorFileSinkOptions options) {
-
+        this._ConfigurationDirectoryAllowCreation = options.DirectoryAllowCreation;
         this._ConfigurationCleanupEnabled = options.CleanupEnabled;
         this._ConfigurationCleanupPeriod = options.CleanupPeriod;
 
@@ -57,7 +58,9 @@ public sealed class TracorCollectiveFileSink
         } else {
             this._ConfigurationDirectory = directory;
             this._ConfigurationFileName = options.FileName;
-            this._ConfigurationPeriod = options.Period;
+            if (options.Period != TimeSpan.Zero) {
+                this._ConfigurationPeriod = options.Period;
+            }
             this._FlushPeriod = options.FlushPeriod;
             this._ConfigurationCompression = options.Compression?.ToLowerInvariant() switch {
                 "brotli" => TracorCompression.Brotli,
@@ -103,7 +106,7 @@ public sealed class TracorCollectiveFileSink
         return default;
     }
 
-    public static string? GetDirectory(
+    public string? GetDirectory(
         string? baseDirectory,
         Func<string?>? getBaseDirectory,
         string? directory,
@@ -139,7 +142,12 @@ public sealed class TracorCollectiveFileSink
                 if (System.IO.Directory.Exists(baseDirectoryNormalized)) {
                     // ok
                 } else {
-                    return null;
+                    if (this._ConfigurationDirectoryAllowCreation) {
+                        System.IO.Directory.CreateDirectory(baseDirectoryNormalized);
+                        // ok
+                    } else { 
+                        return null;
+                    }
                 }
             } else if (getBaseDirectory is { }
                 && getBaseDirectory() is { Length: > 0 } gottenBaseDirectory) {
@@ -158,10 +166,21 @@ public sealed class TracorCollectiveFileSink
             ? System.IO.Path.Combine(baseDirectoryNormalized, directoryNormalized)
             : baseDirectoryNormalized;
 
-        return (directoryCombined is { Length: > 0 })
+        var directoryCombinedNormalized=(directoryCombined is { Length: > 0 })
             ? System.IO.Path.GetFullPath(directoryCombined)
             : directoryCombined;
-
+        if (string.IsNullOrEmpty(directoryCombinedNormalized)) {
+            return null;
+        }
+        if (System.IO.Directory.Exists(directoryCombinedNormalized)) {
+            return directoryCombinedNormalized;
+        } else {
+            if (this._ConfigurationDirectoryAllowCreation) {
+                System.IO.Directory.CreateDirectory(directoryCombinedNormalized);
+                return directoryCombinedNormalized;
+            }
+            return null;
+        }
         static string HandleReplacements(string value, string applicationName) {
             value = System.Environment.ExpandEnvironmentVariables(value);
             value = value.Replace(System.IO.Path.AltDirectorySeparatorChar, System.IO.Path.DirectorySeparatorChar);
@@ -200,7 +219,13 @@ public sealed class TracorCollectiveFileSink
                     this._ConfigurationDirectory ?? string.Empty);
                 this._ByResourceName.TryAdd(resourceName, sinkByResource);
             }
-            await sinkByResource.WriteAsync(groupListTracorData, utcNow);
+            try {
+                await sinkByResource.WriteAsync(groupListTracorData, utcNow);
+            } catch (Exception ex) {
+                if (this._TracorEmergencyLogging.IsEnabled) {
+                    this._TracorEmergencyLogging.Log($"Error: while writing {ex.Message}");
+                }
+            }
         }
     }
 
@@ -312,6 +337,12 @@ public sealed class TracorCollectiveFileSink
             long statePeriodStarted;
             Stream? currentFileStream;
             long currentPeriodStarted;
+            if (string.IsNullOrEmpty(this._Parent._ConfigurationDirectory)) {
+                if (this._Parent._TracorEmergencyLogging.IsEnabled) {
+                    this._Parent._TracorEmergencyLogging.Log("FileTracorCollectiveSink disabled - directory is empty");
+                }
+                return;
+            }
             using (this._Parent._LockProperties.EnterScope()) {
                 statePeriod = this._Parent._ConfigurationPeriod;
                 statePeriodStarted = this._PeriodStarted;
@@ -366,6 +397,7 @@ public sealed class TracorCollectiveFileSink
                                 this._Parent._TracorEmergencyLogging.Log($"{this.GetType().Name} created directory:{directory}");
                             }
                         } catch (Exception error) {
+                            this._DirectoryExists = false;
                             if (this._Parent._TracorEmergencyLogging.IsEnabled) {
                                 this._Parent._TracorEmergencyLogging.Log($"{this.GetType().Name} cannot create directory:{directory} {error.Message}");
                             }

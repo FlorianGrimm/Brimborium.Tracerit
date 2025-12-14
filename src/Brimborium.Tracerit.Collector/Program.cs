@@ -39,8 +39,16 @@ public class Program {
             });
 
         // Add services to the container.
+        AppConfig appConfig = new();
+        builder.Configuration.Bind(appConfig);
+
+        //if (appConfig.LimitLocalhost) { 
+        //    builder.Services.AddAuthentication(LocalHostDefaults.AuthenticationScheme)
+        //      .AddLocalHostAuthentication();
+        //} else { 
         builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
             .AddNegotiate();
+        //}
 
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
@@ -53,7 +61,10 @@ public class Program {
         builder.Services.AddTracor(
             addEnabledServices: true,
             configuration: default,
-            configureTracor: default,
+            configureTracor: (tracorOptions) => {
+                tracorOptions.SetOnGetApplicationStopping(
+                    static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
+            },
             configureConvert: default,
             tracorScopedFilterSection: default)
             .AddFileTracorCollectiveSinkDefault(
@@ -78,8 +89,6 @@ public class Program {
 
         builder.Services.AddOptions<AppConfig>().BindConfiguration("");
 
-        AppConfig appConfig = new();
-        builder.Configuration.Bind(appConfig);
         if (appConfig.ServiceName is { Length: > 0 } serviceName) {
             builder.Services.AddWindowsService(options => {
                 options.ServiceName = serviceName;

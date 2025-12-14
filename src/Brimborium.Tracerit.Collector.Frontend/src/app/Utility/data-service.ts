@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, distinctUntilChanged, filter, Subscription } from 'rxjs';
-import { LogFileInformationList, LogLine, PropertyHeader, TypeValue } from '../Api';
+import { getLogLineTraceId, LogFileInformationList, LogLine, PropertyHeader, TraceInformation, TypeValue } from '../Api';
 import { BehaviorRingSubject } from './BehaviorRingSubject';
 import { MasterRingService } from './master-ring.service';
 
@@ -40,6 +40,8 @@ export class DataService {
     (name, message, value) => { console.log(name, message, value?.length); });
 
   readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
+  
+  mapTraceInformation: Map<string, TraceInformation>=new Map<string, TraceInformation>();
 
   constructor() {
     this.addDefaultMapName();
@@ -56,10 +58,10 @@ export class DataService {
 
   public setListFile(value: LogFileInformationList) {
     value.sort((a, b) => {
-          const cmp = b.creationTimeUtc.compareTo(a.creationTimeUtc);
-          if (0 !== cmp) { return cmp; }
-          return a.name.localeCompare(b.name);
-        });
+      const cmp = b.creationTimeUtc.compareTo(a.creationTimeUtc);
+      if (0 !== cmp) { return cmp; }
+      return a.name.localeCompare(b.name);
+    });
     this.listFile$.next(value);
     return value;
   }
@@ -109,7 +111,7 @@ export class DataService {
     if (0 === data.length) { return; }
 
     this.extractHeader(data);
-    const restMaxLength = 1024 - data.length;
+    const restMaxLength = 4096 - data.length;
     if (restMaxLength < 0) {
       this.listLogLineSource$.next(data);
     } else {
@@ -122,6 +124,7 @@ export class DataService {
         ? currentData.slice(currentData.length - restMaxLength)
         : currentData;
       const nextData = currentDataLimited.concat(data);
+      this.connectTraces(data,currentDataLimited);
       this.listLogLineSource$.next(nextData);
     }
   }
@@ -129,9 +132,59 @@ export class DataService {
   /** the data comes from a file (from the webserver) */
   setListLogLine(data: LogLine[]) {
     this.extractHeader(data);
+    this.connectTraces(data, undefined);
     this.listLogLineSource$.next(data);
   }
-  
+  connectTraces(nextData: LogLine[],previousData: LogLine[]|undefined) {
+    const mapTraceInformation = new Map<string, TraceInformation>();
+    this.mapTraceInformation=mapTraceInformation;
+    if(previousData != null) { 
+      for (const logLine of nextData) {
+        let traceInformation = logLine.traceInformation;
+        if (traceInformation != null) { 
+          const traceId = traceInformation.traceId;
+          traceInformation.listLogLineId=[logLine.id];
+          mapTraceInformation.set(traceId, traceInformation);
+        } else {
+          let traceId = getLogLineTraceId(logLine);
+          if (traceId == null || traceId.length === 0) { continue; }
+          let traceInformation = mapTraceInformation.get(traceId);
+          if (traceInformation == null) { 
+            traceInformation = {
+              traceId: traceId,
+              spanId: "",
+              parentSpanId: "",
+              listLogLineId: []
+            };
+            logLine.traceInformation = traceInformation;
+          } else {
+            traceInformation.listLogLineId.push(logLine.id);
+          }
+          mapTraceInformation.set(traceId, traceInformation);
+        }
+      }      
+    }
+    {
+      for (const logLine of nextData) {
+        let traceId = getLogLineTraceId(logLine);
+          if (traceId == null || traceId.length === 0) { continue; }
+          let traceInformation = mapTraceInformation.get(traceId);
+          if (traceInformation == null) { 
+            traceInformation = {
+              traceId: traceId,
+              spanId: "",
+              parentSpanId: "",
+              listLogLineId: []
+            };
+            logLine.traceInformation = traceInformation;
+          } else {
+            traceInformation.listLogLineId.push(logLine.id);
+          }
+          mapTraceInformation.set(traceId, traceInformation);
+      }
+    }
+  }
+
   extractHeader(data: LogLine[]) {
     for (const line of data) {
       for (const prop of line.data.values()) {
@@ -145,12 +198,15 @@ export class DataService {
 
   addDefaultMapName() {
     this.addMapName("id", "int", false);
-    this.addMapName("timestamp", "dt", true);
-    this.addMapName("logLevel", "lvl", true);
-    this.addMapName("resource", "str", true);
-    this.addMapName("source", "str", true);
-    this.addMapName("scope", "str", true);
-    this.addMapName("message", "str", true);
+    this.addMapName("timestamp", "dt", true, 0, 0, -1);
+    this.addMapName("logLevel", "lvl", true, 1, 1, -1);
+    this.addMapName("resource", "str", true, 2, 2, -1);
+    this.addMapName("source", "str", true, 3, 3, -1);
+    this.addMapName("scope", "str", true, 4, 4, -1);
+    this.addMapName("message", "str", true, 5, -1, 0);
+
+    this.addMapName("{OriginalFormat}", "str", false, -1, -1, 1000);
+
     // this.addMapName("value");
     // this.addMapName("event.id");
     // this.addMapName("event.name");
@@ -174,19 +230,24 @@ export class DataService {
     // this.addMapName("{OriginalFormat}");
   }
 
-  addMapName(name: string, typeValue: TypeValue, show: boolean = false) {
+  addMapName(name: string, typeValue: TypeValue, 
+    show: boolean = false, 
+    visualHeaderIndex: number = -1,
+    visualDetailHeaderIndex: number = -1, 
+    visualDetailBodyIndex: number = -1) {
     let result = this.mapName.get(name);
     if (result === undefined) {
       if (!this.mapName.has(name)) {
         const index = 1 + this.mapName.size;
-        const width = ("id"===name) ? 100:99;
+        const width = ("id" === name) ? 100 : 99;
         result = {
           id: `${name}-${typeValue}`,
           name: name,
           typeValue: typeValue,
           index: index,
-          visualHeaderIndex: index,
-          visualDetailIndex: index,
+          visualHeaderIndex: visualHeaderIndex,
+          visualDetailHeaderIndex: visualDetailHeaderIndex,
+          visualDetailBodyIndex: visualDetailBodyIndex,
           show: show,
           width: width,
           headerCellStyle: { width: `${width}px` },

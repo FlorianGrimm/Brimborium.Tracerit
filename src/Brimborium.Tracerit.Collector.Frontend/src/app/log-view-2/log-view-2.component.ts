@@ -1,20 +1,37 @@
-import { AfterViewInit, Component, computed, effect, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { CdkMenu, CdkMenuItem, CdkContextMenuTrigger } from '@angular/cdk/menu';
 import { AsyncPipe } from '@angular/common';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
-import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Duration, ZonedDateTime } from '@js-joda/core';
 import { Subscription, combineLatest, tap } from 'rxjs';
-import { LucideAngularModule, Funnel, FunnelX, Eye, EyeOff, GripVertical } from 'lucide-angular';
+import { LucideAngularModule, Funnel, FunnelX, Eye, EyeOff, GripVertical, Menu } from 'lucide-angular';
 
 import { DataService } from '../Utility/data-service';
 import { LogTimeDataService } from '../Utility/log-time-data.service';
 import { MasterRingService } from '../Utility/master-ring.service';
 import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
 import { getVisualHeader } from '../Utility/propertyHeaderUtility';
-import { epoch0, epoch1, getEffectiveRange, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
-import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader } from '../Api';
+import { epoch0, epoch1, getEffectiveRange, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, TimeRangeDuration, TimeRangeOrNull } from '../Utility/time-range';
+import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader, TraceInformation } from '../Api';
 
 import { TimeScale2Component } from './time-scale-2/time-scale-2.component';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { binarySearchById } from '../Utility/binarysearch';
+
+export type LogLineValueWithHeader = LogLineValue & { header: PropertyHeader };
+
+export type DisplayTraceInformation = {
+  traceId: string;
+  spanId: string;
+  parentSpanId: string;
+  listLogLineId: number[];
+  logLineFirst: LogLine | null;
+  logLineLast: LogLine | null;
+  xStart: number;
+  xFinish: number;
+};
+
 
 const headerContentNames: string[] = [
   "timestamp",
@@ -37,8 +54,11 @@ const headerContentNamesPosition = new Map<string, number>([
   imports: [
     AsyncPipe,
     ScrollingModule,
-    CdkDropList,
     CdkDrag,
+    CdkDropList,
+    CdkContextMenuTrigger,
+    CdkMenu,
+    CdkMenuItem,
     LucideAngularModule,
     TimeScale2Component
   ],
@@ -46,12 +66,17 @@ const headerContentNamesPosition = new Map<string, number>([
   styleUrl: './log-view-2.component.scss',
 })
 export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
+  selectTrace(displayTraceInformation: DisplayTraceInformation) {
+    if (displayTraceInformation.listLogLineId.length === 0) { return; }
+    this.selectedLogLineId.set(displayTraceInformation.listLogLineId[0]);
+  }
   // Icons
   readonly Funnel = Funnel;
   readonly FunnelX = FunnelX;
   readonly Eye = Eye;
   readonly EyeOff = EyeOff;
   readonly GripVertical = GripVertical;
+  readonly Menu = Menu;
 
   // Services
   readonly subscription = new Subscription();
@@ -75,11 +100,8 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   // State - Selection & Highlighting
   readonly selectedLogLineId = signal<number | null>(null);
   readonly highlightedLogLineId = signal<number | null>(null);
-  readonly selectedLogLine = computed(() => {
-    const id = this.selectedLogLineId();
-    if (id === null) return null;
-    return this.listLogLineAll$.getValue().find(l => l.id === id) ?? null;
-  });
+  readonly selectedLogLineId$ = toObservable(this.selectedLogLineId);
+  readonly selectedLogLine = signal<LogLine | null>(null);
   readonly headerId = signal<PropertyHeader | undefined>(undefined);
 
   // State - Time ranges
@@ -107,8 +129,8 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
     subscription: Subscription;
   } | null = null;
   // private overlay: HTMLDivElement | null = null;
-
-
+  //
+  @ViewChild('logView2Container', { static: true }) logView2Container!: ElementRef<HTMLDivElement>;
   constructor() {
   }
   ngOnInit(): void {
@@ -118,6 +140,7 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
   }
   ngAfterViewInit(): void {
     if (!this.viewport) { return; }
+    this.updateViewBox();
 
     const onScrollViewport = (ev: Event) => this.onScrollViewport(ev);
     const nativeElement = this.viewport.elementRef.nativeElement;
@@ -168,7 +191,6 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
           localSubscription.unsubscribe();
         }
       })
-
     );
 
     // Subscribe to log lines
@@ -222,7 +244,46 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
         next: (id) => this.selectedLogLineId.set(id)
       })
     );
+
+    this.subscription.add(
+      combineLatest({
+        selectedLogLineId: this.selectedLogLineId$,
+        listLogLineFiltered: this.listLogLineFiltered$
+      }).subscribe({
+        next: ({ selectedLogLineId, listLogLineFiltered }) => {
+          if (selectedLogLineId != null) {
+            const selectedLogLine = listLogLineFiltered.find(l => l.id === selectedLogLineId) ?? null;
+            this.selectedLogLine.set(selectedLogLine);
+            if (selectedLogLine != null) {
+              this.detailsHeaderContent.set(this.getDetailsHeaderContent(selectedLogLine));
+              this.detailsBodyContent.set(this.getDetailsBodyContent(selectedLogLine));
+            }
+          } else {
+            this.selectedLogLine.set(null);
+          }
+        }
+      }));
   }
+
+  readonly displayWidth$ = new BehaviorRingSubject<number>(0,
+    0, 'LogView2Component_displayWidth', this.subscription, this.ring$, undefined
+  );
+  readonly displayWidth = signal(0);
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.updateViewBox();
+  }  
+
+  private updateViewBox(): void {
+    const width = this.logView2Container.nativeElement.clientWidth;
+    this.displayWidth$.next(width);
+    this.displayWidth.set(width);
+  }
+
+  readonly detailsHeaderContent = signal<LogLineValueWithHeader[]>([]);
+  readonly detailsBodyContent = signal<LogLineValueWithHeader[]>([]);
+
 
   // Template helpers
   getContent(logLine: LogLine, header: PropertyHeader): string {
@@ -277,6 +338,7 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
     }
     const { start, end } = this.viewport.getRenderedRange()
     const listLogLineFiltered = this.listLogLineFiltered$.getValue();
+    if (listLogLineFiltered.length === 0) { return; }
     const startIndex = Math.max(0, Math.min(start, listLogLineFiltered.length - 1));
     const endIndex = Math.max(0, Math.min(end, listLogLineFiltered.length - 1));
     const startTS = listLogLineFiltered[startIndex].ts;
@@ -494,39 +556,150 @@ export class LogView2Component implements OnInit, AfterViewInit, OnDestroy {
     return dur.toString();
   }
 
-  getHeaderContent(logLine: LogLine) {
+  getDetailsHeaderContent(logLine: LogLine): LogLineValueWithHeader[] {
     const iter = logLine.data.values();
-    const result: LogLineValue[] = [];
+    const result: LogLineValueWithHeader[] = [];
+    const mapName = this.dataService.mapName;
     for (const value of iter) {
-      if (headerContentNames.includes(value.name)) {
-        result.push(value);
-      } else {
-        // ignore
+      const header = mapName.get(value.name)!;
+      if (header.visualDetailHeaderIndex >= 0) {
+        result.push({ ...value, header: header });
       }
     }
     result.sort((a, b) => {
-      return (headerContentNamesPosition.get(a.name) ?? 0) - (headerContentNamesPosition.get(b.name) ?? 0);
+      return a.header.visualDetailHeaderIndex - b.header.visualDetailHeaderIndex;
     });
     return result;
   }
-  getDetailsContent(logLine: LogLine) {
+
+  getDetailsBodyContent(logLine: LogLine): LogLineValueWithHeader[] {
     const iter = logLine.data.values();
-    const result: (LogLineValue & { header: PropertyHeader })[] = [];
+    const result: LogLineValueWithHeader[] = [];
     const mapName = this.dataService.mapName;
     for (const value of iter) {
-      if (headerContentNames.includes(value.name)) {
-        // ignore
-      } else {
-        result.push({ ...value, header: mapName.get(value.name)! });
+      const header = mapName.get(value.name)!;
+      if (header.visualDetailHeaderIndex < 0) {
+        result.push({ ...value, header: header });
       }
     }
     result.sort((a, b) => {
-      let cmp = a.header.visualDetailIndex - b.header.visualDetailIndex;
-      if (cmp !== 0) { return cmp; }
-      cmp = (a.name).localeCompare(b.name);
-      return cmp;
+      if ((a.header.visualDetailBodyIndex < 0) && (b.header.visualDetailBodyIndex < 0)) {
+        return a.header.name.localeCompare(b.header.name);
+      }
+      if (a.header.visualDetailBodyIndex < 0) { return 1; }
+      if (b.header.visualDetailBodyIndex < 0) { return -1; }
+      return a.header.visualDetailBodyIndex - b.header.visualDetailBodyIndex;
     });
     return result;
+  }
+
+  // Context menu - id
+  readonly showFilter = signal(false);
+  readonly filterListTraceInformation = signal<DisplayTraceInformation[]>([]);
+  toggleFilter() {
+    const next = !this.showFilter();
+    const listDisplayTraceInformation: DisplayTraceInformation[] = [];
+    if (next) {
+      const listLogLineAll = this.listLogLineAll$.getValue();
+      const rangeZoom = this.rangeZoom$.getValue();
+      const displayWidth = this.displayWidth$.getValue();
+
+      for (const traceInformation of this.dataService.mapTraceInformation.values()) {
+        let logLineFirst: LogLine | null = null;
+        let logLineLast: LogLine | null = null;
+        for (let idx = 0; idx < traceInformation.listLogLineId.length; idx++) {
+          const id = traceInformation.listLogLineId[idx];
+          //const logLine = binarySearchById(id, listLogLineAll);
+          const logLine = listLogLineAll.find(l => l.id === id);
+          if (logLine == null) {
+            continue;
+          } else {
+            logLineFirst = logLine;
+            break;
+          }
+        }
+        for (let idx = traceInformation.listLogLineId.length - 1; 0 <= idx; idx++) {
+          const id = traceInformation.listLogLineId[idx];
+          //const logLine = binarySearchById(id, listLogLineAll);
+          const logLine = listLogLineAll.find(l => l.id === id);
+          if (logLine == null) {
+            continue;
+          } else {
+            logLineLast = logLine;
+            break;
+          }
+        }
+        let xStart = 0;
+        let xFinish = 0;
+        if (rangeZoom.start && rangeZoom.finish && rangeZoom.duration && logLineFirst?.ts && logLineLast?.ts) {
+          /*
+          const durationZoomMillis = rangeZoom.duration.toMillis();
+          const startMillis = Duration.between(rangeZoom.start, logLineFirst.ts).toMillis();
+          const finishMillis = Duration.between(logLineLast.ts, rangeZoom.finish).toMillis();
+          xStart = displayWidth * (startMillis / durationZoomMillis);
+          xFinish = displayWidth * (finishMillis / durationZoomMillis);
+          */
+          xStart = this.calcPositionX(logLineFirst.ts, rangeZoom, displayWidth);
+          xFinish = this.calcPositionX(logLineLast.ts, rangeZoom, displayWidth);
+        }
+        const displayTraceInformation:DisplayTraceInformation={
+          traceId: traceInformation.traceId,
+          spanId: traceInformation.spanId,
+          parentSpanId: traceInformation.parentSpanId,
+          listLogLineId: traceInformation.listLogLineId,
+          logLineFirst: logLineFirst,
+          logLineLast: logLineLast,
+          xStart: xStart,
+          xFinish: xFinish,
+        };
+        listDisplayTraceInformation.push(displayTraceInformation);
+      }
+    }
+    this.filterListTraceInformation.set(listDisplayTraceInformation);
+    this.showFilter.set(next);
+  }
+
+  showAllFieldsInDetails() {
+    const allHeaders = this.listAllHeader$.getValue();
+    const selectedLogLine: LogLine = { id: 0, ts: null, data: new Map<string, LogLineValue>(), traceInformation: null };
+    for (const header of allHeaders) {
+      selectedLogLine.data.set(header.name, { name: header.name, typeValue: header.typeValue, value: null! });
+    }
+    this.detailsHeaderContent.set(this.getDetailsHeaderContent(selectedLogLine));
+    this.detailsBodyContent.set(this.getDetailsBodyContent(selectedLogLine));
+  }
+
+  resetRange() {
+    const rangeComplete = this.logTimeDataService.rangeComplete$.getValue();
+    setTimeRangeDurationIfChanged(this.logTimeDataService.rangeZoom$, rangeComplete);
+    setTimeRangeIfChanged(this.logTimeDataService.rangeFilter$, rangeComplete);
+  }
+
+  dropDetailsContent(event: CdkDragDrop<LogLineValueWithHeader[]>) {
+    console.log("dropDetailsContent", event);
+    /*
+    TODO: allow reordering of the columns and moving between header and body
+    adjust this.getDetailsHeaderContent and this.getDetailsBodyContent
+     if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex,
+      );
+    }
+    */
+    return true;
+  }
+
+  private calcPositionX(value: ZonedDateTime, rangeZoom: TimeRangeDuration, displayWidth: number): number {
+    const durationMillis = rangeZoom.duration.toMillis();
+    if (durationMillis <= 0) return 15;
+    const currentMillis = Duration.between(rangeZoom.start, value).toMillis();
+    const width = displayWidth - 30;
+    return 15 + ((currentMillis / durationMillis) * width);
   }
 
 }

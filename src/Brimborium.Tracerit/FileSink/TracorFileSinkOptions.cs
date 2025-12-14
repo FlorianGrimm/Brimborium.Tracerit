@@ -4,7 +4,7 @@
 /// Use GetApplicationStopping or FlushAsync to prevent loose log entries.
 /// </summary>
 public sealed class TracorFileSinkOptions : TracorBulkSinkOptions {
-
+    public bool DirectoryAllowCreation {  get; set; }
     /// <summary>
     /// (BaseDirectory or GetBaseDirectory) + Directory + FileName
     /// </summary>

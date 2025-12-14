@@ -1,5 +1,6 @@
 ﻿// MIT - Florian Grimm
 #pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE0079 // Remove unnecessary suppression
 
 // This is a copy from OpenTelemetry.SuppressInstrumentationScope
 /*

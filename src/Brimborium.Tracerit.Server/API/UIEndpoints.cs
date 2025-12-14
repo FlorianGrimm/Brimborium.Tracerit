@@ -31,11 +31,15 @@ public class UIEndpoints : IController {
 
         group.MapGet("/CurrentStream/{name?}", (string? name) => {
             return GetCurrentStream(name);
-        }).AllowAnonymous();
+        }).AllowAnonymous()
+        .RequireHost(["localhost"])
+        ;
 
         group.MapGet("/DirectoryList", () => {
             return this._LogFileService.DirectoryBrowse();
-        }).AllowAnonymous();
+        }).AllowAnonymous()
+        .RequireHost(["localhost"])
+        ;
 
         group.MapGet("/File/{name}", async (HttpContext httpContext, string name) => {
             var nameNormalize = name.TrimStart('\\', '/');
@@ -43,8 +47,8 @@ public class UIEndpoints : IController {
             if (result is ResponseSuccessful<FileContentReadResponse> { Result: { } responseResult }) {
                 httpContext.Response.StatusCode = 200;
                 httpContext.Response.ContentType = responseResult.ContentType;
-                    httpContext.Response.Headers.ContentLength = responseResult.ContentLength;
-                if (responseResult.ContentEncoding is { Length: > 0 } contentEncoding) { 
+                httpContext.Response.Headers.ContentLength = responseResult.ContentLength;
+                if (responseResult.ContentEncoding is { Length: > 0 } contentEncoding) {
                     httpContext.Response.Headers.ContentEncoding = contentEncoding;
                 }
                 await httpContext.Response.SendFileAsync(responseResult.FileFQ, 0, responseResult.ContentLength, httpContext.RequestAborted);
@@ -54,7 +58,8 @@ public class UIEndpoints : IController {
             } else {
                 await Results.InternalServerError().ExecuteAsync(httpContext);
             }
-        }).AllowAnonymous();
+        }).AllowAnonymous()
+        .RequireHost(["localhost"]);
     }
 
     public IResult GetCurrentStream(string? name) {

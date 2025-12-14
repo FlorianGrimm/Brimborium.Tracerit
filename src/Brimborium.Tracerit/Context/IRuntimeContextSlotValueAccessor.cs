@@ -1,4 +1,5 @@
 #pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE0079 // Remove unnecessary suppression
 
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
