@@ -115,12 +115,18 @@ public abstract class TracorCollectiveBulkSink<TOptions>
                             : DateTime.UtcNow
                     };
                     this._Resource.ListProperty.AddRange(resource.ListProperty);
+
                 } else {
                     this._Resource = new TracorDataRecord() {
                         TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", this._ApplicationName ?? string.Empty, string.Empty),
                         Timestamp = DateTime.UtcNow
                     };
                 }
+
+                if (!this._Resource.ListProperty.Any(p => TracorConstants.ResourceMaschine == p.Name)) { 
+                    this._Resource.ListProperty.Add(TracorDataProperty.CreateStringValue(TracorConstants.ResourceMaschine, System.Environment.MachineName));
+                }
+                // TODO: otlp service.instance
 
             }
         }

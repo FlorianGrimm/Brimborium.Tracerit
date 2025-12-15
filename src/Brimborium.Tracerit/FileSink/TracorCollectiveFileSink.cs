@@ -41,7 +41,7 @@ public sealed class TracorCollectiveFileSink
             sinkOfResourceName.ResetForOptionsChange();
         }
 
-        string? directory = GetDirectory(
+        string? directory = this.GetDirectory(
             options.BaseDirectory,
             options.GetBaseDirectory,
             options.Directory,
@@ -68,24 +68,6 @@ public sealed class TracorCollectiveFileSink
                 _ => TracorCompression.None
             };
 
-            //if (options.GetResource() is { } resource) {
-            //    string resourceName = (resource.TracorIdentifier.RescourceName is { Length: > 0 } tiRescourceName)
-            //        ? tiRescourceName
-            //        : (this._ApplicationName ?? string.Empty);
-            //    this._Resource = new TracorDataRecord() {
-            //        TracorIdentifier = new(resourceName, "Resource", resource.TracorIdentifier.Scope, string.Empty),
-            //        Timestamp = DateTime.UtcNow
-            //    };
-            //    this._Resource.ListProperty.AddRange(resource.ListProperty);
-            //} else {
-            //    this._Resource = new TracorDataRecord() {
-            //        TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", this._ApplicationName ?? string.Empty, string.Empty),
-            //        Timestamp = DateTime.UtcNow
-            //    };
-            //}
-
-            if (this._Resource.ListProperty.Any(p => TracorConstants.ResourceMaschine == p.Name))
-                this._Resource.ListProperty.Add(TracorDataProperty.CreateStringValue(TracorConstants.ResourceMaschine, System.Environment.MachineName));
             if (this._TracorEmergencyLogging.IsEnabled) {
                 this._TracorEmergencyLogging.Log($"{this.GetType().Name} directory:{directory}");
             }
