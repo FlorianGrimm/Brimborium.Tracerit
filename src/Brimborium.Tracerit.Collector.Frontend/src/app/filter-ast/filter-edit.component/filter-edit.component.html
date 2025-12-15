@@ -1,0 +1,46 @@
+<app-filter-ast-node [uiNode]="uiNodeRoot()" [uiNodeRoot]="uiNodeRoot()" (nodeChanged)="onNodeChanged($event)"
+    [selection]="selection()" (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node>
+@let s=selection();
+@if (s) {
+<div class="filter-ast-node-actions">
+    @if(s.id!=null){
+    <div class="filter-ast-node-self-actions">
+        <button (click)="onRemoveNode()">
+            <lucide-icon [img]="Minus" class="lucide-icon"></lucide-icon> Delete
+        </button>
+        <button (click)="onInsertParent()">
+            <lucide-icon [img]="CirclePlus" class="lucide-icon"></lucide-icon> New Parent
+        </button>
+        <button (click)="onAppendListChild()" [disabled]="!uiCanAddChild()">
+            <lucide-icon [img]="Plus" class="lucide-icon"></lucide-icon> Add Child
+        </button>
+        <button (click)="onClipboardCopy()">
+            <lucide-icon [img]="ClipboardCopy" class="lucide-icon"></lucide-icon> Copy
+        </button>
+        <button (click)="onClipboardCut()">
+            <lucide-icon [img]="ClipboardCut" class="lucide-icon"></lucide-icon> Cut
+        </button>
+        <button (click)="onClipboardPaste()" [disabled]="!isClipboardPasteEnabled()">
+            <lucide-icon [img]="ClipboardPaste" class="lucide-icon"></lucide-icon> Paste
+        </button>
+    </div>
+    }
+    @if (('operator'===s.property)||('list'===s.property)){
+    <div class="filter-ast-node-operator">
+        @for (item of filterOperatorsListDisplay; track item.operator) {
+        <button (click)="onSetOperator(item)"> {{item.display}} </button>
+        }
+        @for (item of filterOperatorsValueDisplay; track item.operator) {
+        <button (click)="onSetOperator(item)"> {{item.display}} </button>
+        }
+    </div>
+    }
+    @if (('operator'===s.property)||('list'===s.property)){
+    <div class="filter-ast-node-property">
+        @for (header of listPropertyHeader; track header.id) {
+        <button (click)="onSetProperty(header)"> {{header.name}} </button>
+        }
+    </div>
+    }
+</div>
+}

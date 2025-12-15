@@ -1,20 +1,41 @@
 <div class="app-tracerit-content">
     <aside [className]="expanded() ? 'aside-expanded' : 'aside-collapsed'">
         <header>
+            <button type="button" routerLink="/tracorit/directory-list">
+                <span-lucide [img]="icon.DirectoryList" class="aside-collapsed my-icon"></span-lucide>
+                <span class="aside-expanded">
+                    Directory
+                </span>
+            </button>
             <button type="button" routerLink="/tracorit/log">
-                <span-lucide [img]="Home" class="aside-collapsed my-icon"></span-lucide>
-                <span class="aside-expanded">Log</span>
+                <span-lucide [img]="icon.LogView" class="aside-collapsed my-icon"></span-lucide>
+                <span class="aside-expanded">
+                    Log
+                </span>
+            </button>
+            <button type="button" routerLink="/tracorit/trace">
+                <span-lucide [img]="icon.TraceView" class="aside-collapsed my-icon"></span-lucide>
+                <span class="aside-expanded">
+                    Trace
+                </span>
+            </button>
+            <button type="button" routerLink="/tracorit/filter">
+                <span-lucide [img]="icon.Filter" class="aside-collapsed my-icon"></span-lucide>
+                <span class="aside-expanded">
+                    Filter
+                </span>
+            </button>
+            <button type="button" routerLink="/tracorit/highlight">
+                <span-lucide [img]="icon.Highlight" class="aside-collapsed my-icon"></span-lucide>
+                <span class="aside-expanded">
+                    Highlight
+                </span>
             </button>
         </header>
-        <button type="button" routerLink="/tracorit/directory-list">
-            <span-lucide [img]="FileStack" class="aside-collapsed my-icon"></span-lucide>
-            <span class="aside-expanded">
-                Directory                    
-            </span>
-        </button>
         <footer>
             <button type="button" (click)="handleToggle()">
-                <span-lucide [img]="(expanded())?ChevronLeft:ChevronRight" class="aside-collapsed my-icon"></span-lucide>
+                <span-lucide [img]="(expanded())?icon.ChevronLeft:icon.ChevronRight"
+                    class="aside-collapsed my-icon"></span-lucide>
                 <span class="aside-expanded">
                     {{ expanded() ? 'Collapse' : 'Expand' }}
                 </span>

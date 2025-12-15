@@ -1,16 +1,16 @@
-import { Component, signal, ChangeDetectionStrategy, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, signal, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { LucideAngularModule, Home, FileStack, ChevronLeft, ChevronRight } from 'lucide-angular';
-import { DataService } from './Utility/data-service';
-import { HttpClientService } from './Utility/http-client-service';
+import { DataService } from '@app/Utility/data-service';
+import { HttpClientService } from '@app/Utility/http-client-service';
 import { distinctUntilChanged, filter, repeat, Subscription, switchMap, take, tap } from 'rxjs';
-import { BehaviorRingSubject, createBehaviorRingSubject } from './Utility/BehaviorRingSubject';
-import { createObserableSubscripe } from './Utility/ObservableSubscripe';
-import { combineLatestSubject } from './Utility/CombineLatestSubject';
-import { MasterRingService } from './Utility/master-ring.service';
-
+import { BehaviorRingSubject, createBehaviorRingSubject } from '@app/Utility/BehaviorRingSubject';
+import { createObserableSubscripe } from '@app/Utility/ObservableSubscripe';
+import { combineLatestSubject } from '@app/Utility/CombineLatestSubject';
+import { MasterRingService } from '@app/Utility/master-ring.service';
+import { LucideAngularModule } from 'lucide-angular';
+import { AppIconComponent } from '@app/app-icon/app-icon.component';
 @Component({
     selector: 'app-root',
     imports: [
@@ -29,17 +29,16 @@ export class AppComponent {
     readonly dataService = inject(DataService);
 
     readonly subscription = new Subscription();
+    readonly router = inject(Router);
+
     readonly ring$ = inject(MasterRingService).dependendRing('LogTimeDataService-ring$', this.subscription);
 
+    readonly icon = new AppIconComponent();
     readonly title = 'Tracerit';
-    readonly Home = Home;
-    readonly ChevronLeft = ChevronLeft;
-    readonly FileStack = FileStack;
-    readonly ChevronRight = ChevronRight;
-
     protected expanded = signal(false);
     protected open = false;
     protected switch = false;
+
 
     readonly visibilityState$ = createBehaviorRingSubject<string>({
         subscription: this.subscription,
@@ -83,6 +82,11 @@ export class AppComponent {
         */
         window.addEventListener('visibilitychange', (currentEvent: Event) => {
             this.visibilityState$.next(document.visibilityState);
+        });
+        this.router.events.subscribe((event) => {
+            if (event instanceof NavigationEnd) {
+                console.log("NavigationEnd", event);
+            }
         });
     }
 

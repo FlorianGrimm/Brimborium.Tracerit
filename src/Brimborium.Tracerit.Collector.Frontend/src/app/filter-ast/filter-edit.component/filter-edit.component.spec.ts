@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { LogView2Component } from './log-view-2.component';
+import { FilterEditComponent } from './filter-edit.component';
 
-describe('LogView2Component', () => {
-  let component: LogView2Component;
-  let fixture: ComponentFixture<LogView2Component>;
+describe('FilterEditComponent', () => {
+  let component: FilterEditComponent;
+  let fixture: ComponentFixture<FilterEditComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [LogView2Component]
+      imports: [FilterEditComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(LogView2Component);
+    fixture = TestBed.createComponent(FilterEditComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

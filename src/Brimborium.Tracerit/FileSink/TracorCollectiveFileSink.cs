@@ -67,18 +67,22 @@ public sealed class TracorCollectiveFileSink
                 "gzip" => TracorCompression.Gzip,
                 _ => TracorCompression.None
             };
-            if (options.GetResource() is { } resource) {
-                this._Resource = new TracorDataRecord() {
-                    TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", resource.TracorIdentifier.Scope, string.Empty),
-                    Timestamp = DateTime.UtcNow
-                };
-                this._Resource.ListProperty.AddRange(resource.ListProperty);
-            } else {
-                this._Resource = new TracorDataRecord() {
-                    TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", this._ApplicationName ?? string.Empty, string.Empty),
-                    Timestamp = DateTime.UtcNow
-                };
-            }
+
+            //if (options.GetResource() is { } resource) {
+            //    string resourceName = (resource.TracorIdentifier.RescourceName is { Length: > 0 } tiRescourceName)
+            //        ? tiRescourceName
+            //        : (this._ApplicationName ?? string.Empty);
+            //    this._Resource = new TracorDataRecord() {
+            //        TracorIdentifier = new(resourceName, "Resource", resource.TracorIdentifier.Scope, string.Empty),
+            //        Timestamp = DateTime.UtcNow
+            //    };
+            //    this._Resource.ListProperty.AddRange(resource.ListProperty);
+            //} else {
+            //    this._Resource = new TracorDataRecord() {
+            //        TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", this._ApplicationName ?? string.Empty, string.Empty),
+            //        Timestamp = DateTime.UtcNow
+            //    };
+            //}
 
             if (this._Resource.ListProperty.Any(p => TracorConstants.ResourceMaschine == p.Name))
                 this._Resource.ListProperty.Add(TracorDataProperty.CreateStringValue(TracorConstants.ResourceMaschine, System.Environment.MachineName));
@@ -145,7 +149,7 @@ public sealed class TracorCollectiveFileSink
                     if (this._ConfigurationDirectoryAllowCreation) {
                         System.IO.Directory.CreateDirectory(baseDirectoryNormalized);
                         // ok
-                    } else { 
+                    } else {
                         return null;
                     }
                 }
@@ -166,7 +170,7 @@ public sealed class TracorCollectiveFileSink
             ? System.IO.Path.Combine(baseDirectoryNormalized, directoryNormalized)
             : baseDirectoryNormalized;
 
-        var directoryCombinedNormalized=(directoryCombined is { Length: > 0 })
+        var directoryCombinedNormalized = (directoryCombined is { Length: > 0 })
             ? System.IO.Path.GetFullPath(directoryCombined)
             : directoryCombined;
         if (string.IsNullOrEmpty(directoryCombinedNormalized)) {

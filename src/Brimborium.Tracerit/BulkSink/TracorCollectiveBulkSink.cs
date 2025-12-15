@@ -12,6 +12,10 @@ public abstract class TracorCollectiveBulkSink<TOptions>
     protected readonly Lock _LockProperties = new Lock();
     protected readonly SemaphoreSlim _AsyncLockWriteFile = new(initialCount: 1, maxCount: 1);
     protected TimeSpan _FlushPeriod = TimeSpan.Zero;
+    // configured in TracorOptions
+    protected TracorDataRecord? _TracorResource;
+
+    // configured in TOptions/TracorBulkSinkOptions
     protected TracorDataRecord? _Resource;
 
     protected readonly System.Threading.Channels.Channel<ITracorData> _Channel;
@@ -70,16 +74,18 @@ public abstract class TracorCollectiveBulkSink<TOptions>
 
     protected virtual void SetTracorOptions(TracorOptions tracorOptions) {
         using (this._LockProperties.EnterScope()) {
-            if (tracorOptions.ApplicationName is { Length: > 0 } applicationName) {
-                string machineName = System.Environment.MachineName;
-                this._ApplicationName = applicationName
-                    .Replace("{MaschineName}", machineName);
-            } else if (this._ApplicationName is null) {
-                string machineName = System.Environment.MachineName;
-                applicationName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Application";
-                applicationName = $"{applicationName}-{machineName}";
-                this._ApplicationName = applicationName;
+            if (this._ApplicationName is null) {
+                if (tracorOptions.ApplicationName is { Length: > 0 } applicationName) {
+                    // TODO: Replace 
+                    //string machineName = System.Environment.MachineName;
+                    //applicationName = $"{applicationName}-{machineName}";
+                    //this._ApplicationName = applicationName;
+                    this._ApplicationName = applicationName;
+                } else {
+                    this._ApplicationName = tracorOptions.GetApplicationName();
+                }
             }
+            this._TracorResource = tracorOptions.GetResource();
 
             if (this._ServiceProvider is { } serviceProvider
                 && tracorOptions.GetOnGetApplicationStopping() is { } getApplicationStopping) {
@@ -93,6 +99,30 @@ public abstract class TracorCollectiveBulkSink<TOptions>
         using (this._LockProperties.EnterScope()) {
             this._JsonSerializerOptions = new System.Text.Json.JsonSerializerOptions(options.GetJsonSerializerOptions());
             this.SetBulkSinkOptionsExtended(options);
+
+            if (this._Resource is null) {
+
+                var resource = options.GetResource() ?? this._TracorResource;
+                this._TracorResource = null;
+                if (resource is { }) {
+                    string resourceName = (resource.TracorIdentifier.RescourceName is { Length: > 0 } tiRescourceName)
+                        ? tiRescourceName
+                        : (this._ApplicationName ?? string.Empty);
+                    this._Resource = new TracorDataRecord() {
+                        TracorIdentifier = new(resourceName, "Resource", resource.TracorIdentifier.Scope, string.Empty),
+                        Timestamp = (DateTime.UnixEpoch < resource.Timestamp)
+                            ? resource.Timestamp
+                            : DateTime.UtcNow
+                    };
+                    this._Resource.ListProperty.AddRange(resource.ListProperty);
+                } else {
+                    this._Resource = new TracorDataRecord() {
+                        TracorIdentifier = new(this._ApplicationName ?? string.Empty, "Resource", this._ApplicationName ?? string.Empty, string.Empty),
+                        Timestamp = DateTime.UtcNow
+                    };
+                }
+
+            }
         }
     }
 
@@ -142,7 +172,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
 
     public void OnTrace(bool isPublic, ITracorData tracorData) {
         if (string.IsNullOrEmpty(tracorData.TracorIdentifier.RescourceName)) {
-            tracorData.TracorIdentifier = tracorData.TracorIdentifier with { 
+            tracorData.TracorIdentifier = tracorData.TracorIdentifier with {
                 RescourceName = this._ApplicationName
             };
         }
@@ -231,7 +261,7 @@ public abstract class TracorCollectiveBulkSink<TOptions>
                 }
             }
             */
-            
+
         } finally {
             this._AsyncLockWriteFile.Release();
         }

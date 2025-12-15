@@ -7,11 +7,10 @@ import { DateTimeFormatter, Duration, ZonedDateTime, ZoneId } from '@js-joda/cor
 import { BehaviorSubject, combineLatest, delay, filter, Subscription } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { getLogLineTimestampValue, LogLine } from '../../Api';
-import { BehaviorRingSubject } from '../../Utility/BehaviorRingSubject';
-import { MasterRingService } from '../../Utility/master-ring.service';
-import { TimeRange, TimeRangeDuration, TimeRangeOrNull, getEffectiveRange, setTimeRangeDurationIfChanged, setTimeRangeFinishIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, setTimeRangeStartIfChanged } from '../../Utility/time-range';
-import { LogTimeDataService } from '../../Utility/log-time-data.service';
-import { tick } from '@angular/core/testing';
+import { BehaviorRingSubject } from '@app/Utility/BehaviorRingSubject';
+import { MasterRingService } from '@app/Utility/master-ring.service';
+import { TimeRange, TimeRangeDuration, TimeRangeOrNull, getEffectiveRange, getTimeRangeDurationToDebugString, getTimeRangeToDebugString, setTimeRangeDurationIfChanged, setTimeRangeFinishIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, setTimeRangeStartIfChanged } from '@app/Utility/time-range';
+import { LogTimeDataService } from '@app/Utility/log-time-data.service';
 
 const epoch0 = ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.UTC);
 const epoch1 = ZonedDateTime.of(1970, 1, 1, 1, 1, 1, 1, ZoneId.UTC);
@@ -67,10 +66,10 @@ export type LogTick = {
   selector: 'app-time-scale-2',
   standalone: true,
   imports: [AsyncPipe],
-  templateUrl: './time-scale-2.component.html',
-  styleUrl: './time-scale-2.component.scss'
+  templateUrl: './time-scale.component.html',
+  styleUrl: './time-scale.component.scss'
 })
-export class TimeScale2Component implements AfterViewInit, OnDestroy {
+export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   private subscription = new Subscription();
   private readonly ring$ = inject(MasterRingService).dependendRing('TimeScale2-ring$', this.subscription);
   private readonly logTimeDataService = inject(LogTimeDataService);
@@ -98,7 +97,7 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
       duration: Duration.between(epoch0, epoch1)
     }),
     0, 'TimeScale2Component_rangeComplete$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() }); });
+    (name, message, value) => { console.log(name, message, getTimeRangeDurationToDebugString(value)); });
 
   readonly rangeZoom$ = new BehaviorRingSubject<TimeRangeDuration>(Object.freeze({
     start: epoch0,
@@ -107,10 +106,7 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
   }),
     0, 'TimeScale2Component_rangeZoom',
     this.subscription, this.ring$, undefined,
-    (name, message, value) => {
-      console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString(), duration: value?.duration?.toString() });
-    }
-  );
+    (name, message, value) => { console.log(name, message, getTimeRangeDurationToDebugString(value)); });
 
   readonly rangeFilter$ = new BehaviorRingSubject<TimeRangeDuration>(Object.freeze({
     start: epoch0,
@@ -118,10 +114,7 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
     duration: Duration.between(epoch0, epoch1)
   }),
     0, 'TimeScale2Component_rangeFilter', this.subscription, this.ring$, undefined,
-    (name, message, value) => {
-      console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() });
-    }
-  );
+    (name, message, value) => { console.log(name, message, getTimeRangeDurationToDebugString(value)); });
 
   readonly selectedLogLineId$ = toObservable(this.selectedLogLineId);
   readonly highlightedLogLineId$ = toObservable(this.highlightedLogLineId);
@@ -144,15 +137,37 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
 
   readonly state$ = new BehaviorRingSubject<TimeScale2ViewModel>(
     this.createInitialState(),
-    0, 'TimeScale2_state', this.subscription, this.ring$, undefined
+    0, 'TimeScale2_state', this.subscription, this.ring$, undefined,
+    (name, message, value) => {
+      if ((value?.finishFilterPositionX ??0)<0){
+        console.error("finishFilterPositionX < 0", value?.finishFilterPositionX);
+        //debugger;
+      }
+      console.log(name, message, {
+        displayWidth: value?.displayWidth,
+        viewBox: value?.viewBox,
+        rangeZoom: getTimeRangeDurationToDebugString(value?.rangeZoom),
+        rangeFilter: getTimeRangeToDebugString(value?.rangeFilter),
+        startFilterPositionX: value?.startFilterPositionX,
+        finishFilterPositionX: value?.finishFilterPositionX,
+        finishFilterWidth: value?.finishFilterWidth,
+        tickInterval: value?.tickInterval?.toString(),
+        tickUnit: value?.tickUnit,
+        majorTickEvery: value?.majorTickEvery,
+        listTick: value?.listTick?.length,
+        listLogTick: value?.listLogTick?.length,
+        selectedLogTick: value?.selectedLogTick?.id
+      });
+    }
   );
 
   readonly displayWidth$ = new BehaviorRingSubject<number>(0,
-    0, 'TimeScale2_displayWidth', this.subscription, this.ring$, undefined
+    0, 'TimeScale2_displayWidth', this.subscription, this.ring$, undefined,
+    (name, message, value) => { console.log(name, message, { displayWidth: value }); }
   );
 
   @ViewChild('containerElement', { static: true }) containerElement!: ElementRef<HTMLDivElement>;
-  @ViewChild('svgElement', { static: false }) svgElement!: ElementRef<SVGSVGElement>;
+  // @ViewChild('svgElement', { static: false }) svgElement!: ElementRef<SVGSVGElement>;
 
   private dragState: { mode: 'start' | 'finish' | ''; startClientX: number; startPositionX: number; } = {
     mode: '', startClientX: 0, startPositionX: 0
@@ -402,6 +417,12 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
           }
           if (rangeFilter.finish && rangeFilter.finish.compareTo(rangeZoom.finish) < 0) {
             finishFilterPositionX = this.calcPositionX(rangeFilter.finish, rangeZoom, displayWidth);
+            if (finishFilterPositionX < 0) {
+              console.error("finishFilterPositionX < 0", finishFilterPositionX);
+              //debugger;
+              //finishFilterPositionX = this.calcPositionX(rangeFilter.finish, rangeZoom, displayWidth);
+              finishFilterPositionX = displayWidth - 15;
+            }
             finishFilterWidth = displayWidth - 15 - finishFilterPositionX;
           } else {
             finishFilterPositionX = displayWidth - 15;
@@ -577,7 +598,7 @@ export class TimeScale2Component implements AfterViewInit, OnDestroy {
 
     const clientX = event.clientX - this.containerElement.nativeElement.getBoundingClientRect().left;
     const state = this.state$.getValue();
-
+    //debugger;
     if (this.dragState.mode === 'start') {
       this.state$.next({ ...state, startFilterPositionX: Math.max(15, clientX) });
     } else if (this.dragState.mode === 'finish') {

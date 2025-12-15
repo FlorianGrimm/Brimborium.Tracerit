@@ -1,0 +1,52 @@
+@if(uiNode(); as node){
+@let thisSel=thisSelection();
+<div class="node-filter" [ngClass]="{'focus': (thisSel != null), 'node-filter-operatorIsList':(operatorIsList())}">
+    <div class="node-start">(</div>
+
+    @if(showValueOrChild()){
+    <div class="node-operator" (click)="setSelection('operator')"
+        [ngClass]="{'focus': (thisSel?.property == 'operator')}">
+        {{operatorDisplay()}}
+    </div>
+    <div class="node-list-child">
+        @if(node.listChild != null){
+        @for (child of node.listChild; track child.id) {
+        <app-filter-ast-node [uiNode]="child" [uiNodeRoot]="uiNodeRoot()" (nodeChanged)="onNodeChanged($event)"
+            [selection]="selection()" (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node>
+        }@empty {
+        <div>...</div>
+        }
+        }@else {
+        <div>...</div>
+        }
+    </div>
+    }@else {
+    @if (node.value != null) {
+    <div class="node-name">
+        {{node.value.name}}
+    </div>
+    <div class="node-operator" (click)="setSelection('operator')"
+        [ngClass]="{'focus': (thisSel?.property == 'operator')}">
+        {{operatorDisplay()}}
+    </div>
+    <div class="node-value">
+        <app-filter-ast-node-value [uiNode]="uiNode()" [uiNodeRoot]="uiNodeRoot()" (nodeChanged)="onNodeChanged($event)"
+            [selection]="selection()" (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node-value>
+    </div>
+    }@else{
+    <div class="node-name">
+        ...
+    </div>
+    <div class="node-operator" (click)="setSelection('operator')"
+        [ngClass]="{'focus': (thisSel?.property == 'operator')}">
+        {{operatorDisplay()}}
+    </div>
+    <div class="node-value">
+        ...
+    </div>
+    }
+    }
+    <div class="node-end">)</div>
+</div>
+
+}

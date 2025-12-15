@@ -1,0 +1,41 @@
+.filter-ast-node-actions {
+    z-index: 2;
+
+    .filter-ast-node-self-actions,
+    .filter-ast-node-operator,
+    .filter-ast-node-property {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        min-height: 30px;
+        border: 1px solid #f0f0f0;
+        border-radius: 15px;
+        padding: 5px 10px;
+
+
+        button {
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            padding: 5px 10px;
+            margin: 0 5px;
+        }
+    }
+
+    .filter-ast-node-self-actions{
+        background-color: #f8f8f8;
+    }
+    .filter-ast-node-operator {
+        background-color: #f0f0f0;
+    }
+    
+    .filter-ast-node-property {
+        background-color: #f8f8f8;
+    }
+    x-box-shadow: 8px 8px 2px 1px rgba(21, 21, 21, 0.5);
+    filter: drop-shadow(8px 8px 2px rgba(21, 21, 21, 0.5));
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-top: 4px;
+    margin-bottom: 18px;
+
+}

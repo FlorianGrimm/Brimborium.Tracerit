@@ -1,0 +1,31 @@
+@let uiTypeValue = typeValue();
+<div class="filter-ast-node-value">
+    {{uiTypeValue}}:
+    @if (uiTypeValue === 'null') {
+    null
+    } @else if (uiTypeValue === 'str') {
+        <input type="text" [value]="valueStr()" (change)="setValueStr($event.target.value)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'int') {
+        <input type="number" [valueAsNumber]="valueInt()" (change)="setValueInt($event.target.valueAsNumber)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'lvl') {
+        <select (change)="setValueLvl($event)" (focus)="onFocus()">
+            @for (level of listLevels; track $index) {
+                <option  [value]="level" [selected]="level === valueStr()">{{level}}</option>
+            }
+        </select>
+    } @else if (uiTypeValue === 'dt' ) {
+        <input type="datetime-local" [valueAsDate]="valueDateTime()" (change)="setValueDt($event.target.valueAsDate)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'dto') {
+        <input type="datetime-local" [valueAsDate]="valueDateTime()" (change)="setValueDto($event.target.valueAsDate)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'dur') {
+        <input type="text" [value]="valueStr()" (change)="setValueStr($event.target.value)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'bool') {
+        <input type="checkbox" [checked]="valueBool()" (change)="setValueStr($event.target.value)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'dbl') {
+        <input type="number" [valueAsNumber]="valueInt()" (change)="setValueInt($event.target.valueAsNumber)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'enum') {
+        <input type="text" [value]="valueStr()" (change)="setValueStr($event.target.value)" (focus)="onFocus()" />
+    } @else if (uiTypeValue === 'uuid') {
+        <input type="text" [value]="valueStr()" (change)="setValueStr($event.target.value)" (focus)="onFocus()" />
+    }
+</div>

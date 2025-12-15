@@ -1,302 +1,295 @@
-import { Component, inject, OnDestroy } from '@angular/core';
-import { BehaviorSubject, combineLatest, delay, filter, map, Subscription, tap } from 'rxjs';
-import { DataService } from '../Utility/data-service';
-import { HttpClientService } from '../Utility/http-client-service';
-import { filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
-import { AsyncPipe, JsonPipe, KeyValuePipe } from '@angular/common';
-import { getVisualHeader } from '../Utility/propertyHeaderUtility';
-import { LucideAngularModule, FileStack, ChevronLeft, ChevronRight, Funnel, FunnelPlus, FunnelX } from 'lucide-angular';
-import { RouterLink } from '@angular/router';
+import { AfterViewInit, Component, computed, effect, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { CdkMenu, CdkMenuItem, CdkContextMenuTrigger, CdkMenuTrigger } from '@angular/cdk/menu';
+import { AsyncPipe } from '@angular/common';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Duration, ZonedDateTime } from '@js-joda/core';
-import { TimeRulerComponent } from "../time-ruler/time-ruler.component";
-import { LogTimeDataService } from '../Utility/log-time-data.service';
-import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
-import { MasterRingService } from '../Utility/master-ring.service';
-import { combineLatestSubject } from '../Utility/CombineLatestSubject';
-import { createObserableSubject } from '../Utility/ObserableSubject';
-import { createObserableSubscripe } from '../Utility/ObservableSubscripe';
-import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
-import { epoch0, epoch1 } from '../Utility/time-range';
+import { Subscription, combineLatest, tap } from 'rxjs';
+import { LucideAngularModule, Funnel, FunnelX, Eye, EyeOff, GripVertical, Menu } from 'lucide-angular';
+
+import { DataService } from '@app/Utility/data-service';
+import { LogTimeDataService } from '@app/Utility/log-time-data.service';
+import { MasterRingService } from '@app/Utility/master-ring.service';
+import { BehaviorRingSubject } from '@app/Utility/BehaviorRingSubject';
+import { getVisualHeader } from '@app/Utility/propertyHeaderUtility';
+import { epoch0, epoch1, getEffectiveRange, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, TimeRangeDuration, TimeRangeOrNull } from '@app/Utility/time-range';
+import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader, TraceInformation } from '../Api';
+
+import { TimeScaleComponent } from './time-scale/time-scale.component';
+import { toObservable } from '@angular/core/rxjs-interop';
+
+export type LogLineValueWithHeader = LogLineValue & { header: PropertyHeader };
+
+export type DisplayTraceInformation = {
+  traceId: string;
+  spanId: string;
+  parentSpanId: string;
+  listLogLineId: number[];
+  logLineFirst: LogLine | null;
+  logLineLast: LogLine | null;
+  xStart: number;
+  xFinish: number;
+};
+
+
+const headerContentNames: string[] = [
+  "timestamp",
+  "logLevel",
+  "resource",
+  "source",
+  "scope",
+];
+const headerContentNamesPosition = new Map<string, number>([
+  ["timestamp", 1],
+  ["logLevel", 2],
+  ["resource", 3],
+  ["source", 4],
+  ["scope", 5],
+]);
 
 @Component({
   selector: 'app-log-view',
+  standalone: true,
   imports: [
     AsyncPipe,
-    CdkDropList,
+    ScrollingModule,
     CdkDrag,
-    RouterLink,
+    CdkDropList,
+    CdkContextMenuTrigger,
+    CdkMenu,
+    CdkMenuItem,
     LucideAngularModule,
-    TimeRulerComponent
-  ],
+    TimeScaleComponent
+],
   templateUrl: './log-view.component.html',
   styleUrl: './log-view.component.scss',
 })
-export class LogViewComponent implements OnDestroy {
-  resizeScreenX: number = 0;
-  resizeClientWidth: number = 0;
-  resizeHeaderId: string = '';
-  overlay: HTMLDivElement | undefined = undefined;
-  private boundResizeMouseMove = this.onResizeMouseMove.bind(this);
-  private boundResizeMouseUp = this.onResizeMouseUp.bind(this);
-
-  mouseDownResize(e: MouseEvent, headerId: string) {
-    //e.preventDefault();
-    const allHeader = this.listAllHeader$.getValue();
-    const header = allHeader.find((item) => (headerId === item.id));
-    if (undefined === header) { return; }
-
-    this.resizeHeaderId = headerId;
-    this.resizeScreenX = e.screenX;
-    const elementHeader = window.document.getElementById("header-" + headerId);
-    if (elementHeader == null) { return; }
-    this.resizeClientWidth = elementHeader.clientWidth;
-
-    // Add document-level listeners to track mouse outside the element
-    const overlay = document.createElement('div');
-    this.overlay = overlay;
-    overlay.style.position = 'absolute';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.zIndex = '500';
-    overlay.addEventListener('mousemove', this.boundResizeMouseMove);
-    overlay.addEventListener('mouseup', this.boundResizeMouseUp);
-    overlay.style.cursor = 'col-resize';
-    overlay.style.userSelect = 'none';
-    window.document.body.appendChild(overlay);
-    console.log("mouseDownResize", headerId, e);
+export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
+  
+  selectTrace(displayTraceInformation: DisplayTraceInformation) {
+    if (displayTraceInformation.listLogLineId.length === 0) { return; }
+    this.selectedLogLineId.set(displayTraceInformation.listLogLineId[0]);
   }
-
-  private onResizeMouseMove(e: MouseEvent) {
-    if (0 === this.resizeScreenX || !this.resizeHeaderId) { return; }
-    const allHeader = this.listAllHeader$.getValue();
-    const header = allHeader.find((item) => (this.resizeHeaderId === item.id));
-    if (undefined === header) { return; }
-    const diff = e.screenX - this.resizeScreenX;
-    const newWidth = Math.max(50, this.resizeClientWidth + diff); // Minimum width of 50px
-    header.headerCellStyle = { 'width': `${newWidth}px` };
-    header.dataCellStyle = { 'width': `${newWidth}px` };
-    console.log("mouseMoveResize", this.resizeHeaderId, diff, e);
-  }
-
-  private onResizeMouseUp(e: MouseEvent) {
-    if (this.resizeHeaderId) {
-      const allHeader = this.listAllHeader$.getValue();
-      const header = allHeader.find((item) => (this.resizeHeaderId === item.id));
-      if (header) {
-        const diff = e.screenX - this.resizeScreenX;
-        const newWidth = Math.max(50, this.resizeClientWidth + diff);
-        header.headerCellStyle = { 'width': `${newWidth}px` };
-        header.dataCellStyle = { 'width': `${newWidth}px` };
-        console.log("mouseUpResize", this.resizeHeaderId, diff, e);
-      }
-    }
-
-    // Clean up
-    const overlay = this.overlay;
-    this.overlay = undefined;
-    if (overlay != null) {
-      window.document.body.removeChild(overlay);
-      overlay.removeEventListener('mousemove', this.boundResizeMouseMove);
-      overlay.removeEventListener('mouseup', this.boundResizeMouseUp);
-      overlay.style.cursor = '';
-      overlay.style.userSelect = '';
-    }
-    this.resizeScreenX = 0;
-    this.resizeClientWidth = 0;
-    this.resizeHeaderId = '';
-  }
-
-  // Keep these for backward compatibility, but they're no longer needed
-  mouseMoveResize(_e: MouseEvent, _headerId: string) { }
-  mouseUpResize(_e: MouseEvent, _headerId: string) { }
-  readonly FileStack = FileStack;
-  readonly ChevronLeft = ChevronLeft;
-  readonly ChevronRight = ChevronRight;
+  // Icons
   readonly Funnel = Funnel;
-  readonly FunnelPlus = FunnelPlus;
   readonly FunnelX = FunnelX;
+  readonly Eye = Eye;
+  readonly EyeOff = EyeOff;
+  readonly GripVertical = GripVertical;
+  readonly Menu = Menu;
 
+  // Services
   readonly subscription = new Subscription();
-  readonly ring$ = inject(MasterRingService).dependendRing('LogTimeDataService-ring$', this.subscription);
+  readonly ring$ = inject(MasterRingService).dependendRing('LogView2-ring$', this.subscription);
   readonly dataService = inject(DataService);
-  readonly httpClientService = inject(HttpClientService);
   readonly logTimeDataService = inject(LogTimeDataService);
 
-  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
-    0, 'LogViewComponent_listAllHeader', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-  readonly listCurrentHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
-    0, 'LogViewComponent_listCurrentHeader', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-  readonly listAllHeaderSubscripe = createObserableSubscripe({
-    obs: this.dataService.listAllHeader$.pipe(
-      tap({
-        next: (value) => {
-          const nextValue = value.slice();
-          this.listAllHeader$.next(nextValue);
-          this.listCurrentHeader$.next(getVisualHeader(nextValue));
-        }
-      })
-    ),
-    subscribtion: this.subscription,
-    immediate: true
-  });
+  // Virtual scroll viewport reference
+  @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
 
-  readonly listLogLine$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogViewComponent_listLogLine', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-  readonly listLogLineSubscripe = createObserableSubscripe({
-    obs: this.dataService.listLogLine$.pipe(
-      tap({
-        next: (value) => {
-          this.listLogLine$.next(value.slice());
-        }
-      })
-    ),
-    subscribtion: this.subscription,
-    immediate: true
-  });
+  // State - Headers
+  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([], 0, 'LogView2_listAllHeader', this.subscription, this.ring$);
+  readonly listCurrentHeader$ = new BehaviorRingSubject<PropertyHeader[]>([], 0, 'LogView2_listCurrentHeader', this.subscription, this.ring$);
 
-  readonly listLogLineFilteredCondition$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogViewComponent_listLogLineFilteredCondition', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  // State - Log lines
+  readonly listLogLineAll$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineAl', this.subscription, this.ring$);
+  readonly listLogLineTimeZoomed$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
+  readonly listLogLineTimeFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineTimeFiltered', this.subscription, this.ring$);
+  readonly listLogLineFiltered$ = new BehaviorRingSubject<LogLine[]>([], 0, 'LogView2_listLogLineFiltered', this.subscription, this.ring$);
 
-  readonly listLogLineFilteredConditionSubscripe = createObserableSubscripe({
-    obs: this.logTimeDataService.listLogLineFilteredCondition$.pipe(
-      tap({
-        next: (value) => {
-          this.listLogLineFilteredCondition$.next(value.slice());
-        }
-      })
-    ),
-    subscribtion: this.subscription,
-    immediate: true
-  });
+  // State - Selection & Highlighting
+  readonly selectedLogLineId = signal<number | null>(null);
+  readonly highlightedLogLineId = signal<number | null>(null);
+  readonly selectedLogLineId$ = toObservable(this.selectedLogLineId);
+  readonly selectedLogLine = signal<LogLine | null>(null);
+  readonly headerId = signal<PropertyHeader | undefined>(undefined);
 
-  readonly listLogLineFilteredTime$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogViewComponent_listLogLineFilteredTime', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-  readonly listLogLineFilteredTimeSubscripe = createObserableSubscripe({
-    obs:
-      combineLatest({
-        listLogLineFilteredCondition: this.listLogLineFilteredCondition$,
-        rangeFilter: this.logTimeDataService.rangeFilter$,
-      }).pipe(
-        tap({
-          next: (value) => {
-            const testStart = (epoch0.compareTo(value.rangeFilter.start) !== 0);
-            const testFinish = (epoch1.compareTo(value.rangeFilter.finish) !== 0);
-            const resultFilteredTime = value.listLogLineFilteredCondition.filter(
-              (item) => {
-                const ts = getLogLineTimestampValue(item);
-                if (ts === null) { return false; }
-                return (testStart ? (value.rangeFilter.start.compareTo(ts) <= 0) : true)
-                  && (testFinish ? (ts.compareTo(value.rangeFilter.finish) <= 0) : true);
-              });
-            // console.log("filter start", value.rangeFilter.start.toString(), "finish", value.rangeFilter.finish.toString(), resultFilteredTime.length);
-            this.listLogLineFilteredTime$.next(resultFilteredTime);
-          }
-        })
-      ),
-    subscribtion: this.subscription,
-    immediate: true
-  });
-
-  readonly filter$ = new BehaviorRingSubject<number>(1, 0, 'LogViewComponent_filter$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-
-  readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null,
-    0, 'LogViewComponent_currentLogLineId', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'LogViewComponent_currentLogLine', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null,
-    0, 'LogViewComponent_currentLogTimestamp', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-
-  readonly contextLogLineId$ = new BehaviorRingSubject<number | null>(null,
-    0, 'LogViewComponent_contextLogLineId', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  readonly contextLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'LogViewComponent_contextLogLine', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-
-  readonly error$ = new BehaviorRingSubject<null | string>(null,
-    0, 'LogViewComponent_error$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-
-  readonly triggerFilter$ = combineLatestSubject(
-    {
-      dictObservable: {
-        filter: this.filter$,
-        listCurrentHeader: this.listCurrentHeader$
-      },
-      name: 'LogViewComponent_triggerFilter$'
-    }
+  // State - Time ranges
+  readonly rangeZoom$ = new BehaviorRingSubject<TimeRangeDuration>(
+    { start: epoch0, finish: epoch1, duration: Duration.between(epoch0, epoch1) },
+    0, 'LogView2_rangeZoom', this.subscription, this.ring$
+  );
+  readonly rangeFilter$ = new BehaviorRingSubject<TimeRangeOrNull>(
+    { start: null, finish: null },
+    0, 'LogView2_rangeFilter', this.subscription, this.ring$
   );
 
-  copyToLogTimeDataService = createObserableSubscripe({
-    obs: this.triggerFilter$.combineLatest().pipe(
-      map(value => value.listCurrentHeader.slice()),
-      tap({
-        next: (value) => {
-          this.logTimeDataService.listFilterCondition$.next(value);
-        }
-      })
-    ),
-    subscribtion: this.subscription,
-    immediate: true
-  });
+  // State - Visible range in viewport (for timescale sync)
+  readonly visibleRange = signal<TimeRangeOrNull | null>(null);
 
+  // Row height for virtual scroll
+  readonly rowHeight = 32;
+
+  // Resize state
+  private resizeState: {
+    headerId: string;
+    startX: number;
+    startWidth: number;
+    overlay: HTMLDivElement;
+    subscription: Subscription;
+  } | null = null;
+  // private overlay: HTMLDivElement | null = null;
+  //
+  @ViewChild('logView2Container', { static: true }) logView2Container!: ElementRef<HTMLDivElement>;
   constructor() {
+  }
+  ngOnInit(): void {
+    window.requestAnimationFrame(() => {
+      this.setupSubscriptions();
+    });
+  }
 
+  ngAfterViewInit(): void {
+    if (!this.viewport) { return; }
+    this.updateViewBox();
+
+    const onScrollViewport = (ev: Event) => this.onScrollViewport(ev);
+    const nativeElement = this.viewport.elementRef.nativeElement;
+    nativeElement.addEventListener('scroll', onScrollViewport);
+    this.subscription.add(() => { nativeElement.removeEventListener('scroll', onScrollViewport); });
+  }
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+    this.cleanupResize();
+  }
+
+  private setupSubscriptions(): void {
+    // Subscribe to headers from data service
     this.subscription.add(
       this.dataService.listAllHeader$.subscribe({
         next: (value) => {
           const nextValue = value.slice();
+
+          const idHeader = nextValue.find((item) => (item.name === "id"));
+          this.headerId.set(idHeader);
+
           this.listAllHeader$.next(nextValue);
           this.listCurrentHeader$.next(getVisualHeader(nextValue));
         }
-      }));
+      })
+    );
 
-    /*
-    this.subscription.add(
+    const localSubscription = new Subscription();
+    this.subscription.add(localSubscription);
+    localSubscription.add(
       combineLatest({
-        listLogLineFilteredCondition: this.listLogLineFilteredCondition$,
-        rangeFilter: this.logTimeDataService.rangeFilter$,
+        listCurrentHeader: this.listCurrentHeader$,
+        listLogLineFiltered: this.listLogLineFiltered$
       }).subscribe({
-        next: (value) => {
-          const testStart = (epoch0.compareTo(value.rangeFilter.start) !== 0);
-          const testFinish = (epoch0.compareTo(value.rangeFilter.finish) !== 0);
-          const resultFilteredTime = value.listLogLineFilteredCondition.filter(
-            (item) => {
-              const ts = getLogLineTimestampValue(item);
-              if (ts === null) { return false; }
-              return (testStart ? (value.rangeFilter.start.compareTo(ts) <= 0) : true)
-                && (testFinish ? (ts.compareTo(value.rangeFilter.finish) <= 0) : true);
-            });
-          console.log("filter start", value.rangeFilter.start.toString(), "finish", value.rangeFilter.finish.toString(), resultFilteredTime.length);
-          this.listLogLineFilteredTime$.next(resultFilteredTime);
+        next: ({ listCurrentHeader, listLogLineFiltered }) => {
+          if (0 === listLogLineFiltered.length) {
+            return;
+          }
+          if (listCurrentHeader.length < 2) {
+            return;
+          }
+          for (const header of listCurrentHeader) {
+            if (header.width < 100) {
+              this.measureHeader(header, listLogLineFiltered);
+            }
+          }
+          this.updateGridHeader();
+          localSubscription.unsubscribe();
         }
       })
     );
-    */
 
-    this.subscription.add(this.logTimeDataService.currentLogLineId$.subscribe(this.currentLogLineId$));
-    this.subscription.add(this.logTimeDataService.currentLogLine$.subscribe(this.currentLogLine$));
-    this.subscription.add(this.logTimeDataService.currentLogTimestamp$.subscribe(this.currentLogTimestamp$));
+    // Subscribe to log lines
+    this.subscription.add(
+      this.logTimeDataService.listLogLineAll$.subscribe({
+        next: (value) => {
+          this.listLogLineAll$.next(value);
+        }
+      })
+    );
+    this.subscription.add(
+      this.logTimeDataService.listLogLineTimeZoomed$.subscribe({
+        next: (value) => {
+          this.listLogLineTimeZoomed$.next(value);
+        }
+      })
+    );
+
+    this.subscription.add(
+      this.logTimeDataService.listLogLineFilteredCondition$.subscribe({
+        next: (value) => {
+          this.listLogLineFiltered$.next(value);
+          window.requestAnimationFrame(() => {
+            this.onScrollIndexChange();
+          });
+        }
+      })
+    );
+
+    // Subscribe to range zoom
+    this.subscription.add(
+      this.logTimeDataService.rangeZoom$.subscribe({
+        next: (value) => {
+          this.rangeZoom$.next(value);
+        }
+      })
+    );
+
+    // Subscribe to range filter
+    this.subscription.add(
+      this.logTimeDataService.rangeFilter$.subscribe({
+        next: (value) => {
+          this.rangeFilter$.next(value);
+        }
+      })
+    );
+
+    // Sync selection with logTimeDataService
+    this.subscription.add(
+      this.logTimeDataService.currentLogLineId$.subscribe({
+        next: (id) => this.selectedLogLineId.set(id)
+      })
+    );
+
+    this.subscription.add(
+      combineLatest({
+        selectedLogLineId: this.selectedLogLineId$,
+        listLogLineFiltered: this.listLogLineFiltered$
+      }).subscribe({
+        next: ({ selectedLogLineId, listLogLineFiltered }) => {
+          if (selectedLogLineId != null) {
+            const selectedLogLine = listLogLineFiltered.find(l => l.id === selectedLogLineId) ?? null;
+            this.selectedLogLine.set(selectedLogLine);
+            if (selectedLogLine != null) {
+              this.detailsHeaderContent.set(this.getDetailsHeaderContent(selectedLogLine));
+              this.detailsBodyContent.set(this.getDetailsBodyContent(selectedLogLine));
+            }
+          } else {
+            this.selectedLogLine.set(null);
+          }
+        }
+      }));
   }
 
-  ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+  readonly displayWidth$ = new BehaviorRingSubject<number>(0,
+    0, 'LogViewComponent_displayWidth', this.subscription, this.ring$, undefined
+  );
+  readonly displayWidth = signal(0);
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.updateViewBox();
+  }  
+
+  private updateViewBox(): void {
+    const width = this.logView2Container.nativeElement.clientWidth;
+    this.displayWidth$.next(width);
+    this.displayWidth.set(width);
   }
 
+  readonly detailsHeaderContent = signal<LogLineValueWithHeader[]>([]);
+  readonly detailsBodyContent = signal<LogLineValueWithHeader[]>([]);
+
+
+  // Template helpers
   getContent(logLine: LogLine, header: PropertyHeader): string {
     const property = logLine.data.get(header.name);
-    if (undefined === property) { return ""; }
+    if (!property) return '';
     switch (property.typeValue) {
       case 'null': return 'null';
       case 'str': return property.value;
@@ -309,139 +302,413 @@ export class LogViewComponent implements OnDestroy {
       case 'dt': return property.value.toString().replace('T', '\r\n');
       case 'dto': return property.value.toString().replace('T', '\r\n');
       case 'dur': return property.value.toString();
-      default: return (property as any).value?.toString() ?? "";
+      default: return (property as any).value?.toString() ?? '';
     }
-    //return property.value?.toString() ?? "";
   }
 
-  setCurrentLogLine(logLineId: number, $event: MouseEvent) {
-    const listLogLine = this.listLogLine$.getValue();
-    const logLine = listLogLine.find((item) => (logLineId === item.id));
-    console.log("LogViewComponent.setCurrentLogLine-logLine", logLine);
-
-    this.logTimeDataService.currentLogLineId$.next(logLine?.id ?? null);
-    $event.stopPropagation();
-    return false;
+  isSelected(logLine: LogLine): boolean {
+    return logLine.id === this.selectedLogLineId();
   }
 
-  setContextLogLine(logLineId: number, $event: PointerEvent) {
-    console.log("setContextLogLine", logLineId, $event.button);
-    const listLogLine = this.listLogLine$.getValue();
-    const logLine = listLogLine.find((item) => (logLineId === item.id));
-    if ((logLine === undefined)
-      || (this.contextLogLineId$.getValue() === logLine.id)) {
-      this.contextLogLineId$.next(null);
-      this.contextLogLine$.next(null);
+  isHighlighted(logLine: LogLine): boolean {
+    return logLine.id === this.highlightedLogLineId();
+  }
+
+  trackByLogLine(index: number, logLine: LogLine): number {
+    return logLine.id;
+  }
+
+  // Event handlers
+  onSelectLogLine(logLine: LogLine): void {
+    this.selectedLogLineId.set(logLine.id);
+    this.logTimeDataService.currentLogLineId$.next(logLine.id);
+    const listLogLineFiltered = this.listLogLineFiltered$.getValue();
+    const index = listLogLineFiltered.findIndex(l => l.id === logLine.id);
+    if (index < 0) { return; }
+    this.viewport.scrollToIndex(index);
+  }
+
+  onHighlightLogLine(logLine: LogLine | null): void {
+    this.highlightedLogLineId.set(logLine?.id ?? null);
+  }
+
+  onScrollIndexChange(): void {
+    if (!this.viewport) {
+      console.log("onScrollIndexChange-viewport", this.viewport);
+      return;
+    }
+    const { start, end } = this.viewport.getRenderedRange()
+    const listLogLineFiltered = this.listLogLineFiltered$.getValue();
+    if (listLogLineFiltered.length === 0) { return; }
+    const startIndex = Math.max(0, Math.min(start, listLogLineFiltered.length - 1));
+    const endIndex = Math.max(0, Math.min(end, listLogLineFiltered.length - 1));
+    const startTS = listLogLineFiltered[startIndex].ts;
+    const finishTS = listLogLineFiltered[endIndex].ts;
+    //console.log("onScrollIndexChange-viewport", startTS?.toString(), finishTS?.toString());
+    this.visibleRange.set(
+      {
+        start: startTS,
+        finish: finishTS
+      }
+    );
+  }
+
+  // Column management
+  onDropHeader(event: CdkDragDrop<PropertyHeader[]>): void {
+    const headers = this.listCurrentHeader$.getValue();
+    moveItemInArray(headers, event.previousIndex, event.currentIndex);
+    headers.forEach((h, i) => h.visualHeaderIndex = i);
+    this.listCurrentHeader$.next([...headers]);
+  }
+
+  onToggleColumn(header: PropertyHeader): void {
+    const allHeaders = this.listAllHeader$.getValue();
+    const target = allHeaders.find(h => h.id === header.id);
+    if (target) {
+      target.show = !target.show;
+      this.listCurrentHeader$.next(getVisualHeader(allHeaders));
+    }
+  }
+
+  onToggleColumnByName(name: string): void {
+    const allHeaders = this.listAllHeader$.getValue();
+    const targets = allHeaders.filter(h => h.name === name);
+    const listLogLine = this.listLogLineFiltered$.getValue();
+    for (const header of targets) {
+      header.show = !header.show;
+      if (header.show) {
+        this.measureHeader(header, listLogLine);
+      }
+    }
+    this.dataService.listAllHeader$.next(this.listAllHeader$.getValue());
+    this.updateGridHeader();
+
+  }
+
+  // Column resize
+  onResizeStart(event: MouseEvent, header: PropertyHeader | undefined): void {
+    console.log("onResizeStart", event);
+    if (header == null) { return; }
+    event.preventDefault();
+    event.stopPropagation();
+    const element = document.getElementById(`header-${header.id}`);
+    if (!element) return;
+
+    const overlay = document.createElement('div');
+    const subscription = new Subscription();
+    this.resizeState = {
+      headerId: header.id,
+      startX: event.screenX,
+      startWidth: element.clientWidth,
+      overlay: overlay,
+      subscription: subscription
+    };
+
+    Object.assign(overlay.style, {
+      position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+      zIndex: '1000', cursor: 'col-resize', userSelect: 'none'
+    });
+    overlay.addEventListener('mousemove', this.onResizeMove);
+    overlay.addEventListener('mouseup', this.onResizeEnd);
+    overlay.addEventListener('mouseleave', this.onResizeEnd);
+    document.body.appendChild(overlay);
+    subscription.add(() => {
+      overlay.removeEventListener('mousemove', this.onResizeMove);
+      overlay.removeEventListener('mouseup', this.onResizeEnd);
+      overlay.removeEventListener('mouseleave', this.onResizeEnd);
+      document.body.removeChild(overlay);
+      this.resizeState = null;
+    });
+  }
+
+  private onResizeMove = (event: MouseEvent): void => {
+    if (!this.resizeState) return;
+    const diff = event.screenX - this.resizeState.startX;
+    const nextWidth = Math.max(50, this.resizeState.startWidth + diff);
+
+    const headers = this.listAllHeader$.getValue();
+    const header = headers.find(h => h.id === this.resizeState!.headerId);
+    if (header) {
+      header.width = nextWidth;
+      header.headerCellStyle = { width: `${nextWidth}px` };
+      header.dataCellStyle = { width: `${nextWidth}px` };
+      this.updateGridHeader();
+    }
+  };
+
+  private onResizeEnd = (event: MouseEvent): void => {
+    this.onResizeMove(event);
+    this.cleanupResize();
+  };
+
+  private cleanupResize(): void {
+    if (this.resizeState != null) {
+      this.resizeState.subscription.unsubscribe();
+      this.resizeState = null;
+    }
+  }
+
+  onAutoSize(header: PropertyHeader) {
+    this.cleanupResize();
+    const listLogLine = this.listLogLineFiltered$.getValue();
+    this.measureHeader(header, listLogLine);
+    this.updateGridHeader();
+    this.dataService.listAllHeader$.next(this.listAllHeader$.getValue());
+  }
+
+  private measureCanvas?: HTMLCanvasElement | undefined;
+  measureHeader(header: PropertyHeader, listLogLine: LogLine[]) {
+    let nextWidth = 100;
+    let nextMaxContent = '';
+    for (const logLine of listLogLine) {
+      const value = logLine.data.get(header.name);
+      if (value) {
+        const content = this.getContent(logLine, header);
+        if (nextMaxContent.length < content.length) { nextMaxContent = content; }
+        const width = this.getContent(logLine, header).length * 6;
+        if (nextWidth < width) { nextWidth = width; }
+      }
+    }
+    {
+      let measureCanvas: HTMLCanvasElement
+      if (this.measureCanvas == null) {
+        measureCanvas = window.document.createElement('canvas');
+        measureCanvas.style.fontFamily = 'monospace';
+        measureCanvas.style.fontSize = '12px';
+        this.measureCanvas = measureCanvas;
+        this.subscription.add(() => {
+          if (this.measureCanvas) {
+            this.measureCanvas.remove();
+            this.measureCanvas = undefined;
+          }
+        });
+      } else {
+        measureCanvas = this.measureCanvas;
+      }
+      const ctxt = measureCanvas.getContext('2d');
+      if (ctxt != null) {
+        ctxt.font = '12px monospace';
+        const width = ctxt.measureText(nextMaxContent).width + 40;
+        console.log("onAutoSize", header.name, nextWidth, width);
+        if (nextWidth < width) { nextWidth = width; }
+      }
+    }
+
+    header.width = nextWidth;
+    header.headerCellStyle = { width: `${nextWidth}px` };
+    header.dataCellStyle = { width: `${nextWidth}px` };
+    return nextWidth;
+  }
+
+  readonly gridHeaderWidth = signal<number | null>(null);
+  updateGridHeader() {
+    const headers = this.listCurrentHeader$.getValue();
+    const width = headers.reduce((acc, header) => acc + header.width, 0) + 100 + 50;
+    this.gridHeaderWidth.set(width);
+  }
+
+  readonly gridHeaderTransform = signal<string | null>(null);
+  onScrollViewport(ev: Event): void {
+    const scrollLeft = (ev.target as (HTMLDivElement | null))?.scrollLeft;
+    if (scrollLeft) {
+      this.gridHeaderTransform.set(`translateX(${(-scrollLeft)}px)`);
     } else {
-      this.contextLogLineId$.next(logLine.id);
-      this.contextLogLine$.next(logLine);
+      this.gridHeaderTransform.set(null);
     }
-    $event.stopPropagation();
-    return false;
   }
 
-  getCurrentDiff(logLine: LogLine): string {
-    const currentLogTimestamp = this.currentLogTimestamp$.getValue();
-    if (undefined === currentLogTimestamp || null === currentLogTimestamp) { return ""; }
-
-    const timestamp = getLogLineTimestampValue(logLine);
-    if (undefined === timestamp || null === timestamp) { return ""; }
-
-    const dur = Duration.between(currentLogTimestamp, timestamp);
-    {
-      const mili = dur.toMillis();
-      if (-2000 <= mili && mili <= 2000) { return mili.toFixed(2) + ' ms'; }
+  // Filter management
+  addFilter(logLine: LogLine, header: PropertyHeader): void {
+    const value = logLine.data.get(header.name);
+    if (value) {
+      header.filter = { ...value };
+      this.triggerFilter();
     }
-    {
-      const seconds = dur.seconds();
-      if (-100 <= seconds && seconds <= 100) { return seconds.toFixed(2) + ' sec'; }
-      const minutes = seconds / 60;
-      if (-240 <= minutes && minutes <= 240) { return minutes.toFixed(2) + ' min'; }
-      const hours = seconds / 3600;
-      if (-24 <= hours && hours <= 24) { return hours.toFixed(2) + ' hrs'; }
-    }
+  }
+
+  removeFilter(header: PropertyHeader): void {
+    header.filter = undefined;
+    this.triggerFilter();
+  }
+
+  private filterCounter = 0;
+  private triggerFilter(): void {
+    this.filterCounter++;
+    const headers = this.listCurrentHeader$.getValue();
+    this.logTimeDataService.listFilterCondition$.next(headers.slice());
+  }
+
+  // Time diff helper
+  getTimeDiff(logLine: LogLine): string {
+    const selectedLog = this.selectedLogLine();
+    if (!selectedLog) return '';
+
+    const selectedTs = getLogLineTimestampValue(selectedLog);
+    const currentTs = getLogLineTimestampValue(logLine);
+    if (!selectedTs || !currentTs) return '';
+
+    const dur = Duration.between(selectedTs, currentTs);
+    const millis = dur.toMillis();
+    if (Math.abs(millis) < 2000) return `${millis.toFixed(0)}ms`;
+    const seconds = dur.seconds();
+    if (Math.abs(seconds) < 100) return `${seconds.toFixed(1)}s`;
+    const minutes = seconds / 60;
+    if (Math.abs(minutes) < 240) return `${minutes.toFixed(1)}m`;
     return dur.toString();
   }
 
-  addFilter(logLineId: number, headerId: string) {
-    const listLogLine = this.listLogLine$.getValue();
-    const listCurrentHeader = this.listCurrentHeader$.getValue();
+  getDetailsHeaderContent(logLine: LogLine): LogLineValueWithHeader[] {
+    const iter = logLine.data.values();
+    const result: LogLineValueWithHeader[] = [];
+    const mapName = this.dataService.mapName;
+    for (const value of iter) {
+      const header = mapName.get(value.name)!;
+      if (header.visualDetailHeaderIndex >= 0) {
+        result.push({ ...value, header: header });
+      }
+    }
+    result.sort((a, b) => {
+      return a.header.visualDetailHeaderIndex - b.header.visualDetailHeaderIndex;
+    });
+    return result;
+  }
 
-    const logLine = listLogLine.find((item) => (logLineId === item.id));
-    const header = listCurrentHeader.find((item) => (headerId === item.id));
-    if ((undefined === logLine) || (undefined === header)) { return false; }
+  getDetailsBodyContent(logLine: LogLine): LogLineValueWithHeader[] {
+    const iter = logLine.data.values();
+    const result: LogLineValueWithHeader[] = [];
+    const mapName = this.dataService.mapName;
+    for (const value of iter) {
+      const header = mapName.get(value.name)!;
+      if (header.visualDetailHeaderIndex < 0) {
+        result.push({ ...value, header: header });
+      }
+    }
+    result.sort((a, b) => {
+      if ((a.header.visualDetailBodyIndex < 0) && (b.header.visualDetailBodyIndex < 0)) {
+        return a.header.name.localeCompare(b.header.name);
+      }
+      if (a.header.visualDetailBodyIndex < 0) { return 1; }
+      if (b.header.visualDetailBodyIndex < 0) { return -1; }
+      return a.header.visualDetailBodyIndex - b.header.visualDetailBodyIndex;
+    });
+    return result;
+  }
 
-    const filter = logLine.data.get(header.name);
-    if (undefined === filter) {
-      header.filter = undefined;
+  // Context menu - id
+  //readonly showFilter = signal(false);
+  readonly filterListTraceInformation = signal<DisplayTraceInformation[]>([]);
+
+  @ViewChild(CdkContextMenuTrigger) trigger!: CdkContextMenuTrigger;
+  onClickTriggerContextMenuId(event: PointerEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.trigger.open({x: event.clientX, y: event.clientY});
+  }
+
+  // toggleFilter() {
+  //   const next = !this.showFilter();
+  //   const listDisplayTraceInformation: DisplayTraceInformation[] = [];
+  //   if (next) {
+  //     const listLogLineAll = this.listLogLineAll$.getValue();
+  //     const rangeZoom = this.rangeZoom$.getValue();
+  //     const displayWidth = this.displayWidth$.getValue();
+
+  //     for (const traceInformation of this.dataService.mapTraceInformation.values()) {
+  //       let logLineFirst: LogLine | null = null;
+  //       let logLineLast: LogLine | null = null;
+  //       for (let idx = 0; idx < traceInformation.listLogLineId.length; idx++) {
+  //         const id = traceInformation.listLogLineId[idx];
+  //         //const logLine = binarySearchById(id, listLogLineAll);
+  //         const logLine = listLogLineAll.find(l => l.id === id);
+  //         if (logLine == null) {
+  //           continue;
+  //         } else {
+  //           logLineFirst = logLine;
+  //           break;
+  //         }
+  //       }
+  //       for (let idx = traceInformation.listLogLineId.length - 1; 0 <= idx; idx++) {
+  //         const id = traceInformation.listLogLineId[idx];
+  //         //const logLine = binarySearchById(id, listLogLineAll);
+  //         const logLine = listLogLineAll.find(l => l.id === id);
+  //         if (logLine == null) {
+  //           continue;
+  //         } else {
+  //           logLineLast = logLine;
+  //           break;
+  //         }
+  //       }
+  //       let xStart = 0;
+  //       let xFinish = 0;
+  //       if (rangeZoom.start && rangeZoom.finish && rangeZoom.duration && logLineFirst?.ts && logLineLast?.ts) {
+  //         /*
+  //         const durationZoomMillis = rangeZoom.duration.toMillis();
+  //         const startMillis = Duration.between(rangeZoom.start, logLineFirst.ts).toMillis();
+  //         const finishMillis = Duration.between(logLineLast.ts, rangeZoom.finish).toMillis();
+  //         xStart = displayWidth * (startMillis / durationZoomMillis);
+  //         xFinish = displayWidth * (finishMillis / durationZoomMillis);
+  //         */
+  //         xStart = this.calcPositionX(logLineFirst.ts, rangeZoom, displayWidth);
+  //         xFinish = this.calcPositionX(logLineLast.ts, rangeZoom, displayWidth);
+  //       }
+  //       const displayTraceInformation:DisplayTraceInformation={
+  //         traceId: traceInformation.traceId,
+  //         spanId: traceInformation.spanId,
+  //         parentSpanId: traceInformation.parentSpanId,
+  //         listLogLineId: traceInformation.listLogLineId,
+  //         logLineFirst: logLineFirst,
+  //         logLineLast: logLineLast,
+  //         xStart: xStart,
+  //         xFinish: xFinish,
+  //       };
+  //       listDisplayTraceInformation.push(displayTraceInformation);
+  //     }
+  //   }
+  //   this.filterListTraceInformation.set(listDisplayTraceInformation);
+  //   this.showFilter.set(next);
+  // }
+
+  showAllFieldsInDetails() {
+    const allHeaders = this.listAllHeader$.getValue();
+    const selectedLogLine: LogLine = { id: 0, ts: null, data: new Map<string, LogLineValue>(), traceInformation: null };
+    for (const header of allHeaders) {
+      selectedLogLine.data.set(header.name, { name: header.name, typeValue: header.typeValue, value: null! });
+    }
+    this.detailsHeaderContent.set(this.getDetailsHeaderContent(selectedLogLine));
+    this.detailsBodyContent.set(this.getDetailsBodyContent(selectedLogLine));
+  }
+
+  resetRange() {
+    const rangeComplete = this.logTimeDataService.rangeComplete$.getValue();
+    setTimeRangeDurationIfChanged(this.logTimeDataService.rangeZoom$, rangeComplete);
+    setTimeRangeDurationIfChanged(this.logTimeDataService.rangeFilter$, rangeComplete);
+  }
+
+  dropDetailsContent(event: CdkDragDrop<LogLineValueWithHeader[]>) {
+    console.log("dropDetailsContent", event);
+    /*
+    TODO: allow reordering of the columns and moving between header and body
+    adjust this.getDetailsHeaderContent and this.getDetailsBodyContent
+     if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
-      header.filter = { ...filter };
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex,
+      );
     }
-
-    this.filter$.next(1 + this.filter$.getValue());
-    return false;
+    */
+    return true;
   }
 
-  setFilterStrValue(header: PropertyHeader, value: string) {
-    if (undefined === header.filter) {
-      header.filter = {
-        name: header.name,
-        typeValue: "str",
-        value: value
-      };
-    } else if ("str" === header.filter.typeValue) {
-      header.filter.value = value;
-    }
-    this.filter$.next(1 + this.filter$.getValue());
-    return false;
+  private calcPositionX(value: ZonedDateTime, rangeZoom: TimeRangeDuration, displayWidth: number): number {
+    const durationMillis = rangeZoom.duration.toMillis();
+    if (durationMillis <= 0) return 15;
+    const currentMillis = Duration.between(rangeZoom.start, value).toMillis();
+    const width = displayWidth - 30;
+    return 15 + ((currentMillis / durationMillis) * width);
   }
-
-  removeFilter(headerId: string) {
-    const listCurrentHeader = this.listCurrentHeader$.getValue();
-    const header = listCurrentHeader.find((item) => (headerId === item.id));
-    if (undefined === header) { return false; }
-
-    header.filter = undefined;
-
-    this.filter$.next(1 + this.filter$.getValue());
-    return false;
-  }
-
-  getHeaderStyle(propertyHeader: PropertyHeader) {
-    const dataCellStyle = (propertyHeader.dataCellStyle == null)
-      ? 'data-header'
-      : `data-header ${propertyHeader.dataCellStyle || ''}`;
-    return dataCellStyle;
-  }
-
-  dropHeader($event: CdkDragDrop<any, any, any>) {
-    const listCurrentHeader = this.listCurrentHeader$.getValue();
-    const { currentIndex, previousIndex } = $event;
-    if (currentIndex === previousIndex) { return; }
-    const lowerIndex = Math.min(currentIndex, previousIndex);
-    const higherIndex = Math.max(currentIndex, previousIndex);
-    moveItemInArray(listCurrentHeader, previousIndex, currentIndex);
-    for (let idx = lowerIndex; idx <= higherIndex; idx++) {
-      listCurrentHeader[idx].visualHeaderIndex = idx;
-    }
-    const listAllHeader = this.listAllHeader$.getValue();
-    this.listCurrentHeader$.next(getVisualHeader(listAllHeader));
-  }
-
-  toggleColumn(headerId: string, headerName: string) {
-    const listAllHeader = this.listAllHeader$.getValue();
-
-    const listMatchingHeader = (headerId === "")
-      ? listAllHeader.filter((header) => (headerName === header.name))
-      : listAllHeader.filter((header) => (headerId === header.id) && (headerName === header.name));
-
-    for (const header of listMatchingHeader) {
-      header.show = !header.show;
-    }
-    this.listCurrentHeader$.next(getVisualHeader(listAllHeader));
-
-    return false;
-  }
-
 
 }

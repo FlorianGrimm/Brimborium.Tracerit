@@ -1,0 +1,36 @@
+<div style="display: flex;flex-direction: column; height: 100%;">
+  <div style="flex: 1; background-color: lightgray; ">TimeScale with ranges (gantt like) based on trace and span</div>
+  <div style="flex: 1; background-color: yellow;">table</div>
+  <div style="flex: 1; background-color: lightgray  ;">details</div>
+</div>
+
+<!--
+     <div>Traces</div>
+        <div class="trace-list">
+          @for (traceInformation of filterListTraceInformation(); track traceInformation.traceId) {
+          <svg #svgElement width="displayWidth()" height="4px" style="z-index: 16;">
+            <line x1="0" y1="0" [attr.x2]="traceInformation.xStart" y2="4" fill="#ffcccc" stroke="fuchsia"
+              stroke-width="2" />
+            <line [attr.x1]="traceInformation.xStart" y1="0" [attr.x2]="1+traceInformation.xFinish" y2="4" fill="black"
+              stroke="#ffcccc" stroke-width="4" />
+            <line [attr.x1]="traceInformation.xFinish" y1="0" [attr.x2]="displayWidth()" y2="4" fill="fuchsia"
+              stroke="#ccccff" stroke-width="2" />
+          </svg>
+          <div class="trace-item" (click)="selectTrace(traceInformation)">
+            <div class="trace-cell-cnt">
+              {{traceInformation.listLogLineId.length}}
+            </div>
+            <div class="trace-cell-traceId">
+              {{traceInformation.traceId}}
+            </div>
+            <div class="trace-cell-dt">
+              {{traceInformation.logLineFirst?.ts?.toString()}}
+            </div>
+            <div class="trace-cell-dt">
+              {{traceInformation.logLineLast?.ts?.toString()}}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    -->      

@@ -148,6 +148,7 @@ public partial class Program {
                 .AddFileTracorCollectiveSinkDefault(
                    configuration: builder.Configuration,
                    configure: (fileTracorOptions) => {
+                       fileTracorOptions.SetResource
                    })
                 .AddTracorCollectiveHttpSink(
                    configuration: builder.Configuration,

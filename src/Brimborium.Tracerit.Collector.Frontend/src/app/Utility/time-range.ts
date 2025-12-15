@@ -20,6 +20,39 @@ export type TimeRangeOrNull = {
 };
 
 // TimeRange
+export function createTimeRange(start: ZonedDateTime, finish: ZonedDateTime): TimeRange {
+  if(start.compareTo(finish) > 0) {
+    debugger;
+    console.error("start > finish");
+  }
+  return Object.freeze({
+    start: start,
+    finish: finish,
+  });
+}
+
+export function createTimeRangeOrNull(start: ZonedDateTime | null, finish: ZonedDateTime | null): TimeRangeOrNull {
+  if(start != null && finish != null && start.compareTo(finish) > 0) {
+    debugger;
+    console.error("start > finish");
+  }
+  return Object.freeze({
+    start: start,
+    finish: finish,
+  });
+}
+
+export function createTimeRangeDuration(start: ZonedDateTime, finish: ZonedDateTime): TimeRangeDuration {
+  if(start.compareTo(finish) > 0) {
+    debugger;
+    console.error("start > finish");
+  }
+  return Object.freeze({
+    start: start,
+    finish: finish,
+    duration: Duration.between(start, finish)
+  });
+}
 
 export function setTimeRangeStartIfChanged(
   subject: BehaviorSubject<TimeRange>,
@@ -28,11 +61,8 @@ export function setTimeRangeStartIfChanged(
   const currentValue = subject.getValue();
   if (currentValue.start.isEqual(value)) {
     //skip
-  } else {
-    subject.next(Object.freeze({
-      start: value,
-      finish: currentValue.finish,
-    }));
+  } else {    
+    subject.next(createTimeRange(value, currentValue.finish));
   }
 }
 
@@ -44,10 +74,7 @@ export function setTimeRangeFinishIfChanged(
   if (currentValue.finish.isEqual(value)) {
     //skip
   } else {
-    subject.next(Object.freeze({
-      start: currentValue.start,
-      finish: value,
-    }));
+    subject.next(createTimeRange(currentValue.start, value));
   }
 }
 
@@ -60,7 +87,7 @@ export function setTimeRangeIfChanged(
     && currentValue.finish.isEqual(value.finish)) {
     //skip
   } else {
-    subject.next(Object.freeze(value));
+    subject.next(createTimeRange(value.start, value.finish));
   }
 }
 
@@ -74,11 +101,7 @@ export function setTimeRangeDurationStartIfChanged(
   if (currentValue.start.isEqual(value)) {
     //skip
   } else {
-    subject.next(Object.freeze({
-      start: value,
-      finish: currentValue.finish,
-      duration: Duration.between(value, currentValue.finish)
-    }));
+    subject.next(createTimeRangeDuration(value, currentValue.finish));
   }
 }
 
@@ -90,11 +113,7 @@ export function setTimeRangeDurationFinishIfChanged(
   if (currentValue.finish.isEqual(value)) {
     //skip
   } else {
-    subject.next(Object.freeze({
-      start: currentValue.start,
-      finish: value,
-      duration: Duration.between(currentValue.start, value)
-    }));
+    subject.next(createTimeRangeDuration(currentValue.start, value));
   }
 }
 
@@ -107,11 +126,7 @@ export function setTimeRangeDurationIfChanged(
     && currentValue.finish.isEqual(value.finish)) {
     //skip
   } else {
-    subject.next(Object.freeze({
-      start: value.start,
-      finish: value.finish,
-      duration: Duration.between(value.start, value.finish)
-    }));
+    subject.next(createTimeRangeDuration(value.start, value.finish));
   }
 }
 
@@ -127,10 +142,7 @@ export function setTimeRangeOrNullStartIfChanged(
   ) {
     //skip
   } else {
-    subject.next(Object.freeze({
-      start: value,
-      finish: currentValue.finish,
-    }));
+    subject.next(createTimeRangeOrNull(value, currentValue.finish));
   }
 }
 
@@ -144,10 +156,7 @@ export function setTimeRangeOrNullFinishIfChanged(
   ) {
     //skip
   } else {
-    subject.next(Object.freeze({
-      start: currentValue.start,
-      finish: value,
-    }));
+    subject.next(createTimeRangeOrNull(currentValue.start, value));
   }
 }
 
@@ -164,11 +173,11 @@ export function setTimeRangeOrNullIfChanged(
   ) {
     //skip
   } else {
-    subject.next(Object.freeze(value));
+    subject.next(createTimeRangeOrNull(value.start, value.finish));
   }
 }
 
-export function getEffectiveRange(list: TimeRange[]) {
+export function getEffectiveRange(list: TimeRange[]): TimeRangeDuration {
   let start: ZonedDateTime | null = null;
   let finish: ZonedDateTime | null = null;
 
@@ -185,9 +194,14 @@ export function getEffectiveRange(list: TimeRange[]) {
       finish = item.finish;
     }
   }
+  return createTimeRangeDuration(start ?? epoch0, finish ?? epoch1);  
+}
 
-  return {
-    start: start ?? epoch0,
-    finish: finish ?? epoch1,
-  };
+export function getTimeRangeToDebugString(value: TimeRange|TimeRangeOrNull|null|undefined){
+  if (value == null) { return value; }
+  return { start: value?.start?.toString(), finish: value?.finish?.toString() }
+}
+export function getTimeRangeDurationToDebugString(value: TimeRangeDuration|null|undefined){
+  if (value == null) { return value; }
+  return { start: value?.start?.toString(), finish: value?.finish?.toString(), duration: value?.duration?.toString() }
 }

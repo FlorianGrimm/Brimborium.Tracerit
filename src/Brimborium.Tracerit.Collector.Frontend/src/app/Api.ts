@@ -85,6 +85,14 @@ export type TraceInformation = {
     listLogLineId: number[];
 };
 
+export type FilterAstOperator = "and" | "or" | "not" | "eq" | "ne" | "lt" | "le" | "gt" | "ge" | "contains" | "startsWith";
+
+export type FilterAstNode = {
+    operator: FilterAstOperator;
+    listChild: FilterAstNode[] | undefined;
+    value: LogLineValue | undefined;
+};
+
 export type LogLineValue = LogLineNull
     | LogLineString
     | LogLineInteger
@@ -220,10 +228,6 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
                 continue;
             }
             itemResult.ts = getLogLineTimestampValue(itemResult);
-            if (itemResult.ts == null) {
-                itemResult.ts = getLogLineTimestampValue(itemResult);
-                continue;
-            }
             result.push(itemResult);
         } catch (err) {
             console.error("Error in parseJsonl", lineText, err);
@@ -240,7 +244,7 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
             logLine.id = id++;
         }
     }
-    //console.log("parseJsonl", result.map(i=>({id:i.id, ts:i.ts})));
+    //console.log("parseJsonl", result, "nextId", id);
     return { listLogline: result, nextId: id };
 }
 

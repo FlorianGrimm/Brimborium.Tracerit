@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { combineLatest, distinctUntilChanged, filter, map, Subscription, switchMap, tap } from 'rxjs';
 import { filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
 import { Duration, ZonedDateTime } from '@js-joda/core';
-import { epoch0, epoch1, getEffectiveRange, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, TimeRange, TimeRangeDuration, TimeRangeOrNull } from './time-range';
+import { createTimeRangeDuration, epoch0, epoch1, getEffectiveRange, getTimeRangeDurationToDebugString, getTimeRangeToDebugString, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, TimeRange, TimeRangeDuration, TimeRangeOrNull } from './time-range';
 import { debounceToggle } from './debounceToggle';
 import { BehaviorRingSubject } from './BehaviorRingSubject';
 import { MasterRingService } from './master-ring.service';
@@ -88,7 +88,7 @@ export class LogTimeDataService {
   readonly listLogLineTimeZoomed$ = new BehaviorRingSubject<LogLine[]>([],
     0, 'LogTimeDataService_listLogLineTimeZoomed', this.subscription, this.ring$, undefined,
     (name, message, value) => { console.log(name, message, value?.length); });
-    
+
   // calculated output depended on listLogLineFilteredCondition$ and rangeFilter$
   readonly listLogLineFilteredTime$ = new BehaviorRingSubject<LogLine[]>([],
     0, 'LogTimeDataService_listLogLineFilteredTime', this.subscription, this.ring$, undefined,
@@ -110,20 +110,18 @@ export class LogTimeDataService {
   readonly listLogLineIdHighlighted$ = new BehaviorRingSubject<Set<string>>(new Set<string>(), 1, 'listLogLineIdHighlighted$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
 
   // depended listLogLineFiltered$
-  readonly rangeComplete$ = new BehaviorRingSubject<TimeRange>(
+  readonly rangeComplete$ = new BehaviorRingSubject<TimeRangeDuration>(
     Object.freeze({
       start: epoch0,
       finish: epoch1,
+      duration: Duration.between(epoch0, epoch1)
     }),
     0, 'LogTimeDataService_rangeComplete$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() }); });
+    (name, message, value) => { console.log(name, message, getTimeRangeToDebugString(value)); });
 
   // input
   readonly modeZoom$ = new BehaviorRingSubject<'complete'>('complete', 1, 'modeZoom$', this.subscription, this.ring$, undefined,
-    (name, message, value) => {
-      console.log(name, message, value);
-    });
-
+    (name, message, value) => { console.log(name, message, value); });
   // depended modeZoom$ listLogLineFiltered$
 
   readonly rangeZoom$ = new BehaviorRingSubject<TimeRangeDuration>(Object.freeze({
@@ -133,38 +131,33 @@ export class LogTimeDataService {
   }),
     0, 'LogTimeDataService_rangeZoom',
     this.subscription, this.ring$, undefined,
-    (name, message, value) => {
-      console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString(), duration: value?.duration?.toString() });
-    }
+    (name, message, value) => { console.log(name, message, getTimeRangeDurationToDebugString(value)); }
   );
 
-  readonly rangeFilter$ = new BehaviorRingSubject<TimeRange>(Object.freeze({
+  readonly rangeFilter$ = new BehaviorRingSubject<TimeRangeDuration>(Object.freeze({
     start: epoch0,
     finish: epoch1,
+    duration: Duration.between(epoch0, epoch1)
   }),
     0, 'LogTimeDataService_rangeFilter', this.subscription, this.ring$, undefined,
-    (name, message, value) => {
-      console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() });
-    }
-  );
+    (name, message, value) => { console.log(name, message, getTimeRangeToDebugString(value)); });
 
   readonly rangeCurrentSelected$ = new BehaviorRingSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }),
     0, 'LogTimeDataService_rangeCurrentSelected',
     this.subscription, this.ring$, undefined,
-    (name, message, value) => {
-      console.log(name, message, { start: value?.start?.toString(), finish: value?.finish?.toString() });
-    }
-  );
+    (name, message, value) => { console.log(name, message, getTimeRangeToDebugString(value)); });
 
   constructor() {
-      //switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$)
+    //switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$)
     this.subscription.add(
       this.listLogLineAll$.subscribe({
         next: (listLogLine) => {
           const rangeComplete = calcStartFinish(listLogLine)
-          setTimeRangeIfChanged(this.rangeComplete$, rangeComplete);
+          //console.log("rangeComplete", getTimeRangeToDebugString(rangeComplete));
+          this.setRangeComplete(rangeComplete);
+          setTimeRangeDurationIfChanged(this.rangeComplete$, rangeComplete);
           setTimeRangeDurationIfChanged(this.rangeZoom$, rangeComplete);
-          setTimeRangeDurationIfChanged(this.rangeZoom$, rangeComplete);
+          setTimeRangeDurationIfChanged(this.rangeFilter$, rangeComplete);
           /*
           TODO
           this.useCurrentStream$.getValue()
@@ -186,7 +179,7 @@ export class LogTimeDataService {
         rangeZoom: this.rangeZoom$
       }).pipe(
         map(value => {
-          const filterStart = (value.rangeZoom.start ?? epoch0).isEqual(epoch0) ;
+          const filterStart = (value.rangeZoom.start ?? epoch0).isEqual(epoch0);
           const filterFinish = (value.rangeZoom.finish ?? epoch1).isEqual(epoch1);
 
           if (filterStart && filterFinish) {
@@ -195,9 +188,9 @@ export class LogTimeDataService {
 
           return value.listLogLine.filter(item => {
             const ts = getLogLineTimestampValue(item);
-            if (ts === null) { return false; }            
-            return (filterStart ? true : (value.rangeZoom.start.compareTo(ts) <= 0) )
-              && (filterFinish ? true : (ts.compareTo(value.rangeZoom.finish) <= 0) );
+            if (ts === null) { return false; }
+            return (filterStart ? true : (value.rangeZoom.start.compareTo(ts) <= 0))
+              && (filterFinish ? true : (ts.compareTo(value.rangeZoom.finish) <= 0));
           });
         })
       ).subscribe({
@@ -212,18 +205,18 @@ export class LogTimeDataService {
         rangeFilter: this.rangeFilter$
       }).pipe(
         map(value => {
-          const filterStart = (value.rangeFilter.start ?? epoch0).isEqual(epoch0) ;
+          const filterStart = (value.rangeFilter.start ?? epoch0).isEqual(epoch0);
           const filterFinish = (value.rangeFilter.finish ?? epoch1).isEqual(epoch1);
 
           if (filterStart && filterFinish) {
             return value.listLogLine;
           }
-          
+
           return value.listLogLine.filter(item => {
             const ts = getLogLineTimestampValue(item);
-            if (ts === null) { return false; }            
-            return (filterStart ? true : (value.rangeFilter.start.compareTo(ts) <= 0) )
-              && (filterFinish ? true : (ts.compareTo(value.rangeFilter.finish) <= 0) );
+            if (ts === null) { return false; }
+            return (filterStart ? true : (value.rangeFilter.start.compareTo(ts) <= 0))
+              && (filterFinish ? true : (ts.compareTo(value.rangeFilter.finish) <= 0));
           });
         })
       ).subscribe({
@@ -240,7 +233,7 @@ export class LogTimeDataService {
       }).subscribe({
         next: (value) => {
           const result = filterListLogLine(
-            value.listLogLineFilteredTime, 
+            value.listLogLineFilteredTime,
             value.listFilterCondition);
           this.listLogLineFilteredCondition$.next(result);
         }
@@ -307,48 +300,79 @@ export class LogTimeDataService {
     );
   }
 
-  setRangeFilter(range: TimeRangeOrNull) {
-    const rangeNormalized = {
-      start: range.start ?? epoch0,
-      finish: range.finish ?? epoch1
+  setRangeComplete(value: TimeRangeDuration) {
+    const rangeComplete = createTimeRangeDuration(value.start, value.finish);    
+    this.rangeComplete$.next(value);
+
+    const rangeZoom = this.rangeZoom$.getValue();
+    const nextRangeZoom = getEffectiveRange([rangeComplete, rangeZoom]);
+    setTimeRangeDurationIfChanged(this.rangeZoom$, nextRangeZoom);
+    
+    const rangeFilter = this.rangeFilter$.getValue();
+    const nextRangeFilter = getEffectiveRange([rangeComplete, rangeZoom, rangeFilter]);
+    setTimeRangeDurationIfChanged(this.rangeFilter$, nextRangeFilter);
+  }
+  
+  setRangeZoom(value: TimeRangeOrNull) {
+    const valueNormalized = {
+      start: value.start ?? epoch0,
+      finish: value.finish ?? epoch1
     };
     const rangeComplete = this.rangeComplete$.getValue();
-    const nextRange = getEffectiveRange([rangeComplete, rangeNormalized]);
-    /*
-    console.log("setRangeFilter-rangeComplete", rangeComplete.start.toString(), rangeComplete.finish.toString());
-    console.log("setRangeFilter-rangeNormalized", rangeNormalized.start.toString(), rangeNormalized.finish.toString());
-    console.log("setRangeFilter-nextRange", nextRange.start.toString(), nextRange.finish.toString());
-    */
-    this.rangeFilter$.next(nextRange);
+    const nextRangeZoom = getEffectiveRange([rangeComplete, valueNormalized]);
+    setTimeRangeDurationIfChanged(this.rangeZoom$, nextRangeZoom);
+    
+    const rangeFilter = this.rangeFilter$.getValue();
+    const nextRangeFilter = getEffectiveRange([rangeComplete, nextRangeZoom, rangeFilter]);
+    setTimeRangeDurationIfChanged(this.rangeFilter$, nextRangeFilter);
+  }
+
+  setRangeFilter(value: TimeRangeOrNull) {
+    const valueNormalized = {
+      start: value.start ?? epoch0,
+      finish: value.finish ?? epoch1
+    };
+    const rangeComplete = this.rangeComplete$.getValue();
+    const rangeZoom = this.rangeZoom$.getValue();    
+    const nextRangeFilter = getEffectiveRange([rangeComplete, rangeZoom, valueNormalized]);
+    setTimeRangeDurationIfChanged(this.rangeFilter$, nextRangeFilter);
   }
 
 }
 
 function calcStartFinish(value: LogLine[]) {
   if (0 === value.length) {
-    return <TimeRange>({
-      start: epoch0,
-      finish: epoch1,
-    });
+    return createTimeRangeDuration( epoch0, epoch1);
   } else {
 
     let start: ZonedDateTime | null = null;
     let finish: ZonedDateTime | null = null;
 
-    for (const item of value) {
+    // for (const item of value) {
+    //   const ts = getLogLineTimestampValue(item);
+    //   if (ts === null) { continue; }
+    //   if (start === null || ts.isBefore(start)) {
+    //     start = ts;
+    //   }
+    //   if (finish === null || ts.isAfter(finish)) {
+    //     finish = ts;
+    //   }
+    // }
+    for (let idx = 0; idx < value.length; idx++) {
+      const item = value[idx];
       const ts = getLogLineTimestampValue(item);
       if (ts === null) { continue; }
-      if (start === null || ts.isBefore(start)) {
-        start = ts;
-      }
-      if (finish === null || ts.isAfter(finish)) {
-        finish = ts;
-      }
+      start = ts;
+      break;
     }
-    return <TimeRange>({
-      start: start ?? epoch0,
-      finish: finish ?? epoch1,
-    });
+    for (let idx = value.length - 1; 0 <= idx; idx--) {
+      const item = value[idx];
+      const ts = getLogLineTimestampValue(item);
+      if (ts === null) { continue; }
+      finish = ts;
+      break;
+    }
+    return createTimeRangeDuration(start ?? epoch0, finish ?? epoch1);
   }
 
 }

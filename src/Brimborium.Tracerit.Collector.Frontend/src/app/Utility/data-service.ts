@@ -207,33 +207,35 @@ export class DataService {
 
     this.addMapName("{OriginalFormat}", "str", false, -1, -1, 1000);
 
-    // this.addMapName("value");
-    // this.addMapName("event.id");
-    // this.addMapName("event.name");
-    // this.addMapName("activity.traceId");
-    // this.addMapName("activity.parentTraceId");
-    // this.addMapName("activity.parentTraceId.2");
-    // this.addMapName("activity.parentTraceId.3");
-    // this.addMapName("activity.spanId");
-    // this.addMapName("activity.parentSpanId");
-    // this.addMapName("activity.parentSpanId.2");
-    // this.addMapName("activity.parentSpanId.3");
-    // this.addMapName("activity.traceFlags");
-    // this.addMapName("exception.typeName");
-    // this.addMapName("exception.message");
-    // this.addMapName("exception.hResult");
-    // this.addMapName("exception.VerboseMessage");
-    // this.addMapName("activity.OperationName");
-    // this.addMapName("activity.DisplayName");
-    // this.addMapName("activity.StartTimeUtc");
-    // this.addMapName("activity.StopTimeUtc");
-    // this.addMapName("{OriginalFormat}");
+    this.addMapName("value", "str", false, -1, -1, 100);
+    this.addMapName("event.id", "str", false, -1, -1, 100);
+    this.addMapName("event.name", "str", false, -1, -1, 100);
+    this.addMapName("activity.traceId", "str", false, -1, -1, 100);
+    this.addMapName("activity.parentTraceId", "str", false, -1, -1, 100);
+    this.addMapName("activity.parentTraceId.2", "str", false, -1, -1, 100);
+    this.addMapName("activity.parentTraceId.3", "str", false, -1, -1, 100);
+    this.addMapName("activity.spanId", "str", false, -1, -1, 100);
+    this.addMapName("activity.parentSpanId", "str", false, -1, -1, 100);
+    this.addMapName("activity.parentSpanId.2", "str", false, -1, -1, 100);
+    this.addMapName("activity.parentSpanId.3", "str", false, -1, -1, 100);
+    this.addMapName("activity.traceFlags", "str", false, -1, -1, 100);
+    this.addMapName("exception.typeName", "str", false, -1, -1, 100);
+    this.addMapName("exception.message", "str", false, -1, -1, 100);
+    this.addMapName("exception.hResult", "str", false, -1, -1, 100);
+    this.addMapName("exception.VerboseMessage", "str", false, -1, -1, 100);
+    this.addMapName("activity.OperationName", "str", false, -1, -1, 100);
+    this.addMapName("activity.DisplayName", "str", false, -1, -1, 100);
+    this.addMapName("activity.StartTimeUtc", "dt", false, -1, -1, 100);
+    this.addMapName("activity.StopTimeUtc", "dt", false, -1, -1, 100);
+    this.addMapName("{OriginalFormat}", "str", false, -1, -1, 100);
   }
 
-  addMapName(name: string, typeValue: TypeValue, 
-    show: boolean = false, 
+  addMapName(
+    name: string,
+    typeValue: TypeValue,
+    show: boolean = false,
     visualHeaderIndex: number = -1,
-    visualDetailHeaderIndex: number = -1, 
+    visualDetailHeaderIndex: number = -1,
     visualDetailBodyIndex: number = -1) {
     let result = this.mapName.get(name);
     if (result === undefined) {
@@ -255,18 +257,23 @@ export class DataService {
         }
         this.mapName.set(name, result);
         this.listAllHeader.push(result);
+        this.listAllHeader.sort((a, b) => {
+          let cmp = 0;
+          if (0 <= a.visualDetailHeaderIndex && 0 <= b.visualDetailHeaderIndex) {
+            cmp = a.visualDetailHeaderIndex - b.visualDetailHeaderIndex;
+          }
+          if (cmp != 0) { return cmp; }
+
+          if (0 <= a.visualDetailBodyIndex && 0 <= b.visualDetailBodyIndex) {
+            cmp = a.visualDetailBodyIndex - b.visualDetailBodyIndex;
+          }
+          if (cmp != 0) { return cmp; }
+
+          cmp = a.name.localeCompare(b.name)
+          return cmp;
+        });
       }
     }
     return result;
-  }
-
-  reloadIfNecessary() {
-    if (this.useCurrentStream$.getValue()) {
-      this.loadCurrentStream();
-    }
-  }
-
-  loadCurrentStream() {
-
   }
 }

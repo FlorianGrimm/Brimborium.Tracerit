@@ -24,6 +24,22 @@ public sealed class TracorOptions {
     /// </summary>
     public string? ApplicationVersion { get; set; }
 
+    private TracorDataRecord? _Resource;
+
+    /// <summary>
+    /// The resource is transmitted for each new file, session...
+    /// </summary>
+    /// <returns>optional - the resource</returns>
+    public TracorDataRecord? GetResource() => this._Resource;
+
+    /// <summary>
+    /// The resource
+    /// </summary>
+    /// <param name="value">the resource</param>
+    public void SetResource(TracorDataRecord? value) {
+        this._Resource = value;
+    }
+
     /// <summary>
     /// Important allows to retrieve the IHostApplicationLifetime.ApplicationStopping which is essential for periodical flush.
     /// So that at the end the buffer will be flushed.
@@ -42,8 +58,24 @@ public sealed class TracorOptions {
         return this._OnGetApplicationStopping;
     }
 }
-
 public static class TracorOptionsExtension {
+    public static void PostConfigureOptions(TracorOptions options) {
+        if (options.ApplicationName is null) {
+            options.ApplicationName = options.GetApplicationName();
+        }
+        if (options.GetResource() is { } resource) {
+            if (resource.Timestamp <= DateTime.UnixEpoch) { 
+                resource.Timestamp = DateTime.UtcNow;
+            }
+        } else { 
+            var applicationName = options.GetApplicationName();
+            resource = new TracorDataRecord() {
+                TracorIdentifier = new(applicationName, "Resource", string.Empty, string.Empty),
+                Timestamp = DateTime.UtcNow
+            };
+            options.SetResource(resource);
+        }
+    }
 
     /// <summary>
     /// Bind the configuration.Section(Tracor) to option.
@@ -89,7 +121,13 @@ public static class TracorOptionsExtension {
             }
             return that.ApplicationName = (applicationName ?? "Application");
         } else {
-            return applicationName;
+            if (applicationName.Contains("{MaschineName}")) {
+                string machineName = System.Environment.MachineName;
+                return applicationName
+                    .Replace("{MaschineName}", machineName);
+            } else { 
+                return applicationName;
+            }
         }
     }
 }

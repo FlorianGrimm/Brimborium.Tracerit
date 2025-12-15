@@ -19,10 +19,10 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'brimborium-tracerit-collector-frontend' title`, () => {
+  it(`should have the 'Tracerit' title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('brimborium-tracerit-collector-frontend');
+    expect(app.title).toEqual('Tracerit');
   });
 
   // it('should render title', () => {

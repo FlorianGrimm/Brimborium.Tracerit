@@ -1,0 +1,12 @@
+.filter-ast-node-value {
+    display: flex;
+    height: 100%;
+
+    margin-top: auto;
+    margin-bottom: auto;
+
+    input,
+    select{
+        min-width: 100px;
+    }
+}

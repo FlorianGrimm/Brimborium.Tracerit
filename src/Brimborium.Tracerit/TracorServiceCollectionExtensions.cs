@@ -142,6 +142,7 @@ public static partial class TracorServiceCollectionExtensions {
                 optionsBuilder.Bind(configuration);
             }
             if (configureTracor is { }) { optionsBuilder.Configure(configureTracor); }
+            optionsBuilder.PostConfigure(TracorOptionsExtension.PostConfigureOptions);
         }
         {
             var optionsBuilder = serviceBuilder.AddOptions<TracorDataConvertOptions>();

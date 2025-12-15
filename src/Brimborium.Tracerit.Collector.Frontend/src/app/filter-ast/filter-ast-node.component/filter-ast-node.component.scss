@@ -1,0 +1,59 @@
+.node-filter {
+    display: flex;
+    flex-direction: row;
+    min-height: 30px;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    padding: 5px;
+}
+
+.node-filter-operatorIsList > .node-list-child{
+    flex-direction: column;
+}
+
+.node-name {
+    font-style: italic;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.node-operator {
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    background-color: #eee;
+    padding: 0 5px;
+    font-weight: bold;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.node-operator:hover {
+    text-decoration: underline;
+}
+
+.node-list-child {
+    display: flex;
+    flex-direction: row;
+}
+
+.node-value {
+    display: block;
+}
+
+.app-filter-ast-node-value {
+    display: block;
+
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.node-start,
+.node-end {
+    color: blue;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.focus {
+    border: 1px dashed blue;
+}
