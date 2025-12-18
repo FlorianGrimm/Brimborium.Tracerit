@@ -4,12 +4,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter, RouterModule } from '@angular/router';
 import { routes } from './app.routes';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RouterModule, AppComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter(routes)]
+      providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting(), provideRouter(routes)]
     }).compileComponents();
   });
 

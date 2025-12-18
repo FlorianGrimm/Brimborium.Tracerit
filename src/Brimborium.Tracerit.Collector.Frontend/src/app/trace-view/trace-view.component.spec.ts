@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TraceViewComponent } from './trace-view.component';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('TraceViewComponent', () => {
   let component: TraceViewComponent;
@@ -8,6 +9,7 @@ describe('TraceViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
       imports: [TraceViewComponent]
     })
     .compileComponents();

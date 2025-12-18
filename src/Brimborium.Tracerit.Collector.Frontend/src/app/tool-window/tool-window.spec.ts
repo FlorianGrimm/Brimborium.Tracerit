@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ToolWindow } from './tool-window';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('ToolWindow', () => {
   let component: ToolWindow;
@@ -8,6 +9,7 @@ describe('ToolWindow', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
       imports: [ToolWindow]
     })
     .compileComponents();

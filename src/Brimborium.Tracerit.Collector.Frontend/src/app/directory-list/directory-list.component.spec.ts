@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DirectoryListComponent } from './directory-list.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('DirectoryListComponent', () => {
   let component: DirectoryListComponent;
@@ -11,9 +12,9 @@ describe('DirectoryListComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DirectoryListComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting()]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(DirectoryListComponent);
     component = fixture.componentInstance;

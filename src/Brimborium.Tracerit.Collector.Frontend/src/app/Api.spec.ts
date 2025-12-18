@@ -21,7 +21,8 @@ describe('App', () => {
             data: new Map<string, LogLineValue>([
               ["abc", { name: "abc", typeValue: "str", value: "def" }]
             ]),
-            traceInformation: null
+            traceInformation: null,
+            source: null
           }
         ],
       nextId: 2
@@ -39,7 +40,8 @@ describe('App', () => {
             data: new Map<string, LogLineValue>([
               ["abc", { name: "abc", typeValue: "int", value: 123 }]
             ]),
-            traceInformation: null
+            traceInformation: null,
+            source: null
           }
         ],
       nextId: 2
@@ -58,7 +60,8 @@ describe('App', () => {
             data: new Map<string, LogLineValue>([
               ["abc", { name: "abc", typeValue: "lvl", value: "error" }]
             ]),
-            traceInformation: null
+            traceInformation: null,
+            source: null
           }
         ],
       nextId: 2

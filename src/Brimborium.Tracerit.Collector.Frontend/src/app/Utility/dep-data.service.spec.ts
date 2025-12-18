@@ -59,10 +59,10 @@ describe('DepDataService', () => {
       name: 'testB',
       initialValue: 1,
       subscription: subscription
-    }).withSource(
-      { propA: propertyA.dependencyInner() },
-      (d) => { return d.propA + 1; }
-    );
+    }).withSource({
+      sourceDependency: { propA: propertyA.dependencyInner() },
+      sourceTransform: (d) => { return d.propA + 1; }
+    });
 
     expect(propertyA._getListSinkTrigger().length).toEqual(1);
 
@@ -80,7 +80,7 @@ describe('DepDataService', () => {
     }
     subscription.unsubscribe();
   });
-  it('property dep 2', () => {
+  it('property dep 2 ui and inner', () => {
     const subscription = new Subscription();
     const propertyA = service.createProperty<number>({
       name: 'testA',
@@ -99,19 +99,26 @@ describe('DepDataService', () => {
       initialValue: 1,
       report: (property, msg, value) => { listReport.push(`${property.name}-${value}`); },
       subscription: subscription
-    }).withSource(
-      { propA: propertyA.dependencyUi(), propB: propertyB.dependencyUi() },
-      (d) => { return d.propA + d.propB; });
+    }).withSource({
+      sourceDependency: {
+        propA: propertyA.dependencyUi(),
+        propB: propertyB.dependencyUi()
+      },
+      sourceTransform: (d) => { return d.propA + d.propB; }
+    });
 
     const propertyRInner = service.createProperty({
       name: 'testRInner',
       initialValue: 1,
       report: (property, msg, value) => { listReport.push(`${property.name}-${value}`); },
       subscription: subscription,
-    }).withSource(
-      { propA: propertyA.dependencyInner(), propB: propertyB.dependencyInner() },
-      (d) => { return d.propA + d.propB; }
-    );
+    }).withSource({
+      sourceDependency: {
+        propA: propertyA.dependencyInner(),
+        propB: propertyB.dependencyInner()
+      },
+      sourceTransform: (d) => { return d.propA + d.propB; }
+    });
 
     expect(propertyRUi.getValue()).toEqual(2);
     expect(propertyRInner.getValue()).toEqual(2);
@@ -125,48 +132,48 @@ describe('DepDataService', () => {
 
     subscription.unsubscribe();
   });
-   
+
   it('property dep repeat', () => {
-  const subscription = new Subscription();
-  const propertyA = service.createProperty<number>({
-    name: 'testA',
-    initialValue: 1,
-    subscription: subscription,
-  });
-  const propertyB = service.createProperty<number>({
-    name: 'testB',
-    initialValue: 1,
-    subscription: subscription,
-  });
-  
-  const propertyRUi = service.createProperty({
-    name: 'testRUi',
-    initialValue: 1,
-    subscription: subscription,
-  }).withSource(
-    { propA: propertyA.dependencyUi(), propB: propertyB.dependencyUi() },
-    (d) => { return d.propA + d.propB; }
-  );
-   
-   
-  const propertyRInner = service.createProperty({
-    name: 'testRInner',
-    initialValue: 1,
-    subscription: subscription,    
-   }).withSource(
-    { propA: propertyA.dependencyInner(), propB: propertyB.dependencyInner() },
-    (d) => { return d.propA + d.propB; }
-  );
-  
-  expect(propertyRUi.getValue()).toEqual(2);
-  expect(propertyRInner.getValue()).toEqual(2);
-  
-  for (let idx = 0; idx < 100; idx++) {
-    propertyA.setValue(idx);
-    expect(propertyRUi.getValue()).toEqual(idx + 1);
-    expect(propertyRInner.getValue()).toEqual(idx + 1);
-  }
-  
-  subscription.unsubscribe();
+    const subscription = new Subscription();
+    const propertyA = service.createProperty<number>({
+      name: 'testA',
+      initialValue: 1,
+      subscription: subscription,
+    });
+    const propertyB = service.createProperty<number>({
+      name: 'testB',
+      initialValue: 1,
+      subscription: subscription,
+    });
+
+    const propertyRUi = service.createProperty({
+      name: 'testRUi',
+      initialValue: 1,
+      subscription: subscription,
+    }).withSource({
+      sourceDependency: { propA: propertyA.dependencyInner(), propB: propertyB.dependencyInner() },
+      sourceTransform: (d) => { return d.propA + d.propB; }
+    });
+
+
+    const propertyRInner = service.createProperty({
+      name: 'testRInner',
+      initialValue: 1,
+      subscription: subscription,
+    }).withSource({
+      sourceDependency: { propA: propertyA.dependencyInner(), propB: propertyB.dependencyInner() },
+      sourceTransform: (d) => { return d.propA + d.propB; }
+    });
+
+    expect(propertyRUi.getValue()).toEqual(2);
+    expect(propertyRInner.getValue()).toEqual(2);
+
+    for (let idx = 0; idx < 100; idx++) {
+      propertyA.setValue(idx);
+      expect(propertyRUi.getValue()).toEqual(idx + 1);
+      expect(propertyRInner.getValue()).toEqual(idx + 1);
+    }
+
+    subscription.unsubscribe();
   });
 });

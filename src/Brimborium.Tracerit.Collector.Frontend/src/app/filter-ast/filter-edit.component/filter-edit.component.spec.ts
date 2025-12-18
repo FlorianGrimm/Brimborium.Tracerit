@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FilterEditComponent } from './filter-edit.component';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('FilterEditComponent', () => {
   let component: FilterEditComponent;
@@ -8,6 +9,7 @@ describe('FilterEditComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
       imports: [FilterEditComponent]
     })
     .compileComponents();

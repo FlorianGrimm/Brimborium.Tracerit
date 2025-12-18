@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FilterAstNodeValue } from './filter-ast-node-value.component';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('FilterAstNodeValue', () => {
   let component: FilterAstNodeValue;
@@ -8,6 +9,7 @@ describe('FilterAstNodeValue', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
       imports: [FilterAstNodeValue]
     })
     .compileComponents();

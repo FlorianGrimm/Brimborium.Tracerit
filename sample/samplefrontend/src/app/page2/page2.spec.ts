@@ -8,6 +8,7 @@ describe('Page2', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
       imports: [Page2]
     })
     .compileComponents();
