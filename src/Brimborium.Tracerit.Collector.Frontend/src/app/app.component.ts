@@ -8,6 +8,8 @@ import { HttpClientService } from '@app/Utility/http-client-service';
 import { Subscription } from 'rxjs';
 import { AppIconComponent } from '@app/app-icon/app-icon.component';
 import { DepDataService } from './Utility/dep-data.service';
+type ReloadCurrentStream = { trigger: boolean, tick: number };
+
 @Component({
     selector: 'app-root',
     imports: [
@@ -40,50 +42,47 @@ export class AppComponent {
         subscription: this.subscription,
     });
 
-    // TODO
-    // readonly reloadCurrentStream = this.depDataService.createProperty({
-    //     name: 'AppComponent_triggerReload',
-    //     initialValue: 0,
-    //     subscription: this.subscription,
-    // }).withSource({
-    //     sourceDependency: {
-    //         visibilityState: this.visibilityState.dependencyInner(),
-    //         useCurrentStream: this.dataService.useCurrentStream.dependencyInner(),
-    //     },
-    //     sourceTransform:
-    //         (d) => {
-    //             if (d.visibilityState === 'visible' && d.useCurrentStream) {
-    //                 return 1;
-    //             }
-    //             return 2;
-    //         },
-    //     depDataPropertyInitializer: this.depDataPropertyInitializer
-    // });
 
-    // readonly triggerReload$ = combineLatestSubject({
-    //     dictObservable: {
-    //     visibilityState: this.visibilityState$,
-    //     useCurrentStream: this.dataService.useCurrentStream$.pipe(distinctUntilChanged())
-    //     },
-    //     name: 'visibilityState$'
-    // });
-    // readonly reloadCurrentStream$=createObserableSubscripe({
-    //     obs: this.triggerReload$.combineLatest().pipe(
-    //       filter(value => value.visibilityState === 'visible' && value.useCurrentStream),
-    //       switchMap(() => this.httpClientService.getCurrentStream(this.dataService.currentStreamName).pipe(take(1))),
-    //       tap({
-    //         next: (value) => {
-    //             console.log("reloadCurrentStream$", {mode:value.mode, data:value.data?.length});
-    //             if ("success" === value.mode) {
-    //                 //this.dataService.addListLogLine(value.data);
-    //             }
-    //         }
-    //       }),
-    //       repeat()
-    //     ),
-    //     subscribtion: this.subscription,
-    //     immediate: true
-    //   });
+    readonly reloadCurrentStream = this.depDataService.createProperty<ReloadCurrentStream>({
+        name: 'AppComponent_triggerReload',
+        initialValue: { trigger: false, tick: 0 },
+        compare: (a, b) => a.tick === b.tick,
+        sideEffect: {
+          fn: (value) => {
+            if (value.trigger) {
+              this.httpClientService.getCurrentStream(this.dataService.currentStreamName).subscribe({
+                next: (value) => {
+                    console.log("reloadCurrentStream$", {mode:value.mode, data:value.data?.length});
+                    if ("success" === value.mode) {
+                        this.dataService.addListLogLine(value.data);
+                    }
+                }
+              });
+            }
+          },
+          kind: 'UI',
+          requestAnimationFrame: true,
+        },
+        subscription: this.subscription,
+    }).withSource({
+        sourceDependency: {
+            visibilityState: this.visibilityState.dependencyInner(),
+            useCurrentStream: this.dataService.useCurrentStream.dependencyInner(),
+        },
+        sourceTransform:
+            ({visibilityState, useCurrentStream}) => {
+                const currentValue = this.reloadCurrentStream.getValue();
+                if (visibilityState === 'visible' && useCurrentStream) {
+                    const result: ReloadCurrentStream = { trigger: true, tick: currentValue.tick + 1 };
+                    return result;
+                }
+                {
+                    const result: ReloadCurrentStream = { trigger: false, tick: currentValue.tick };
+                    return result;;
+                }
+            },
+        depDataPropertyInitializer: this.depDataPropertyInitializer
+    });
 
     constructor() {
         this.depDataPropertyInitializer.execute();

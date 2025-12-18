@@ -7,7 +7,9 @@ import {
   ChevronRight,
   Funnel,
   Spotlight,
-  ChartNoAxesGantt
+  ChartNoAxesGantt,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-angular';
 
 export class AppIconComponent {
@@ -19,4 +21,6 @@ export class AppIconComponent {
   readonly TraceView = ChartNoAxesGantt;
   readonly ChevronLeft = ChevronLeft;
   readonly ChevronRight = ChevronRight;
+  readonly ZoomIn = ZoomIn;
+  readonly ZoomOut = ZoomOut;
 }

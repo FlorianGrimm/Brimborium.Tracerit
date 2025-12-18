@@ -88,4 +88,10 @@
     }
   </svg>
   }
+  <button class="zoom-in-button" (click)="onZoomIn()">
+    <lucide-icon [img]="appIcon.ZoomIn" class="lucide-icon"></lucide-icon>
+  </button>
+  <button class="zoom-out-button" (click)="onZoomOut('increment')" (dblclick)="onZoomOut('complete')">
+    <lucide-icon [img]="appIcon.ZoomOut" class="lucide-icon"></lucide-icon>
+  </button>
 </div>

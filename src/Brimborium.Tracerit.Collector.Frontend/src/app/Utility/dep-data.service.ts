@@ -35,6 +35,8 @@ export type DepDataPropertyArguments<V> = {
   /* sideEffect is called after the value is set. */
   sideEffect?: DepDataSideEffectTriggerArguments<V>;
 
+  disableReport?: boolean;
+
   /* report is called after the value is set - before the dependcies and sideEffect is called. */
   report?: ReportFN<V> | undefined;
 
@@ -246,6 +248,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
   public subscription: Subscription;
   private _transform: ((value: V) => V) | undefined;
   private _compare: ((a: V, b: V) => boolean) | undefined;
+  private _disableReport: boolean;
   private _report: ReportFN<V> | undefined;
   private _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
   private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
@@ -258,6 +261,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     this.name = args.name;
     this._transform = args.transform;
     this._compare = args.compare;
+    this._disableReport = args.disableReport??false;
     this._report = args.report;
     this.subscription = args.subscription;
     this.value = args.initialValue;
@@ -331,7 +335,10 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     if (this._report != null) {
       this._report(this, 'set', value);
     }
-    this._service.onReport(this, 'set', value);
+    if (!this._disableReport) {
+      this._service.onReport(this, 'set', value);
+    }
+    
 
     try {
       for (const trigger of this._listSinkTrigger) {
@@ -612,9 +619,15 @@ export class DepDataServiceSource<V, TS> {
       const value = sd.sourceProperty.getValue();
       sourceValue[key] = value;
     }
-    const result = this.sourceTransform(sourceValue);
-    this.targetProperty.setValue(result);
+    try{
+      const result = this.sourceTransform(sourceValue);
+      this.targetProperty.setValue(result);
+      return result;
     return result;
+    } catch (error) {
+      this.service.onReportError(this.targetProperty as any, 'error', error);
+      throw undefined;
+    }
   }
 
   private _isDirty: boolean = false;

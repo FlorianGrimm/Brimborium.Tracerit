@@ -76,6 +76,7 @@ export type LogLine = {
     ts: ZonedDateTime | null;
     data: Map<string, LogLineValue>;
     traceInformation: TraceInformation | null;
+    source: LogLine | null;
 };
 
 export type TraceInformation = {
@@ -126,6 +127,7 @@ export type LogLineUuid = { name: string, typeValue: "uuid", value: string };
 export function parseJsonl(content: string, id: number): { listLogline: LogLine[], nextId: number } {
     const result: LogLine[] = [];
     const lines = content.split(/\r\n|\r|\n/);
+    let logLineSource: LogLine | null = null;
     for (const lineText of lines) {
         if (lineText.length <= 1) { continue; }
         try {
@@ -136,7 +138,8 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
                 id: 0,
                 ts: null,
                 data: new Map<string, LogLineValue>(),
-                traceInformation: null
+                traceInformation: null,
+                source: logLineSource
             };
             for (const itemObj of lineObj) {
                 if (!Array.isArray(itemObj)) { continue; }
@@ -228,7 +231,13 @@ export function parseJsonl(content: string, id: number): { listLogline: LogLine[
                 continue;
             }
             itemResult.ts = getLogLineTimestampValue(itemResult);
-            result.push(itemResult);
+            const source = getLogLineSourceValue(itemResult);
+            if ("Resource" === source) {
+                logLineSource = itemResult;
+            } else {
+                result.push(itemResult);
+            }
+
         } catch (err) {
             console.error("Error in parseJsonl", lineText, err);
         }
@@ -296,6 +305,17 @@ export function getLogLineTraceId(
     const property = logLine.data.get("activity.traceid");
     if ((undefined !== property)
         && (("str" === property.typeValue))) {
+        return property.value;
+    }
+    return null;
+}
+
+export function getLogLineSourceValue(
+    logLine: LogLine | null | undefined
+): (string | null) {
+    if (logLine == null) { return null; }
+    const property = logLine.data.get("source");
+    if ((undefined !== property) && ("str" === property.typeValue)) {
         return property.value;
     }
     return null;

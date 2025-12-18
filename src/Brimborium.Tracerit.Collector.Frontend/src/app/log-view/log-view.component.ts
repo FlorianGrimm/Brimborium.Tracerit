@@ -746,7 +746,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   showAllFieldsInDetails() {
     const allHeaders = this.listAllHeader.getValue();
-    const selectedLogLine: LogLine = { id: 0, ts: null, data: new Map<string, LogLineValue>(), traceInformation: null };
+    const selectedLogLine: LogLine = { id: 0, ts: null, data: new Map<string, LogLineValue>(), traceInformation: null, source: null };
     for (const header of allHeaders) {
       selectedLogLine.data.set(header.name, { name: header.name, typeValue: header.typeValue, value: null! });
     }
