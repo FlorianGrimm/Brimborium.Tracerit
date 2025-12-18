@@ -23,8 +23,8 @@ export class FilterComponent {
     initialValue: null,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.filterAst.dependencyPublic()
-  );
+    this.logTimeDataService.filterAst.dependencyPublic(),
+    this.depDataPropertyInitializer);
   public readonly $filterAst = this.filterAst.asSignal();
 
   constructor() {

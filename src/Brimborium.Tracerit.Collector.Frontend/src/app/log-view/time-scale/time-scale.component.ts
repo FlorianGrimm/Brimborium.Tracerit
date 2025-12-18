@@ -80,30 +80,30 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly selectedLogLineIdProp = this.depDataService.createProperty<number>({
     name: 'TimeScaleComponent_selectedLogLineId',
     initialValue: 0,
-    compare: (a, b) => (a??0) === (b??0),
-    input: { 
+    compare: (a, b) => (a ?? 0) === (b ?? 0),
+    input: {
       input: this.selectedLogLineId,
       transform: (value) => (value ?? 0)
-     },
+    },
     subscription: this.subscription,
   });
 
   readonly highlightedLogLineIdProp = this.depDataService.createProperty<number>({
     name: 'TimeScaleComponent_highlightedLogLineId',
     initialValue: 0,
-    compare: (a, b) => (a===b),
-    input: { 
+    compare: (a, b) => (a === b),
+    input: {
       input: this.highlightedLogLineId,
       transform: (value) => (value ?? 0)
-     },
+    },
     subscription: this.subscription,
   });
 
   readonly visibleRangeProp = this.depDataService.createProperty<TimeRangeOrNull>({
     name: 'TimeScaleComponent_visibleRange',
-    initialValue: emptyTimeRangeOrNull,    
+    initialValue: emptyTimeRangeOrNull,
     compare: (a, b) => equalsTimeRangeOrNull(a, b),
-    input: { 
+    input: {
       input: this.visibleRange,
       transform: (value) => (value ?? emptyTimeRangeOrNull)
     },
@@ -115,28 +115,32 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataComplete.dependencyPublic());
+    this.logTimeDataService.dataComplete.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   readonly dataZoom = this.depDataService.createProperty({
     name: 'TimeScaleComponent_dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataZoom.dependencyPublic());
+    this.logTimeDataService.dataZoom.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   readonly dataTimeFiltered = this.depDataService.createProperty({
     name: 'TimeScaleComponent_dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataTimeFiltered.dependencyPublic());
+    this.logTimeDataService.dataTimeFiltered.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   readonly dataLogLineFilteredCondition = this.depDataService.createProperty({
     name: 'TimeScaleComponent_dataLogLineFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataFilteredCondition.dependencyPublic());
+    this.logTimeDataService.dataFilteredCondition.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   // HERE
 
@@ -358,7 +362,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   readonly $selectedLogLine = this.selectedLogLine.asSignal();
-  
+
   readonly highlightedLogLine = this.depDataService.createProperty<LogTick | null>({
     name: 'TimeScaleComponent_highlightedLogLine',
     initialValue: null as (LogTick | null),
@@ -377,7 +381,8 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
 
       if (highlightedLogLine != null && highlightedLogLine.ts != null) {
         const positionX = this.calcPositionX(highlightedLogLine.ts, rangeZoom, displayWidth);
-        const tick: LogTick = { id: highlightedLogLineId!,
+        const tick: LogTick = {
+          id: highlightedLogLineId!,
           positionX: positionX - 1,
           positionY: 5 + (highlightedLogLineId! % 25) * 2,
           width: 4,
@@ -391,7 +396,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       } else {
         return null;
       }
-    },  
+    },
     depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   readonly $highlightedLogLine = this.highlightedLogLine.asSignal();
@@ -400,7 +405,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     name: 'TimeScale_state',
     initialValue: this.createInitialState(),
     report: (property, message, value) => {
-      console.log(name, message, {
+      console.log(property.name, message, {
         displayWidth: value?.displayWidth,
         viewBox: value?.viewBox,
         rangeZoom: getTimeRangeDurationToDebugString(value?.rangeZoom),

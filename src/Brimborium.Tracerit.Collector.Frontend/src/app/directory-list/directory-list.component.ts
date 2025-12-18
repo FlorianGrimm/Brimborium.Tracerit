@@ -28,17 +28,9 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
     name: 'DirectoryListComponent_currentFile',
     initialValue: undefined as (string | undefined),
     subscription: this.subscription,
-  }).withSource(
-    {
-      sourceDependency:
-      {
-        currentFile: this.dataService.currentFile.dependencyInner()
-      },
-      sourceTransform:
-        (d) => d.currentFile,
-      depDataPropertyInitializer: this.depDataPropertyInitializer
-    }
-  );
+  }).withSourceIdentity(
+    this.dataService.currentFile.dependencyInner(),
+    this.depDataPropertyInitializer);
   readonly $currentFile = this.currentFile.asSignal();
 
   readonly listFile = this.depDataService.createProperty({

@@ -1,6 +1,5 @@
 import { AfterViewInit, Component, computed, effect, ElementRef, EnvironmentInjector, HostListener, inject, input, OnDestroy, OnInit, signal, ViewChild, ViewContainerRef } from '@angular/core';
 import { CdkMenu, CdkMenuItem, CdkContextMenuTrigger, CdkMenuTrigger } from '@angular/cdk/menu';
-import { AsyncPipe } from '@angular/common';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Duration, ZonedDateTime } from '@js-joda/core';
@@ -101,7 +100,8 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataComplete.dependencyPublic());
+    this.logTimeDataService.dataComplete.dependencyPublic(),
+    this.depDataPropertyInitializer);
   public readonly $dataComplete = this.dataComplete.asSignal();
 
   public readonly dataZoom = this.depDataService.createProperty<LogLineTimeRangeDuration>({
@@ -109,14 +109,16 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataZoom.dependencyPublic());
+    this.logTimeDataService.dataZoom.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   public readonly dataTimeFiltered = this.depDataService.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataTimeFiltered.dependencyPublic());
+    this.logTimeDataService.dataTimeFiltered.dependencyPublic(),
+    this.depDataPropertyInitializer);
   public readonly $dataTimeFiltered = this.dataTimeFiltered.asSignal();
 
   public readonly dataFilteredCondition = this.depDataService.createProperty<LogLineTimeRangeDuration>({
@@ -130,7 +132,8 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     },
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataFilteredCondition.dependencyPublic());
+    this.logTimeDataService.dataFilteredCondition.dependencyPublic(),
+    this.depDataPropertyInitializer);
   public readonly $dataFilteredCondition = this.dataFilteredCondition.asSignal();
 
   // State - Selection & Highlighting

@@ -53,21 +53,24 @@ export class LogTimeDataService {
     initialValue: [],
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.dataService.listLogLineSource.dependencyPublic());
+    this.dataService.listLogLineSource.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   public readonly listLogLineAll = this.depDataService.createProperty({
     name: 'LogTimeDataService_listLogLineAll',
     initialValue: [] as LogLine[],
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.dataService.listLogLineSource.dependencyPublic());
+    this.dataService.listLogLineSource.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   public readonly listHeaderAndLogLineAll = this.depDataService.createProperty<HeaderAndLogLine>({
     name: 'LogTimeDataService_listHeaderAndLogLineAll',
     initialValue: emptyHeaderAndLogLine,
     subscription: this.subscription,
   }).withSourceIdentity(
-    this.dataService.listHeaderAndLogLineSource.dependencyPublic());
+    this.dataService.listHeaderAndLogLineSource.dependencyPublic(),
+    this.depDataPropertyInitializer);
 
   public readonly dataComplete = this.depDataService.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataComplete',

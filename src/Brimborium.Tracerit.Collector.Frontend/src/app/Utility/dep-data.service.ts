@@ -177,9 +177,29 @@ export class DepDataService {
 
 /** allows to delay the creation of a property *source*. */
 export class DepDataPropertyInitializer {
+  private static _EnsureExecuted: DepDataPropertyInitializer[] | undefined = undefined;
+  private static ensureExecuted() {
+    if (DepDataPropertyInitializer._EnsureExecuted == null) { return; }
+    const list = DepDataPropertyInitializer._EnsureExecuted;
+    DepDataPropertyInitializer._EnsureExecuted = undefined;
+    for (const initializer of list) {
+      if(initializer._ListDelayed == null) { continue; }
+      console.warn('Missing call to DepDataPropertyInitializer.execute');
+      initializer.execute();
+    }
+  }
+
   private _ListDelayed: DepDataPropertyWithSourceDelayed<any, any>[] | undefined = undefined;
 
-  constructor() { }
+  constructor(
+
+  ) { 
+    if (DepDataPropertyInitializer._EnsureExecuted == null) {
+      window.requestAnimationFrame(() => { DepDataPropertyInitializer.ensureExecuted();    });
+      DepDataPropertyInitializer._EnsureExecuted = [];
+    }
+    DepDataPropertyInitializer._EnsureExecuted.push(this);
+  }
 
   /** internal - add a delayed creation. */
   public add<TS>(delayed: DepDataPropertyWithSourceDelayed<any, any>) {
@@ -401,7 +421,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
 
   public withSourceIdentity(
     dependency: DepDataPropertyDependency<V>,
-    depDataPropertyInitializer?: DepDataPropertyInitializer
+    depDataPropertyInitializer: DepDataPropertyInitializer
   ) {
     return this.withSource<{ value: V }>({
       sourceDependency: { value: dependency },
