@@ -1,11 +1,11 @@
 <div #containerElement class="time-scale-2" (mouseup)="onMouseUp($event, 'inner')"
   (mousemove)="onMouseMove($event, 'inner')">
-  @let state = state$ | async;
+  @let state = $state();
   @if ((state != null)&& (state.displayWidth > 0) && (state.viewBox !== '')) {
   <svg #svgElement [attr.viewBox]="state.viewBox" class="time-scale-svg">
 
     <rect x="15" y="80" width="4" height="80" fill="#f0f0f0" />
-    <polyline [attr.points]="plotCount()" style="fill:none; stroke:rgba(0, 128, 0, 1);;stroke-width:1" />
+    <polyline [attr.points]="$plotCount()" style="fill:none; stroke:rgba(0, 128, 0, 1);;stroke-width:1" />
 
     <!-- Log tick marks (visualizing log entries) -->
     @for (logTick of state.listLogTick; track logTick.id) {
@@ -14,13 +14,13 @@
       class="log-tick" (click)="onLogTickClick(logTick)" (mouseenter)="onLogTickHover(logTick)"
       (mouseleave)="onLogTickHover(null)" />
     }
-    @if(selectedLogLine(); as selectedTick ) {
+    @if($selectedLogLine(); as selectedTick ) {
     <rect [attr.x]="selectedTick.positionX" [attr.y]="selectedTick.positionY" [attr.width]="selectedTick.width"
       [attr.height]="4" [attr.fill]="selectedTick.color" [class.highlighted]="selectedTick.isHighlighted"
       [class.selected]="selectedTick.isSelected" class="log-tick" (click)="onLogTickClick(selectedTick)"
       (mouseenter)="onLogTickHover(selectedTick)" (mouseleave)="onLogTickHover(null)" />
     }
-    @if(highlightedLogLine(); as highlightedTick ) {
+    @if($highlightedLogLine(); as highlightedTick ) {
     <rect [attr.x]="highlightedTick.positionX" [attr.y]="highlightedTick.positionY" [attr.width]="highlightedTick.width"
       [attr.height]="4" [attr.fill]="highlightedTick.color" [class.highlighted]="highlightedTick.isHighlighted"
       [class.selected]="highlightedTick.isSelected" class="log-tick" (click)="onLogTickClick(highlightedTick)"

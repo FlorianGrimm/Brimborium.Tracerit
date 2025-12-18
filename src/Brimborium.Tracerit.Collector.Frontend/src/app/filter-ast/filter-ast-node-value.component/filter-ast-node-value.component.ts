@@ -153,5 +153,5 @@ export class FilterAstNodeValue {
     });
   }
 
-  listLevels = ['info', 'warn', 'error'];
+  listLevels = ['trace', 'debug','information', 'warning', 'error'];
 }

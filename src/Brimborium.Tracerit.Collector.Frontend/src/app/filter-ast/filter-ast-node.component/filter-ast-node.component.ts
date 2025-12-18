@@ -1,10 +1,11 @@
 import { Component, computed, inject, input, output } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule, Plus, Minus } from 'lucide-angular';
-import { mapFilterOperatorsDisplayByOperator, replaceUiNode } from '@app/Utility/filter-ast-node';
+import { getValidLogLineValue, mapFilterOperatorsDisplayByOperator, replaceUiNode } from '@app/Utility/filter-ast-node';
 import { DataService } from '@app/Utility/data-service';
 import { initialUIFilterAstNodeSelection, OutputFilterAstNode, UIFilterAstNode, UIFilterAstNodeSelection } from '@app/Utility/filter-ast-node';
 import { FilterAstNodeValue } from "@app/filter-ast/filter-ast-node-value.component/filter-ast-node-value.component";
+import { LogLineValue } from '@app/Api';
 
 
 @Component({
@@ -68,6 +69,34 @@ export class FilterAstNodeComponent {
     };
     this.selectionChanged.emit(nextSelection);
   }
+
+  onNameChanged(name: string) {
+    const node = this.uiNode();
+    if (node == null) { return; }
+
+    debugger;
+    
+    const listAllHeader = this.dataService.listAllHeader.getValue();
+    const nextProperty = listAllHeader.find((item) => (item.name === name));
+    if (nextProperty == null) { return; }
+
+    const nextValueValue = getValidLogLineValue(nextProperty.typeValue, node.value?.value)
+    const nextValue: LogLineValue = {
+        name: nextProperty.name,
+        typeValue: nextProperty.typeValue,
+        value: nextValueValue! as any,
+      };
+    const nextNode= {
+        ...node,
+        value: nextValue,
+      };
+    this.nodeChanged.emit({
+      nextNode: nextNode,
+      nextNodeRoot: undefined,
+      nextSelection: undefined,
+    });
+  }
+
 
   onNodeChanged(value: OutputFilterAstNode) {
     if (value.nextNodeRoot != null) {     

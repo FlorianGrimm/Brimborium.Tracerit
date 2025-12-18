@@ -22,8 +22,12 @@
     </div>
     }@else {
     @if (node.value != null) {
-    <div class="node-name">
+    <div class="node-name" (click)="setSelection('operator')">
+        @if (thisSel==null){
         {{node.value.name}}
+        } @else {
+        <input type="text" [value]="node.value.name" (change)="onNameChanged($event.target.value)" />
+        }
     </div>
     <div class="node-operator" (click)="setSelection('operator')"
         [ngClass]="{'focus': (thisSel?.property == 'operator')}">
@@ -35,7 +39,11 @@
     </div>
     }@else{
     <div class="node-name">
+        @if (thisSel==null){
         ...
+        } @else {
+        <input type="text" (change)="onNameChanged($event.target.value)" />
+        }
     </div>
     <div class="node-operator" (click)="setSelection('operator')"
         [ngClass]="{'focus': (thisSel?.property == 'operator')}">

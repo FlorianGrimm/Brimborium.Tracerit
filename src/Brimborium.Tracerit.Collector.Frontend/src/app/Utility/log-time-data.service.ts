@@ -1,330 +1,453 @@
 import { inject, Injectable } from '@angular/core';
-import { combineLatest, distinctUntilChanged, filter, map, Subscription, switchMap, tap } from 'rxjs';
-import { filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
+import { Subscription } from 'rxjs';
+import { FilterAstNode, filterListLogLine, getLogLineTimestampValue, LogLine, PropertyHeader } from '../Api';
 import { Duration, ZonedDateTime } from '@js-joda/core';
-import { createTimeRangeDuration, epoch0, epoch1, getEffectiveRange, getTimeRangeDurationToDebugString, getTimeRangeToDebugString, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, TimeRange, TimeRangeDuration, TimeRangeOrNull } from './time-range';
-import { debounceToggle } from './debounceToggle';
-import { BehaviorRingSubject } from './BehaviorRingSubject';
-import { MasterRingService } from './master-ring.service';
-import { combineLatestRingSubject } from './CombineLatestRingSubject';
+import { calcZoomRange, createTimeRangeDuration, createTimeRangeOrNull, emptyHeaderAndLogLine, emptyLogLineTimeRangeDuration, epoch0, epoch01RangeDuration, epoch1, equalsTimeRangeDuration, getEffectiveRange, getTimeRangeDurationToDebugString, getTimeRangeToDebugString, HeaderAndLogLine, LogLineTimeRangeDuration, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, setTimeRangeOrNullIfChanged, TimeRange, TimeRangeDuration, TimeRangeOrNull } from './time-range';
 import { DataService } from './data-service';
-import { createObserableSubscripe } from './ObservableSubscripe';
-import { combineLatestSubject } from './CombineLatestSubject';
+import { DepDataService } from './dep-data.service';
+import { generateFilterFunction } from './filter-ast-node';
+import { getVisualHeader } from './propertyHeaderUtility';
+
+export type ModeZoom = 'complete' | 'zoom' | 'filter';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LogTimeDataService {
-  readonly subscription = new Subscription();
-  readonly ring$ = inject(MasterRingService).dependendRing('LogTimeDataService-ring$', this.subscription);
-  readonly dataService = inject(DataService);
+  public readonly subscription = new Subscription();
+  public readonly depDataService = inject(DepDataService);
+  public readonly depDataPropertyInitializer = this.depDataService.createInitializer();
+  public readonly dataService = inject(DataService);
 
-  readonly useCurrentStream$ = new BehaviorRingSubject<boolean>(false, 1, 'LogTimeDataService_useCurrentStream$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
+  public readonly listAllHeader = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listAllHeader',
+    initialValue: [] as PropertyHeader[],
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency: {
+        listAllHeader: this.dataService.listAllHeader.dependencyPublic()
+      },
+      sourceTransform:
+        (d) => d.listAllHeader,
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
+
+  public readonly useCurrentStream = this.depDataService.createProperty({
+    name: 'LogTimeDataService_useCurrentStream',
+    initialValue: false,
+    subscription: this.subscription,
+  });
+  //readonly useCurrentStream$ = this.useCurrentStream.asObserable();
 
   // input
-  readonly listLogLineCurrentStream$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogTimeDataService_listLogLineCurrentStream', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-
-  readonly listLogLineFiles$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogTimeDataService_listLogLineFiles', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-
-  readonly listLogLineFilesSubscripe = createObserableSubscripe({
-    obs: this.dataService.listLogLineSource$.pipe(
-      tap({
-        next: (value) => {
-          this.listLogLineFiles$.next(value);
-        }
-      })
-    ),
-    subscribtion: this.subscription,
-    immediate: true
+  public readonly listLogLineCurrentStream = this.depDataService.createProperty<LogLine[]>({
+    name: 'LogTimeDataService_listLogLineCurrentStream',
+    initialValue: [],
+    subscription: this.subscription,
   });
 
-  readonly listLogLineInputSources$ = combineLatestSubject({
-    dictObservable: {
-      useCurrentStream: this.useCurrentStream$,
-      listLogLineCurrentStream: this.listLogLineCurrentStream$,
-      listLogLineFiles: this.listLogLineFiles$,
+  public readonly listLogLineFiles = this.depDataService.createProperty<LogLine[]>({
+    name: 'LogTimeDataService_listLogLineFilesSubscripe2',
+    initialValue: [],
+    subscription: this.subscription,
+  }).withSourceIdentity(
+    this.dataService.listLogLineSource.dependencyPublic());
+
+  public readonly listLogLineAll = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listLogLineAll',
+    initialValue: [] as LogLine[],
+    subscription: this.subscription,
+  }).withSourceIdentity(
+    this.dataService.listLogLineSource.dependencyPublic());
+
+  public readonly listHeaderAndLogLineAll = this.depDataService.createProperty<HeaderAndLogLine>({
+    name: 'LogTimeDataService_listHeaderAndLogLineAll',
+    initialValue: emptyHeaderAndLogLine,
+    subscription: this.subscription,
+  }).withSourceIdentity(
+    this.dataService.listHeaderAndLogLineSource.dependencyPublic());
+
+  public readonly dataComplete = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+    name: 'LogTimeDataService_dataComplete',
+    initialValue: emptyLogLineTimeRangeDuration,
+    sideEffect: {
+      fn: (value) => {
+        if (Object.is(value, emptyLogLineTimeRangeDuration)) { return; }
+
+        const rangeComplete = value.range;
+        const rangeZoom = this.rangeZoom.getValue();
+        const nextRangeZoom = calcZoomRange(rangeComplete, rangeZoom);
+        setTimeRangeDurationIfChanged(this.rangeZoom, nextRangeZoom);
+      }
     },
-    name: 'LogTimeDataService_listLogLineInputSources$'
+    subscription: this.subscription,
+  }).withSource({
+    sourceDependency: {
+      src: this.listHeaderAndLogLineAll.dependencyInner()
+    },
+    sourceTransform: ({ src }) => {
+      if (0 === src.listLogLine.length) {
+        return emptyLogLineTimeRangeDuration;
+      } else {
+        const range = calcStartFinish(src.listLogLine);
+        const listVisualHeader = getVisualHeader(src.listAllHeader);
+        const result: LogLineTimeRangeDuration = {
+          listAllHeader: src.listAllHeader, listVisualHeader,
+          listLogLine: src.listLogLine, range: range, filter: null
+        };
+        return result;
+      }
+    },
+    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
 
-  readonly listLogLineAll$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogTimeDataService_listLogLineAll', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly rangeComplete = this.depDataService.createProperty<TimeRangeDuration>({
+    name: 'LogTimeDataService_rangeComplete',
+    initialValue: epoch01RangeDuration,
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency: {
+        src: this.dataComplete.dependencyInner()
+      },
+      sourceTransform: ({ src }) => { return src.range; },
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
 
-  readonly listLogLineSubscripe = createObserableSubscripe({
-    obs: this.useCurrentStream$.pipe(
-      switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$)
-    ).pipe(
-      tap({
-        next: (value) => {
-          this.listLogLineAll$.next(value);
-        }
-      })
-    ),
-    subscribtion: this.subscription,
-    immediate: true
+  // input
+  public readonly modeZoom = this.depDataService.createProperty({
+    name: 'LogTimeDataService_modeZoom',
+    initialValue: 'complete' as ModeZoom,
+    subscription: this.subscription,
+  });
+  //readonly modeZoom$ = this.modeZoom.asObserable();
+
+  public readonly rangeZoom = this.depDataService.createProperty<TimeRangeDuration>({
+    name: 'LogTimeDataService_rangeZoom',
+    initialValue: epoch01RangeDuration,
+    transform: (value) => {
+      return calcRange([this.rangeComplete.getValue(), value]);
+    },
+    subscription: this.subscription,
   });
 
-  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
-    0, 'LogTimeDataService_listAllHeader', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly dataZoom = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+    name: 'LogTimeDataService_dataZoom',
+    initialValue: emptyLogLineTimeRangeDuration,
+    sideEffect: {
+      fn: (value) => {
+        if (value == emptyLogLineTimeRangeDuration) { return; }
+        const rangeZoom = value.range;
+        const rangeFilter = this.rangeFilter.getValue();
+        const nextRangeFilter = calcZoomRange(rangeZoom, rangeFilter);
+        setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
+      }
+    },
+    subscription: this.subscription,
+  }).withSource({
+    sourceDependency: {
+      dataComplete: this.dataComplete.dependencyInner(),
+      modeZoom: this.modeZoom.dependencyInner(),
+      rangeZoom: this.rangeZoom.dependencyInner(),
+    },
+    sourceTransform: ({ dataComplete, modeZoom, rangeZoom }) => {
+      if (Object.is(dataComplete, emptyLogLineTimeRangeDuration)) { return emptyLogLineTimeRangeDuration; }
+
+      const { listAllHeader, listVisualHeader, listLogLine, range: rangeComplete } = dataComplete;
+      //if (d.modeZoom === 'complete') TODO
+      const nextRangeZoom = getEffectiveRange([rangeComplete, rangeZoom]);
+      let nextListLogLine = listLogLine;
+      if (!equalsTimeRangeDuration(rangeComplete, nextRangeZoom)) {
+        nextListLogLine = listLogLine.filter(item => {
+          const ts = getLogLineTimestampValue(item);
+          if (ts === null) { return false; }
+          return (nextRangeZoom.start.compareTo(ts) <= 0)
+            && (ts.compareTo(nextRangeZoom.finish) <= 0);
+        });
+      }
+      const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range: nextRangeZoom, filter: null };
+      return result;
+    },
+    depDataPropertyInitializer: this.depDataPropertyInitializer
+  });
+
+  public readonly rangeFilter = this.depDataService.createProperty<TimeRangeDuration>({
+    name: 'LogTimeDataService_rangeFilter',
+    initialValue: epoch01RangeDuration,
+    transform: (value) => {
+      return calcRange([this.rangeComplete.getValue(), this.rangeZoom.getValue(), value]);
+    },
+    subscription: this.subscription,
+  });
+
+  public readonly dataTimeFiltered = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+    name: 'LogTimeDataService_dataTimeFiltered',
+    initialValue: emptyLogLineTimeRangeDuration,
+    sideEffect: {
+      fn: (value) => {
+        if (Object.is(value, emptyLogLineTimeRangeDuration)) { return; }
+
+        const rangeZoom = value.range;
+        const rangeFilter = this.rangeFilter.getValue();
+        const nextRangeFilter = calcZoomRange(rangeZoom, rangeFilter);
+        setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
+      }
+    },
+    subscription: this.subscription,
+  }).withSource({
+    sourceDependency: {
+      dataZoom: this.dataZoom.dependencyInner(),
+      rangeFilter: this.rangeFilter.dependencyInner(),
+    },
+    sourceTransform: ({ dataZoom, rangeFilter }) => {
+      if (Object.is(dataZoom, emptyLogLineTimeRangeDuration)) { return emptyLogLineTimeRangeDuration; }
+      const { listAllHeader, listVisualHeader, listLogLine, range: rangeZoom } = dataZoom;
+
+      const nextRangeFilter = getEffectiveRange([rangeZoom, rangeFilter]);
+      let nextListLogLine = listLogLine;
+      if (!equalsTimeRangeDuration(rangeZoom, nextRangeFilter)) {
+        nextListLogLine = listLogLine.filter(item => {
+          const ts = getLogLineTimestampValue(item);
+          if (ts === null) { return false; }
+          return (nextRangeFilter.start.compareTo(ts) <= 0)
+            && (ts.compareTo(nextRangeFilter.finish) <= 0);
+        });
+      }
+      const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range: nextRangeFilter, filter: null };
+      return result;
+    },
+    depDataPropertyInitializer: this.depDataPropertyInitializer
+  });
 
   // filter
   // input
-  readonly listFilterCondition$ = new BehaviorRingSubject<PropertyHeader[]>([],
-    0, 'LogTimeDataService_listFilterCondition', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  // TODO
+  public readonly listFilterCondition = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listFilterCondition',
+    initialValue: [] as PropertyHeader[],
+    sideEffect: {
+      fn: (value) => {
+        // TODO
+        //const next = integrate(value, this.filterAst.getValue());
+        //this.filterAst.set(next);
+      }
+    },
+    subscription: this.subscription,
+  });
+
+  public readonly filterAst = this.depDataService.createProperty({
+    name: 'LogTimeDataService_filterAst',
+    initialValue: null as FilterAstNode | null,
+    subscription: this.subscription,
+  });
+
+  public readonly dataFilteredCondition = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+    name: 'LogTimeDataService_dataFilteredCondition',
+    initialValue: emptyLogLineTimeRangeDuration,
+    subscription: this.subscription,
+  }).withSource({
+    sourceDependency: {
+      dataTimeFiltered: this.dataTimeFiltered.dependencyInner(),
+      filterAst: this.filterAst.dependencyInner(),
+    },
+    sourceTransform: ({ dataTimeFiltered, filterAst }) => {
+      if (Object.is(dataTimeFiltered, emptyLogLineTimeRangeDuration)) { return emptyLogLineTimeRangeDuration; }
+      const { listAllHeader, listVisualHeader, listLogLine, range } = dataTimeFiltered;
+      const filterFn = generateFilterFunction(filterAst);
+      const nextListLogLine = listLogLine.filter(filterFn);
+      const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range, filter: filterAst };
+      return result;
+    },
+    depDataPropertyInitializer: this.depDataPropertyInitializer
+  });
 
   // calculated output depended on listLogLine$ and listFilterCondition$
-  readonly listLogLineFilteredCondition$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogTimeDataService_listLogLineFilteredCondition', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly listLogLineFilteredCondition = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listLogLineFilteredCondition',
+    initialValue: [] as LogLine[],
+    subscription: this.subscription,
+  }).withSource({
+    sourceDependency: {
+      listLogLineAll: this.listLogLineAll.dependencyInner(),
+      listFilterCondition: this.listFilterCondition.dependencyInner(),
+    },
+    sourceTransform: (d) => {
+      const result = filterListLogLine(
+        d.listLogLineAll,
+        d.listFilterCondition);
+      return result;
+    },
+    depDataPropertyInitializer: this.depDataPropertyInitializer
+  }
+  );
+  public readonly $listLogLineFilteredCondition = this.listLogLineFilteredCondition.asSignal();
 
-  readonly listLogLineTimeZoomed$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogTimeDataService_listLogLineTimeZoomed', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly listLogLineTimeZoomed = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listLogLineTimeZoomed',
+    initialValue: [] as LogLine[],
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency:
+      {
+        listLogLine: this.listLogLineAll.dependencyInner(),
+        rangeZoom: this.rangeZoom.dependencyInner(),
+      },
+      sourceTransform:
+        (d) => {
+          const filterStart = (d.rangeZoom.start ?? epoch0).isEqual(epoch0);
+          const filterFinish = (d.rangeZoom.finish ?? epoch1).isEqual(epoch1);
 
-  // calculated output depended on listLogLineFilteredCondition$ and rangeFilter$
-  readonly listLogLineFilteredTime$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'LogTimeDataService_listLogLineFilteredTime', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+          if (filterStart && filterFinish) {
+            return d.listLogLine;
+          }
 
-  // input
-  readonly currentLogLineId$ = new BehaviorRingSubject<number | null>(null,
-    0, 'currentLogLineId$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  // depended listLogLineFiltered$ currentLogLineId$
-  readonly currentLogLine$ = new BehaviorRingSubject<LogLine | null>(null,
-    0, 'LogTimeDataService_currentLogLine$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
-
-  readonly currentLogTimestamp$ = new BehaviorRingSubject<(ZonedDateTime | null)>(null,
-    0, 'LogTimeDataService_currentLogTimestamp$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.toString()); });
-
-  // input
-  readonly listLogLineIdHighlighted$ = new BehaviorRingSubject<Set<string>>(new Set<string>(), 1, 'listLogLineIdHighlighted$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
-
-  // depended listLogLineFiltered$
-  readonly rangeComplete$ = new BehaviorRingSubject<TimeRangeDuration>(
-    Object.freeze({
-      start: epoch0,
-      finish: epoch1,
-      duration: Duration.between(epoch0, epoch1)
-    }),
-    0, 'LogTimeDataService_rangeComplete$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, getTimeRangeToDebugString(value)); });
-
-  // input
-  readonly modeZoom$ = new BehaviorRingSubject<'complete'>('complete', 1, 'modeZoom$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  // depended modeZoom$ listLogLineFiltered$
-
-  readonly rangeZoom$ = new BehaviorRingSubject<TimeRangeDuration>(Object.freeze({
-    start: epoch0,
-    finish: epoch1,
-    duration: Duration.between(epoch0, epoch1)
-  }),
-    0, 'LogTimeDataService_rangeZoom',
-    this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, getTimeRangeDurationToDebugString(value)); }
+          const result = d.listLogLine.filter(item => {
+            const ts = getLogLineTimestampValue(item);
+            if (ts === null) { return false; }
+            return (filterStart ? true : (d.rangeZoom.start.compareTo(ts) <= 0))
+              && (filterFinish ? true : (ts.compareTo(d.rangeZoom.finish) <= 0));
+          });
+          return result;
+        },
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
   );
 
-  readonly rangeFilter$ = new BehaviorRingSubject<TimeRangeDuration>(Object.freeze({
-    start: epoch0,
-    finish: epoch1,
-    duration: Duration.between(epoch0, epoch1)
-  }),
-    0, 'LogTimeDataService_rangeFilter', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, getTimeRangeToDebugString(value)); });
+  // calculated output depended on listLogLineFilteredCondition$ and rangeFilter$
+  public readonly listLogLineFilteredTime = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listLogLineFilteredTime',
+    initialValue: [] as LogLine[],
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency:
+      {
+        listLogLineTimeZoomed: this.listLogLineTimeZoomed.dependencyInner(),
+        rangeFilter: this.rangeFilter.dependencyInner(),
+      },
+      sourceTransform:
+        (d) => {
+          let result: LogLine[] = [];
+          const filterStart = (d.rangeFilter.start ?? epoch0).isEqual(epoch0);
+          const filterFinish = (d.rangeFilter.finish ?? epoch1).isEqual(epoch1);
 
-  readonly rangeCurrentSelected$ = new BehaviorRingSubject<TimeRangeOrNull>(Object.freeze({ start: null, finish: null }),
-    0, 'LogTimeDataService_rangeCurrentSelected',
-    this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, getTimeRangeToDebugString(value)); });
+          if (filterStart && filterFinish) {
+            return result = d.listLogLineTimeZoomed;
+          }
+
+          // TODO
+          result = (d.listLogLineTimeZoomed as LogLine[]).filter(item => {
+            const ts = getLogLineTimestampValue(item);
+            if (ts === null) { return false; }
+            return (filterStart ? true : (d.rangeFilter.start.compareTo(ts) <= 0))
+              && (filterFinish ? true : (ts.compareTo(d.rangeFilter.finish) <= 0));
+          });
+          return result;
+        },
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
+
+  // input
+  public readonly currentLogLineId = this.depDataService.createProperty({
+    name: 'LogTimeDataService_currentLogLineId',
+    initialValue: null as (number | null),
+    subscription: this.subscription,
+  });
+
+  // depended listLogLineFiltered$ currentLogLineId$
+  public readonly currentLogLine = this.depDataService.createProperty<LogLine | null>({
+    name: 'LogTimeDataService_currentLogLine',
+    initialValue: null as (LogLine | null),
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency:
+      {
+        dataTimeFiltered: this.dataTimeFiltered.dependencyInner(),
+        currentLogLineId: this.currentLogLineId.dependencyInner(),
+      },
+      sourceTransform:
+        ({ dataTimeFiltered, currentLogLineId }) => {
+          if (currentLogLineId === null) { return null; }
+          const result = dataTimeFiltered.listLogLine.find(item => item.id === currentLogLineId) ?? null;
+          return result;
+        },
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    });
+
+  public readonly currentLogTimestamp = this.depDataService.createProperty<ZonedDateTime | null>({
+    name: 'LogTimeDataService_currentLogTimestamp',
+    initialValue: null,
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency: {
+        currentLogLine: this.currentLogLine.dependencyInner(),
+      },
+      sourceTransform: ({ currentLogLine }) => {
+        const result = getLogLineTimestampValue(currentLogLine);
+        return result;
+      },
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
+
+  // input
+  public readonly listLogLineIdHighlighted = this.depDataService.createProperty({
+    name: 'LogTimeDataService_listLogLineIdHighlighted',
+    initialValue: new Set<string>(),
+    subscription: this.subscription,
+  });
+
+  public readonly rangeCurrentSelected = this.depDataService.createProperty<TimeRangeOrNull>({
+    name: 'LogTimeDataService_rangeCurrentSelected',
+    initialValue: Object.freeze({ start: null, finish: null }),
+    subscription: this.subscription,
+  }).withSource({
+    sourceDependency: {
+      currentLogLine: this.currentLogLine.dependencyInner(),
+    },
+    sourceTransform: ({ currentLogLine }) => {
+      const ts = getLogLineTimestampValue(currentLogLine);
+      return createTimeRangeOrNull(ts, ts);
+    },
+    depDataPropertyInitializer: this.depDataPropertyInitializer
+  });
 
   constructor() {
-    //switchMap(value => value ? this.listLogLineCurrentStream$ : this.listLogLineFiles$)
-    this.subscription.add(
-      this.listLogLineAll$.subscribe({
-        next: (listLogLine) => {
-          const rangeComplete = calcStartFinish(listLogLine)
-          //console.log("rangeComplete", getTimeRangeToDebugString(rangeComplete));
-          this.setRangeComplete(rangeComplete);
-          setTimeRangeDurationIfChanged(this.rangeComplete$, rangeComplete);
-          setTimeRangeDurationIfChanged(this.rangeZoom$, rangeComplete);
-          setTimeRangeDurationIfChanged(this.rangeFilter$, rangeComplete);
-          /*
-          TODO
-          this.useCurrentStream$.getValue()
-          const nextRangeZoom = getEffectiveRange([rangeComplete, this.rangeZoom$.getValue()]);
-          setTimeRangeDurationIfChanged(this.rangeZoom$, nextRangeZoom);
-
-          const nextRangeFilter = getEffectiveRange([nextRangeZoom, this.rangeFilter$.getValue()]);
-          setTimeRangeIfChanged(this.rangeFilter$, nextRangeFilter);
-          console.log("rangeComplete", rangeComplete.start.toString(), rangeComplete.finish.toString());
-          console.log("rangeZoom", nextRangeZoom.start.toString(), nextRangeZoom.finish.toString());
-          console.log("rangeFilter", nextRangeFilter.start.toString(), nextRangeFilter.finish.toString());
-          */
-        }
-      }));
-
-    this.subscription.add(
-      combineLatest({
-        listLogLine: this.listLogLineAll$,
-        rangeZoom: this.rangeZoom$
-      }).pipe(
-        map(value => {
-          const filterStart = (value.rangeZoom.start ?? epoch0).isEqual(epoch0);
-          const filterFinish = (value.rangeZoom.finish ?? epoch1).isEqual(epoch1);
-
-          if (filterStart && filterFinish) {
-            return value.listLogLine;
-          }
-
-          return value.listLogLine.filter(item => {
-            const ts = getLogLineTimestampValue(item);
-            if (ts === null) { return false; }
-            return (filterStart ? true : (value.rangeZoom.start.compareTo(ts) <= 0))
-              && (filterFinish ? true : (ts.compareTo(value.rangeZoom.finish) <= 0));
-          });
-        })
-      ).subscribe({
-        next: (value) => {
-          this.listLogLineTimeZoomed$.next(value);
-        }
-      })
-    );
-    this.subscription.add(
-      combineLatest({
-        listLogLine: this.listLogLineTimeZoomed$,
-        rangeFilter: this.rangeFilter$
-      }).pipe(
-        map(value => {
-          const filterStart = (value.rangeFilter.start ?? epoch0).isEqual(epoch0);
-          const filterFinish = (value.rangeFilter.finish ?? epoch1).isEqual(epoch1);
-
-          if (filterStart && filterFinish) {
-            return value.listLogLine;
-          }
-
-          return value.listLogLine.filter(item => {
-            const ts = getLogLineTimestampValue(item);
-            if (ts === null) { return false; }
-            return (filterStart ? true : (value.rangeFilter.start.compareTo(ts) <= 0))
-              && (filterFinish ? true : (ts.compareTo(value.rangeFilter.finish) <= 0));
-          });
-        })
-      ).subscribe({
-        next: (value) => {
-          this.listLogLineFilteredTime$.next(value);
-        }
-      })
-    );
-
-    this.subscription.add(
-      combineLatest({
-        listFilterCondition: this.listFilterCondition$,
-        listLogLineFilteredTime: this.listLogLineFilteredTime$
-      }).subscribe({
-        next: (value) => {
-          const result = filterListLogLine(
-            value.listLogLineFilteredTime,
-            value.listFilterCondition);
-          this.listLogLineFilteredCondition$.next(result);
-        }
-      })
-    );
-
-    // this.subscription.add(
-    //   combineLatest({
-    //     modeZoom: this.modeZoom$,
-    //     rangeComplete: this.rangeComplete$
-    //   }).pipe(
-    //     distinctUntilChanged((a, b) => {
-    //       return a.modeZoom === b.modeZoom
-    //         && a.rangeComplete.start.isEqual(b.rangeComplete.start)
-    //         && a.rangeComplete.finish.isEqual(b.rangeComplete.finish);
-    //     }),
-    //     debounceToggle(this.ring$.pipe(map(value => 0 < value)))
-    //   ).subscribe({
-    //     next: (value) => {
-    //       if ('complete' === value.modeZoom) {
-    //         console.log("LogTimeDataService.modeZoom-complete-startZoom",
-    //           {
-    //             modeZoom: value.modeZoom,
-    //             startComplete: value.rangeComplete.start.toString(),
-    //             finishComplete: value.rangeComplete.finish.toString(),
-    //           });
-    //         setTimeRangeDurationIfChanged(this.rangeZoom$, {
-    //           start: value.rangeComplete.start,
-    //           finish: value.rangeComplete.finish,
-    //         });
-    //       }
-    //     }
-    //   })
-    // );
-
-    this.subscription.add(
-      combineLatest({
-        listLogLine: this.listLogLineAll$,
-        currentLogLineId: this.currentLogLineId$,
-      }).pipe(
-        debounceToggle(this.ring$.pipe(map(value => 0 < value)))
-      ).subscribe({
-        next: (value) => {
-          const currentLogLine = ((null === value.currentLogLineId) || (undefined === value.currentLogLineId))
-            ? undefined
-            : value.listLogLine.find(item => item.id === value.currentLogLineId);
-
-          console.log("LogTimeDataService.currentLogLineId-currentLogLine", currentLogLine);
-
-          if (undefined === currentLogLine) {
-            this.currentLogLine$.next(null);
-            this.currentLogTimestamp$.next(null);
-          } else {
-            this.currentLogLine$.next(currentLogLine);
-            const ts = getLogLineTimestampValue(currentLogLine);
-            if (null === ts) { return; }
-            if (!(this.currentLogTimestamp$.getValue()?.isEqual(ts))) {
-              this.currentLogTimestamp$.next(ts);
-            }
-            setTimeRangeOrNullIfChanged(this.rangeCurrentSelected$, { start: ts, finish: null });
-          }
-        }
-      })
-    );
+    this.depDataPropertyInitializer.execute();
   }
 
   setRangeComplete(value: TimeRangeDuration) {
-    const rangeComplete = createTimeRangeDuration(value.start, value.finish);    
-    this.rangeComplete$.next(value);
+    const rangeComplete = createTimeRangeDuration(value.start, value.finish);
+    this.rangeComplete.setValue(value);
 
-    const rangeZoom = this.rangeZoom$.getValue();
+    const rangeZoom = this.rangeZoom.getValue();
     const nextRangeZoom = getEffectiveRange([rangeComplete, rangeZoom]);
-    setTimeRangeDurationIfChanged(this.rangeZoom$, nextRangeZoom);
-    
-    const rangeFilter = this.rangeFilter$.getValue();
+    setTimeRangeDurationIfChanged(this.rangeZoom, nextRangeZoom);
+
+    const rangeFilter = this.rangeFilter.getValue();
     const nextRangeFilter = getEffectiveRange([rangeComplete, rangeZoom, rangeFilter]);
-    setTimeRangeDurationIfChanged(this.rangeFilter$, nextRangeFilter);
+    setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
   }
-  
+
   setRangeZoom(value: TimeRangeOrNull) {
     const valueNormalized = {
       start: value.start ?? epoch0,
       finish: value.finish ?? epoch1
     };
-    const rangeComplete = this.rangeComplete$.getValue();
+    const rangeComplete = this.rangeComplete.getValue();
     const nextRangeZoom = getEffectiveRange([rangeComplete, valueNormalized]);
-    setTimeRangeDurationIfChanged(this.rangeZoom$, nextRangeZoom);
-    
-    const rangeFilter = this.rangeFilter$.getValue();
+    setTimeRangeDurationIfChanged(this.rangeZoom, nextRangeZoom);
+
+    const rangeFilter = this.rangeFilter.getValue();
     const nextRangeFilter = getEffectiveRange([rangeComplete, nextRangeZoom, rangeFilter]);
-    setTimeRangeDurationIfChanged(this.rangeFilter$, nextRangeFilter);
+    setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
   }
 
   setRangeFilter(value: TimeRangeOrNull) {
@@ -332,36 +455,27 @@ export class LogTimeDataService {
       start: value.start ?? epoch0,
       finish: value.finish ?? epoch1
     };
-    const rangeComplete = this.rangeComplete$.getValue();
-    const rangeZoom = this.rangeZoom$.getValue();    
+    const rangeComplete = this.dataComplete.getValue().range;
+    const rangeZoom = this.dataZoom.getValue().range;
     const nextRangeFilter = getEffectiveRange([rangeComplete, rangeZoom, valueNormalized]);
-    setTimeRangeDurationIfChanged(this.rangeFilter$, nextRangeFilter);
+    setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
   }
 
 }
 
 function calcStartFinish(value: LogLine[]) {
   if (0 === value.length) {
-    return createTimeRangeDuration( epoch0, epoch1);
+    return createTimeRangeDuration(epoch0, epoch1);
   } else {
 
     let start: ZonedDateTime | null = null;
     let finish: ZonedDateTime | null = null;
 
-    // for (const item of value) {
-    //   const ts = getLogLineTimestampValue(item);
-    //   if (ts === null) { continue; }
-    //   if (start === null || ts.isBefore(start)) {
-    //     start = ts;
-    //   }
-    //   if (finish === null || ts.isAfter(finish)) {
-    //     finish = ts;
-    //   }
-    // }
     for (let idx = 0; idx < value.length; idx++) {
       const item = value[idx];
       const ts = getLogLineTimestampValue(item);
       if (ts === null) { continue; }
+      if (ts === epoch0) { continue; }
       start = ts;
       break;
     }
@@ -369,6 +483,8 @@ function calcStartFinish(value: LogLine[]) {
       const item = value[idx];
       const ts = getLogLineTimestampValue(item);
       if (ts === null) { continue; }
+      if (ts === epoch1) { continue; }
+
       finish = ts;
       break;
     }
@@ -377,3 +493,12 @@ function calcStartFinish(value: LogLine[]) {
 
 }
 
+function calcRange(lst: TimeRangeDuration[]) {
+  const result = getEffectiveRange(lst);
+  if (result.duration.isNegative()) {
+    console.error("calcRange duration is negative", { start: result.start.toString(), finish: result.finish.toString() });
+    //   return lst[0];
+    // } else {
+  }
+  return result;
+}

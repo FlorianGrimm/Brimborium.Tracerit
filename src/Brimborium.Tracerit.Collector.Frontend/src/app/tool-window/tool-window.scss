@@ -1,0 +1,166 @@
+.tool-window {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    position: absolute;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 20px;
+    min-height: 36px;
+    display: flex;
+    flex-direction: column;
+}
+
+.tool-window-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.tool-window-header {
+    background: linear-gradient(180deg, #f0f0f0 0%, #e0e0e0 100%);
+    padding: 8px 12px;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+
+
+    button {
+        background: transparent;
+        border: none;
+        padding: 2px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 2px;
+        transition: background-color 0.2s;
+
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        &:active {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        lucide-icon {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    .tool-window-title {
+        flex: 1;
+        font-weight: 600;
+        font-size: 13px;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.tool-window-header-active {
+    background: linear-gradient(180deg, #8080ff 0%, #4040ff 100%);
+    color: #ffffff;
+
+    .tool-window-title {
+        color: #ffffff;
+    }
+
+    button {
+        color: #ffffff;
+
+        SVG {
+            color: #ffffff;
+        }
+    }
+}
+
+
+.tool-window-content {
+    padding: 12px;
+    flex: 1;
+    overflow: auto;
+    background-color: #ffffff;
+}
+
+// Resize handles
+.resize-handle {
+    position: absolute;
+    background-color: transparent;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    &.resize-n {
+        top: 0;
+        left: 4px;
+        right: 4px;
+        height: 4px;
+        cursor: ns-resize;
+    }
+
+    &.resize-s {
+        bottom: 0;
+        left: 4px;
+        right: 4px;
+        height: 4px;
+        cursor: ns-resize;
+    }
+
+    &.resize-e {
+        right: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 4px;
+        cursor: ew-resize;
+    }
+
+    &.resize-w {
+        left: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 4px;
+        cursor: ew-resize;
+    }
+
+    &.resize-ne {
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 8px;
+        cursor: nesw-resize;
+    }
+
+    &.resize-nw {
+        top: 0;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        cursor: nwse-resize;
+    }
+
+    &.resize-se {
+        bottom: 0;
+        right: 0;
+        width: 8px;
+        height: 8px;
+        cursor: nwse-resize;
+    }
+
+    &.resize-sw {
+        bottom: 0;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        cursor: nesw-resize;
+    }
+}

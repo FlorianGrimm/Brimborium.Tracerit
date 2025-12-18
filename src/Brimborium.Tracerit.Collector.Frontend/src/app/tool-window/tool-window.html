@@ -1,0 +1,46 @@
+<div class="tool-window" [style.top.px]="$windowTop()" [style.left.px]="$windowLeft()" [style.width.px]="$windowWidth()"
+    [style.height.px]="$windowHeight()" [style.z-index]="$windowZIndex()" (mousedown)="onMouseDown()">
+    <div class="tool-window-container">
+        <div class="tool-window-header" [ngClass]="{'tool-window-header-active': $isActive()}" (mousedown)="onHeaderMouseDown($event)">
+            <button class="collapse-button" title="Collapse/Expand" (click)="onToggleCollapse()">
+                @if ($isCollapsed()) {
+                <lucide-icon [img]="WindowButtonCollapsed"></lucide-icon>
+                } @else {
+                <lucide-icon [img]="WindowButtonExpanded"></lucide-icon>
+                }
+            </button>
+            <div class="tool-window-title">{{title()}}</div>
+            @if ($isSizeMaximized()) {
+                <button class="close-button" title="Restore" (click)="onSizeRestore()">
+                    <lucide-icon [img]="WindowButtonRestore"></lucide-icon>
+                </button>
+            } @else {
+                <button class="close-button" title="Maximize" (click)="onSizeMaximize()">
+                    <lucide-icon [img]="WindowButtonMaximize"></lucide-icon>
+                </button>
+            }
+            <button class="close-button" title="Close" (click)="onWindowClose()">
+                <lucide-icon [img]="WindowButtonClose"></lucide-icon>
+            </button>
+        </div>
+        @if (!$isCollapsed()) {
+        <div class="tool-window-content">
+            @if (contentComponent()) {
+            <ng-container *ngComponentOutlet="contentComponent()"></ng-container>
+            }
+        </div>
+        }
+    </div>
+
+    <!-- Resize handles for edges -->
+    <div class="resize-handle resize-n" (mousedown)="onResizeMouseDown($event, 'n')"></div>
+    <div class="resize-handle resize-s" (mousedown)="onResizeMouseDown($event, 's')"></div>
+    <div class="resize-handle resize-e" (mousedown)="onResizeMouseDown($event, 'e')"></div>
+    <div class="resize-handle resize-w" (mousedown)="onResizeMouseDown($event, 'w')"></div>
+
+    <!-- Resize handles for corners -->
+    <div class="resize-handle resize-ne" (mousedown)="onResizeMouseDown($event, 'ne')"></div>
+    <div class="resize-handle resize-nw" (mousedown)="onResizeMouseDown($event, 'nw')"></div>
+    <div class="resize-handle resize-se" (mousedown)="onResizeMouseDown($event, 'se')"></div>
+    <div class="resize-handle resize-sw" (mousedown)="onResizeMouseDown($event, 'sw')"></div>
+</div>

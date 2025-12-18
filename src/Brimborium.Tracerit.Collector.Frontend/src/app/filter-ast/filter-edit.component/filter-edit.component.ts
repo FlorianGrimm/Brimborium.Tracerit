@@ -23,9 +23,9 @@ import {
   mapFilterOperatorsDisplayByOperator,
   getPathUiNodeById,
   replaceUiNodeFn,
-  convertUIFilterAstNodeToFilterAstNode, 
-  OutputFilterAstNode, 
-  getValidLogLineValue, 
+  convertUIFilterAstNodeToFilterAstNode,
+  OutputFilterAstNode,
+  getValidLogLineValue,
   ReplaceUiNodeFn
 } from '@app/Utility/filter-ast-node';
 import { DataService } from '@app/Utility/data-service';
@@ -93,7 +93,7 @@ export class FilterEditComponent {
   readonly filterOperatorsListDisplay = filterOperatorsListDisplay;
   readonly filterOperatorsValueDisplay = filterOperatorsValueDisplay;
 
-  readonly listPropertyHeader = this.dataService.listAllHeader;
+  readonly listPropertyHeader = this.dataService.listAllHeader.getValue();
 
   constructor(
     private clipboard: Clipboard
@@ -320,6 +320,10 @@ export class FilterEditComponent {
   }
 
   onNodeChanged(value: OutputFilterAstNode) {
+    if (value.nextNode != null) {
+      const selection = value.nextSelection ?? this.selection();
+      this.modifyFilterAstNode(value.nextNode, selection);
+    }
     if (value.nextNodeRoot != null) {
       this.uiNodeRoot.set(value.nextNodeRoot);
     }

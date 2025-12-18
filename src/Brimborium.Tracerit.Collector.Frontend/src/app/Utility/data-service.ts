@@ -1,59 +1,81 @@
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, distinctUntilChanged, filter, Subscription } from 'rxjs';
 import { getLogLineTraceId, LogFileInformationList, LogLine, PropertyHeader, TraceInformation, TypeValue } from '../Api';
-import { BehaviorRingSubject } from './BehaviorRingSubject';
-import { MasterRingService } from './master-ring.service';
+import { DepDataService } from './dep-data.service';
+import { emptyHeaderAndLogLine, HeaderAndLogLine } from './time-range';
+import { getVisualHeader } from './propertyHeaderUtility';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
-  readonly subscription = new Subscription();
-  readonly ring$ = inject(MasterRingService).dependendRing('DataService-ring$', this.subscription);
-  readonly currentStreamName = (new Date()).valueOf().toString();
+  public readonly subscription = new Subscription();
+  public readonly depDataService = inject(DepDataService);
+  public readonly currentStreamName = (new Date()).valueOf().toString();
 
-  mapName = new Map<string, PropertyHeader>();
-  listAllHeader: PropertyHeader[] = [];
+  public mapName = new Map<string, PropertyHeader>();
+  private listAllHeaderBuffer: PropertyHeader[] = [];
 
-  readonly listAllHeader$ = new BehaviorRingSubject<PropertyHeader[]>([],
-    0, 'DataService_listAllHeader', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly listAllHeader = this.depDataService.createProperty({
+    name: 'DataService_listAllHeader',
+    initialValue: [] as PropertyHeader[],
+    subscription: this.subscription,
+  });
 
-  readonly useCurrentStream$ = new BehaviorRingSubject<boolean>(true, 1, 'DataService_useCurrentStream$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
+  public readonly useCurrentStream = this.depDataService.createProperty({
+    name: 'DataService_useCurrentStream',
+    initialValue: true,
+    compare: (a, b) => (a === b),
+    sideEffect: {
+      fn: (value) => {
+        if (value) {
+          this.listLogLineSource.setValue([]);
 
-  readonly listFile$ = new BehaviorRingSubject<LogFileInformationList>([],
-    0, 'DataService_listFile', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+          const listAllHeader = this.listAllHeader.getValue();
+          const listVisualHeader = getVisualHeader(listAllHeader);
+          this.listHeaderAndLogLineSource.setValue({ listAllHeader, listVisualHeader, listLogLine: [] });
+        }
+      }
+    },
+    subscription: this.subscription,
+  });
 
-  readonly currentFile$ = new BehaviorRingSubject<string | undefined>(undefined,
-    0, 'DataService_currentFile', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
+  public readonly listFile = this.depDataService.createProperty({
+    name: 'DataService_listFile',
+    initialValue: [] as LogFileInformationList,
+    subscription: this.subscription,
+  });
 
-  readonly listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
-    0, 'DataService_listSelectedFileName', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly currentFile = this.depDataService.createProperty({
+    name: 'DataService_currentFile',
+    initialValue: undefined as (string | undefined),
+    subscription: this.subscription,
+  });
 
-  // listLogLine 
-  readonly listLogLineSource$ = new BehaviorRingSubject<LogLine[]>([],
-    0, 'DataService_listLogLineSource', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
+  public readonly listSelectedFileName = this.depDataService.createProperty({
+    name: 'DataService_listSelectedFileName',
+    initialValue: [] as string[],
+    subscription: this.subscription,
+  });
 
-  readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
-  
-  mapTraceInformation: Map<string, TraceInformation>=new Map<string, TraceInformation>();
+  public readonly listLogLineSource = this.depDataService.createProperty({
+    name: 'DataService_listLogLineSource',
+    initialValue: [] as LogLine[],
+    subscription: this.subscription,
+  });
+
+  public readonly listHeaderAndLogLineSource = this.depDataService.createProperty<HeaderAndLogLine>({
+    name: 'DataService_listHeaderAndLogLineSource',
+    initialValue: emptyHeaderAndLogLine,
+    subscription: this.subscription,
+  });
+
+  public readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
+
+  mapTraceInformation: Map<string, TraceInformation> = new Map<string, TraceInformation>();
 
   constructor() {
     this.addDefaultMapName();
-
-    this.useCurrentStream$.pipe(
-      distinctUntilChanged(),
-      filter(value => value)
-    ).subscribe({
-      next: (value) => {
-        this.listLogLineSource$.next([]);
-      }
-    });
   }
 
   public setListFile(value: LogFileInformationList) {
@@ -62,16 +84,16 @@ export class DataService {
       if (0 !== cmp) { return cmp; }
       return a.name.localeCompare(b.name);
     });
-    this.listFile$.next(value);
+    this.listFile.setValue(value);
     return value;
   }
 
   public setCurrentFile(name: (string | undefined)): (string | undefined) {
-    this.currentFile$.next(name);
+    this.currentFile.setValue(name);
     if (name === undefined) {
-      this.listSelectedFileName$.next([]);
+      this.listSelectedFileName.setValue([]);
     } else {
-      this.listSelectedFileName$.next([name]);
+      this.listSelectedFileName.setValue([name]);
     }
     return name;
   }
@@ -80,11 +102,7 @@ export class DataService {
     this.extractHeader(data);
     let contentSubject = this.mapLogLineByName.get(name);
     if (undefined === contentSubject) {
-      contentSubject = new BehaviorRingSubject<LogLine[]>(
-        data,
-        1, `listLogLine$-${name}`, this.subscription, this.ring$, undefined,
-        (name, message, value) => { console.log(name, message, value?.length); }
-      );
+      contentSubject = new BehaviorSubject<LogLine[]>(data);
       this.mapLogLineByName.set(name, contentSubject);
     } else {
       contentSubject.next(data);
@@ -113,9 +131,17 @@ export class DataService {
     this.extractHeader(data);
     const restMaxLength = 4096 - data.length;
     if (restMaxLength < 0) {
-      this.listLogLineSource$.next(data);
+      this.listLogLineSource.setValue(data);
+
+      const listAllHeader = this.listAllHeaderBuffer.slice();
+      const listVisualHeader = getVisualHeader(listAllHeader);
+      this.listHeaderAndLogLineSource.setValue({
+        listAllHeader,
+        listVisualHeader,
+        listLogLine: data,
+      });
     } else {
-      const currentData = this.listLogLineSource$.getValue();
+      const currentData = this.listLogLineSource.getValue();
       // TODO: adjust the rangeZoom/rangeFilter if appended to the end and the last timestamp of rangeComplete and rangeZoom were equal
       // if (0<currentData.length){
       //   const lastId = currentData[currentData.length - 1].id;
@@ -124,8 +150,17 @@ export class DataService {
         ? currentData.slice(currentData.length - restMaxLength)
         : currentData;
       const nextData = currentDataLimited.concat(data);
-      this.connectTraces(data,currentDataLimited);
-      this.listLogLineSource$.next(nextData);
+      this.connectTraces(data, currentDataLimited);
+
+      this.listLogLineSource.setValue(nextData);
+
+      const listAllHeader = this.listAllHeaderBuffer.slice();
+      const listVisualHeader = getVisualHeader(listAllHeader);
+      this.listHeaderAndLogLineSource.setValue({
+        listAllHeader,
+        listVisualHeader,
+        listLogLine: nextData,
+      });
     }
   }
 
@@ -133,23 +168,32 @@ export class DataService {
   setListLogLine(data: LogLine[]) {
     this.extractHeader(data);
     this.connectTraces(data, undefined);
-    this.listLogLineSource$.next(data);
+    this.listLogLineSource.setValue(data);
+
+    const listAllHeader = this.listAllHeaderBuffer.slice();
+     const listVisualHeader = getVisualHeader(listAllHeader);
+    this.listHeaderAndLogLineSource.setValue({
+      listAllHeader,
+      listVisualHeader,
+      listLogLine: data,
+    });
   }
-  connectTraces(nextData: LogLine[],previousData: LogLine[]|undefined) {
+
+  connectTraces(nextData: LogLine[], previousData: LogLine[] | undefined) {
     const mapTraceInformation = new Map<string, TraceInformation>();
-    this.mapTraceInformation=mapTraceInformation;
-    if(previousData != null) { 
+    this.mapTraceInformation = mapTraceInformation;
+    if (previousData != null) {
       for (const logLine of nextData) {
         let traceInformation = logLine.traceInformation;
-        if (traceInformation != null) { 
+        if (traceInformation != null) {
           const traceId = traceInformation.traceId;
-          traceInformation.listLogLineId=[logLine.id];
+          traceInformation.listLogLineId = [logLine.id];
           mapTraceInformation.set(traceId, traceInformation);
         } else {
           let traceId = getLogLineTraceId(logLine);
           if (traceId == null || traceId.length === 0) { continue; }
           let traceInformation = mapTraceInformation.get(traceId);
-          if (traceInformation == null) { 
+          if (traceInformation == null) {
             traceInformation = {
               traceId: traceId,
               spanId: "",
@@ -162,37 +206,42 @@ export class DataService {
           }
           mapTraceInformation.set(traceId, traceInformation);
         }
-      }      
+      }
     }
     {
       for (const logLine of nextData) {
         let traceId = getLogLineTraceId(logLine);
-          if (traceId == null || traceId.length === 0) { continue; }
-          let traceInformation = mapTraceInformation.get(traceId);
-          if (traceInformation == null) { 
-            traceInformation = {
-              traceId: traceId,
-              spanId: "",
-              parentSpanId: "",
-              listLogLineId: []
-            };
-            logLine.traceInformation = traceInformation;
-          } else {
-            traceInformation.listLogLineId.push(logLine.id);
-          }
-          mapTraceInformation.set(traceId, traceInformation);
+        if (traceId == null || traceId.length === 0) { continue; }
+        let traceInformation = mapTraceInformation.get(traceId);
+        if (traceInformation == null) {
+          traceInformation = {
+            traceId: traceId,
+            spanId: "",
+            parentSpanId: "",
+            listLogLineId: []
+          };
+          logLine.traceInformation = traceInformation;
+        } else {
+          traceInformation.listLogLineId.push(logLine.id);
+        }
+        mapTraceInformation.set(traceId, traceInformation);
       }
     }
   }
 
+  // TODO
   extractHeader(data: LogLine[]) {
+    const oldLength = this.listAllHeaderBuffer.length;
     for (const line of data) {
       for (const prop of line.data.values()) {
         this.addMapName(prop.name, prop.typeValue);
       }
     }
-    if (this.listAllHeader$.getValue().length !== this.listAllHeader.length) {
-      this.listAllHeader$.next([...this.listAllHeader]);
+    // if (this.listAllHeader.getValue().length !== this.listAllHeaderBuffer.length) {
+    //   this.listAllHeader.setValue([...this.listAllHeaderBuffer]);
+    // }
+    if (oldLength !== this.listAllHeaderBuffer.length) {
+      this.listAllHeader.setValue(this.listAllHeaderBuffer.slice());
     }
   }
 
@@ -241,7 +290,7 @@ export class DataService {
     if (result === undefined) {
       if (!this.mapName.has(name)) {
         const index = 1 + this.mapName.size;
-        const width = ("id" === name) ? 100 : 99;
+        const width = ("id" === name) ? 100 : 1;
         result = {
           id: `${name}-${typeValue}`,
           name: name,
@@ -256,8 +305,8 @@ export class DataService {
           dataCellStyle: { width: `${width}px` }
         }
         this.mapName.set(name, result);
-        this.listAllHeader.push(result);
-        this.listAllHeader.sort((a, b) => {
+        this.listAllHeaderBuffer.push(result);
+        this.listAllHeaderBuffer.sort((a, b) => {
           let cmp = 0;
           if (0 <= a.visualDetailHeaderIndex && 0 <= b.visualDetailHeaderIndex) {
             cmp = a.visualDetailHeaderIndex - b.visualDetailHeaderIndex;

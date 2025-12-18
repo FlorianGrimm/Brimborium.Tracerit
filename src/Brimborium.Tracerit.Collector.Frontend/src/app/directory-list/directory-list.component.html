@@ -1,5 +1,5 @@
 <div tuiAppearance="floating">
-    @if (error$|async; as error) {
+    @if ($error(); as error) {
     <div>
         {{getErrorMessage(error)}}
     </div>
@@ -17,9 +17,9 @@
             </tr>
         </thead>
         <tbody>
-            @if(listFile$ | async; as listFile) {
-            @let currentFile=currentFile$ | async;
-            @let listSelectedFileName=(listSelectedFileName$ | async)||[];
+            @if($listFile(); as listFile) {
+            @let currentFile=$currentFile();
+            @let listSelectedFileName=$listSelectedFileName();
             @for(fileInfo of listFile; track fileInfo.name){
             <tr  [class.selected]="currentFile === fileInfo.name">
                 <td><label style="width: 100%; height: 100%;">

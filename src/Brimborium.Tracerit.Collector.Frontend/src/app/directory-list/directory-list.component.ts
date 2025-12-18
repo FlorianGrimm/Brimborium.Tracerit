@@ -2,49 +2,103 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, filter, debounceTime, Subscription, map, take } from 'rxjs';
 import { DataService } from '../Utility/data-service';
 import { HttpClientService } from '../Utility/http-client-service';
-import { AsyncPipe } from '@angular/common';
 import { FileSizePipe } from '../pipe/file-size.pipe';
 
 import type { LogFileInformationList, LogLine } from '../Api';
 import { Router } from '@angular/router';
-import { BehaviorRingSubject } from '../Utility/BehaviorRingSubject';
-import { MasterRingService } from '../Utility/master-ring.service';
+import { DepDataService } from '@app/Utility/dep-data.service';
 
 @Component({
   selector: 'app-directory-list',
-  imports: [AsyncPipe, FileSizePipe],
+  imports: [FileSizePipe],
   templateUrl: './directory-list.component.html',
   styleUrl: './directory-list.component.scss'
 })
 export class DirectoryListComponent implements OnInit, OnDestroy {
-  subscription = new Subscription();
+  readonly subscription = new Subscription();
 
-  ring$ = inject(MasterRingService).dependendRing('DirectoryListComponent-ring$', this.subscription);
-  router = inject(Router);
+  readonly router = inject(Router);
+  readonly depDataService = inject(DepDataService);
+  readonly depDataPropertyInitializer = this.depDataService.createInitializer();
 
-  dataService = inject(DataService);
-  httpClientService = inject(HttpClientService);
+  readonly dataService = inject(DataService);
+  readonly httpClientService = inject(HttpClientService);
 
-  currentFile$ = new BehaviorRingSubject<string | undefined>(undefined, 1, 'DirectoryListComponent_currentFile$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  listFile$ = new BehaviorRingSubject<LogFileInformationList>([], 1, 'DirectoryListComponent_listFile$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value?.length); });
-  error$ = new BehaviorRingSubject<undefined | string | object>(undefined, 1, 'DirectoryListComponent_error$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
-  listSelectedFileName$ = new BehaviorRingSubject<string[]>([],
-    0, 'DirectoryListComponent_listSelectedFileName$', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
+  readonly currentFile = this.depDataService.createProperty({
+    name: 'DirectoryListComponent_currentFile',
+    initialValue: undefined as (string | undefined),
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency:
+      {
+        currentFile: this.dataService.currentFile.dependencyInner()
+      },
+      sourceTransform:
+        (d) => d.currentFile,
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
+  readonly $currentFile = this.currentFile.asSignal();
 
-  loaded$ = new BehaviorRingSubject<boolean>(false,
-    0, 'DirectoryListComponent_loaded', this.subscription, this.ring$, undefined,
-    (name, message, value) => { console.log(name, message, value); });
+  readonly listFile = this.depDataService.createProperty({
+    name: 'DirectoryListComponent_listFile',
+    initialValue: [] as LogFileInformationList,
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency:
+      {
+        listFile: this.dataService.listFile.dependencyPublic()
+      },
+      sourceTransform:
+        (d) => {
+          return d.listFile;
+        },
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
+  $listFile = this.listFile.asSignal();
 
-  listFileLoading$ = new BehaviorRingSubject<string[]>([], 1, 'listFileLoading$', this.subscription, this.ring$, undefined, BehaviorRingSubject.defaultLog);
+  readonly error = this.depDataService.createProperty({
+    name: 'DirectoryListComponent_error',
+    initialValue: undefined as (undefined | string | object),
+    subscription: this.subscription,
+  });
+  readonly $error = this.error.asSignal();
+
+  readonly listSelectedFileName = this.depDataService.createProperty({
+    name: 'DirectoryListComponent_listSelectedFileName',
+    initialValue: [] as string[],
+    subscription: this.subscription,
+  }).withSource(
+    {
+      sourceDependency:
+      {
+        listSelectedFileName: this.dataService.listSelectedFileName.dependencyPublic()
+      },
+      sourceTransform:
+        (d) => d.listSelectedFileName,
+      depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
+  );
+  readonly $listSelectedFileName = this.listSelectedFileName.asSignal();
+  readonly listSelectedFileName$ = this.listSelectedFileName.asObserable();
+
+  readonly loaded = this.depDataService.createProperty<boolean>({
+    name: 'DirectoryListComponent_loaded',
+    initialValue: false,
+    subscription: this.subscription,
+  });
+
+  readonly listFileLoading = this.depDataService.createProperty({
+    name: 'DirectoryListComponent_listFileLoading',
+    initialValue: [] as string[],
+    subscription: this.subscription,
+  });
 
   constructor() {
-    this.subscription.add(this.dataService.listFile$.subscribe(this.listFile$));
-    this.subscription.add(this.dataService.currentFile$.subscribe(this.currentFile$));
-    this.subscription.add(this.dataService.listSelectedFileName$.subscribe(this.listSelectedFileName$));
+    this.depDataPropertyInitializer.execute();
   }
 
   ngOnInit(): void {
@@ -52,10 +106,10 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       combineLatest({
-        loaded: this.loaded$,
-        listSelectedFileName: this.dataService.listSelectedFileName$,
-        selected: this.listSelectedFileName$,
-        listFile: this.dataService.listFile$
+        loaded: this.loaded.asObserable(),
+        listSelectedFileName: this.listSelectedFileName$,
+        selected: this.listSelectedFileName.asObserable(),
+        listFile: this.dataService.listFile.asObserable()
       }).pipe(
         filter((value) => value.loaded),
         filter((value) => (0 < value.listFile.length)),
@@ -79,7 +133,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
           subscription.add(
             combineLatest(
               {
-                condition: this.listFileLoading$.pipe(filter(item => 0 === item.length)),
+                condition: this.listFileLoading.asObserable().pipe(filter(item => 0 === item.length)),
                 listSelectedLogLines: combineLatest(listSelectedLogLines)
               }
             ).pipe(
@@ -101,7 +155,6 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
           );
         }
       })
-
     );
   }
 
@@ -110,33 +163,33 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   }
 
   load() {
-    this.dataService.useCurrentStream$.next(false);
+    this.dataService.useCurrentStream.setValue(false);
     const subscription = new Subscription();
     this.subscription.add(subscription);
     subscription.add(
       this.httpClientService.getDirectoryList().subscribe({
         next: (value) => {
           if ('success' === value.mode) {
-            this.loaded$.next(true);            
+            this.loaded.setValue(true);
             this.dataService.setListFile(value.files);
-            this.error$.next(undefined);
+            this.error.setValue(undefined);
           } else if ("error" === value.mode) {
-            this.listFile$.next([]);
-            this.error$.next(value.error);
+            this.listFile.setValue([]);
+            this.error.setValue(value.error);
           }
         },
         complete: () => {
           subscription.unsubscribe();
         },
         error: (error) => {
-          this.listFile$.next([]);
-          this.error$.next(error);
+          this.listFile.setValue([]);
+          this.error.setValue(error);
         }
       }));
   }
 
   loadCurrentStream() {
-    this.dataService.useCurrentStream$.next(true);
+    this.dataService.useCurrentStream.setValue(true);
     const subscription = new Subscription();
     this.subscription.add(subscription);
     subscription.add(
@@ -146,7 +199,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
             this.dataService.addListLogLine(value.data);
             this.router.navigate(['tracorit', 'log']);
           } else {
-            this.error$.next(value.error);
+            this.error.setValue(value.error);
           }
         },
       }));
@@ -154,16 +207,16 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
   }
 
   loadFile(name: string) {
-    this.dataService.useCurrentStream$.next(false);
-    const directoryList = this.listFile$.getValue();
+    this.dataService.useCurrentStream.setValue(false);
+    const directoryList = this.listFile.getValue();
     const listMatch = directoryList.filter(item => name === item.name);
     if (1 != listMatch.length) { return false; }
 
     //const currentFile = listMatch[0];
     this.dataService.setCurrentFile(name);
-    this.dataService.listSelectedFileName$.next([name]);
+    this.dataService.listSelectedFileName.setValue([name]);
 
-    this.loaded$.next(false);
+    this.loaded.setValue(false);
     this.dataService.setListLogLineByName(name, []);
     const subscription = new Subscription();
     this.subscription.add(subscription);
@@ -176,20 +229,20 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
               this.dataService.setListLogLine(value.data);
               this.router.navigate(['tracorit', 'log']);
             } else {
-              this.error$.next(value.error);
+              this.error.setValue(value.error);
             }
           },
           complete: () => {
           },
           error: (err) => {
-            this.error$.next(err);
+            this.error.setValue(err);
           }
         }));
     return false;
   }
 
   onListSelectedFileNameChange(name: string) {
-    const selected = this.listSelectedFileName$.getValue()
+    const selected = this.listSelectedFileName.getValue()
     let nextSelected: string[] = [];
     if (selected.includes(name)) {
       nextSelected = selected.filter(item => name != item);
@@ -197,7 +250,7 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
       nextSelected = [...selected, name];
       nextSelected.sort((a, b) => a.localeCompare(b));
 
-      this.listFileLoading$.next([...this.listFileLoading$.getValue(), name]);
+      this.listFileLoading.setValue([...this.listFileLoading.getValue(), name]);
       this.dataService.setListLogLineByName(name, []);
       const subscription = new Subscription();
       this.subscription.add(subscription);
@@ -208,19 +261,19 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
               if ("success" === value.mode) {
                 this.dataService.setListLogLineByName(name, value.data);
               } else {
-                this.error$.next(value.error);
+                this.error.setValue(value.error);
               }
             },
             complete: () => {
-              this.listFileLoading$.next(this.listFileLoading$.getValue().filter(item => item != name));
+              this.listFileLoading.setValue(this.listFileLoading.getValue().filter(item => item != name));
             },
             error: (err) => {
-              this.error$.next(err);
-              this.listFileLoading$.next(this.listFileLoading$.getValue().filter(item => item != name));
+              this.error.setValue(err);
+              this.listFileLoading.setValue(this.listFileLoading.getValue().filter(item => item != name));
             }
           }));
     }
-    this.listSelectedFileName$.next(nextSelected);
+    this.listSelectedFileName.setValue(nextSelected);
 
     return false;
   }

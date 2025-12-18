@@ -1,36 +1,37 @@
 <div class="log-view-2-container" #logView2Container>
   <!-- TimeScale Panel -->
   <section class="timescale-panel">
-    <app-time-scale-2 [selectedLogLineId]="selectedLogLineId()" [highlightedLogLineId]="highlightedLogLineId()"
+    <app-time-scale-2 [selectedLogLineId]="$selectedLogLineId()" [highlightedLogLineId]="$highlightedLogLineId()"
       [visibleRange]="visibleRange()" (logLineClick)="onSelectLogLine($event)"
       (logLineHover)="onHighlightLogLine($event)" />
   </section>
+
+  @let dataFilteredCondition = $dataFilteredCondition();
 
   <!-- Main Content Area -->
   <div class="main-content">
     <!-- Grid Panel with Virtual Scroll -->
     <section class="grid-panel">
-      @let listHeaders = (listCurrentHeader$ | async) ?? [];
-      @let listLogLines = (listLogLineFiltered$ | async) ?? [];
 
       <!-- Header Row -->
       <div class="grid-header" cdkDropList cdkDropListOrientation="horizontal"
-        (cdkDropListDropped)="onDropHeader($event)" [style.width.px]="gridHeaderWidth()">
-        <div class="header-cell sticky-col" id="header-id" [style]="headerId()?.headerCellStyle ?? {}">
+        (cdkDropListDropped)="onDropHeader($event)" [style.width.px]="$gridHeaderWidth()">
+        <div class="header-cell sticky-col" id="header-id" [style]="$headerId()?.headerCellStyle ?? {}">
           <div #triggerContextMenuId style="display: flex; flex:1; justify-content: space-between;"
             [cdkContextMenuTriggerFor]="contextMenuId" (click)="onClickTriggerContextMenuId($event)">
             Id
             <lucide-icon [img]="Menu" size="14" />
           </div>
-          <div class="resize-handle" (mousedown)="onResizeStart($event, headerId())"></div>
+          <div class="resize-handle" (mousedown)="onResizeStart($event, $headerId())"></div>
           <ng-template #contextMenuId>
             <div class="context-menu" cdkMenu>
+              <button class="context-menu-item" cdkMenuItem (click)="openFilterDialog()">Filter</button>
               <button class="context-menu-item" cdkMenuItem (click)="resetRange()">Reset Range</button>
               <button class="context-menu-item" cdkMenuItem (click)="showAllFieldsInDetails()">Reorder Details</button>
             </div>
           </ng-template>
         </div>
-        @for (header of listHeaders; track header.id) {
+        @for (header of dataFilteredCondition.listVisualHeader; track header.id) {
         <div class="header-cell" [id]="'header-' + header.id" [style]="header.headerCellStyle"
           [style.transform]="gridHeaderTransform()" (dblclick)="onAutoSize(header)">
           <div class="header-content" cdkDrag>
@@ -47,19 +48,19 @@
         }
       </div>
 
-    
+
       <!-- Virtual Scroll Body -->
       <cdk-virtual-scroll-viewport [itemSize]="rowHeight" class="grid-body"
         (scrolledIndexChange)="onScrollIndexChange()">
-        <div *cdkVirtualFor="let logLine of listLogLines; trackBy: trackByLogLine" class="grid-row"
+        <div *cdkVirtualFor="let logLine of dataFilteredCondition.listLogLine; trackBy: trackByLogLine" class="grid-row"
           [class.selected]="isSelected(logLine)" [class.highlighted]="isHighlighted(logLine)"
           (click)="onSelectLogLine(logLine)" (mouseenter)="onHighlightLogLine(logLine)"
           (mouseleave)="onHighlightLogLine(null)">
-          <div class="data-cell sticky-col" [style]="headerId()?.headerCellStyle ?? {}">
+          <div class="data-cell sticky-col" [style]="$headerId()?.headerCellStyle ?? {}">
             <span class="log-id">{{ logLine.id }}</span>
             <span class="time-diff">{{ getTimeDiff(logLine) }}</span>
           </div>
-          @for (header of listHeaders; track header.id) {
+          @for (header of dataFilteredCondition.listVisualHeader; track header.id) {
           <div class="data-cell" [style]="header.dataCellStyle"
             (contextmenu)="addFilter(logLine, header); $event.preventDefault()">
             {{ getContent(logLine, header) }}
@@ -74,21 +75,21 @@
 
     <!-- Details Panel -->
     <section class="details-panel">
-      @let selected = selectedLogLine();
+      @let selected = $selectedLogLine();
       @if (selected) {
-      <div class="header-content" cdkDropList #detailsHeader="cdkDropList" [cdkDropListData]="detailsHeaderContent()"
+      <div class="header-content" cdkDropList #detailsHeader="cdkDropList" [cdkDropListData]="$detailsHeaderContent()"
         [cdkDropListConnectedTo]="[detailsBody]" (cdkDropListDropped)="dropDetailsContent($event)">
         <h3>Log Details<br /> (ID: {{ selected.id }})</h3>
-        @for (item of detailsHeaderContent(); track item.name) {
+        @for (item of $detailsHeaderContent(); track item.name) {
         <div class="detail-item">
           <label cdkDrag (dblclick)="onToggleColumnByName(item.name)">{{ item.name }}:</label>
           <span class="detail-value">{{ item.value }}</span>
         </div>
         }
       </div>
-      <div class="details-content" cdkDropList #detailsBody="cdkDropList" [cdkDropListData]="detailsBodyContent()"
+      <div class="details-content" cdkDropList #detailsBody="cdkDropList" [cdkDropListData]="$detailsBodyContent()"
         [cdkDropListConnectedTo]="[detailsHeader]" (cdkDropListDropped)="dropDetailsContent($event)">
-        @for (item of detailsBodyContent(); track item.name) {
+        @for (item of $detailsBodyContent(); track item.name) {
         <div class="detail-item">
           <label cdkDrag (dblclick)="onToggleColumnByName(item.name)">{{ item.name
             }}:{{item.header.show?'*':''}}</label>
@@ -106,7 +107,7 @@
 
   <!-- Stats Bar -->
   <footer class="stats-bar">
-    <span>Total: {{ (logTimeDataService.listLogLineAll$ | async)?.length ?? 0 }}</span>
-    <span>Filtered: {{ (logTimeDataService.listLogLineFilteredCondition$ | async)?.length ?? 0 }}</span>
+    <span>Total: {{ $dataComplete().listLogLine.length }}</span>
+    <span>Filtered: {{ dataFilteredCondition.listLogLine.length }}</span>
   </footer>
 </div>
