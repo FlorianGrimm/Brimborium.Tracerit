@@ -10,10 +10,7 @@ import {
   effect,
   EffectRef
 } from '@angular/core';
-import {
-  CommonModule,
-  NgComponentOutlet
-} from '@angular/common';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
 import {
   LucideAngularModule,
   SquareChevronDown,

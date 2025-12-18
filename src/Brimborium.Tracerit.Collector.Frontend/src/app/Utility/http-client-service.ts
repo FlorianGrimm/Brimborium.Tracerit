@@ -92,7 +92,7 @@ export class HttpClientService {
             mode: "success",
             data: data
           };
-          console.log("getCurrentStream", name, result.data.length);
+          // console.log("getCurrentStream", name, result.data.length);
           return result;
         }
         {

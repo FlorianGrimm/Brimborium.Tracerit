@@ -254,7 +254,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
           for (const header of dataFilteredCondition.listVisualHeader) {
             if (header.width < 2) {
               header.width = this.measureHeader(header, dataFilteredCondition.listLogLine);
-              console.log("header", header);
+              // console.log("header", header);
             }
             nextWidth += header.width;
           }
@@ -566,7 +566,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       if (ctxt != null) {
         ctxt.font = '12px monospace';
         const width = ctxt.measureText(nextMaxContent).width + 40;
-        console.log("onAutoSize", header.name, nextWidth, width);
+        // console.log("onAutoSize", header.name, nextWidth, width);
         if (nextWidth < width) { nextWidth = width; }
       }
     }

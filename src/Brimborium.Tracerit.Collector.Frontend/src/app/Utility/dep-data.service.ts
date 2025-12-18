@@ -35,7 +35,7 @@ export type DepDataPropertyArguments<V> = {
   /* sideEffect is called after the value is set. */
   sideEffect?: DepDataSideEffectTriggerArguments<V>;
 
-  disableReport?: boolean;
+  enableReport?: boolean;
 
   /* report is called after the value is set - before the dependcies and sideEffect is called. */
   report?: ReportFN<V> | undefined;
@@ -185,7 +185,7 @@ export class DepDataPropertyInitializer {
     const list = DepDataPropertyInitializer._EnsureExecuted;
     DepDataPropertyInitializer._EnsureExecuted = undefined;
     for (const initializer of list) {
-      if(initializer._ListDelayed == null) { continue; }
+      if (initializer._ListDelayed == null) { continue; }
       console.warn('Missing call to DepDataPropertyInitializer.execute');
       initializer.execute();
     }
@@ -195,9 +195,9 @@ export class DepDataPropertyInitializer {
 
   constructor(
 
-  ) { 
+  ) {
     if (DepDataPropertyInitializer._EnsureExecuted == null) {
-      window.requestAnimationFrame(() => { DepDataPropertyInitializer.ensureExecuted();    });
+      window.requestAnimationFrame(() => { DepDataPropertyInitializer.ensureExecuted(); });
       DepDataPropertyInitializer._EnsureExecuted = [];
     }
     DepDataPropertyInitializer._EnsureExecuted.push(this);
@@ -248,7 +248,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
   public subscription: Subscription;
   private _transform: ((value: V) => V) | undefined;
   private _compare: ((a: V, b: V) => boolean) | undefined;
-  private _disableReport: boolean;
+  private _enableReport: boolean;
   private _report: ReportFN<V> | undefined;
   private _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
   private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
@@ -261,7 +261,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     this.name = args.name;
     this._transform = args.transform;
     this._compare = args.compare;
-    this._disableReport = args.disableReport??false;
+    this._enableReport = args.enableReport ?? false;
     this._report = args.report;
     this.subscription = args.subscription;
     this.value = args.initialValue;
@@ -335,10 +335,10 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     if (this._report != null) {
       this._report(this, 'set', value);
     }
-    if (!this._disableReport) {
+    if (this._enableReport) {
       this._service.onReport(this, 'set', value);
     }
-    
+
 
     try {
       for (const trigger of this._listSinkTrigger) {
@@ -619,11 +619,11 @@ export class DepDataServiceSource<V, TS> {
       const value = sd.sourceProperty.getValue();
       sourceValue[key] = value;
     }
-    try{
+    try {
       const result = this.sourceTransform(sourceValue);
       this.targetProperty.setValue(result);
       return result;
-    return result;
+      return result;
     } catch (error) {
       this.service.onReportError(this.targetProperty as any, 'error', error);
       throw undefined;
@@ -769,7 +769,7 @@ export class DepDataServiceExecutionScope {
 
   public addTriggerOrExecute(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind) {
     if ("Inner" === kind) {
-      console.log('executeOneTrigger', this._listTrigger.name, trigger.name);
+      // console.log('executeOneTrigger', this._listTrigger.name, trigger.name);
       this.executeOneTrigger(trigger);
     } else {
       this.addTriggerToQueue(trigger, kind);
@@ -777,7 +777,7 @@ export class DepDataServiceExecutionScope {
   }
 
   public addTriggerToQueue(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind) {
-    console.log('addTriggerToQueue', this._listTrigger.name, trigger.name);
+    // console.log('addTriggerToQueue', this._listTrigger.name, trigger.name);
 
     if (trigger.setDirty != null) {
       if (trigger.setDirty()) {
@@ -926,7 +926,7 @@ export class ListDepDataPropertyTriggerAndKind {
   }
 
   public getPartialListAndClear() {
-    console.log('getPartialListAndClear', this.name, this._CountInner, this._CountPublic, this._CountUi, this._listTrigger.length);
+    // console.log('getPartialListAndClear', this.name, this._CountInner, this._CountPublic, this._CountUi, this._listTrigger.length);
     if (0 < this._CountInner) {
       const result = this._listTrigger.slice(0, this._CountInner);
       this._listTrigger.splice(0, this._CountInner);

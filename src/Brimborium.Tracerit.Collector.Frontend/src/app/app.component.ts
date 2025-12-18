@@ -52,7 +52,7 @@ export class AppComponent {
             if (value.trigger) {
               this.httpClientService.getCurrentStream(this.dataService.currentStreamName).subscribe({
                 next: (value) => {
-                    console.log("reloadCurrentStream$", {mode:value.mode, data:value.data?.length});
+                    // console.log("reloadCurrentStream$", {mode:value.mode, data:value.data?.length});
                     if ("success" === value.mode) {
                         this.dataService.addListLogLine(value.data);
                     }

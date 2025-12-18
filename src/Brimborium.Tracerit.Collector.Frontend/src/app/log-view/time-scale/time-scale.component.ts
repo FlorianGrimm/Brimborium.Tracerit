@@ -263,7 +263,6 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     name: 'TimeScale_plotCount',
     initialValue: "15,80",
     compare: (a, b) => a === b,
-    disableReport: true,
     subscription: this.subscription,
   }).withSource({
     sourceDependency: {
@@ -417,6 +416,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly state = this.depDataService.createProperty({
     name: 'TimeScale_state',
     initialValue: this.createInitialState(),
+    /*
     report: (property, message, value) => {
       console.log(property.name, message, {
         displayWidth: value?.displayWidth,
@@ -434,6 +434,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
         selectedLogTick: value?.selectedLogTick?.id
       });
     },
+    */
     subscription: this.subscription,
   }).withSource({
     sourceDependency: {
