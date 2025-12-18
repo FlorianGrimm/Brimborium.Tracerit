@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import {MatSidenavModule} from '@angular/material/sidenav';
 import { Header } from './layout/header/header';
@@ -13,5 +13,4 @@ import { Footer } from './layout/footer/footer';
   styleUrl: './app.scss'
 })
 export class App {
-  protected readonly title = signal('samplefrontend');
 }

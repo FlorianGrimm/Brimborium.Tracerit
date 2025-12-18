@@ -1,4 +1,4 @@
-import { Component, inject, input, output, signal, effect, linkedSignal, computed } from '@angular/core';
+import { Component, inject, input, output, signal, effect, linkedSignal, computed, ChangeDetectionStrategy } from '@angular/core';
 import {
   LucideAngularModule,
   Plus,
@@ -39,6 +39,7 @@ import { Clipboard } from '@angular/cdk/clipboard';
   ],
   templateUrl: './filter-edit.component.html',
   styleUrl: './filter-edit.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterEditComponent {
   readonly dataService = inject(DataService);
@@ -55,7 +56,7 @@ export class FilterEditComponent {
     source: () => this.node(),
     computation: (node) => {
       const result = convertFilterAstNodeToUIFilterAstNode(node);
-      console.log('uiNodeRoot', result);
+      // console.log('uiNodeRoot', result);
       return result;
     },
     debugName: 'uiNodeRoot'
@@ -64,7 +65,7 @@ export class FilterEditComponent {
     source: () => this.uiNodeRoot(),
     computation: (uiNodeRoot) => {
       const result = convertUIFilterAstNodeToFilterAstNode(uiNodeRoot);
-      console.log('filterAstNode', result);
+      // console.log('filterAstNode', result);
       return result;
     },
     debugName: 'filterAstNode'

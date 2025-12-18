@@ -54,7 +54,7 @@ export type DepDataPropertyInputAndTransformArguments<S, V> = {
 }
 
 export type DepDataPropertyTrigger = {
-  name: string | undefined;
+  name?: string | undefined;
   setDirty?: (() => boolean);
   executeTrigger(): void;
 };
@@ -105,6 +105,11 @@ export class DepDataService {
   /** starts a new transaction. */
   public start(args: DepDataServiceStart) {
     return this._ExecutionScope.create(args);
+  }
+
+  public addTriggerToQueue(trigger: DepDataPropertyTrigger, kind?: DepDataPropertyTriggerKind) {
+    const scope = this._ExecutionScope.getScope();
+    scope.addTriggerToQueue(trigger, kind ?? "UI");
   }
 
   /** custom callback for onReport. */
@@ -356,7 +361,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     } finally {
       transaction.executeTrigger();
     }
-  }
+  } 
 
   public fireTrigger() {
     if (this.closed) {
@@ -717,6 +722,10 @@ export class DepDataServiceExecutionManager {
       this,
       this._service);
     this._listScope.push(root);
+  }
+
+  public getScope() {
+    return this._listScope[this._listScope.length - 1];
   }
 
   public create(args: DepDataServiceStart | undefined) {

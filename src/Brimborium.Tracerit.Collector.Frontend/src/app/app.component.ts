@@ -19,7 +19,8 @@ type ReloadCurrentStream = { trigger: boolean, tick: number };
         LucideAngularModule
     ],
     templateUrl: './app.component.html',
-    styleUrl: './app.component.scss'
+    styleUrl: './app.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
     readonly httpClientService = inject(HttpClientService);

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { Page2 } from './page2';
+import { provideZonelessChangeDetection } from '@angular/core';
 
 describe('Page2', () => {
   let component: Page2;

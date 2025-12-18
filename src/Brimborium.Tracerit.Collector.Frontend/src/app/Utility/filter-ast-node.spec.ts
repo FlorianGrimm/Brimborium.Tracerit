@@ -36,13 +36,13 @@ describe('generateFilterFunction', () => {
     }
     {
       const { listLogline, nextId } = parseJsonl('[["abc","str","wrong"]]', 1);
-      console.log(listLogline[0]);
+      // console.log(listLogline[0]);
       expect(fn(listLogline[0])).toBe(false);
     }
     
     {
       const { listLogline, nextId } = parseJsonl('[["def","str","def"]]', 1);
-      console.log(listLogline[0]);
+      // console.log(listLogline[0]);
       expect(fn(listLogline[0])).toBe(false);
     }
 

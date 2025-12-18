@@ -171,7 +171,7 @@ export class DataService {
     this.listLogLineSource.setValue(data);
 
     const listAllHeader = this.listAllHeaderBuffer.slice();
-     const listVisualHeader = getVisualHeader(listAllHeader);
+    const listVisualHeader = getVisualHeader(listAllHeader);
     this.listHeaderAndLogLineSource.setValue({
       listAllHeader,
       listVisualHeader,
@@ -247,6 +247,7 @@ export class DataService {
 
   addDefaultMapName() {
     this.addMapName("id", "int", false);
+
     this.addMapName("timestamp", "dt", true, 0, 0, -1);
     this.addMapName("logLevel", "lvl", true, 1, 1, -1);
     this.addMapName("resource", "str", true, 2, 2, -1);
@@ -287,42 +288,39 @@ export class DataService {
     visualDetailHeaderIndex: number = -1,
     visualDetailBodyIndex: number = -1) {
     let result = this.mapName.get(name);
-    if (result === undefined) {
-      if (!this.mapName.has(name)) {
-        const index = 1 + this.mapName.size;
-        const width = ("id" === name) ? 100 : 1;
-        result = {
-          id: `${name}-${typeValue}`,
-          name: name,
-          typeValue: typeValue,
-          index: index,
-          visualHeaderIndex: visualHeaderIndex,
-          visualDetailHeaderIndex: visualDetailHeaderIndex,
-          visualDetailBodyIndex: visualDetailBodyIndex,
-          show: show,
-          width: width,
-          headerCellStyle: { width: `${width}px` },
-          dataCellStyle: { width: `${width}px` }
-        }
-        this.mapName.set(name, result);
-        this.listAllHeaderBuffer.push(result);
-        this.listAllHeaderBuffer.sort((a, b) => {
-          let cmp = 0;
-          if (0 <= a.visualDetailHeaderIndex && 0 <= b.visualDetailHeaderIndex) {
-            cmp = a.visualDetailHeaderIndex - b.visualDetailHeaderIndex;
-          }
-          if (cmp != 0) { return cmp; }
-
-          if (0 <= a.visualDetailBodyIndex && 0 <= b.visualDetailBodyIndex) {
-            cmp = a.visualDetailBodyIndex - b.visualDetailBodyIndex;
-          }
-          if (cmp != 0) { return cmp; }
-
-          cmp = a.name.localeCompare(b.name)
-          return cmp;
-        });
-      }
+    if (result != null) { return result; }
+    const index = 1 + this.mapName.size;
+    const width = ("id" === name) ? 100 : 1;
+    result = {
+      id: `${name}-${typeValue}`,
+      name: name,
+      typeValue: typeValue,
+      index: index,
+      visualHeaderIndex: visualHeaderIndex,
+      visualDetailHeaderIndex: visualDetailHeaderIndex,
+      visualDetailBodyIndex: visualDetailBodyIndex,
+      show: show,
+      width: width,
+      headerCellStyle: { width: `${width}px` },
+      dataCellStyle: { width: `${width}px` }
     }
+    this.mapName.set(name, result);
+    this.listAllHeaderBuffer.push(result);
+    this.listAllHeaderBuffer.sort((a, b) => {
+      let cmp = 0;
+      if (0 <= a.visualDetailHeaderIndex && 0 <= b.visualDetailHeaderIndex) {
+        cmp = a.visualDetailHeaderIndex - b.visualDetailHeaderIndex;
+      }
+      if (cmp != 0) { return cmp; }
+
+      if (0 <= a.visualDetailBodyIndex && 0 <= b.visualDetailBodyIndex) {
+        cmp = a.visualDetailBodyIndex - b.visualDetailBodyIndex;
+      }
+      if (cmp != 0) { return cmp; }
+
+      cmp = a.name.localeCompare(b.name)
+      return cmp;
+    });
     return result;
   }
 }

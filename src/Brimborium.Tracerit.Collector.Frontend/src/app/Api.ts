@@ -77,6 +77,9 @@ export type LogLine = {
     data: Map<string, LogLineValue>;
     traceInformation: TraceInformation | null;
     source: LogLine | null;
+    isSearch?: undefined|true;
+    indexSearch?: undefined|number;
+    isHighlight?: undefined|true;
 };
 
 export type TraceInformation = {

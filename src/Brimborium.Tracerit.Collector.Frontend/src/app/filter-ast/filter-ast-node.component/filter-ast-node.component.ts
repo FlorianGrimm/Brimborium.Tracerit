@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule, Plus, Minus } from 'lucide-angular';
 import { getValidLogLineValue, mapFilterOperatorsDisplayByOperator, replaceUiNode } from '@app/Utility/filter-ast-node';
@@ -13,6 +13,7 @@ import { LogLineValue } from '@app/Api';
   templateUrl: './filter-ast-node.component.html',
   styleUrl: './filter-ast-node.component.scss',
   imports: [LucideAngularModule, NgClass, FilterAstNodeValue],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterAstNodeComponent {
   readonly dataService = inject(DataService);

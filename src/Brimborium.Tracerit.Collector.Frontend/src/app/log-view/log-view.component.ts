@@ -1,23 +1,32 @@
-import { AfterViewInit, Component, computed, effect, ElementRef, EnvironmentInjector, HostListener, inject, input, OnDestroy, OnInit, signal, ViewChild, ViewContainerRef } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, EnvironmentInjector, HostListener, inject, input, OnDestroy, OnInit, signal, ViewChild, ViewContainerRef } from '@angular/core';
 import { CdkMenu, CdkMenuItem, CdkContextMenuTrigger, CdkMenuTrigger } from '@angular/cdk/menu';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Duration, ZonedDateTime } from '@js-joda/core';
 import { Subscription, combineLatest, tap } from 'rxjs';
-import { LucideAngularModule, Funnel, FunnelX, Eye, EyeOff, GripVertical, Menu } from 'lucide-angular';
+import { LucideAngularModule, Funnel, FunnelX, Eye, EyeOff, GripVertical, Menu, Regex } from 'lucide-angular';
 
 import { DataService } from '@app/Utility/data-service';
 import { getVisualHeader } from '@app/Utility/propertyHeaderUtility';
 import { emptyHeaderAndLogLine, emptyLogLineTimeRangeDuration, epoch0, epoch01RangeDuration, epoch1, getEffectiveRange, HeaderAndLogLine, LogLineTimeRangeDuration, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, TimeRangeDuration, TimeRangeOrNull } from '@app/Utility/time-range';
-import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader, TraceInformation } from '../Api';
+import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader, TraceInformation, TypeValue } from '../Api';
 
 import { TimeScaleComponent } from './time-scale/time-scale.component';
 import { DepDataService } from '@app/Utility/dep-data.service';
 import { LogTimeDataService } from '@app/Utility/log-time-data.service';
 import { openToolWindow } from '@app/tool-window/tool-window';
 import { FilterComponent } from '@app/filter/filter.component';
+import { AppIconComponent } from '@app/app-icon/app-icon.component';
+import { HighlightComponent } from '@app/highlight/highlight.component';
+import { CommonModule } from '@angular/common';
 
 export type LogLineValueWithHeader = LogLineValue & { header: PropertyHeader };
+
+export type SearchResult = {
+  listLogLineId: number[];
+  listLogLine: LogLine[];
+  currentIndex: number;
+};
 
 export type DisplayTraceInformation = {
   traceId: string;
@@ -34,6 +43,7 @@ export type DisplayTraceInformation = {
   selector: 'app-log-view',
   standalone: true,
   imports: [
+    CommonModule,
     ScrollingModule,
     CdkDrag,
     CdkDropList,
@@ -41,19 +51,15 @@ export type DisplayTraceInformation = {
     CdkMenu,
     CdkMenuItem,
     LucideAngularModule,
-    TimeScaleComponent
+    TimeScaleComponent,
   ],
   templateUrl: './log-view.component.html',
   styleUrl: './log-view.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   // Icons
-  public readonly Funnel = Funnel;
-  public readonly FunnelX = FunnelX;
-  public readonly Eye = Eye;
-  public readonly EyeOff = EyeOff;
-  public readonly GripVertical = GripVertical;
-  public readonly Menu = Menu;
+  public readonly icon = new AppIconComponent();
 
   // Services
   public readonly subscription = new Subscription();
@@ -84,6 +90,9 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly listCurrentHeader = this.depDataService.createProperty({
     name: 'LogView_listCurrentHeader',
     initialValue: [] as PropertyHeader[],
+    report: (property, message, value) => {
+      console.log(`${property.name} ${message}`, value);
+    },
     subscription: this.subscription,
   }).withSource({
     sourceDependency: {
@@ -126,7 +135,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
       fn: (value) => {
-        this.onScrollIndexChange();
+        this.onScrollIndexChange(-1);
       },
       requestAnimationFrame: true
     },
@@ -148,12 +157,11 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     sourceDependency: {
       selectedLogLineId: this.logTimeDataService.currentLogLineId.dependencyInner()
     },
-    sourceTransform:
-      (d) => d.selectedLogLineId,
+    sourceTransform: ({ selectedLogLineId }) => selectedLogLineId,
     depDataPropertyInitializer: this.depDataPropertyInitializer,
   });
 
-  public readonly highlightedLogLineId = this.depDataService.createProperty<number|null>({
+  public readonly highlightedLogLineId = this.depDataService.createProperty<number | null>({
     name: 'LogView_highlightedLogLineId',
     initialValue: null,
     compare: (a, b) => (a === b),
@@ -161,7 +169,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     subscription: this.subscription,
   });
   public readonly $highlightedLogLineId = this.highlightedLogLineId.asSignal();
-  
+
   public readonly selectedLogLine = this.depDataService.createProperty({
     name: 'LogView_selectedLogLine',
     initialValue: null as (LogLine | null),
@@ -187,16 +195,21 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly headerId = this.depDataService.createProperty<PropertyHeader | undefined>({
     name: 'LogView_headerId',
     initialValue: undefined,
+    compare: (a, b) => (a === b),
     subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       listAllHeader: this.listAllHeader.dependencyInner()
     },
     sourceTransform:
-      (d) => d.listAllHeader.find((item) => (item.name === "id")),
+      ({ listAllHeader }) => {
+        if (listAllHeader.length === 0) { return undefined; }
+        const result = listAllHeader.find((item) => (item.name === "id"));
+        return result;
+      },
     depDataPropertyInitializer: this.depDataPropertyInitializer
   });
-  public readonly $headerId = signal<PropertyHeader | undefined>(undefined);
+  public readonly $headerId = this.headerId.asSignal();
 
   // State - Time ranges
   public readonly rangeZoom = this.depDataService.createProperty<TimeRangeDuration>({
@@ -269,7 +282,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly visibleRange = signal<TimeRangeOrNull | null>(null);
 
   // Row height for virtual scroll
-  public readonly rowHeight = 32;
+  public readonly rowHeight = 26;
 
   // Resize state
   private resizeState: {
@@ -363,7 +376,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly $detailsBodyContent = this.detailsBodyContent.asSignal();
 
   // Template helpers
-  getContent(logLine: LogLine, header: PropertyHeader): string {
+  getContent(logLine: LogLine, header: { name: string, typeValue: TypeValue }): string {
     const property = logLine.data.get(header.name);
     if (!property) return '';
     switch (property.typeValue) {
@@ -396,38 +409,93 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Event handlers
   onSelectLogLine(logLine: LogLine): void {
-    this.$selectedLogLineId.set(logLine.id);
+    this.selectedLogLineIdProp.setValue(logLine.id);
+    this.highlightedLogLineId.setValue(logLine.id);
     this.logTimeDataService.currentLogLineId.setValue(logLine.id);
     const dataFilteredCondition = this.dataFilteredCondition.getValue();
     const index = dataFilteredCondition.listLogLine.findIndex(l => l.id === logLine.id);
+    if (0 <= index) {
+      const searchResult = this.searchResult.getValue();
+      if (0 < searchResult.listLogLine.length) {
+        const listLogLineLE = searchResult.listLogLineId.filter(item => item <= logLine.id);
+        if (0 < listLogLineLE.length) {
+          const currentIndex = listLogLineLE.length - 1;
+          this.searchResult.setValue({ ...searchResult, currentIndex: currentIndex });
+        } else {
+          const listLogLineGT = searchResult.listLogLineId.filter(item => item > logLine.id);
+          if (0 < listLogLineGT.length) {
+            const currentIndex = listLogLineGT.length - 1;
+            this.searchResult.setValue({ ...searchResult, currentIndex: currentIndex });
+          }
+        }
+      }
+    }
+  }
+
+  showLogLine(index: number) {
+    const dataFilteredCondition = this.dataFilteredCondition.getValue();
     if (index < 0) { return; }
+    if (dataFilteredCondition.listLogLine.length <= index) { return; }
+    const logLine = dataFilteredCondition.listLogLine[index];
     this.viewport.scrollToIndex(index);
+    this.onSelectLogLine(logLine);
   }
 
   onHighlightLogLine(logLine: LogLine | null): void {
     this.highlightedLogLineId.setValue(logLine?.id ?? null);
   }
 
-  onScrollIndexChange(): void {
+  onScrollIndexChange(scrollIndex: number): void {
     if (!this.viewport) {
-      console.log("onScrollIndexChange-viewport", this.viewport);
       return;
     }
     const { start, end } = this.viewport.getRenderedRange()
     const { listLogLine } = this.dataFilteredCondition.getValue();
     if (listLogLine.length === 0) { return; }
+
+    const scollIndexNormalized = Math.max(0, Math.min(scrollIndex, listLogLine.length - 1));
+    const offset = this.viewport.getOffsetToRenderedContentStart() ?? 0;
+    const offsetIndex = Math.max(0, Math.min(Math.ceil(offset / this.rowHeight), listLogLine.length - 1))
     const startIndex = Math.max(0, Math.min(start, listLogLine.length - 1));
     const endIndex = Math.max(0, Math.min(end, listLogLine.length - 1));
-    const startTS = listLogLine[startIndex].ts;
+    const lowerIndex = Math.max(scollIndexNormalized, offsetIndex, startIndex);
+    const startTS = listLogLine[lowerIndex].ts;
     const finishTS = listLogLine[endIndex].ts;
-    //console.log("onScrollIndexChange-viewport", startTS?.toString(), finishTS?.toString());
     this.visibleRange.set(
       {
         start: startTS,
         finish: finishTS
       }
     );
+    const searchResult = this.searchResult.getValue();
+    if (0 < searchResult.listLogLine.length) {
+      const listLogLineLE = searchResult.listLogLineId.filter(item => item <= listLogLine[startIndex].id);
+      if (0 < listLogLineLE.length) {
+        const currentIndex = listLogLineLE.length - 1;
+        if (currentIndex !== searchResult.currentIndex) {
+          this.searchResult.setValue({ ...searchResult, currentIndex: currentIndex });
+        }
+      }
+    }
   }
+
+  onScrollToLogLine(logLine: LogLine) {
+    const logLineId = logLine.id
+    const index = this.dataFilteredCondition.getValue().listLogLine.findIndex(l => l.id === logLineId)
+    if (index < 0) {
+      //
+    } else {
+      const { start, end } = this.viewport.getRenderedRange();
+      console.log("onScrollToLogLine", start, index, end);
+      if ((start <= index)
+        && (index <= (start + 10)) && (index <= end)) {
+        // already visible
+      } else {
+        this.viewport.scrollToIndex(index);
+      }
+    }
+  }
+
 
   // Column management
   onDropHeader(event: CdkDragDrop<PropertyHeader[]>): void {
@@ -464,7 +532,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Column resize
   onResizeStart(event: MouseEvent, header: PropertyHeader | undefined): void {
-    console.log("onResizeStart", event);
+    // console.log("onResizeStart", event);
     if (header == null) { return; }
     event.preventDefault();
     event.stopPropagation();
@@ -754,14 +822,181 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     this.detailsBodyContent.setValue(this.getDetailsBodyContent(selectedLogLine));
   }
 
-  openFilterDialog() {
-    /*
-    const dialogRef = this.dialog.open(FilterDialogComponent, {
-      width: '500px',
-      data: { filterAst: this.logTimeDataService.filterAst.getValue() }
+  public readonly showSearch = this.depDataService.createProperty<boolean>({
+    name: 'LogView_showSearch',
+    initialValue: false,
+    compare: (a, b) => a === b,
+    sideEffect: {
+      fn: (value) => {
+        if (!value) {
+          const searchResult = this.searchResult.getValue();
+          if (searchResult.listLogLine.length > 0) {
+            searchResult.listLogLine.forEach(item => item.isSearch = undefined);
+          }
+          this.searchResult.setValue({ listLogLineId: [], listLogLine: [], currentIndex: 0 });
+        }
+      },
+      kind: 'UI',
+      requestAnimationFrame: true
+    },
+    subscription: this.subscription,
+  });
+  public readonly $showSearch = this.showSearch.asSignal();
+
+  public openSearch($event: Event) {
+    const nextShowSearch = !this.$showSearch()
+    this.showSearch.setValue(nextShowSearch);
+    $event.stopPropagation();
+    $event.preventDefault();
+    return false;
+  }
+
+  public readonly searchText = this.depDataService.createProperty<string>({
+    name: 'LogView_searchText',
+    initialValue: "",
+    compare: (a, b) => a === b,
+    subscription: this.subscription,
+  });
+  public readonly searchResult = this.depDataService.createProperty<SearchResult>({
+    name: 'LogView_searchResult',
+    initialValue: { listLogLineId: [], listLogLine: [], currentIndex: 0 },
+    transform: (value) => Object.freeze(value),
+    compare: (a, b) => Object.is(a, b),
+    subscription: this.subscription,
+  })
+    .withSource({
+      sourceDependency: {
+        searchText: this.searchText.dependencyUi(),
+        showSearch: this.showSearch.dependencyUi(),
+        dataFilteredCondition: this.dataFilteredCondition.dependencyUi()
+      },
+      sourceTransform:
+        ({ searchText, showSearch, dataFilteredCondition }) => {
+          // debugger;
+          const currentSearchResult: SearchResult = this.searchResult.getValue();
+          let nextSearchResult: SearchResult;
+          if (!showSearch) {
+            nextSearchResult = currentSearchResult;
+          } else {
+            if (searchText.length === 0) {
+              if (currentSearchResult.listLogLine.length === 0) {
+                return currentSearchResult;
+              }
+              for (const item of currentSearchResult.listLogLine) {
+                item.isSearch = undefined;
+                item.indexSearch = undefined;
+              }
+              return { listLogLineId: [], listLogLine: [], currentIndex: 0 };
+            } else {
+              const searchTextLower = searchText.toLowerCase();
+              const re = new RegExp((RegExp as any).escape(searchTextLower) as string, "i");
+
+              const result = dataFilteredCondition.listLogLine.filter(item => {
+                for (const itemValue of item.data.values()) {
+                  const content = this.getContent(item, itemValue);
+                  if (0 == content.length) { continue; }
+                  //if (content.toLocaleLowerCase().includes(searchText)) { return true; };
+                  //if (searchTextLower.localeCompare === content.toLowerCase()) { return true; };
+                  if (re.test(content)) { return true; };
+                }
+                return false;
+              });
+
+
+              let hasChange = (result.length !== currentSearchResult.listLogLine.length);
+              if (!hasChange) {
+                for (const item of result) {
+                  if (item.isSearch === true) { continue; }
+                  hasChange = true;
+                }
+              }
+
+              if (!hasChange) {
+                return currentSearchResult;
+              }
+
+              {
+                for (const item of currentSearchResult.listLogLine) {
+                  item.isSearch = undefined;
+                  item.indexSearch = undefined;
+                }
+              }
+
+              let index = 0;
+              for (const item of result) {
+                item.isSearch = true;
+                item.indexSearch = index++;
+              }
+              nextSearchResult = {
+                listLogLineId: result.map(item => item.id),
+                listLogLine: result,
+                currentIndex: 0
+              };
+            }
+          }
+          return nextSearchResult;
+        },
+      depDataPropertyInitializer: this.depDataPropertyInitializer,
     });
-    */
-   openToolWindow(this.viewContainerRef, this.environmentInjector, "Filter", FilterComponent);
+
+  public readonly $searchResult = this.searchResult.asSignal();
+  public onSearchChange(value: string) {
+    window.requestAnimationFrame(() => {
+      this.searchText.setValue(value);
+    });
+  }
+  public doSearch() {
+    window.requestAnimationFrame(() => {
+      this.searchResult.fireTrigger();
+      const searchResult = this.searchResult.getValue();
+      if (0 < searchResult.listLogLine.length) {
+        this.scrollToSearchResult(searchResult);
+      }
+    });
+  }
+
+  onSearchResultPrevious() {
+    const searchResult = this.searchResult.getValue();
+    if (searchResult.listLogLine.length === 0) { return; }
+    const currentIndex = (searchResult.currentIndex + searchResult.listLogLine.length - 1) % searchResult.listLogLine.length;
+    const nextSearchResult = { ...searchResult, currentIndex: currentIndex };
+    this.searchResult.setValue(nextSearchResult);
+    this.scrollToSearchResult(nextSearchResult);
+  }
+
+  onSearchResultCurrent() {
+    const searchResult = this.searchResult.getValue();
+    if (searchResult.listLogLine.length === 0) { return; }
+    const nextSearchResult = { ...searchResult, currentIndex: searchResult.currentIndex };
+    this.scrollToSearchResult(nextSearchResult);
+  }
+
+  onSearchResultNext() {
+    const searchResult = this.searchResult.getValue();
+    if (searchResult.listLogLine.length === 0) { return; }
+    const currentIndex = (searchResult.currentIndex + 1) % searchResult.listLogLine.length;
+    const nextSearchResult = { ...searchResult, currentIndex: currentIndex };
+    this.searchResult.setValue(nextSearchResult);
+    this.scrollToSearchResult(nextSearchResult);
+  }
+
+  scrollToSearchResult(searchResult: SearchResult) {
+    if (searchResult.listLogLine.length === 0) { return; }
+    if (0 <= searchResult.currentIndex && searchResult.currentIndex < searchResult.listLogLine.length) {
+      const logLine = searchResult.listLogLine[searchResult.currentIndex];
+      this.onScrollToLogLine(logLine);
+      this.selectedLogLineIdProp.setValue(logLine.id);
+      this.highlightedLogLineId.setValue(logLine.id);
+      this.logTimeDataService.currentLogLineId.setValue(logLine.id);
+    }
+  }
+
+  public openFilterDialog() {
+    openToolWindow(this.viewContainerRef, this.environmentInjector, "Filter", FilterComponent);
+  }
+
+  public openHighlightDialog() {
+    openToolWindow(this.viewContainerRef, this.environmentInjector, "Highlight", HighlightComponent);
   }
 
   resetRange() {
@@ -799,6 +1034,6 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   selectTrace(displayTraceInformation: DisplayTraceInformation) {
     if (displayTraceInformation.listLogLineId.length === 0) { return; }
-    this.$selectedLogLineId.set(displayTraceInformation.listLogLineId[0]);
+    this.selectedLogLineIdProp.setValue(displayTraceInformation.listLogLineId[0]);
   }
 }

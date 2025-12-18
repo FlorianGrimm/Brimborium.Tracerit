@@ -8,6 +8,34 @@
 
   @let dataFilteredCondition = $dataFilteredCondition();
 
+  @if($showSearch()) {
+  <div class="search-panel">
+    <span>
+      <label>
+        Search:
+        <input type="text" (change)="onSearchChange($event.target.value)" />
+        <button (click)="doSearch()">
+          <lucide-icon [img]="icon.Search" size="14" />Search
+        </button>
+      </label>
+
+      @if ($searchResult(); as searchResult){
+      <span>
+        <button (click)="onSearchResultPrevious()">
+          <lucide-icon [img]="icon.ChevronLeft" size="14"></lucide-icon>
+        </button>
+        <span (click)="onSearchResultCurrent()">{{ searchResult.currentIndex + 1 }} of {{ searchResult.listLogLine.length }}</span>
+        <button (click)="onSearchResultNext()">
+          <lucide-icon [img]="icon.ChevronRight" size="14"></lucide-icon>
+        </button>
+      </span>
+      }
+      <button (click)="showSearch.setValue(false)">
+        <lucide-icon [img]="icon.Close" size="14" />Close
+      </button>
+    </span>
+  </div>
+  }
   <!-- Main Content Area -->
   <div class="main-content">
     <!-- Grid Panel with Virtual Scroll -->
@@ -17,17 +45,33 @@
       <div class="grid-header" cdkDropList cdkDropListOrientation="horizontal"
         (cdkDropListDropped)="onDropHeader($event)" [style.width.px]="$gridHeaderWidth()">
         <div class="header-cell sticky-col" id="header-id" [style]="$headerId()?.headerCellStyle ?? {}">
+          <button (click)="openSearch($event)"><lucide-icon [img]="icon.Search" size="14" /></button>
           <div #triggerContextMenuId style="display: flex; flex:1; justify-content: space-between;"
             [cdkContextMenuTriggerFor]="contextMenuId" (click)="onClickTriggerContextMenuId($event)">
             Id
-            <lucide-icon [img]="Menu" size="14" />
+            <lucide-icon [img]="icon.Menu" size="14" />
           </div>
           <div class="resize-handle" (mousedown)="onResizeStart($event, $headerId())"></div>
           <ng-template #contextMenuId>
             <div class="context-menu" cdkMenu>
-              <button class="context-menu-item" cdkMenuItem (click)="openFilterDialog()">Filter</button>
-              <button class="context-menu-item" cdkMenuItem (click)="resetRange()">Reset Range</button>
-              <button class="context-menu-item" cdkMenuItem (click)="showAllFieldsInDetails()">Reorder Details</button>
+              <button class="context-menu-item" cdkMenuItem (click)="openSearch($event)">
+                <lucide-icon [img]="icon.Search" size="14" />
+                Search
+              </button>
+              <button class="context-menu-item" cdkMenuItem (click)="openFilterDialog()">
+                <lucide-icon [img]="icon.Filter" size="14" />
+                Filter
+              </button>
+              <button class="context-menu-item" cdkMenuItem (click)="openHighlightDialog()">
+                <lucide-icon [img]="icon.Highlight" size="14" />
+                Highlight
+              </button>
+              <button class="context-menu-item" cdkMenuItem (click)="resetRange()">
+                Reset Range
+              </button>
+              <button class="context-menu-item" cdkMenuItem (click)="showAllFieldsInDetails()">
+                Reorder Details
+              </button>
             </div>
           </ng-template>
         </div>
@@ -35,11 +79,11 @@
         <div class="header-cell" [id]="'header-' + header.id" [style]="header.headerCellStyle"
           [style.transform]="gridHeaderTransform()" (dblclick)="onAutoSize(header)">
           <div class="header-content" cdkDrag>
-            <lucide-icon [img]="GripVertical" size="14" class="drag-handle" cdkDragHandle />
+            <lucide-icon [img]="icon.GripVertical" size="14" class="drag-handle" cdkDragHandle />
             <span class="header-name">{{ header.name }}</span>
             @if (header.filter) {
             <button class="filter-btn active" (click)="removeFilter(header)" title="Remove filter">
-              <lucide-icon [img]="FunnelX" size="14" />
+              <lucide-icon [img]="icon.FilterX" size="14" />
             </button>
             }
           </div>
@@ -50,18 +94,23 @@
 
 
       <!-- Virtual Scroll Body -->
-      <cdk-virtual-scroll-viewport [itemSize]="rowHeight" class="grid-body"
-        (scrolledIndexChange)="onScrollIndexChange()">
-        <div *cdkVirtualFor="let logLine of dataFilteredCondition.listLogLine; trackBy: trackByLogLine" class="grid-row"
+      <cdk-virtual-scroll-viewport [itemSize]="rowHeight" minBufferPx="0" maxBufferPx="30" class="grid-body"
+        (scrolledIndexChange)="onScrollIndexChange($event)">
+        <div *cdkVirtualFor="let logLine of dataFilteredCondition.listLogLine; trackBy: trackByLogLine; let index = index" class="grid-row"
           [class.selected]="isSelected(logLine)" [class.highlighted]="isHighlighted(logLine)"
           (click)="onSelectLogLine(logLine)" (mouseenter)="onHighlightLogLine(logLine)"
           (mouseleave)="onHighlightLogLine(null)">
-          <div class="data-cell sticky-col" [style]="$headerId()?.headerCellStyle ?? {}">
+          <div class="data-cell sticky-col data-cell-id" [style]="$headerId()?.headerCellStyle ?? {}">
+            <div tabindex="100" (keydown.ArrowDown)="showLogLine(index+1)" (keydown.ArrowUp)="showLogLine(index-1)">
             <span class="log-id">{{ logLine.id }}</span>
-            <span class="time-diff">{{ getTimeDiff(logLine) }}</span>
+            @if (logLine.indexSearch !== undefined) {
+            <span class="index-search">{{ (logLine.indexSearch+1).toString() }}</span>
+            }
+            </div>
+            <div class="time-diff">{{ getTimeDiff(logLine) }}</div>
           </div>
           @for (header of dataFilteredCondition.listVisualHeader; track header.id) {
-          <div class="data-cell" [style]="header.dataCellStyle"
+          <div class="data-cell" [style]="header.dataCellStyle" [ngClass]="{ 'isSearch': logLine.isSearch, 'ishighlight': logLine.isHighlight }"]
             (contextmenu)="addFilter(logLine, header); $event.preventDefault()">
             {{ getContent(logLine, header) }}
           </div>

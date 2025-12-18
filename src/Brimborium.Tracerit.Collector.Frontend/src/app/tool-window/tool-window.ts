@@ -8,7 +8,8 @@ import {
   input,
   signal,
   effect,
-  EffectRef
+  EffectRef,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import {
@@ -31,6 +32,7 @@ const $activeWindow = signal<undefined | ToolWindow>(undefined);
   ],
   templateUrl: './tool-window.html',
   styleUrl: './tool-window.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ToolWindow {
   readonly title = input<string>("title");

@@ -66,7 +66,8 @@ export type LogTick = {
   standalone: true,
   imports: [LucideAngularModule],
   templateUrl: './time-scale.component.html',
-  styleUrl: './time-scale.component.scss'
+  styleUrl: './time-scale.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   private subscription = new Subscription();

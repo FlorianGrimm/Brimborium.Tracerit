@@ -1,4 +1,4 @@
-import { Component, computed, input, linkedSignal, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output } from '@angular/core';
 import { LogLineValue, TypeValue } from '@app/Api';
 import { initialUIFilterAstNodeSelection, OutputFilterAstNode, replaceUiNode, UIFilterAstNode, UIFilterAstNodeSelection } from '@app/Utility/filter-ast-node';
 import { Instant, ZonedDateTime, ZoneId } from '@js-joda/core';
@@ -7,6 +7,7 @@ import { Instant, ZonedDateTime, ZoneId } from '@js-joda/core';
   imports: [],
   templateUrl: './filter-ast-node-value.component.html',
   styleUrl: './filter-ast-node-value.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterAstNodeValue {
   readonly uiNode = input<UIFilterAstNode | null>(null);

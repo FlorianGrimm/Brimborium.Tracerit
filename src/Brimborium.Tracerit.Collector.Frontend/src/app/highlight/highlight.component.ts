@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FilterEditComponent } from "@app/filter-ast/filter-edit.component/filter-edit.component";
 
 @Component({
@@ -6,6 +6,7 @@ import { FilterEditComponent } from "@app/filter-ast/filter-edit.component/filte
   imports: [FilterEditComponent],
   templateUrl: './highlight.component.html',
   styleUrl: './highlight.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HighlightComponent {
 
