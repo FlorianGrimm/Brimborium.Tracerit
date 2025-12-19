@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Flurl" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="TUnit" />
+    <PackageReference Include="Verify.TUnit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Brimborium.Tracerit.Server\Brimborium.Tracerit.Server.csproj" />
+    <ProjectReference Include="..\Brimborium.Tracerit\Brimborium.Tracerit.csproj" />
+  </ItemGroup>
+</Project>

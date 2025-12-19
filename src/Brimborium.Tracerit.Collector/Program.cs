@@ -1,14 +1,16 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using Microsoft.AspNetCore.ResponseCompression;
 
 [assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.Test")]
+[assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.OOP.Test")]
+[assembly: InternalsVisibleTo("Brimborium.Tracerit.Collector.ForTesting")]
 
 namespace Brimborium.Tracerit.Collector;
 
-public class Program {
+public sealed class Program {
     public static async Task<int> Main(string[] args) {
         try {
-            await RunAsync(args, new()).ConfigureAwait(false);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+            await RunAsync(builder, new()).ConfigureAwait(false);
             return 0;
         } catch (Microsoft.Extensions.Hosting.HostAbortedException) {
             return 0;
@@ -26,11 +28,9 @@ public class Program {
     }
 
     internal static Task RunAsync(
-        string[] args,
+        WebApplicationBuilder builder,
         StartupActions startupActions
         ) {
-        var builder = WebApplication.CreateBuilder(args);
-
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
         builder.Services.AddAngularFileService()
@@ -111,7 +111,6 @@ public class Program {
 
         //app.UseAuthorization();
         //app.UseAuthentication();
-        /* app.UseResponseCompression(); */
         app.UseAngularFileService();
         app.MapTracorControllerEndpoints();
 

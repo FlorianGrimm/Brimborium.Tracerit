@@ -3,6 +3,8 @@
 namespace Brimborium.Tracerit.Collector.Test.TestUtility;
 
 public class WebApplicationFactoryIntegration : IAsyncInitializer {
+    private const string _ApplicationName = "Brimborium.Tracerit.Collector.Test";
+
     private WebApplication? _Application;
     public WebApplication GetApplication() => this._Application ?? throw new InvalidOperationException("Application yet is not set");
     public IServiceProvider GetServices() => this.GetApplication().Services;
@@ -79,13 +81,19 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
         string pathStaticAssets = GetPathStaticAssets();
         var contentRoot = Program.GetContentRoot();
         var tsc = new TaskCompletionSource<WebApplication>();
+
+        var args = new string[] {
+                $"--StaticAssets=\"{pathStaticAssets}\""
+            };
+        WebApplicationOptions webApplicationOptions = new() { 
+            ApplicationName = _ApplicationName,
+            EnvironmentName = "Development",
+            ContentRootPath = contentRoot,
+            Args=args
+        };
+        WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
         var taskServer = Program.RunAsync(
-            args: new string[] {
-                @"--environment=Development",
-                $"--contentRoot={contentRoot}",
-                @"--applicationName=Sample.Test",
-                $"--StaticAssets={pathStaticAssets}"
-            },
+            builder,
             new StartupActions() {
                 Testtime = true,
                 ConfigureWebApplicationBuilder = (builder) => {
@@ -127,7 +135,7 @@ public class WebApplicationFactoryIntegration : IAsyncInitializer {
             ) ?? throw new Exception("");
         var result = Path.Combine(
             assemblyLocation,
-            "Sample.staticwebassets.endpoints.json");
+            $"{_ApplicationName}.staticwebassets.endpoints.json");
         return result;
     }
     private static string GetAppsettingsJson([CallerFilePath] string callerFilePath = "") {

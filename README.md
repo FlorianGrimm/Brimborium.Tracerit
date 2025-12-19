@@ -62,7 +62,8 @@ Test Implementation: A ASP.net core web app - with Angular frontend and TUnit.
 - Sample.OOP.Test - testing with playwright in another process
 - SampleForTesting - used by Sample.OOP.Test; implements dangerous things for production - usefull for testing, like another authentication.
 
-Goal
+## Goal
+
 Run the test with the test explorer.
 Run the test with the console.
 Debug the test and debug the server in one process.

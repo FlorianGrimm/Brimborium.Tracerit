@@ -79,7 +79,7 @@ public class TracorValidatorTests {
         var runningStates = validatorPath.GetListRunning();
 
         // Assert
-        await Assert.That(runningStates).Count().EqualTo(1);
+        await Assert.That(runningStates).Count().IsEqualTo(1);
         await Assert.That(validatorPath.GetListFinished()).IsEmpty();
     }
 
@@ -108,7 +108,7 @@ public class TracorValidatorTests {
             var finishedStates = validatorPath.GetListFinished();
 
             // Assert
-            await Assert.That(finishedStates).Count().EqualTo(1);
+            await Assert.That(finishedStates).Count().IsEqualTo(1);
             await Assert.That(validatorPath.GetListRunning()).IsEmpty();
         }
     }
@@ -223,8 +223,8 @@ public class TracorValidatorTests {
         validator.OnTrace(true, tracorData);
 
         // Assert
-        await Assert.That(validatorPath1.GetListFinished()).Count().EqualTo(1);
-        await Assert.That(validatorPath2.GetListFinished()).Count().EqualTo(1);
+        await Assert.That(validatorPath1.GetListFinished()).Count().IsEqualTo(1);
+        await Assert.That(validatorPath2.GetListFinished()).Count().IsEqualTo(1);
     }
 
     [Test]

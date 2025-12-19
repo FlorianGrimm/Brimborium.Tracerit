@@ -100,8 +100,6 @@ public partial class Program {
                                     .AddOtlpExporter((otlpExporterOptions) => {
                                         otlpExporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
                                         otlpExporterOptions.Endpoint = new Uri(tracingOtlpEndPoint, UriKind.Absolute);
-                                        //otlpExporterOptions.Endpoint = new Uri("http://localhost:4318/v1/traces");
-                                        //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/traces");
                                     });
                             }
                         });
@@ -113,8 +111,6 @@ public partial class Program {
                             loggerProviderBuilder.AddOtlpExporter((otlpExporterOptions) => {
                                 otlpExporterOptions.Protocol = OtlpExportProtocol.HttpProtobuf;
                                 otlpExporterOptions.Endpoint = new Uri(loggerOtlpEndPoint, UriKind.Absolute);
-                                //otlpExporterOptions.Endpoint = new Uri("http://localhost:4318/v1/logs");
-                                //otlpExporterOptions.Endpoint = new Uri("http://localhost:8080/v1/logs");
                                 //4318/v1/traces
                             });
                         }, (openTelemetryLoggerOptions) => {
@@ -152,7 +148,6 @@ public partial class Program {
                 .AddTracorCollectiveHttpSink(
                    configuration: builder.Configuration,
                    configure: (tracorHttpSinkOptions) => {
-                       //tracorHttpSinkOptions.TargetUrl = "http://localhost:8080/_api/tracerit/v1/collector.http";
                    });
             ;
         }

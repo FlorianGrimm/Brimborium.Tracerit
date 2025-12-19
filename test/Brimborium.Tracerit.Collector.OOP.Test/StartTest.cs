@@ -6,12 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Brimborium.Tracerit.Condition;
 using Brimborium.Tracerit.Expression;
 
-using Sample.OOP.Test.TestUtility;
+using Brimborium.Tracerit.Collector.OOP.Test.TestUtility;
 
 using static Brimborium.Tracerit.TracorExtension;
 
 [assembly: NotInParallel]
-namespace Sample.WebApp;
+namespace Brimborium.Tracerit.Collector.OOP.Test;
+
 public class StartTest {
     [ClassDataSource<WebAppIntegration>(Shared = SharedType.PerTestSession)]
     public required WebAppIntegration WebAppIntegration { get; init; }

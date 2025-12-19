@@ -148,7 +148,7 @@ public class ReferenceCountPoolTests {
         await Task.WhenAll(tasks);
 
         // Assert - All operations should complete without exceptions
-        await Assert.That(rentedObjects).Count().EqualTo(1000);
+        await Assert.That(rentedObjects).Count().IsEqualTo(1000);
     }
 
     [Test]

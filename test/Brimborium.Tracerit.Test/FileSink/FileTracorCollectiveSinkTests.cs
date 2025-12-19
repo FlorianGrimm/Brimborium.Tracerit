@@ -6,7 +6,10 @@ public class FileTracorCollectiveSinkTests {
     [Test]
     public async Task GetDirectory_baseDirectory_Test() {
         var root = GetLogRootDirectory();
-        var act = TracorCollectiveFileSink.GetDirectory(
+        var sut = new TracorCollectiveFileSink(
+            new TracorOptions(),
+            new TracorFileSinkOptions());
+        var act = sut.GetDirectory(
             baseDirectory: root,
             getBaseDirectory: null,
             directory: null,
@@ -17,7 +20,10 @@ public class FileTracorCollectiveSinkTests {
     [Test]
     public async Task GetDirectory_getBaseDirectory_Test() {
         var root = GetLogRootDirectory();
-        var act = TracorCollectiveFileSink.GetDirectory(
+        var sut = new TracorCollectiveFileSink(
+            new TracorOptions(),
+            new TracorFileSinkOptions());
+        var act = sut.GetDirectory(
             baseDirectory: null,
             getBaseDirectory: () => root,
             directory: null,
@@ -30,7 +36,10 @@ public class FileTracorCollectiveSinkTests {
         var root = GetLogRootDirectory();
         var rootLog2 = System.IO.Path.Combine(root, "Log2");
         System.IO.Directory.CreateDirectory(rootLog2);
-        var act = TracorCollectiveFileSink.GetDirectory(
+        var sut = new TracorCollectiveFileSink(
+            new TracorOptions(),
+            new TracorFileSinkOptions());
+        var act = sut.GetDirectory(
             baseDirectory: root,
             getBaseDirectory: null,
             directory: "Log2",
@@ -43,7 +52,10 @@ public class FileTracorCollectiveSinkTests {
         var root = GetLogRootDirectory();
         var rootLog2 = System.IO.Path.Combine(root, "Log2");
         System.IO.Directory.CreateDirectory(rootLog2);
-        var act = TracorCollectiveFileSink.GetDirectory(
+        var sut = new TracorCollectiveFileSink(
+            new TracorOptions(),
+            new TracorFileSinkOptions());
+        var act = sut.GetDirectory(
             baseDirectory: null,
             getBaseDirectory: () => root,
             directory: "Log2",
