@@ -60,7 +60,7 @@ public sealed class Program {
 
         builder.Services.AddTracor(
             addEnabledServices: true,
-            configuration: default,
+            configuration: builder.Configuration,
             configureTracor: (tracorOptions) => {
                 tracorOptions.SetOnGetApplicationStopping(
                     static (sp) => sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
