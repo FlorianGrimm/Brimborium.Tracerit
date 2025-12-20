@@ -80,6 +80,7 @@ describe('DepDataService', () => {
     }
     subscription.unsubscribe();
   });
+
   it('property dep 2 ui and inner', () => {
     const subscription = new Subscription();
     const propertyA = service.createProperty<number>({
@@ -176,4 +177,87 @@ describe('DepDataService', () => {
 
     subscription.unsubscribe();
   });
+
+  it('property dep inner UI', () => {
+    let index=1;
+    const objectA = {};
+    const depDataService = new DepDataService();
+    const enhancedObjectA = depDataService.wrap(objectA);
+    const propertyA = enhancedObjectA.createProperty<string>({
+      name: 'testA',
+      initialValue: "A",
+    });
+    const propertyB = enhancedObjectA.createProperty<string>({
+      name: 'testB',
+      initialValue: "B",
+    });
+    const propertyC = enhancedObjectA.createProperty<string>({
+      name: 'testC',
+      initialValue: "C",
+    }).withSource({
+      sourceDependency: { propA: propertyA.dependencyInner(), propB: propertyB.dependencyUi() },
+      sourceTransform: ({ propA, propB }) => { return `${index++}-${propA}-${propB}`;}
+    });
+    const propertyD = enhancedObjectA.createProperty<string>({
+      name: 'testD',
+      initialValue: "D",
+    }).withSource({
+      sourceDependency: { propA: propertyA.dependencyPublic(), propC: propertyB.dependencyPublic() },
+      sourceTransform: ({ propA, propC }) => { return `${index++}-${propA}-${propC}`;}
+    });
+    
+    const propertyE = enhancedObjectA.createProperty<string>({
+      name: 'testE',
+      initialValue: "E",
+    }).withSource({
+      sourceDependency: { propB: propertyB.dependencyGate(), propC: propertyB.dependencyPublic() },
+      sourceTransform: ({ propB, propC }, currentValue) => { 
+        if (propB !== "BB") { return currentValue; }
+        return `${index++}-${propB}-${propC}`;
+      }
+    });
+
+    expect(propertyC.getValue()).toEqual('1-A-B');
+    expect(propertyD.getValue()).toEqual('2-A-B');
+    expect(propertyE.getValue()).toEqual('E');
+
+
+    propertyA.setValue("AA");
+    expect(propertyC.getValue()).toEqual('3-AA-B');
+    expect(propertyD.getValue()).toEqual('4-AA-B');
+    expect(propertyE.getValue()).toEqual('E');
+
+    depDataService.start
+    propertyB.setValue("BB");
+    expect(propertyC.getValue()).toEqual('6-AA-BB');
+    expect(propertyD.getValue()).toEqual('5-AA-BB');
+    expect(propertyE.getValue()).toEqual('7-BB-BB');
+  });
+
+  it('property dep loop abort', () => {
+    let index=1;
+    const objectA = {};
+    const depDataService = new DepDataService();
+    const enhancedObjectA = depDataService.wrap(objectA);
+    const propertyA = enhancedObjectA.createProperty<string>({
+      name: 'testA',
+      initialValue: "A",
+    });
+    const propertyB = enhancedObjectA.createProperty<string>({
+      name: 'testB',
+      initialValue: "B",
+    });
+
+    propertyA.withSource({
+      sourceDependency: { propB: propertyB.dependencyPublic() },
+      sourceTransform: ({ propB }) => { return `${index++}-A-${propB}`;}
+    });
+
+    propertyB.withSource({
+      sourceDependency: { propA: propertyA.dependencyPublic() },
+      sourceTransform: ({ propA }) => { return `${index++}-B-${propA}`;}
+    });
+
+    expect(index).toBeLessThan(10);    
+  })
 });

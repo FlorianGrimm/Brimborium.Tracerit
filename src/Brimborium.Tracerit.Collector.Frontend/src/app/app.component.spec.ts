@@ -14,6 +14,10 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
   it('should create the app', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;

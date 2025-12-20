@@ -3,7 +3,10 @@ import {
   ChartNoAxesGantt,
   ChevronLeft,
   ChevronRight,
-  SquareX,
+  CirclePlus,
+  ClipboardCopy,
+  ClipboardMinus,
+  ClipboardPaste,
   Eye,
   EyeOff,
   FileStack,
@@ -12,14 +15,17 @@ import {
   GripVertical,
   Menu,
   MessageSquareText,
+  Minus,
+  Plus,
   Search,
   Spotlight,
+  SquareX,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
 } from 'lucide-angular';
 
 export class AppIconComponent {
-  
+
   public readonly LogView = MessageSquareText;
   public readonly DirectoryList = FileStack;
   public readonly Close = SquareX;
@@ -36,4 +42,10 @@ export class AppIconComponent {
   public readonly EyeOff = EyeOff;
   public readonly GripVertical = GripVertical;
   public readonly Menu = Menu;
+  public readonly CirclePlus = CirclePlus;
+  public readonly Plus = Plus;
+  public readonly Minus = Minus;
+  public readonly ClipboardCopy = ClipboardCopy;
+  public readonly ClipboardPaste = ClipboardPaste;
+  public readonly ClipboardCut = ClipboardMinus;
 }
