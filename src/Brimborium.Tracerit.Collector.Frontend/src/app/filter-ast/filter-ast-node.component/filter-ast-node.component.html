@@ -11,8 +11,9 @@
     <div class="node-list-child">
         @if(node.listChild != null){
         @for (child of node.listChild; track child.id) {
-        <app-filter-ast-node [uiNode]="child" [uiNodeRoot]="uiNodeRoot()" (nodeChanged)="onNodeChanged($event)"
-            [selection]="selection()" (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node>
+        <app-filter-ast-node [uiNode]="child" [filterAstManager]="filterAstManager()" [uiNodeRoot]="uiNodeRoot()"
+            (nodeChanged)="onNodeChanged($event)" [selection]="selection()"
+            (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node>
         }@empty {
         <div>...</div>
         }

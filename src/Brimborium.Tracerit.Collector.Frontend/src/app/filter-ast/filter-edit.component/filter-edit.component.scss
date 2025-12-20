@@ -1,3 +1,29 @@
+[ngTabs]{
+    display: flex;
+    flex-direction: column;
+
+    [ngTabList]{
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        padding: 5px 10px;
+
+        [ngTab]{
+            min-width: 100px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            margin: 0 5px;
+            text-align: center;
+        }
+        [ngTab][aria-selected='true'] {
+            background-color: #666;
+            color: #fff;
+        }
+    }
+}
 .filter-ast-node-actions {
     z-index: 2;
 

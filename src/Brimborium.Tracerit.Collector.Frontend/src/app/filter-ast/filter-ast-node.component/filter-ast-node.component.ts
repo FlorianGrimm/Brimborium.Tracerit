@@ -6,6 +6,8 @@ import { DataService } from '@app/Utility/data-service';
 import { initialUIFilterAstNodeSelection, OutputFilterAstNode, UIFilterAstNode, UIFilterAstNodeSelection } from '@app/Utility/filter-ast-node';
 import { FilterAstNodeValue } from "@app/filter-ast/filter-ast-node-value.component/filter-ast-node-value.component";
 import { LogLineValue } from '@app/Api';
+import { FilterAstManager } from '../filter-ast-manager';
+import { AppIconComponent } from '@app/app-icon/app-icon.component';
 
 
 @Component({
@@ -17,10 +19,9 @@ import { LogLineValue } from '@app/Api';
 })
 export class FilterAstNodeComponent {
   readonly dataService = inject(DataService);
+  readonly appIcon = new AppIconComponent();
 
-  readonly Plus = Plus;
-  readonly Minus = Minus;
-
+  readonly filterAstManager = input.required<FilterAstManager>();
   readonly uiNode = input<UIFilterAstNode | null>(null);
   readonly uiNodeRoot = input<UIFilterAstNode | null>(null);
   readonly selection = input<UIFilterAstNodeSelection>(initialUIFilterAstNodeSelection);
@@ -75,22 +76,20 @@ export class FilterAstNodeComponent {
     const node = this.uiNode();
     if (node == null) { return; }
 
-    debugger;
-    
     const listAllHeader = this.dataService.listAllHeader.getValue();
     const nextProperty = listAllHeader.find((item) => (item.name === name));
     if (nextProperty == null) { return; }
 
     const nextValueValue = getValidLogLineValue(nextProperty.typeValue, node.value?.value)
     const nextValue: LogLineValue = {
-        name: nextProperty.name,
-        typeValue: nextProperty.typeValue,
-        value: nextValueValue! as any,
-      };
-    const nextNode= {
-        ...node,
-        value: nextValue,
-      };
+      name: nextProperty.name,
+      typeValue: nextProperty.typeValue,
+      value: nextValueValue! as any,
+    };
+    const nextNode = {
+      ...node,
+      value: nextValue,
+    };
     this.nodeChanged.emit({
       nextNode: nextNode,
       nextNodeRoot: undefined,
@@ -100,7 +99,7 @@ export class FilterAstNodeComponent {
 
 
   onNodeChanged(value: OutputFilterAstNode) {
-    if (value.nextNodeRoot != null) {     
+    if (value.nextNodeRoot != null) {
       //console.log('onNodeChanged-nextNodeRoot', value);
       this.nodeChanged.emit(value);
       return;

@@ -1,14 +1,5 @@
-import { Component, inject, input, output, signal, effect, linkedSignal, computed, ChangeDetectionStrategy } from '@angular/core';
-import {
-  LucideAngularModule,
-  Plus,
-  Minus,
-  CirclePlus,
-  ClipboardCopy,
-  ClipboardPaste,
-  ClipboardMinus
-} from 'lucide-angular';
-import { FilterAstNodeComponent } from '@app/filter-ast/filter-ast-node.component/filter-ast-node.component';
+import { Component, inject, input, output, signal, effect, linkedSignal, computed, ChangeDetectionStrategy, untracked } from '@angular/core';
+import { LucideAngularModule } from 'lucide-angular';
 import { FilterAstNode, LogLineValue, PropertyHeader } from '@app/Api';
 import {
   UIFilterAstNode,
@@ -28,29 +19,37 @@ import {
   getValidLogLineValue,
   ReplaceUiNodeFn
 } from '@app/Utility/filter-ast-node';
-import { DataService } from '@app/Utility/data-service';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { Tab, Tabs, TabList, TabPanel, TabContent } from '@angular/aria/tabs';
+import { DataService } from '@app/Utility/data-service';
+import { FilterAstNodeComponent } from '@app/filter-ast/filter-ast-node.component/filter-ast-node.component';
+import { AppIconComponent } from '@app/app-icon/app-icon.component';
+import { DepDataService } from '@app/Utility/dep-data.service';
+import { FilterAstManager } from '../filter-ast-manager';
 
 @Component({
   selector: 'app-filter-edit',
   imports: [
     LucideAngularModule,
-    FilterAstNodeComponent
-  ],
+    FilterAstNodeComponent,
+    TabList, Tab, Tabs, TabPanel, TabContent],
   templateUrl: './filter-edit.component.html',
   styleUrl: './filter-edit.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterEditComponent {
   readonly dataService = inject(DataService);
-  readonly node = input<FilterAstNode | null>(null);
+  readonly depDataService = inject(DepDataService);
+  readonly depThis = this.depDataService.wrap(this);
 
-  readonly CirclePlus = CirclePlus;
-  readonly Plus = Plus;
-  readonly Minus = Minus;
-  readonly ClipboardCopy = ClipboardCopy;
-  readonly ClipboardPaste = ClipboardPaste;
-  readonly ClipboardCut = ClipboardMinus;
+  readonly node = input<FilterAstNode | null>(null);
+  readonly nodeChanged = output<FilterAstNode>();
+
+  readonly appIcon = new AppIconComponent();
+
+  readonly filterAstManager = new FilterAstManager(null, this.depThis.subscription, this.node, this.nodeChanged);
+  readonly $filterAstManager = signal(this.filterAstManager);
+  readonly $uiNodeRoot = this.filterAstManager.$uiNodeRoot;
 
   readonly uiNodeRoot = linkedSignal({
     source: () => this.node(),
@@ -70,7 +69,6 @@ export class FilterEditComponent {
     },
     debugName: 'filterAstNode'
   });
-  readonly nodeChanged = output<FilterAstNode>();
 
   readonly selection = signal<UIFilterAstNodeSelection>(initialUIFilterAstNodeSelection);
   readonly uiCanAddChild = computed(() => {
@@ -99,6 +97,11 @@ export class FilterEditComponent {
   constructor(
     private clipboard: Clipboard
   ) {
+    const e = effect(() => {
+      const node = this.node();
+      untracked(() => { this.filterAstManager.setRootNode(node); });
+    });
+    this.depThis.subscription.add(() => e.destroy());
   }
 
   onSelectionChanged(value: UIFilterAstNodeSelection) {
