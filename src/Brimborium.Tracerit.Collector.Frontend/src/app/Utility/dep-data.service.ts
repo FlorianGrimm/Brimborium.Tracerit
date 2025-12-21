@@ -107,20 +107,8 @@ export class DepDataService {
     return new DepDataPropertyEnhancedObject(that, this, () => this.nextPropertyIndex());
   }
 
-  /** creates a new initializer. */
-  public createInitializer() {
-    return new DepDataPropertyInitializer();
-  }
-
   private nextPropertyIndex() {
     return this._PropertyIndex++;
-  }
-
-  /** creates a new property. */
-  public createProperty<V>(
-    args: DepDataPropertyArguments<V>
-  ): DepDataProperty<V> {
-    return new DepDataProperty<V>(args, this, this._PropertyIndex++);
   }
 
   private readonly _ExecutionScope = new DepDataServiceExecutionManager(this);
@@ -227,7 +215,7 @@ export class DepDataPropertyEnhancedObject {
   ) {
     this.name = that.constructor.name;
     this.depDataService = depDataService;
-    this.depDataPropertyInitializer = that.depDataPropertyInitializer ?? new DepDataPropertyInitializer();
+    this.depDataPropertyInitializer = that.depDataPropertyInitializer ?? new DepDataPropertyInitializer(that);
     this.subscription = that.subscription ?? new Subscription();
     if (that.ngOnInit == null) {
       that.ngOnInit = () => {
@@ -265,13 +253,17 @@ export class DepDataPropertyEnhancedObject {
     return new DepDataProperty<V>(argsWithSubscription, this.depDataService, this.nextPropertyIndex(), this.depDataPropertyInitializer);
   }
 
-  
+
   public dependencyInput<V>(input: Signal<V>): IDepDataPropertyDependency<V> {
     return this.createProperty({
       name: 'dependencyInput',
       initialValue: input(),
-      input: {input},
+      input: { input },
     }).dependencyInner();
+  }
+
+  public executePropertyInitializer() {
+    this.depDataPropertyInitializer.execute();
   }
 }
 
@@ -284,14 +276,16 @@ export class DepDataPropertyInitializer {
     DepDataPropertyInitializer._EnsureExecuted = undefined;
     for (const initializer of list) {
       if (initializer._ListDelayed == null) { continue; }
-      console.warn('Missing call to DepDataPropertyInitializer.execute');
+      console.warn(`Missing call to DepDataPropertyInitializer.execute for ${initializer.that?.constructor.name}`);
       initializer.execute();
     }
   }
 
   private _ListDelayed: DepDataPropertyWithSourceDelayed<any, any>[] | undefined = undefined;
 
-  constructor() {
+  that: {} | undefined;;
+  constructor(that: {}) {
+    this.that = that;
     if (DepDataPropertyInitializer._EnsureExecuted == null) {
       window.requestAnimationFrame(() => { DepDataPropertyInitializer.ensureExecuted(); });
       DepDataPropertyInitializer._EnsureExecuted = [];
@@ -313,6 +307,7 @@ export class DepDataPropertyInitializer {
     for (const delayed of listDelayed) {
       delayed.fnDelayed(delayed);
     }
+    this.that = undefined;;
   }
 }
 
@@ -322,7 +317,7 @@ export type SourceTransform<TS, V> = (value: DepDataPropertySourceValue<TS>, cur
 /** arguments for withSource. */
 export type DepDataPropertyWithSource<TS, V> = {
   //sourceDependency: DepDataPropertySourceDependency<TS>;
-  sourceDependency:  SourceDependency<TS>;
+  sourceDependency: SourceDependency<TS>;
   //sourceTransform: (value: DepDataPropertySourceValue<TS>, currentValue: V) => V;
   sourceTransform: SourceTransform<TS, V>;
   subscription?: Subscription;
@@ -535,12 +530,12 @@ export class DepDataProperty<V> implements InteropObservable<V> {
 
   public withSourceIdentity(
     dependency: IDepDataPropertyDependency<V>,
-    depDataPropertyInitializer: DepDataPropertyInitializer
+    depDataPropertyInitializer?: DepDataPropertyInitializer
   ) {
     return this.withSource<{ value: V }>({
       sourceDependency: { value: dependency },
       sourceTransform: (d) => d.value,
-      depDataPropertyInitializer: depDataPropertyInitializer,
+      depDataPropertyInitializer: depDataPropertyInitializer ?? this.depDataPropertyInitializer,
     });
   }
 
@@ -728,9 +723,9 @@ export class DepDataPropertyDependencyGate<V> implements IDepDataPropertyDepende
 
 export class DepDataServiceSource<V, TS> {
   public name: string | undefined = undefined;
-  
+
   constructor(
-    public readonly sourceDependency:  SourceDependency<TS>,
+    public readonly sourceDependency: SourceDependency<TS>,
     public readonly sourceTransform: SourceTransform<TS, V>,
     public readonly targetProperty: DepDataProperty<V>,
     public readonly service: DepDataService
@@ -761,7 +756,7 @@ export class DepDataServiceSource<V, TS> {
     }
     try {
       const currentValue = this.targetProperty.getValue();
-      const nextValue = this.sourceTransform(sourceValue,currentValue);
+      const nextValue = this.sourceTransform(sourceValue, currentValue);
       this.targetProperty.setValue(nextValue);
       return nextValue;
     } catch (error) {

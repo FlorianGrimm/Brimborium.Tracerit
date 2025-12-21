@@ -16,13 +16,13 @@ export type ModeZoom = 'complete' | 'zoom' | 'filter';
 export class LogTimeDataService {
   public readonly subscription = new Subscription();
   public readonly depDataService = inject(DepDataService);
-  public readonly depDataPropertyInitializer = this.depDataService.createInitializer();
+  public readonly depThis = this.depDataService.wrap(this);
   public readonly dataService = inject(DataService);
 
-  public readonly listAllHeader = this.depDataService.createProperty({
+  public readonly listAllHeader = this.depThis.createProperty({
     name: 'LogTimeDataService_listAllHeader',
     initialValue: [] as PropertyHeader[],
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency: {
@@ -30,49 +30,46 @@ export class LogTimeDataService {
       },
       sourceTransform:
         (d) => d.listAllHeader,
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
 
-  public readonly useCurrentStream = this.depDataService.createProperty({
+  public readonly useCurrentStream = this.depThis.createProperty({
     name: 'LogTimeDataService_useCurrentStream',
     initialValue: false,
-    subscription: this.subscription,
+    
   });
   //readonly useCurrentStream$ = this.useCurrentStream.asObserable();
 
   // input
-  public readonly listLogLineCurrentStream = this.depDataService.createProperty<LogLine[]>({
+  public readonly listLogLineCurrentStream = this.depThis.createProperty<LogLine[]>({
     name: 'LogTimeDataService_listLogLineCurrentStream',
     initialValue: [],
-    subscription: this.subscription,
+    
   });
 
-  public readonly listLogLineFiles = this.depDataService.createProperty<LogLine[]>({
+  public readonly listLogLineFiles = this.depThis.createProperty<LogLine[]>({
     name: 'LogTimeDataService_listLogLineFilesSubscripe2',
     initialValue: [],
-    subscription: this.subscription,
+    
   }).withSourceIdentity(
-    this.dataService.listLogLineSource.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.dataService.listLogLineSource.dependencyPublic());
 
-  public readonly listLogLineAll = this.depDataService.createProperty({
+  public readonly listLogLineAll = this.depThis.createProperty({
     name: 'LogTimeDataService_listLogLineAll',
     initialValue: [] as LogLine[],
-    subscription: this.subscription,
+    
   }).withSourceIdentity(
-    this.dataService.listLogLineSource.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.dataService.listLogLineSource.dependencyPublic());
 
-  public readonly listHeaderAndLogLineAll = this.depDataService.createProperty<HeaderAndLogLine>({
+  public readonly listHeaderAndLogLineAll = this.depThis.createProperty<HeaderAndLogLine>({
     name: 'LogTimeDataService_listHeaderAndLogLineAll',
     initialValue: emptyHeaderAndLogLine,
-    subscription: this.subscription,
+    
   }).withSourceIdentity(
-    this.dataService.listHeaderAndLogLineSource.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.dataService.listHeaderAndLogLineSource.dependencyPublic());
 
-  public readonly dataComplete = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataComplete = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataComplete',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
@@ -85,7 +82,7 @@ export class LogTimeDataService {
         setTimeRangeDurationIfChanged(this.rangeZoom, nextRangeZoom);
       }
     },
-    subscription: this.subscription,
+    
   }).withSource({
     sourceDependency: {
       src: this.listHeaderAndLogLineAll.dependencyInner()
@@ -103,41 +100,41 @@ export class LogTimeDataService {
         return result;
       }
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    
   });
 
-  public readonly rangeComplete = this.depDataService.createProperty<TimeRangeDuration>({
+  public readonly rangeComplete = this.depThis.createProperty<TimeRangeDuration>({
     name: 'LogTimeDataService_rangeComplete',
     initialValue: epoch01RangeDuration,
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency: {
         src: this.dataComplete.dependencyInner()
       },
       sourceTransform: ({ src }) => { return src.range; },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
 
   // input
-  public readonly modeZoom = this.depDataService.createProperty({
+  public readonly modeZoom = this.depThis.createProperty({
     name: 'LogTimeDataService_modeZoom',
     initialValue: 'complete' as ModeZoom,
-    subscription: this.subscription,
+    
   });
   //readonly modeZoom$ = this.modeZoom.asObserable();
 
-  public readonly rangeZoom = this.depDataService.createProperty<TimeRangeDuration>({
+  public readonly rangeZoom = this.depThis.createProperty<TimeRangeDuration>({
     name: 'LogTimeDataService_rangeZoom',
     initialValue: epoch01RangeDuration,
     transform: (value) => {
       return calcRange([this.rangeComplete.getValue(), value]);
     },
-    subscription: this.subscription,
+    
   });
 
-  public readonly dataZoom = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataZoom = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
@@ -149,7 +146,7 @@ export class LogTimeDataService {
         setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
       }
     },
-    subscription: this.subscription,
+    
   }).withSource({
     sourceDependency: {
       dataComplete: this.dataComplete.dependencyInner(),
@@ -174,19 +171,19 @@ export class LogTimeDataService {
       const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range: nextRangeZoom, filter: null };
       return result;
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    
   });
 
-  public readonly rangeFilter = this.depDataService.createProperty<TimeRangeDuration>({
+  public readonly rangeFilter = this.depThis.createProperty<TimeRangeDuration>({
     name: 'LogTimeDataService_rangeFilter',
     initialValue: epoch01RangeDuration,
     transform: (value) => {
       return calcRange([this.rangeComplete.getValue(), this.rangeZoom.getValue(), value]);
     },
-    subscription: this.subscription,
+    
   });
 
-  public readonly dataTimeFiltered = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataTimeFiltered = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
@@ -199,7 +196,7 @@ export class LogTimeDataService {
         setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
       }
     },
-    subscription: this.subscription,
+    
   }).withSource({
     sourceDependency: {
       dataZoom: this.dataZoom.dependencyInner(),
@@ -222,13 +219,13 @@ export class LogTimeDataService {
       const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range: nextRangeFilter, filter: null };
       return result;
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    
   });
 
   // filter
   // input
   // TODO
-  public readonly listFilterCondition = this.depDataService.createProperty({
+  public readonly listFilterCondition = this.depThis.createProperty({
     name: 'LogTimeDataService_listFilterCondition',
     initialValue: [] as PropertyHeader[],
     sideEffect: {
@@ -238,19 +235,19 @@ export class LogTimeDataService {
         //this.filterAst.set(next);
       }
     },
-    subscription: this.subscription,
+    
   });
 
-  public readonly filterAst = this.depDataService.createProperty({
+  public readonly filterAst = this.depThis.createProperty({
     name: 'LogTimeDataService_filterAst',
     initialValue: null as FilterAstNode | null,
-    subscription: this.subscription,
+    
   });
 
-  public readonly dataFilteredCondition = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataFilteredCondition = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
+    
   }).withSource({
     sourceDependency: {
       dataTimeFiltered: this.dataTimeFiltered.dependencyInner(),
@@ -264,14 +261,14 @@ export class LogTimeDataService {
       const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range, filter: filterAst };
       return result;
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    
   });
 
   // calculated output depended on listLogLine$ and listFilterCondition$
-  public readonly listLogLineFilteredCondition = this.depDataService.createProperty({
+  public readonly listLogLineFilteredCondition = this.depThis.createProperty({
     name: 'LogTimeDataService_listLogLineFilteredCondition',
     initialValue: [] as LogLine[],
-    subscription: this.subscription,
+    
   }).withSource({
     sourceDependency: {
       listLogLineAll: this.listLogLineAll.dependencyInner(),
@@ -283,15 +280,15 @@ export class LogTimeDataService {
         d.listFilterCondition);
       return result;
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    
   }
   );
   public readonly $listLogLineFilteredCondition = this.listLogLineFilteredCondition.asSignal();
 
-  public readonly listLogLineTimeZoomed = this.depDataService.createProperty({
+  public readonly listLogLineTimeZoomed = this.depThis.createProperty({
     name: 'LogTimeDataService_listLogLineTimeZoomed',
     initialValue: [] as LogLine[],
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency:
@@ -316,15 +313,15 @@ export class LogTimeDataService {
           });
           return result;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
 
   // calculated output depended on listLogLineFilteredCondition$ and rangeFilter$
-  public readonly listLogLineFilteredTime = this.depDataService.createProperty({
+  public readonly listLogLineFilteredTime = this.depThis.createProperty({
     name: 'LogTimeDataService_listLogLineFilteredTime',
     initialValue: [] as LogLine[],
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency:
@@ -351,22 +348,22 @@ export class LogTimeDataService {
           });
           return result;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
 
   // input
-  public readonly currentLogLineId = this.depDataService.createProperty({
+  public readonly currentLogLineId = this.depThis.createProperty({
     name: 'LogTimeDataService_currentLogLineId',
     initialValue: null as (number | null),
-    subscription: this.subscription,
+    
   });
 
   // depended listLogLineFiltered$ currentLogLineId$
-  public readonly currentLogLine = this.depDataService.createProperty<LogLine | null>({
+  public readonly currentLogLine = this.depThis.createProperty<LogLine | null>({
     name: 'LogTimeDataService_currentLogLine',
     initialValue: null as (LogLine | null),
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency:
@@ -380,13 +377,13 @@ export class LogTimeDataService {
           const result = dataTimeFiltered.listLogLine.find(item => item.id === currentLogLineId) ?? null;
           return result;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     });
 
-  public readonly currentLogTimestamp = this.depDataService.createProperty<ZonedDateTime | null>({
+  public readonly currentLogTimestamp = this.depThis.createProperty<ZonedDateTime | null>({
     name: 'LogTimeDataService_currentLogTimestamp',
     initialValue: null,
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency: {
@@ -396,21 +393,21 @@ export class LogTimeDataService {
         const result = getLogLineTimestampValue(currentLogLine);
         return result;
       },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
 
   // input
-  public readonly listLogLineIdHighlighted = this.depDataService.createProperty({
+  public readonly listLogLineIdHighlighted = this.depThis.createProperty({
     name: 'LogTimeDataService_listLogLineIdHighlighted',
     initialValue: new Set<string>(),
-    subscription: this.subscription,
+    
   });
 
-  public readonly rangeCurrentSelected = this.depDataService.createProperty<TimeRangeOrNull>({
+  public readonly rangeCurrentSelected = this.depThis.createProperty<TimeRangeOrNull>({
     name: 'LogTimeDataService_rangeCurrentSelected',
     initialValue: Object.freeze({ start: null, finish: null }),
-    subscription: this.subscription,
+    
   }).withSource({
     sourceDependency: {
       currentLogLine: this.currentLogLine.dependencyInner(),
@@ -419,11 +416,11 @@ export class LogTimeDataService {
       const ts = getLogLineTimestampValue(currentLogLine);
       return createTimeRangeOrNull(ts, ts);
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    
   });
 
   constructor() {
-    this.depDataPropertyInitializer.execute();
+    this.depThis.executePropertyInitializer();
   }
 
   setRangeComplete(value: TimeRangeDuration) {

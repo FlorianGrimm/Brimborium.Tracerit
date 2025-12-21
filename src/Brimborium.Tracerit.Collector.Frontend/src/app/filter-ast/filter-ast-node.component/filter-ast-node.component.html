@@ -11,15 +11,18 @@
     <div class="node-list-child">
         @if(node.listChild != null){
         @for (child of node.listChild; track child.id) {
-        <app-filter-ast-node [uiNode]="child" [filterAstManager]="filterAstManager()" [uiNodeRoot]="uiNodeRoot()"
-            (nodeChanged)="onNodeChanged($event)" [selection]="selection()"
-            (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node>
+        <app-filter-ast-node [uiNode]="child" [filterAstManager]="filterAstManager()"></app-filter-ast-node>
         }@empty {
-        <div>...</div>
+        <div>...empty</div>
         }
         }@else {
-        <div>...</div>
+        <div>...null</div>
         }
+        <div>
+            <button class="node-add-child" (click)="onAppendListChild()">
+                <lucide-icon [img]="appIcon.Plus" class="lucide-icon" size="10"></lucide-icon> new
+            </button>
+        </div>
     </div>
     }@else {
     @if (node.value != null) {
@@ -27,7 +30,7 @@
         @if (thisSel==null){
         {{node.value.name}}
         } @else {
-        <input type="text" [value]="node.value.name" (change)="onNameChanged($event.target.value)" />
+        <app-filter-ast-name [uiNode]="uiNode()" [filterAstManager]="filterAstManager()"></app-filter-ast-name>
         }
     </div>
     <div class="node-operator" (click)="setSelection('operator')"
@@ -35,15 +38,15 @@
         {{operatorDisplay()}}
     </div>
     <div class="node-value">
-        <app-filter-ast-node-value [uiNode]="uiNode()" [uiNodeRoot]="uiNodeRoot()" (nodeChanged)="onNodeChanged($event)"
-            [selection]="selection()" (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node-value>
+        <app-filter-ast-node-value [uiNode]="uiNode()"
+            [filterAstManager]="filterAstManager()"></app-filter-ast-node-value>
     </div>
     }@else{
     <div class="node-name">
         @if (thisSel==null){
         ...
         } @else {
-        <input type="text" (change)="onNameChanged($event.target.value)" />
+        <app-filter-ast-name [uiNode]="uiNode()" [filterAstManager]="filterAstManager()"></app-filter-ast-name>
         }
     </div>
     <div class="node-operator" (click)="setSelection('operator')"

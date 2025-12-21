@@ -7,7 +7,7 @@
     padding: 5px;
 }
 
-.node-filter-operatorIsList > .node-list-child{
+.node-filter-operatorIsList>.node-list-child {
     flex-direction: column;
 }
 
@@ -57,3 +57,13 @@
 .focus {
     border: 1px dashed blue;
 }
+
+button.node-add-child {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #eee;
+    padding: 0 5px;
+    font-weight: bold;
+    margin: auto 8px;
+}
+

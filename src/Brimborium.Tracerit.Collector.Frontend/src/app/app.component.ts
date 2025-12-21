@@ -26,7 +26,7 @@ export class AppComponent {
     readonly httpClientService = inject(HttpClientService);
     readonly dataService = inject(DataService);
     readonly depDataService = inject(DepDataService);
-    readonly depDataPropertyInitializer = this.depDataService.createInitializer();
+    public readonly depThis = this.depDataService.wrap(this);
 
     readonly subscription = new Subscription();
     readonly router = inject(Router);
@@ -37,14 +37,14 @@ export class AppComponent {
     protected open = false;
     protected switch = false;
 
-    readonly visibilityState = this.depDataService.createProperty({
+    readonly visibilityState = this.depThis.createProperty({
         name: 'AppComponent_visibilityState',
         initialValue: document.visibilityState,
-        subscription: this.subscription,
+        
     });
 
 
-    readonly reloadCurrentStream = this.depDataService.createProperty<ReloadCurrentStream>({
+    readonly reloadCurrentStream = this.depThis.createProperty<ReloadCurrentStream>({
         name: 'AppComponent_triggerReload',
         initialValue: { trigger: false, tick: 0 },
         compare: (a, b) => a.tick === b.tick,
@@ -64,7 +64,7 @@ export class AppComponent {
           kind: 'UI',
           requestAnimationFrame: true,
         },
-        subscription: this.subscription,
+        
     }).withSource({
         sourceDependency: {
             visibilityState: this.visibilityState.dependencyInner(),
@@ -82,11 +82,11 @@ export class AppComponent {
                     return result;;
                 }
             },
-        depDataPropertyInitializer: this.depDataPropertyInitializer
+        
     });
 
     constructor() {
-        this.depDataPropertyInitializer.execute();
+        this.depThis.executePropertyInitializer();
         window.addEventListener('visibilitychange', (currentEvent: Event) => {
             this.visibilityState.setValue(document.visibilityState);
         });

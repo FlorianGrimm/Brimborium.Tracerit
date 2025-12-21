@@ -6,9 +6,7 @@
     <div>
         <div ngTabPanel [preserveContent]="false" value="AST">
             <ng-template ngTabContent>
-                <app-filter-ast-node [uiNode]="uiNodeRoot()" [filterAstManager]="$filterAstManager()"
-                    [uiNodeRoot]="uiNodeRoot()" (nodeChanged)="onNodeChanged($event)" [selection]="selection()"
-                    (selectionChanged)="onSelectionChanged($event)"></app-filter-ast-node>
+                <app-filter-ast-node [uiNode]="$uiNodeRoot()" [filterAstManager]="$filterAstManager()"></app-filter-ast-node>
                 @let s=selection();
                 @if (s) {
                 <div class="filter-ast-node-actions">
@@ -61,5 +59,8 @@
                 <textarea></textarea>
             </ng-template>
         </div>
-    </div>
+    </div>    
+</div>
+<div>
+    <pre>{{ $uiNodeRoot() | json }}</pre>
 </div>

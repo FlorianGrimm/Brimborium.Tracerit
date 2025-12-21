@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, outp
 import { LogLineValue, TypeValue } from '@app/Api';
 import { initialUIFilterAstNodeSelection, OutputFilterAstNode, replaceUiNode, UIFilterAstNode, UIFilterAstNodeSelection } from '@app/Utility/filter-ast-node';
 import { Instant, ZonedDateTime, ZoneId } from '@js-joda/core';
+import { FilterAstManager } from '../filter-ast-manager';
 @Component({
   selector: 'app-filter-ast-node-value',
   imports: [],
@@ -10,13 +11,13 @@ import { Instant, ZonedDateTime, ZoneId } from '@js-joda/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterAstNodeValue {
-  readonly uiNode = input<UIFilterAstNode | null>(null);
-  readonly uiNodeRoot = input<UIFilterAstNode | null>(null);
-  readonly selection = input<UIFilterAstNodeSelection>(initialUIFilterAstNodeSelection);
+  readonly filterAstManager = input.required<FilterAstManager>();
+  readonly uiNode = input.required<UIFilterAstNode>();
+
   readonly nodeValue = computed(() => {
-    const node = this.uiNode();
-    if (node == null) { return null; }
-    return node.value;
+    const nodeValue = this.uiNode()?.value;
+    if (nodeValue == null) { return null; }
+    return nodeValue;
   });
 
   readonly name = computed(() => {
@@ -75,21 +76,21 @@ export class FilterAstNodeValue {
 
   readonly thisSelection = computed(() => {
     const node = this.uiNode();
-    const selection = this.selection();
+    const filterAstManager = this.filterAstManager();
+    const selection = filterAstManager.$selection();
     if (node == null || selection == null) { return null; }
     if (node.id != selection.id) { return null; }
     if (!(selection.property == 'value')) { return null; }
     return selection;
   });
 
-  readonly nodeChanged = output<OutputFilterAstNode>();
-  readonly selectionChanged = output<UIFilterAstNodeSelection>();
-
   constructor() {
   }
+
   onFocus() {
     const node = this.uiNode();
     const selection = this.thisSelection();
+    const filterAstManager = this.filterAstManager();
     if (node == null) { return; }
     if (selection != null && selection.id == node.id) { return; }
 
@@ -97,7 +98,7 @@ export class FilterAstNodeValue {
       id: node.id,
       property: 'value',
     };
-    this.selectionChanged.emit(nextSelection);
+    filterAstManager.setSelection(nextSelection);
   }
 
   setValueStr(value: string) {
@@ -130,6 +131,7 @@ export class FilterAstNodeValue {
 
   setValue(value: any, typeValue: TypeValue) {
     const node = this.uiNode();
+    const filterAstManager = this.filterAstManager();
     if (node == null || node.value == null) { return; }
     const nodeValue = node.value;
     if (nodeValue.typeValue != typeValue) { return; }
@@ -142,16 +144,7 @@ export class FilterAstNodeValue {
       ...node,
       value: nextValue,
     };
-    const uiNodeRoot = this.uiNodeRoot();
-    if (uiNodeRoot == null) { return; }
-    const nextUiNodeRoot = replaceUiNode(uiNodeRoot, nextNode);
-    // console.log('setValueStr-nextUiNodeRoot', nextUiNodeRoot);
-
-    this.nodeChanged.emit({
-      nextNode: undefined,
-      nextNodeRoot: nextUiNodeRoot,
-      nextSelection: undefined,
-    });
+    filterAstManager.replaceUiNode(nextNode);   
   }
 
   listLevels = ['trace', 'debug','information', 'warning', 'error'];

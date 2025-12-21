@@ -19,24 +19,23 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
 
   readonly router = inject(Router);
   readonly depDataService = inject(DepDataService);
-  readonly depDataPropertyInitializer = this.depDataService.createInitializer();
+  public readonly depThis = this.depDataService.wrap(this);
 
   readonly dataService = inject(DataService);
   readonly httpClientService = inject(HttpClientService);
 
-  readonly currentFile = this.depDataService.createProperty({
+  readonly currentFile = this.depThis.createProperty({
     name: 'DirectoryListComponent_currentFile',
     initialValue: undefined as (string | undefined),
-    subscription: this.subscription,
+    
   }).withSourceIdentity(
-    this.dataService.currentFile.dependencyInner(),
-    this.depDataPropertyInitializer);
+    this.dataService.currentFile.dependencyInner());
   readonly $currentFile = this.currentFile.asSignal();
 
-  readonly listFile = this.depDataService.createProperty({
+  readonly listFile = this.depThis.createProperty({
     name: 'DirectoryListComponent_listFile',
     initialValue: [] as LogFileInformationList,
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency:
@@ -47,22 +46,22 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
         (d) => {
           return d.listFile;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
   $listFile = this.listFile.asSignal();
 
-  readonly error = this.depDataService.createProperty({
+  readonly error = this.depThis.createProperty({
     name: 'DirectoryListComponent_error',
     initialValue: undefined as (undefined | string | object),
-    subscription: this.subscription,
+    
   });
   readonly $error = this.error.asSignal();
 
-  readonly listSelectedFileName = this.depDataService.createProperty({
+  readonly listSelectedFileName = this.depThis.createProperty({
     name: 'DirectoryListComponent_listSelectedFileName',
     initialValue: [] as string[],
-    subscription: this.subscription,
+    
   }).withSource(
     {
       sourceDependency:
@@ -71,26 +70,24 @@ export class DirectoryListComponent implements OnInit, OnDestroy {
       },
       sourceTransform:
         (d) => d.listSelectedFileName,
-      depDataPropertyInitializer: this.depDataPropertyInitializer
+      
     }
   );
   readonly $listSelectedFileName = this.listSelectedFileName.asSignal();
   readonly listSelectedFileName$ = this.listSelectedFileName.asObserable();
 
-  readonly loaded = this.depDataService.createProperty<boolean>({
+  readonly loaded = this.depThis.createProperty<boolean>({
     name: 'DirectoryListComponent_loaded',
     initialValue: false,
-    subscription: this.subscription,
   });
 
-  readonly listFileLoading = this.depDataService.createProperty({
+  readonly listFileLoading = this.depThis.createProperty({
     name: 'DirectoryListComponent_listFileLoading',
     initialValue: [] as string[],
-    subscription: this.subscription,
   });
 
   constructor() {
-    this.depDataPropertyInitializer.execute();
+    this.depThis.executePropertyInitializer();
   }
 
   ngOnInit(): void {

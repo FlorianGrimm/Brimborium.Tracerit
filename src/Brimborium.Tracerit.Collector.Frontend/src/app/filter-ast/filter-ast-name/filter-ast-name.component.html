@@ -1,0 +1,26 @@
+<div ngCombobox filterMode="auto-select" class="ngCombobox-default">
+    <div #origin class="autocomplete">
+        <lucide-icon [img]="appIcon.Search" size="14" translate="no" aria-hidden="true" class="search-icon" />
+        <input type="text" [value]="$query()" (change)="onNameChanged($event.target.value)" (keydown)="onNameChanged($event.target.value)"
+            aria-label="Label dropdown" placeholder="property name" ngComboboxInput />
+    </div>
+    <ng-template ngComboboxPopupContainer>
+        <ng-template [cdkConnectedOverlay]="{origin, usePopover: 'inline', matchWidth: true}"
+            [cdkConnectedOverlayOpen]="true">
+            <div class="ngCombobox-default-popup">
+                @if ($listPropertyHeader().length === 0) {
+                <div class="no-results">No results found</div>
+                }
+                <div ngListbox>
+                    @for (header of $listPropertyHeader(); track header) {
+                    <div ngOption [value]="header" [label]="header.name">
+                        <span class="option-label">{{ header.name }}</span>
+                        <span class="check-icon material-symbols-outlined" translate="no"
+                            aria-hidden="true">check</span>
+                    </div>
+                    }
+                </div>
+            </div>
+        </ng-template>
+    </ng-template>
+</div>

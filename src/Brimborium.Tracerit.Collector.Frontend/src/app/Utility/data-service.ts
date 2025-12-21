@@ -11,19 +11,33 @@ import { getVisualHeader } from './propertyHeaderUtility';
 export class DataService {
   public readonly subscription = new Subscription();
   public readonly depDataService = inject(DepDataService);
+  public readonly depThis = this.depDataService.wrap(this);
   public readonly currentStreamName = (new Date()).valueOf().toString();
 
   public mapName = new Map<string, PropertyHeader>();
   private listAllHeaderBuffer: PropertyHeader[] = [];
 
-  public readonly listAllHeader = this.depDataService.createProperty({
-    name: 'DataService_listAllHeader',
+  public readonly listAllHeader = this.depThis.createProperty({
+    name: 'listAllHeader',
     initialValue: [] as PropertyHeader[],
-    subscription: this.subscription,
   });
 
-  public readonly useCurrentStream = this.depDataService.createProperty({
-    name: 'DataService_useCurrentStream',
+  public readonly listAllHeaderSortedByName = this.depThis.createProperty({
+    name: 'listAllHeaderSortedByName',
+    initialValue: [] as PropertyHeader[],
+  }).withSource({
+    sourceDependency: {
+      listAllHeader: this.listAllHeader.dependencyInner()
+    },
+    sourceTransform: ({ listAllHeader }) => {
+      const result = listAllHeader.slice();
+      result.sort((a, b) => a.name.localeCompare(b.name));
+      return result;
+    },
+  });
+
+  public readonly useCurrentStream = this.depThis.createProperty({
+    name: 'useCurrentStream',
     initialValue: true,
     compare: (a, b) => (a === b),
     sideEffect: {
@@ -37,37 +51,37 @@ export class DataService {
         }
       }
     },
-    subscription: this.subscription,
+    
   });
 
-  public readonly listFile = this.depDataService.createProperty({
-    name: 'DataService_listFile',
+  public readonly listFile = this.depThis.createProperty({
+    name: 'listFile',
     initialValue: [] as LogFileInformationList,
-    subscription: this.subscription,
+    
   });
 
-  public readonly currentFile = this.depDataService.createProperty({
-    name: 'DataService_currentFile',
+  public readonly currentFile = this.depThis.createProperty({
+    name: 'currentFile',
     initialValue: undefined as (string | undefined),
-    subscription: this.subscription,
+    
   });
 
-  public readonly listSelectedFileName = this.depDataService.createProperty({
-    name: 'DataService_listSelectedFileName',
+  public readonly listSelectedFileName = this.depThis.createProperty({
+    name: 'listSelectedFileName',
     initialValue: [] as string[],
-    subscription: this.subscription,
+    
   });
 
-  public readonly listLogLineSource = this.depDataService.createProperty({
-    name: 'DataService_listLogLineSource',
+  public readonly listLogLineSource = this.depThis.createProperty({
+    name: 'listLogLineSource',
     initialValue: [] as LogLine[],
-    subscription: this.subscription,
+    
   });
 
-  public readonly listHeaderAndLogLineSource = this.depDataService.createProperty<HeaderAndLogLine>({
-    name: 'DataService_listHeaderAndLogLineSource',
+  public readonly listHeaderAndLogLineSource = this.depThis.createProperty<HeaderAndLogLine>({
+    name: 'listHeaderAndLogLineSource',
     initialValue: emptyHeaderAndLogLine,
-    subscription: this.subscription,
+    
   });
 
   public readonly mapLogLineByName = new Map<string, BehaviorSubject<LogLine[]>>();
@@ -76,6 +90,7 @@ export class DataService {
 
   constructor() {
     this.addDefaultMapName();
+    this.depThis.executePropertyInitializer();
   }
 
   public setListFile(value: LogFileInformationList) {

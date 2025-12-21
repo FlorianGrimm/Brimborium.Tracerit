@@ -67,7 +67,7 @@ export function convertFilterAstNodeToUIFilterAstNode(node: FilterAstNode | null
         const uiNode: UIFilterAstNode = {
             id: crypto.randomUUID(),
             operator: node.operator,
-            listChild: node.listChild?.map((child) => convertFilterAstNodeToUIFilterAstNode(child)),
+            listChild: node.listChild?.map((child) => convertFilterAstNodeToUIFilterAstNode(child)).filter(item => item != null),
             value: node.value,
         };
         return uiNode;
@@ -120,7 +120,11 @@ export type ReplaceUiNodeResult = { node: UIFilterAstNode, replaced: boolean };
 
 export function replaceUiNode(uiNode: UIFilterAstNode, replaceNode: UIFilterAstNode): UIFilterAstNode {
     const result = replaceUiNodeInner(uiNode, replaceNode);
-    return result.node;
+    if (result.replaced) {
+        return result.node;
+    } else {
+        throw new Error('replaceUiNode failed');
+    }
 }
 
 function replaceUiNodeInner(uiNode: UIFilterAstNode, replaceNode: UIFilterAstNode): ReplaceUiNodeResult {
@@ -148,7 +152,11 @@ export type ReplaceUiNodeFn = (node: UIFilterAstNode) => ReplaceUiNodeResult;
 
 export function replaceUiNodeFn(uiNode: UIFilterAstNode, fnReplace: ReplaceUiNodeFn): UIFilterAstNode {
     const result = replaceUiNodeFnInner(uiNode, fnReplace);
-    return result.node;
+    if (result.replaced) {
+        return result.node;
+    } else {
+        throw new Error('replaceUiNodeFn failed');
+    }
 }
 
 function replaceUiNodeFnInner(uiNode: UIFilterAstNode, fnReplace: ReplaceUiNodeFn): ReplaceUiNodeResult {

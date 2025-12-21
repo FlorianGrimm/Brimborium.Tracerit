@@ -15,19 +15,18 @@ export class FilterComponent {
   //readonly node = input<FilterAstNode | null>(null);
   public readonly subscription = new Subscription();
   public readonly depDataService = inject(DepDataService);
-  public readonly depDataPropertyInitializer = this.depDataService.createInitializer();
+  public readonly depThis = this.depDataService.wrap(this);
   public readonly logTimeDataService = inject(LogTimeDataService);
 
-  public readonly filterAst = this.depDataService.createProperty<FilterAstNode | null>({
+  public readonly filterAst = this.depThis.createProperty<FilterAstNode | null>({
     name: 'FilterComponent_filterAst',
     initialValue: null,
-    subscription: this.subscription,
+    
   }).withSourceIdentity(
-    this.logTimeDataService.filterAst.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.filterAst.dependencyPublic());
   public readonly $filterAst = this.filterAst.asSignal();
 
   constructor() {
-    this.depDataPropertyInitializer.execute();
+    this.depThis.executePropertyInitializer();
   }
 }

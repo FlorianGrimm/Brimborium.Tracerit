@@ -70,10 +70,10 @@ export type LogTick = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TimeScaleComponent implements AfterViewInit, OnDestroy {
-  private subscription = new Subscription();
+  readonly subscription = new Subscription();
   readonly depDataService = inject(DepDataService);
-  readonly depDataPropertyInitializer = this.depDataService.createInitializer();
-  private readonly logTimeDataService = inject(LogTimeDataService);
+  readonly depThis = this.depDataService.wrap(this);
+  readonly logTimeDataService = inject(LogTimeDataService);
 
   readonly appIcon=new AppIconComponent();
 
@@ -82,7 +82,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly highlightedLogLineId = input<number | null>(null);
   readonly visibleRange = input<TimeRangeOrNull | null>(null);
 
-  readonly selectedLogLineIdProp = this.depDataService.createProperty<number>({
+  readonly selectedLogLineIdProp = this.depThis.createProperty<number>({
     name: 'TimeScaleComponent_selectedLogLineId',
     initialValue: 0,
     compare: (a, b) => (a ?? 0) === (b ?? 0),
@@ -90,10 +90,9 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       input: this.selectedLogLineId,
       transform: (value) => (value ?? 0)
     },
-    subscription: this.subscription,
   });
 
-  readonly highlightedLogLineIdProp = this.depDataService.createProperty<number>({
+  readonly highlightedLogLineIdProp = this.depThis.createProperty<number>({
     name: 'TimeScaleComponent_highlightedLogLineId',
     initialValue: 0,
     compare: (a, b) => (a === b),
@@ -101,10 +100,9 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       input: this.highlightedLogLineId,
       transform: (value) => (value ?? 0)
     },
-    subscription: this.subscription,
   });
 
-  readonly visibleRangeProp = this.depDataService.createProperty<TimeRangeOrNull>({
+  readonly visibleRangeProp = this.depThis.createProperty<TimeRangeOrNull>({
     name: 'TimeScaleComponent_visibleRange',
     initialValue: emptyTimeRangeOrNull,
     compare: (a, b) => equalsTimeRangeOrNull(a, b),
@@ -112,45 +110,35 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       input: this.visibleRange,
       transform: (value) => (value ?? emptyTimeRangeOrNull)
     },
-    subscription: this.subscription,
   });
 
-  readonly dataComplete = this.depDataService.createProperty({
+  readonly dataComplete = this.depThis.createProperty({
     name: 'TimeScaleComponent_dataComplete',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataComplete.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataComplete.dependencyPublic());
 
-  readonly dataZoom = this.depDataService.createProperty({
+  readonly dataZoom = this.depThis.createProperty({
     name: 'TimeScaleComponent_dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataZoom.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataZoom.dependencyPublic());
 
-  readonly dataTimeFiltered = this.depDataService.createProperty({
+  readonly dataTimeFiltered = this.depThis.createProperty({
     name: 'TimeScaleComponent_dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataTimeFiltered.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataTimeFiltered.dependencyPublic());
 
-  readonly dataLogLineFilteredCondition = this.depDataService.createProperty({
+  readonly dataLogLineFilteredCondition = this.depThis.createProperty({
     name: 'TimeScaleComponent_dataLogLineFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataFilteredCondition.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataFilteredCondition.dependencyPublic());
 
-  readonly listLogLineVisual = this.depDataService.createProperty({
+  readonly listLogLineVisual = this.depThis.createProperty({
     name: 'TimeScaleComponent_listLogLineVisual',
     initialValue: [] as LogLine[],
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       dataLogLine: this.logTimeDataService.dataComplete.dependencyUi()
@@ -172,53 +160,44 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
           }
         }
         return nextListLogLineVisual;
-      },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
-  });
+      }  });
 
 
-  readonly rangeComplete = this.depDataService.createProperty({
+  readonly rangeComplete = this.depThis.createProperty({
     name: 'TimeScaleComponent_rangeComplete',
     initialValue: epoch01RangeDuration,
     compare: equalsTimeRangeDuration,
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       rangeComplete: this.logTimeDataService.rangeComplete.dependencyInner()
     },
-    sourceTransform:
-      (d) => d.rangeComplete,
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    sourceTransform:      (d) => d.rangeComplete
   });
 
 
-  readonly rangeZoom = this.depDataService.createProperty({
+  readonly rangeZoom = this.depThis.createProperty({
     name: 'TimeScaleComponent_rangeZoom',
     initialValue: epoch01RangeDuration,
     compare: equalsTimeRangeDuration,
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       rangeZoom: this.logTimeDataService.rangeZoom.dependencyInner()
     },
     sourceTransform:
       (d) => d.rangeZoom,
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
 
 
-  readonly rangeFilter = this.depDataService.createProperty({
+  readonly rangeFilter = this.depThis.createProperty({
     name: 'TimeScaleComponent_rangeFilter',
     initialValue: epoch01RangeDuration,
     compare: equalsTimeRangeDuration,
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       rangeFilter: this.logTimeDataService.rangeFilter.dependencyInner()
     },
     sourceTransform:
       (d) => d.rangeFilter,
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   readonly rangeFilter$ = this.rangeFilter.asObserable();
 
@@ -227,16 +206,14 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly logLineHover = output<LogLine | null>();
 
   // Internal state
-  readonly displayWidth = this.depDataService.createProperty<number>({
+  readonly displayWidth = this.depThis.createProperty<number>({
     name: 'TimeScale_displayWidth',
     initialValue: 0,
-    subscription: this.subscription,
   });
 
-  readonly stateTicks = this.depDataService.createProperty<TicksViewModel>({
+  readonly stateTicks = this.depThis.createProperty<TicksViewModel>({
     name: 'TimeScale_stateTicks',
     initialValue: this.createInitialState(),
-    subscription: this.subscription
   }).withSource({
     sourceDependency: {
       displayWidth: this.displayWidth.dependencyInner(),
@@ -255,16 +232,14 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       };
       return stateTicks;
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
 
   readonly $stateTicks = this.stateTicks.asSignal();
 
-  readonly plotCount = this.depDataService.createProperty({
+  readonly plotCount = this.depThis.createProperty({
     name: 'TimeScale_plotCount',
     initialValue: "15,80",
     compare: (a, b) => a === b,
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       dataZoom: this.dataZoom.dependencyUi(),
@@ -331,15 +306,13 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
         const pointsString = points.join(' ');
         return pointsString;
       }
-    },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
   });
   readonly $plotCount = this.plotCount.asSignal();
 
-  readonly selectedLogLine = this.depDataService.createProperty<LogTick | null>({
+  readonly selectedLogLine = this.depThis.createProperty<LogTick | null>({
     name: 'TimeScaleComponent_selectedLogLine',
     initialValue: null as (LogTick | null),
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       selectedLogLineId: this.selectedLogLineIdProp.dependencyInner(),
@@ -372,14 +345,12 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
         return null;
       }
     },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   readonly $selectedLogLine = this.selectedLogLine.asSignal();
 
-  readonly highlightedLogLine = this.depDataService.createProperty<LogTick | null>({
+  readonly highlightedLogLine = this.depThis.createProperty<LogTick | null>({
     name: 'TimeScaleComponent_highlightedLogLine',
     initialValue: null as (LogTick | null),
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       highlightedLogLineId: this.highlightedLogLineIdProp.dependencyInner(),
@@ -409,13 +380,12 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       } else {
         return null;
       }
-    },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    }
   });
   readonly $highlightedLogLine = this.highlightedLogLine.asSignal();
 
-  readonly state = this.depDataService.createProperty({
-    name: 'TimeScale_state',
+  readonly state = this.depThis.createProperty({
+    name: 'state',
     initialValue: this.createInitialState(),
     /*
     report: (property, message, value) => {
@@ -436,7 +406,6 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       });
     },
     */
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       displayWidth: this.displayWidth.dependencyInner(),
@@ -491,8 +460,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       };
 
       return state;
-    },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
+    }    
   });
   readonly $state = this.state.asSignal();
 
@@ -504,7 +472,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   };
 
   constructor() {
-    this.depDataPropertyInitializer.execute();
+    this.depThis.executePropertyInitializer();
   }
 
   private createInitialState(): TimeScale2ViewModel {

@@ -1,5 +1,6 @@
-import { effect, InputSignal, OutputEmitterRef, signal, untracked } from "@angular/core";
+import { effect, inject, InputSignal, OutputEmitterRef, signal, untracked } from "@angular/core";
 import { FilterAstNode, LogLineValue, PropertyHeader } from "@app/Api";
+import { DataService } from "@app/Utility/data-service";
 import {
     convertFilterAstNodeToUIFilterAstNode,
     convertUIFilterAstNodeToFilterAstNode,
@@ -18,8 +19,10 @@ import {
 import { Subscription } from "rxjs";
 
 export class FilterAstManager {
+    readonly dataService = inject(DataService);
     readonly $uiNodeRoot = signal<UIFilterAstNode>(convertFilterAstNodeToUIFilterAstNode(null));
     readonly $selection = signal<UIFilterAstNodeSelection>(initialUIFilterAstNodeSelection);
+    rootNode: FilterAstNode | null;
 
     constructor(
         rootNode: FilterAstNode | null,
@@ -27,10 +30,11 @@ export class FilterAstManager {
         nodeInput: InputSignal<FilterAstNode | null> | undefined,
         readonly nodeChanged: OutputEmitterRef<FilterAstNode> | undefined
     ) {
+        this.rootNode = rootNode;
         if (nodeInput != null) {
             const e = effect(() => {
                 const node = nodeInput();
-                untracked(() => { this.setRootNode(node); });
+                this.setRootNode(node);
             });
             subscription?.add(() => e.destroy());
         }
@@ -39,18 +43,34 @@ export class FilterAstManager {
     }
 
     setRootNode(rootNode: FilterAstNode | null) {
-        const uiNodeRoot = convertFilterAstNodeToUIFilterAstNode(rootNode);
-        this.$uiNodeRoot.set(uiNodeRoot);
+        if (rootNode == null) {
+            rootNode = {
+                operator: "and",
+                listChild: [],
+                value: undefined,
+            };
+        }
+        if (Object.is(this.rootNode, rootNode)) {
+            console.log("setRootNode is", this.rootNode, rootNode);
+            return this;
+        } else {
+            console.log("setRootNode is not ", this.rootNode, rootNode);
+            this.rootNode = rootNode;
+            const uiNodeRoot = convertFilterAstNodeToUIFilterAstNode(rootNode);
+            this.$uiNodeRoot.set(uiNodeRoot);
 
-        return this;
+            return this;
+        }
     }
 
     setRootNodeUi(uiNodeRoot: UIFilterAstNode) {
         this.$uiNodeRoot.set(uiNodeRoot);
         const rootNode = convertUIFilterAstNodeToFilterAstNode(uiNodeRoot);
+        this.$uiNodeRoot.set(uiNodeRoot);
         this.nodeChanged?.emit(rootNode);
         return this;
     }
+
     setSelection(selection: UIFilterAstNodeSelection) {
         this.$selection.set(selection);
         return this;
@@ -88,6 +108,40 @@ export class FilterAstManager {
         this.setRootNodeUi(nextUiNodeRoot).setSelection(nextSelection);
     }
 
+    setPropertyName(name: string, node: UIFilterAstNode) {
+        const header = this.dataService.listAllHeaderSortedByName.getValue().find(h => h.name === name);
+        if (header == null) { throw new Error('header is null'); }
+        const typeValue = header.typeValue;
+        const value = getValidLogLineValue(typeValue, node.value?.value);
+        const nextNode = {
+            ...node,
+            value: {
+                name: name,
+                typeValue: typeValue,
+                value: value,
+            }
+        };
+        this.replaceUiNode(nextNode);
+    }
+
+    appendListChild(uiNode: UIFilterAstNode) {
+        const uiNodeRoot = this.$uiNodeRoot();
+        if (uiNodeRoot == null) { throw new Error('uiNodeRoot is null'); }
+
+        const appendUiNode: UIFilterAstNode = {
+            id: crypto.randomUUID(),
+            operator: 'eq',
+            listChild: [],
+            value: undefined
+        };
+
+        const nextUiNode: UIFilterAstNode = {
+            ...uiNode,
+            listChild: [...(uiNode.listChild ?? []), appendUiNode]
+        };
+        const nextUiNodeRoot = replaceUiNode(uiNodeRoot, nextUiNode);
+        this.setRootNodeUi(nextUiNodeRoot).setSelection({ id: appendUiNode.id, property: 'operator' });
+    }
 
     appendFilterAstNodeListChild(uiNode: UIFilterAstNode, appendUiNode: UIFilterAstNode) {
         const selection = this.$selection();
@@ -95,11 +149,9 @@ export class FilterAstManager {
         if (selection == null) { throw new Error('selection is null'); }
         if (uiNodeRoot == null) { throw new Error('uiNodeRoot is null'); }
 
-        const listChild = (uiNode.listChild ??= []).slice();
-        listChild.push(appendUiNode);
         const nextUiNode: UIFilterAstNode = {
             ...uiNode,
-            listChild: listChild
+            listChild: [...(uiNode.listChild ?? []), appendUiNode]
         };
         const nextUiNodeRoot = replaceUiNode(uiNodeRoot, nextUiNode);
         const nextSelection: UIFilterAstNodeSelection = {

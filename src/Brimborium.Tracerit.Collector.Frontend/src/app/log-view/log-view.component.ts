@@ -66,71 +66,61 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly dataService = inject(DataService);
   public readonly logTimeDataService = inject(LogTimeDataService);
   public readonly depDataService = inject(DepDataService);
-  public readonly depDataPropertyInitializer = this.depDataService.createInitializer();
+  public readonly depThis = this.depDataService.wrap(this);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly environmentInjector = inject(EnvironmentInjector);
 
   // Virtual scroll viewport reference
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
 
-  // State - Headers
-  public readonly listAllHeader = this.depDataService.createProperty({
+  // State - Headers  
+  public readonly listAllHeader = this.depThis.createProperty({
     name: 'LogView_listAllHeader',
     initialValue: [] as PropertyHeader[],
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       listAllHeader: this.dataService.listAllHeader.dependencyPublic()
     },
     sourceTransform: ({ listAllHeader }) => listAllHeader,
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
 
   public readonly listAllHeader$ = this.listAllHeader.asObserable();
-  public readonly listCurrentHeader = this.depDataService.createProperty({
+  public readonly listCurrentHeader = this.depThis.createProperty({
     name: 'LogView_listCurrentHeader',
     initialValue: [] as PropertyHeader[],
     report: (property, message, value) => {
       console.log(`${property.name} ${message}`, value);
     },
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       listAllHeader: this.listAllHeader.dependencyInner()
     },
     sourceTransform: ({ listAllHeader }) => getVisualHeader(listAllHeader),
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   }
   );
 
   // State - Log lines
-  public readonly dataComplete = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataComplete = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataComplete',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataComplete.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataComplete.dependencyPublic());
   public readonly $dataComplete = this.dataComplete.asSignal();
 
-  public readonly dataZoom = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataZoom = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataZoom.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataZoom.dependencyPublic());
 
-  public readonly dataTimeFiltered = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataTimeFiltered = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogTimeDataService_dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataTimeFiltered.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataTimeFiltered.dependencyPublic()  );
   public readonly $dataTimeFiltered = this.dataTimeFiltered.asSignal();
 
-  public readonly dataFilteredCondition = this.depDataService.createProperty<LogLineTimeRangeDuration>({
+  public readonly dataFilteredCondition = this.depThis.createProperty<LogLineTimeRangeDuration>({
     name: 'LogView_dataFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
@@ -139,41 +129,35 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       requestAnimationFrame: true
     },
-    subscription: this.subscription,
   }).withSourceIdentity(
-    this.logTimeDataService.dataFilteredCondition.dependencyPublic(),
-    this.depDataPropertyInitializer);
+    this.logTimeDataService.dataFilteredCondition.dependencyPublic()  );
   public readonly $dataFilteredCondition = this.dataFilteredCondition.asSignal();
 
   // State - Selection & Highlighting
   public readonly $selectedLogLineId = signal<number | null>(null);
-  public readonly selectedLogLineIdProp = this.depDataService.createProperty<number | null>({
+  public readonly selectedLogLineIdProp = this.depThis.createProperty<number | null>({
     name: 'LogView_selectedLogLineId',
     initialValue: null,
     input: { input: this.$selectedLogLineId },
     compare: (a, b) => (a === b),
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       selectedLogLineId: this.logTimeDataService.currentLogLineId.dependencyInner()
     },
     sourceTransform: ({ selectedLogLineId }) => selectedLogLineId,
-    depDataPropertyInitializer: this.depDataPropertyInitializer,
   });
 
-  public readonly highlightedLogLineId = this.depDataService.createProperty<number | null>({
+  public readonly highlightedLogLineId = this.depThis.createProperty<number | null>({
     name: 'LogView_highlightedLogLineId',
     initialValue: null,
     compare: (a, b) => (a === b),
     //input: { input: this.$highlightedLogLineId },
-    subscription: this.subscription,
   });
   public readonly $highlightedLogLineId = this.highlightedLogLineId.asSignal();
 
-  public readonly selectedLogLine = this.depDataService.createProperty({
+  public readonly selectedLogLine = this.depThis.createProperty({
     name: 'LogView_selectedLogLine',
     initialValue: null as (LogLine | null),
-    subscription: this.subscription,
   }).withSource(
     {
       sourceDependency: {
@@ -188,15 +172,13 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
             ?? null;
           return result;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
     });
   public readonly $selectedLogLine = this.selectedLogLine.asSignal();
 
-  public readonly headerId = this.depDataService.createProperty<PropertyHeader | undefined>({
+  public readonly headerId = this.depThis.createProperty<PropertyHeader | undefined>({
     name: 'LogView_headerId',
     initialValue: undefined,
     compare: (a, b) => (a === b),
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       listAllHeader: this.listAllHeader.dependencyInner()
@@ -207,15 +189,13 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
         const result = listAllHeader.find((item) => (item.name === "id"));
         return result;
       },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   public readonly $headerId = this.headerId.asSignal();
 
   // State - Time ranges
-  public readonly rangeZoom = this.depDataService.createProperty<TimeRangeDuration>({
+  public readonly rangeZoom = this.depThis.createProperty<TimeRangeDuration>({
     name: 'LogView_rangeZoom',
     initialValue: epoch01RangeDuration,
-    subscription: this.subscription,
   }).withSource(
     {
       sourceDependency: {
@@ -223,14 +203,12 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       sourceTransform:
         (d) => d.rangeZoom,
-      depDataPropertyInitializer: this.depDataPropertyInitializer
     }
   );
 
-  public readonly rangeFilter = this.depDataService.createProperty<TimeRangeDuration>({
+  public readonly rangeFilter = this.depThis.createProperty<TimeRangeDuration>({
     name: 'LogView_rangeFilter',
     initialValue: epoch01RangeDuration,
-    subscription: this.subscription,
   }).withSource(
     {
       sourceDependency: {
@@ -238,15 +216,13 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       sourceTransform:
         (d) => d.rangeFilter,
-      depDataPropertyInitializer: this.depDataPropertyInitializer
     }
   );
 
-  public readonly gridHeaderWidth = this.depDataService.createProperty({
+  public readonly gridHeaderWidth = this.depThis.createProperty({
     name: 'LogView_gridHeaderWidth',
     initialValue: 100,
     compare: (a, b) => a === b,
-    subscription: this.subscription,
   }).withSource(
     {
       sourceDependency: {
@@ -273,7 +249,6 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
           }
           return nextWidth;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer
     }
   );
   public readonly $gridHeaderWidth = this.gridHeaderWidth.asSignal();
@@ -296,7 +271,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   //
   @ViewChild('logView2Container', { static: true }) logView2Container!: ElementRef<HTMLDivElement>;
   constructor() {
-    this.depDataPropertyInitializer.execute();
+    this.depThis.executePropertyInitializer();
   }
 
   ngOnInit(): void {
@@ -323,10 +298,9 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     // Subscribe to headers from data service
   }
 
-  public readonly displayWidth = this.depDataService.createProperty<number>({
+  public readonly displayWidth = this.depThis.createProperty<number>({
     name: 'LogView_displayWidth',
     initialValue: 0,
-    subscription: this.subscription,
   });
 
   public readonly $displayWidth = this.displayWidth.asSignal();
@@ -341,10 +315,9 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     this.displayWidth.setValue(width);
   }
 
-  public readonly detailsHeaderContent = this.depDataService.createProperty<LogLineValueWithHeader[]>({
+  public readonly detailsHeaderContent = this.depThis.createProperty<LogLineValueWithHeader[]>({
     name: 'LogView_detailsHeaderContent',
     initialValue: [] as LogLineValueWithHeader[],
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       selectedLogLine: this.selectedLogLine.dependencyInner()
@@ -354,14 +327,12 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (d.selectedLogLine == null) { return []; }
         return this.getDetailsHeaderContent(d.selectedLogLine);
       },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   public readonly $detailsHeaderContent = this.detailsHeaderContent.asSignal();
 
-  public readonly detailsBodyContent = this.depDataService.createProperty<LogLineValueWithHeader[]>({
+  public readonly detailsBodyContent = this.depThis.createProperty<LogLineValueWithHeader[]>({
     name: 'LogView_detailsBodyContent',
     initialValue: [] as LogLineValueWithHeader[],
-    subscription: this.subscription,
   }).withSource({
     sourceDependency: {
       selectedLogLine: this.selectedLogLine.dependencyInner()
@@ -371,7 +342,6 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (d.selectedLogLine == null) { return []; }
         return this.getDetailsBodyContent(d.selectedLogLine);
       },
-    depDataPropertyInitializer: this.depDataPropertyInitializer
   });
   public readonly $detailsBodyContent = this.detailsBodyContent.asSignal();
 
@@ -822,7 +792,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     this.detailsBodyContent.setValue(this.getDetailsBodyContent(selectedLogLine));
   }
 
-  public readonly showSearch = this.depDataService.createProperty<boolean>({
+  public readonly showSearch = this.depThis.createProperty<boolean>({
     name: 'LogView_showSearch',
     initialValue: false,
     compare: (a, b) => a === b,
@@ -839,7 +809,6 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       kind: 'UI',
       requestAnimationFrame: true
     },
-    subscription: this.subscription,
   });
   public readonly $showSearch = this.showSearch.asSignal();
 
@@ -851,18 +820,16 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
     return false;
   }
 
-  public readonly searchText = this.depDataService.createProperty<string>({
+  public readonly searchText = this.depThis.createProperty<string>({
     name: 'LogView_searchText',
     initialValue: "",
     compare: (a, b) => a === b,
-    subscription: this.subscription,
   });
-  public readonly searchResult = this.depDataService.createProperty<SearchResult>({
+  public readonly searchResult = this.depThis.createProperty<SearchResult>({
     name: 'LogView_searchResult',
     initialValue: { listLogLineId: [], listLogLine: [], currentIndex: 0 },
     transform: (value) => Object.freeze(value),
     compare: (a, b) => Object.is(a, b),
-    subscription: this.subscription,
   })
     .withSource({
       sourceDependency: {
@@ -936,7 +903,6 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
           }
           return nextSearchResult;
         },
-      depDataPropertyInitializer: this.depDataPropertyInitializer,
     });
 
   public readonly $searchResult = this.searchResult.asSignal();
