@@ -1,8 +1,13 @@
 <div ngCombobox filterMode="auto-select" class="ngCombobox-default">
     <div #origin class="autocomplete">
         <lucide-icon [img]="appIcon.Search" size="14" translate="no" aria-hidden="true" class="search-icon" />
-        <input type="text" [value]="$query()" (change)="onNameChanged($event.target.value)" (keydown)="onNameChanged($event.target.value)"
-            aria-label="Label dropdown" placeholder="property name" ngComboboxInput />
+        <input type="text" [value]="$query()" (change)="onNameChanged($event.target.value, true)"
+            (keydown)="onNameChanged($event.target.value , false)" aria-label="Label dropdown"
+            placeholder="property name" ngComboboxInput />
+        <button type="button" (click)="onComboBoxToggle()">
+            <lucide-icon [img]="combobox()?.expanded() ? appIcon.ComboBoxClose : appIcon.ComboBoxOpen" size="14"
+                translate="no" aria-hidden="true" />
+        </button>
     </div>
     <ng-template ngComboboxPopupContainer>
         <ng-template [cdkConnectedOverlay]="{origin, usePopover: 'inline', matchWidth: true}"

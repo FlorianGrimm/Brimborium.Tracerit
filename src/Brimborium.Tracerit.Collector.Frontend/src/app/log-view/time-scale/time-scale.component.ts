@@ -75,7 +75,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly depThis = this.depDataService.wrap(this);
   readonly logTimeDataService = inject(LogTimeDataService);
 
-  readonly appIcon=new AppIconComponent();
+  readonly appIcon = new AppIconComponent();
 
   // Inputs
   readonly selectedLogLineId = input<number | null>(null);
@@ -83,7 +83,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly visibleRange = input<TimeRangeOrNull | null>(null);
 
   readonly selectedLogLineIdProp = this.depThis.createProperty<number>({
-    name: 'TimeScaleComponent_selectedLogLineId',
+    name: 'selectedLogLineId',
     initialValue: 0,
     compare: (a, b) => (a ?? 0) === (b ?? 0),
     input: {
@@ -93,7 +93,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly highlightedLogLineIdProp = this.depThis.createProperty<number>({
-    name: 'TimeScaleComponent_highlightedLogLineId',
+    name: 'highlightedLogLineId',
     initialValue: 0,
     compare: (a, b) => (a === b),
     input: {
@@ -103,7 +103,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly visibleRangeProp = this.depThis.createProperty<TimeRangeOrNull>({
-    name: 'TimeScaleComponent_visibleRange',
+    name: 'visibleRange',
     initialValue: emptyTimeRangeOrNull,
     compare: (a, b) => equalsTimeRangeOrNull(a, b),
     input: {
@@ -113,32 +113,32 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly dataComplete = this.depThis.createProperty({
-    name: 'TimeScaleComponent_dataComplete',
+    name: 'dataComplete',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
     this.logTimeDataService.dataComplete.dependencyPublic());
 
   readonly dataZoom = this.depThis.createProperty({
-    name: 'TimeScaleComponent_dataZoom',
+    name: 'dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
     this.logTimeDataService.dataZoom.dependencyPublic());
 
   readonly dataTimeFiltered = this.depThis.createProperty({
-    name: 'TimeScaleComponent_dataTimeFiltered',
+    name: 'dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
     this.logTimeDataService.dataTimeFiltered.dependencyPublic());
 
   readonly dataLogLineFilteredCondition = this.depThis.createProperty({
-    name: 'TimeScaleComponent_dataLogLineFilteredCondition',
+    name: 'dataLogLineFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
     this.logTimeDataService.dataFilteredCondition.dependencyPublic());
 
-  readonly listLogLineVisual = this.depThis.createProperty({
-    name: 'TimeScaleComponent_listLogLineVisual',
-    initialValue: [] as LogLine[],
+  readonly listLogLineVisual = this.depThis.createProperty<readonly LogLine[]>({
+    name: 'listLogLineVisual',
+    initialValue: [],
   }).withSource({
     sourceDependency: {
       dataLogLine: this.logTimeDataService.dataComplete.dependencyUi()
@@ -148,35 +148,36 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
         const { listLogLine } = d.dataLogLine;
         const listLogLineLength = listLogLine.length;
         const maxLength = 512;
-        let nextListLogLineVisual: LogLine[];
         if (listLogLineLength <= (maxLength + 1)) {
-          nextListLogLineVisual = listLogLine;
+          return listLogLine;
         } else {
+          let nextListLogLineVisual: LogLine[];
           // sample down to 500 items and keep the selected and highlighted items
           nextListLogLineVisual = Array(maxLength + 1);
           for (let pos = 0; pos <= maxLength; pos++) {
             const index = Math.floor(pos * listLogLineLength / 500);
             nextListLogLineVisual[pos] = listLogLine[index];
           }
+          return nextListLogLineVisual;
         }
-        return nextListLogLineVisual;
-      }  });
+      }
+  });
 
 
   readonly rangeComplete = this.depThis.createProperty({
-    name: 'TimeScaleComponent_rangeComplete',
+    name: 'rangeComplete',
     initialValue: epoch01RangeDuration,
     compare: equalsTimeRangeDuration,
   }).withSource({
     sourceDependency: {
       rangeComplete: this.logTimeDataService.rangeComplete.dependencyInner()
     },
-    sourceTransform:      (d) => d.rangeComplete
+    sourceTransform: (d) => d.rangeComplete
   });
 
 
   readonly rangeZoom = this.depThis.createProperty({
-    name: 'TimeScaleComponent_rangeZoom',
+    name: 'rangeZoom',
     initialValue: epoch01RangeDuration,
     compare: equalsTimeRangeDuration,
   }).withSource({
@@ -189,7 +190,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
 
 
   readonly rangeFilter = this.depThis.createProperty({
-    name: 'TimeScaleComponent_rangeFilter',
+    name: 'rangeFilter',
     initialValue: epoch01RangeDuration,
     compare: equalsTimeRangeDuration,
   }).withSource({
@@ -207,12 +208,12 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
 
   // Internal state
   readonly displayWidth = this.depThis.createProperty<number>({
-    name: 'TimeScale_displayWidth',
+    name: 'displayWidth',
     initialValue: 0,
   });
 
   readonly stateTicks = this.depThis.createProperty<TicksViewModel>({
-    name: 'TimeScale_stateTicks',
+    name: 'stateTicks',
     initialValue: this.createInitialState(),
   }).withSource({
     sourceDependency: {
@@ -237,7 +238,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly $stateTicks = this.stateTicks.asSignal();
 
   readonly plotCount = this.depThis.createProperty({
-    name: 'TimeScale_plotCount',
+    name: 'plotCount',
     initialValue: "15,80",
     compare: (a, b) => a === b,
   }).withSource({
@@ -271,7 +272,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
               }
             }
             if (0 < idxPart && idxPart < partsCount) {
-              listCountPart[idxPart-1]++;
+              listCountPart[idxPart - 1]++;
             }
           } catch (error) {
             console.error(error);
@@ -285,21 +286,21 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
         const width = visualWidth / partsCount;
 
         const points: string[] = Array(partsCount + 2);
-        
+
         for (let idx = 0; idx < partsCount; idx++) {
           //const x = 15 + visualWidth * (idx / partsCount);
           //const x= width * idx + width / 2 + 15;
-          const x = this.calcPositionX(listTick[idx].ts, range, displayWidth) + width / 2 ;
+          const x = this.calcPositionX(listTick[idx].ts, range, displayWidth) + width / 2;
           const rel = (maxCountPart === 0) ? 0 : (80 * (listCountPart[idx] / maxCountPart));
           const y = 80 - rel;
           if (Number.isNaN(y) || Number.isNaN(x)) {
             debugger;
           } else {
-            points[idx+1] = `${x},${y}`;
+            points[idx + 1] = `${x},${y}`;
             if (idx === 0) {
               points[0] = `15,${y}`;
             } else if (idx === (partsCount_1)) {
-              points[partsCount+1] = `${displayWidth - 15},${y}`;
+              points[partsCount + 1] = `${displayWidth - 15},${y}`;
             }
           }
         }
@@ -311,7 +312,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly $plotCount = this.plotCount.asSignal();
 
   readonly selectedLogLine = this.depThis.createProperty<LogTick | null>({
-    name: 'TimeScaleComponent_selectedLogLine',
+    name: 'selectedLogLine',
     initialValue: null as (LogTick | null),
   }).withSource({
     sourceDependency: {
@@ -323,8 +324,8 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     },
     sourceTransform: ({ selectedLogLineId, highlightedLogLineId, listLogLineVisual, displayWidth, rangeZoom }) => {
       if (selectedLogLineId == null) { return null; }
-      
-      const selectedLogLine = listLogLineVisual.find(l =>l!=null && l.id === selectedLogLineId)
+
+      const selectedLogLine = listLogLineVisual.find(l => l != null && l.id === selectedLogLineId)
         ?? null;
 
       if (selectedLogLine != null && selectedLogLine.ts != null) {
@@ -349,7 +350,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
   readonly $selectedLogLine = this.selectedLogLine.asSignal();
 
   readonly highlightedLogLine = this.depThis.createProperty<LogTick | null>({
-    name: 'TimeScaleComponent_highlightedLogLine',
+    name: 'highlightedLogLine',
     initialValue: null as (LogTick | null),
   }).withSource({
     sourceDependency: {
@@ -360,7 +361,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     },
     sourceTransform: ({ highlightedLogLineId, listLogLineVisual, displayWidth, rangeZoom }) => {
       if (highlightedLogLineId == null) { return null; }
-      const highlightedLogLine = listLogLineVisual.find(l => l!=null && l.id === highlightedLogLineId)
+      const highlightedLogLine = listLogLineVisual.find(l => l != null && l.id === highlightedLogLineId)
         ?? null;
 
       if (highlightedLogLine != null && highlightedLogLine.ts != null) {
@@ -460,7 +461,7 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
       };
 
       return state;
-    }    
+    }
   });
   readonly $state = this.state.asSignal();
 
@@ -571,7 +572,12 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     return ticks;
   }
 
-  private generateLogTicks(listLogLine: LogLine[], rangeZoom: TimeRangeDuration, displayWidth: number, selectedId: number | null, highlightedId: number | null): LogTick[] {
+  private generateLogTicks(
+    listLogLine: readonly LogLine[],
+    rangeZoom: TimeRangeDuration,
+    displayWidth: number,
+    selectedId: number | null,
+    highlightedId: number | null): LogTick[] {
     const ticks: LogTick[] = [];
 
     for (let i = 0; i < listLogLine.length; i++) {
@@ -704,24 +710,21 @@ export class TimeScaleComponent implements AfterViewInit, OnDestroy {
     nextRange = { start: rangeFilter.start, finish: rangeFilter.finish };
     this.logTimeDataService.setRangeZoom(nextRange);
   }
-  onZoomOut(mode: 'increment'|'complete') {
-    if (mode === 'increment') { 
+  onZoomOut(mode: 'increment' | 'complete') {
+    if (mode === 'increment') {
       const rangeFilter = this.rangeFilter.getValue();
       const rangeZoom = this.rangeZoom.getValue();
-      let nextRange={ start: rangeZoom.start.minus(rangeZoom.duration), finish: rangeZoom.finish.plus(rangeZoom.duration) };
-      const scope = this.depDataService.start({ name: 'TimeScaleComponent_onZoomOut' });
-      try{
-        this.logTimeDataService.setRangeZoom(nextRange);      
+      let nextRange = { start: rangeZoom.start.minus(rangeZoom.duration), finish: rangeZoom.finish.plus(rangeZoom.duration) };
+      this.depDataService.scoped(() => {
+        this.logTimeDataService.setRangeZoom(nextRange);
         this.logTimeDataService.setRangeFilter(rangeFilter);
-      } finally {
-        scope.executeTrigger();
-      }
+      }, { name: 'onZoomOut' });
       return;
     }
-    if (mode === 'complete') { 
+    if (mode === 'complete') {
       const rangeFilter = this.rangeFilter.getValue();
       const rangeComplete = this.logTimeDataService.dataComplete.getValue().range;
-      let nextRange=rangeComplete;
+      let nextRange = rangeComplete;
       this.logTimeDataService.setRangeZoom(nextRange);
       this.logTimeDataService.setRangeFilter(rangeFilter);
       return;

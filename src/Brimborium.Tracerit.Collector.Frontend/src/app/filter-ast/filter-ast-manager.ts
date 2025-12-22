@@ -108,20 +108,32 @@ export class FilterAstManager {
         this.setRootNodeUi(nextUiNodeRoot).setSelection(nextSelection);
     }
 
-    setPropertyName(name: string, node: UIFilterAstNode) {
-        const header = this.dataService.listAllHeaderSortedByName.getValue().find(h => h.name === name);
-        if (header == null) { throw new Error('header is null'); }
-        const typeValue = header.typeValue;
-        const value = getValidLogLineValue(typeValue, node.value?.value);
-        const nextNode = {
-            ...node,
-            value: {
-                name: name,
-                typeValue: typeValue,
+    setPropertyName(name: string|null, node: UIFilterAstNode) {
+
+    }
+    setPropertyHeader(header: PropertyHeader|null, node: UIFilterAstNode) {
+        if (header == null) {
+            const value :(LogLineValue|undefined | null)= (node.value == null)
+                ? undefined 
+                : ({...node.value, name: "" });
+            const nextNode : UIFilterAstNode = {
+                ...node,
                 value: value,
-            }
-        };
-        this.replaceUiNode(nextNode);
+            };
+            this.replaceUiNode(nextNode);
+        } else {
+            const typeValue = header.typeValue;
+            const value = getValidLogLineValue(typeValue, node.value?.value);
+            const nextNode = {
+                ...node,
+                value: {
+                    name: header.name,
+                    typeValue: typeValue,
+                    value: value,
+                }
+            };
+            this.replaceUiNode(nextNode);
+        }
     }
 
     appendListChild(uiNode: UIFilterAstNode) {

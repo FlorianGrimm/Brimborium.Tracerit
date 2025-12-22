@@ -1,6 +1,6 @@
 import {
   effect, Injectable, Signal, signal, untracked, WritableSignal,
-  OnDestroy, OnInit
+  OnDestroy, OnInit,
 } from '@angular/core';
 import { Duration, ZonedDateTime } from '@js-joda/core';
 import { BehaviorSubject, InteropObservable, Subscribable, Subscription } from 'rxjs';
@@ -46,6 +46,10 @@ export type DepDataPropertyArgumentsE<V> = {
 export type DepDataPropertyArguments<V> =
   DepDataPropertyArgumentsE<V>
   & {
+    objectName: string;
+    objectIndex: number;
+    propertyName: string;
+    propertyIndex: number;
     /* subscription is used to unsubscribe all dependcies and sideEffect. */
     subscription: Subscription;
   }
@@ -62,7 +66,7 @@ export type DepDataPropertyInputAndTransformArguments<S, V> = {
 export type DepDataPropertyTrigger = {
   name?: string | undefined;
   setDirty?: (() => boolean);
-  executeTrigger(): void;
+  executeTrigger(scope: DepDataServiceExecutionScope): void;
 };
 
 export type DepDataPropertyTriggerKind =
@@ -93,11 +97,25 @@ export type DepDataPropertyEnhancedThat = Partial<OnDestroy>
     subscription: Subscription;
   }>;
 
+export type LogEntry = {
+  objectPropertyIdentity: ObjectPropertyIdentity;
+  logicalTime: number;
+  watchDog: number;
+  message: string;
+  value: any;
+};
+
+export type ObjectPropertyIdentity = {
+  readonly objectName: string;
+  readonly objectIndex: number;
+  readonly propertyName: string;
+  readonly propertyIndex: number;
+};
+
 @Injectable({
   providedIn: 'root',
 })
 export class DepDataService {
-
   private _PropertyIndex = 1;
   constructor() { }
 
@@ -117,12 +135,12 @@ export class DepDataService {
   public start(args: DepDataServiceStart) {
     return this._ExecutionScope.create(args);
   }
-  public region(action: () => void, args?: DepDataServiceStart) {
-    const scope = this._ExecutionScope.create(args);
+  public scoped(action: () => void, args?: DepDataServiceStart) {
+    const transaction = this._ExecutionScope.create(args);
     try {
       action();
     } finally {
-      scope.executeTrigger();
+      transaction.executeTrigger();
     }
   }
 
@@ -199,13 +217,37 @@ export class DepDataService {
       console.error(classMethod, error);
     }
   }
+
+
+  private _isLoggingEnabled: boolean = false;
+  public get isLoggingEnabled(): boolean {
+    return this._isLoggingEnabled;
+  }
+  public set isLoggingEnabled(value: boolean) {
+    this._isLoggingEnabled = value;
+  }
+
+  ListLogEntry: LogEntry[] = [];
+  addLog(logEntry: LogEntry) {
+    if (!this._isLoggingEnabled) { return; }
+    if (1000 < this.ListLogEntry.length) {
+      this.ListLogEntry.splice(0, 500);
+    }
+    this.ListLogEntry.push(logEntry);
+    // console.log({ ...logEntry.objectPropertyIdentity, ...logEntry });
+  }
+
 }
 
 export class DepDataPropertyEnhancedObject {
-  public name: string;
-  public depDataService: DepDataService;
-  public depDataPropertyInitializer: DepDataPropertyInitializer;
-  public subscription: Subscription;
+  private static _nextObjectIndex = 1;
+  public readonly objectIndex: number = DepDataPropertyEnhancedObject._nextObjectIndex++;
+
+  public readonly objectName: string;
+  public readonly depDataService: DepDataService;
+  public readonly depDataPropertyInitializer: DepDataPropertyInitializer;
+  public readonly subscription: Subscription;
+
   private nextPropertyIndex: () => number;
 
   constructor(
@@ -213,13 +255,13 @@ export class DepDataPropertyEnhancedObject {
     depDataService: DepDataService,
     nextPropertyIndex: () => number
   ) {
-    this.name = that.constructor.name;
+    this.objectName = that.constructor.name;
     this.depDataService = depDataService;
-    this.depDataPropertyInitializer = that.depDataPropertyInitializer ?? new DepDataPropertyInitializer(that);
+    this.depDataPropertyInitializer = that.depDataPropertyInitializer ?? new DepDataPropertyInitializer(that, this.depDataService);
     this.subscription = that.subscription ?? new Subscription();
     if (that.ngOnInit == null) {
       that.ngOnInit = () => {
-        this.depDataPropertyInitializer.execute();
+        this.depDataPropertyInitializer.execute(this.depDataService);
       };
     }
     if (that.ngOnDestroy == null) {
@@ -239,8 +281,13 @@ export class DepDataPropertyEnhancedObject {
   public createProperty<V>(
     args: DepDataPropertyArgumentsE<V>
   ): DepDataProperty<V> {
-    const argsWithSubscription = {
-      name: `${this.name}-${args.name}`,
+    const propertyIndex = this.nextPropertyIndex()
+    const argsWithSubscription: DepDataPropertyArguments<V> = {
+      name: `${this.objectName}-${this.objectIndex}-${args.name}-${propertyIndex}`,
+      objectName: this.objectName,
+      objectIndex: this.objectIndex,
+      propertyName: args.name,
+      propertyIndex: propertyIndex,
       initialValue: args.initialValue,
       input: args.input,
       transform: args.transform,
@@ -263,31 +310,34 @@ export class DepDataPropertyEnhancedObject {
   }
 
   public executePropertyInitializer() {
-    this.depDataPropertyInitializer.execute();
+    this.depDataPropertyInitializer.execute(this.depDataService);
   }
 }
 
 /** allows to delay the creation of a property *source*. */
 export class DepDataPropertyInitializer {
   private static _EnsureExecuted: DepDataPropertyInitializer[] | undefined = undefined;
-  private static ensureExecuted() {
+  private static ensureExecuted(service: DepDataService) {
     if (DepDataPropertyInitializer._EnsureExecuted == null) { return; }
     const list = DepDataPropertyInitializer._EnsureExecuted;
     DepDataPropertyInitializer._EnsureExecuted = undefined;
     for (const initializer of list) {
       if (initializer._ListDelayed == null) { continue; }
       console.warn(`Missing call to DepDataPropertyInitializer.execute for ${initializer.that?.constructor.name}`);
-      initializer.execute();
+      initializer.execute(service);
     }
   }
 
   private _ListDelayed: DepDataPropertyWithSourceDelayed<any, any>[] | undefined = undefined;
 
   that: {} | undefined;;
-  constructor(that: {}) {
+  constructor(
+    that: {},
+    service: DepDataService
+  ) {
     this.that = that;
     if (DepDataPropertyInitializer._EnsureExecuted == null) {
-      window.requestAnimationFrame(() => { DepDataPropertyInitializer.ensureExecuted(); });
+      window.requestAnimationFrame(() => { DepDataPropertyInitializer.ensureExecuted(service); });
       DepDataPropertyInitializer._EnsureExecuted = [];
     }
     DepDataPropertyInitializer._EnsureExecuted.push(this);
@@ -300,19 +350,26 @@ export class DepDataPropertyInitializer {
   }
 
   /** internal - execute all delayed creations. */
-  public execute() {
+  public execute(service: DepDataService) {
     const listDelayed = this._ListDelayed;
     this._ListDelayed = undefined;
     if (listDelayed == null) { return; }
-    for (const delayed of listDelayed) {
-      delayed.fnDelayed(delayed);
+    const scope = service.start({
+      name: 'DepDataPropertyInitializer.execute'
+    });
+    try {
+      for (const delayed of listDelayed) {
+        delayed.fnDelayed(delayed, scope);
+      }
+    } finally {
+      scope.executeTrigger();
     }
     this.that = undefined;;
   }
 }
 
 export type SourceDependency<TS> = DepDataPropertySourceDependency<TS>;
-export type SourceTransform<TS, V> = (value: DepDataPropertySourceValue<TS>, currentValue: V) => V;
+export type SourceTransform<TS, V> = (value: DepDataPropertySourceValue<TS>, currentValue: V, scope: DepDataServiceExecutionScope) => V;
 
 /** arguments for withSource. */
 export type DepDataPropertyWithSource<TS, V> = {
@@ -328,7 +385,7 @@ export type DepDataPropertyWithSource<TS, V> = {
 export type DepDataPropertyWithSourceDelayed<TS, V> =
   DepDataPropertyWithSource<TS, V>
   & {
-    fnDelayed: (args: DepDataPropertyWithSourceDelayed<TS, V>) => void;
+    fnDelayed: (args: DepDataPropertyWithSourceDelayed<TS, V>, scope: DepDataServiceExecutionScope) => void;
   }
 
 /** property - with a value if set the 
@@ -348,6 +405,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
   private _report: ReportFN<V> | undefined;
   private _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
   private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
+  private objectPropertyIdentity: ObjectPropertyIdentity;
 
   constructor(
     args: DepDataPropertyArguments<V>,
@@ -356,6 +414,13 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     private depDataPropertyInitializer?: DepDataPropertyInitializer
   ) {
     this.name = args.name;
+    this.objectPropertyIdentity = {
+      objectName: args.objectName,
+      objectIndex: args.objectIndex,
+      propertyName: args.propertyName,
+      propertyIndex: args.propertyIndex,
+    };
+
     this._transform = args.transform;
     this._compare = args.compare;
     this._enableReport = args.enableReport ?? false;
@@ -429,6 +494,14 @@ export class DepDataProperty<V> implements InteropObservable<V> {
       this.logicalTime = transaction.id;
     }
 
+    const logEntry: LogEntry = {
+      objectPropertyIdentity: this.objectPropertyIdentity,
+      logicalTime: this.logicalTime,
+      watchDog: this._WatchDog,
+      message: 'setValue',
+      value: value,
+    };
+    this._service.addLog(logEntry);
     if (this._report != null) {
       this._report(this, 'set', value);
     }
@@ -518,7 +591,14 @@ export class DepDataProperty<V> implements InteropObservable<V> {
       args.depDataPropertyInitializer = this.depDataPropertyInitializer;
     }
     if (args.depDataPropertyInitializer == null) {
-      this._internalWithSource(args);
+      const scope = this._service.start({
+        name: this.name
+      });
+      try {
+        this._internalWithSource(args, scope);
+      } finally {
+        scope.executeTrigger();
+      }
     } else {
       args.depDataPropertyInitializer.add({
         ...args,
@@ -529,18 +609,18 @@ export class DepDataProperty<V> implements InteropObservable<V> {
   }
 
   public withSourceIdentity(
-    dependency: IDepDataPropertyDependency<V>,
-    depDataPropertyInitializer?: DepDataPropertyInitializer
+    dependency: IDepDataPropertyDependency<V>
   ) {
     return this.withSource<{ value: V }>({
       sourceDependency: { value: dependency },
       sourceTransform: (d) => d.value,
-      depDataPropertyInitializer: depDataPropertyInitializer ?? this.depDataPropertyInitializer,
+      depDataPropertyInitializer: this.depDataPropertyInitializer,
     });
   }
 
   private _internalWithSource<TS>(
-    args: DepDataPropertyWithSource<TS, V>
+    args: DepDataPropertyWithSource<TS, V>,
+    scope: DepDataServiceExecutionScope
   ) {
     let subscription = args.subscription;
     if (subscription == null) {
@@ -553,7 +633,7 @@ export class DepDataProperty<V> implements InteropObservable<V> {
 
     const listSource = (this.listSource ??= []);
     listSource.push(source);
-    source.updateValue();
+    source.updateValue(scope);
 
     return this;
   }
@@ -610,7 +690,7 @@ class DepDataServiceSubject<V> extends BehaviorSubject<V> {
     this.property.setValue(value);
   }
 
-  public executeTrigger() {
+  public executeTrigger(/* scope: DepDataServiceExecutionScope */) {
     super.next(this.property.getValue());
   }
 }
@@ -642,7 +722,7 @@ export interface IDepDataPropertyDependency<V> {
   addSinkTrigger(trigger: DepDataPropertyTrigger): void;
   removeSinkTrigger(trigger: DepDataPropertyTrigger): void;
   setDirty?: () => boolean;
-  executeTrigger(): void;
+  executeTrigger(scope: DepDataServiceExecutionScope): void;
 }
 
 export class DepDataPropertyDependency<V> implements IDepDataPropertyDependency<V> {
@@ -684,9 +764,9 @@ export class DepDataPropertyDependency<V> implements IDepDataPropertyDependency<
     }
   }
 
-  public executeTrigger() {
+  public executeTrigger(scope: DepDataServiceExecutionScope) {
     if (this.trigger == null) { return; }
-    this.trigger.executeTrigger();
+    this.trigger.executeTrigger(scope);
   }
 }
 
@@ -746,7 +826,7 @@ export class DepDataServiceSource<V, TS> {
     }
   }
 
-  public updateValue(): V {
+  public updateValue(scope: DepDataServiceExecutionScope): V {
     // this.service.onReport(this.targetProperty, 'updatingValue', this.targetProperty.value);
     const sourceValue: DepDataPropertySourceValue<TS> = {} as DepDataPropertySourceValue<TS>;
     for (const key in this.sourceDependency) {
@@ -756,7 +836,7 @@ export class DepDataServiceSource<V, TS> {
     }
     try {
       const currentValue = this.targetProperty.getValue();
-      const nextValue = this.sourceTransform(sourceValue, currentValue);
+      const nextValue = this.sourceTransform(sourceValue, currentValue, scope);
       this.targetProperty.setValue(nextValue);
       return nextValue;
     } catch (error) {
@@ -780,9 +860,9 @@ export class DepDataServiceSource<V, TS> {
     }
   }
 
-  public executeTrigger() {
+  public executeTrigger(scope: DepDataServiceExecutionScope) {
     try {
-      this.updateValue();
+      this.updateValue(scope);
     } catch (error) {
       this.service.onReport<any>(this.targetProperty, 'error', error);
     }
@@ -943,7 +1023,7 @@ export class DepDataServiceExecutionScope {
     while (0 < this._listTrigger.length) {
       for (const trigger of this._listTrigger.getPartialListAndClear()) {
         try {
-          trigger.executeTrigger();
+          trigger.executeTrigger(this);
         } catch (error) {
           this._Service.onReportError(this, 'DepDataServiceExecutionScope', error);
         }
@@ -968,7 +1048,7 @@ export class DepDataServiceExecutionScope {
 
   private executeOneTrigger(trigger: DepDataPropertyTrigger) {
     try {
-      trigger.executeTrigger();
+      trigger.executeTrigger(this);
     } catch (error) {
       this._Service.onReportError(this, 'DepDataServiceExecutionScope', error);
     }

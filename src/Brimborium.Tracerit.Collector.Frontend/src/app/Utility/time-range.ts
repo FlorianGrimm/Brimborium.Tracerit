@@ -39,9 +39,9 @@ export const emptyTimeRangeOrNull :TimeRangeOrNull = Object.freeze({
 });
 
 export type HeaderAndLogLine = {
-  listAllHeader: PropertyHeader[];
-  listVisualHeader: PropertyHeader[];
-  listLogLine: LogLine[];
+  listAllHeader: readonly PropertyHeader[];
+  listVisualHeader: readonly PropertyHeader[];
+  listLogLine: readonly LogLine[];
 }
 
 export const emptyHeaderAndLogLine: HeaderAndLogLine = Object.freeze({
@@ -51,9 +51,9 @@ export const emptyHeaderAndLogLine: HeaderAndLogLine = Object.freeze({
 });
 
 export type LogLineTimeRangeDuration = {
-  listAllHeader: PropertyHeader[],
-  listVisualHeader: PropertyHeader[];
-  listLogLine: LogLine[];
+  listAllHeader: readonly PropertyHeader[],
+  listVisualHeader:  readonly PropertyHeader[];
+  listLogLine: readonly LogLine[];
   range: TimeRangeDuration;
   filter: FilterAstNode | null;
 }

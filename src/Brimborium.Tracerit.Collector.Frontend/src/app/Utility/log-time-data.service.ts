@@ -19,10 +19,10 @@ export class LogTimeDataService {
   public readonly depThis = this.depDataService.wrap(this);
   public readonly dataService = inject(DataService);
 
-  public readonly listAllHeader = this.depThis.createProperty({
-    name: 'LogTimeDataService_listAllHeader',
-    initialValue: [] as PropertyHeader[],
-    
+  public readonly listAllHeader = this.depThis.createProperty<readonly PropertyHeader[]>({
+    name: 'listAllHeader',
+    initialValue: [],
+
   }).withSource(
     {
       sourceDependency: {
@@ -30,47 +30,47 @@ export class LogTimeDataService {
       },
       sourceTransform:
         (d) => d.listAllHeader,
-      
+
     }
   );
 
   public readonly useCurrentStream = this.depThis.createProperty({
-    name: 'LogTimeDataService_useCurrentStream',
+    name: 'useCurrentStream',
     initialValue: false,
-    
+
   });
   //readonly useCurrentStream$ = this.useCurrentStream.asObserable();
 
   // input
   public readonly listLogLineCurrentStream = this.depThis.createProperty<LogLine[]>({
-    name: 'LogTimeDataService_listLogLineCurrentStream',
+    name: 'listLogLineCurrentStream',
     initialValue: [],
-    
+
   });
 
   public readonly listLogLineFiles = this.depThis.createProperty<LogLine[]>({
-    name: 'LogTimeDataService_listLogLineFilesSubscripe2',
+    name: 'listLogLineFilesSubscripe2',
     initialValue: [],
-    
+
   }).withSourceIdentity(
     this.dataService.listLogLineSource.dependencyPublic());
 
   public readonly listLogLineAll = this.depThis.createProperty({
-    name: 'LogTimeDataService_listLogLineAll',
+    name: 'listLogLineAll',
     initialValue: [] as LogLine[],
-    
+
   }).withSourceIdentity(
     this.dataService.listLogLineSource.dependencyPublic());
 
   public readonly listHeaderAndLogLineAll = this.depThis.createProperty<HeaderAndLogLine>({
-    name: 'LogTimeDataService_listHeaderAndLogLineAll',
+    name: 'listHeaderAndLogLineAll',
     initialValue: emptyHeaderAndLogLine,
-    
+
   }).withSourceIdentity(
     this.dataService.listHeaderAndLogLineSource.dependencyPublic());
 
   public readonly dataComplete = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataComplete',
+    name: 'dataComplete',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
       fn: (value) => {
@@ -82,7 +82,7 @@ export class LogTimeDataService {
         setTimeRangeDurationIfChanged(this.rangeZoom, nextRangeZoom);
       }
     },
-    
+
   }).withSource({
     sourceDependency: {
       src: this.listHeaderAndLogLineAll.dependencyInner()
@@ -100,42 +100,42 @@ export class LogTimeDataService {
         return result;
       }
     },
-    
+
   });
 
   public readonly rangeComplete = this.depThis.createProperty<TimeRangeDuration>({
-    name: 'LogTimeDataService_rangeComplete',
+    name: 'rangeComplete',
     initialValue: epoch01RangeDuration,
-    
+
   }).withSource(
     {
       sourceDependency: {
         src: this.dataComplete.dependencyInner()
       },
       sourceTransform: ({ src }) => { return src.range; },
-      
+
     }
   );
 
   // input
   public readonly modeZoom = this.depThis.createProperty({
-    name: 'LogTimeDataService_modeZoom',
+    name: 'modeZoom',
     initialValue: 'complete' as ModeZoom,
-    
+
   });
   //readonly modeZoom$ = this.modeZoom.asObserable();
 
   public readonly rangeZoom = this.depThis.createProperty<TimeRangeDuration>({
-    name: 'LogTimeDataService_rangeZoom',
+    name: 'rangeZoom',
     initialValue: epoch01RangeDuration,
     transform: (value) => {
       return calcRange([this.rangeComplete.getValue(), value]);
     },
-    
+
   });
 
   public readonly dataZoom = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataZoom',
+    name: 'dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
       fn: (value) => {
@@ -146,7 +146,7 @@ export class LogTimeDataService {
         setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
       }
     },
-    
+
   }).withSource({
     sourceDependency: {
       dataComplete: this.dataComplete.dependencyInner(),
@@ -171,20 +171,20 @@ export class LogTimeDataService {
       const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range: nextRangeZoom, filter: null };
       return result;
     },
-    
+
   });
 
   public readonly rangeFilter = this.depThis.createProperty<TimeRangeDuration>({
-    name: 'LogTimeDataService_rangeFilter',
+    name: 'rangeFilter',
     initialValue: epoch01RangeDuration,
     transform: (value) => {
       return calcRange([this.rangeComplete.getValue(), this.rangeZoom.getValue(), value]);
     },
-    
+
   });
 
   public readonly dataTimeFiltered = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataTimeFiltered',
+    name: 'dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
       fn: (value) => {
@@ -196,7 +196,7 @@ export class LogTimeDataService {
         setTimeRangeDurationIfChanged(this.rangeFilter, nextRangeFilter);
       }
     },
-    
+
   }).withSource({
     sourceDependency: {
       dataZoom: this.dataZoom.dependencyInner(),
@@ -219,14 +219,14 @@ export class LogTimeDataService {
       const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range: nextRangeFilter, filter: null };
       return result;
     },
-    
+
   });
 
   // filter
   // input
   // TODO
   public readonly listFilterCondition = this.depThis.createProperty({
-    name: 'LogTimeDataService_listFilterCondition',
+    name: 'listFilterCondition',
     initialValue: [] as PropertyHeader[],
     sideEffect: {
       fn: (value) => {
@@ -235,19 +235,19 @@ export class LogTimeDataService {
         //this.filterAst.set(next);
       }
     },
-    
+
   });
 
   public readonly filterAst = this.depThis.createProperty({
-    name: 'LogTimeDataService_filterAst',
+    name: 'filterAst',
     initialValue: null as FilterAstNode | null,
-    
+
   });
 
   public readonly dataFilteredCondition = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataFilteredCondition',
+    name: 'dataFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
-    
+
   }).withSource({
     sourceDependency: {
       dataTimeFiltered: this.dataTimeFiltered.dependencyInner(),
@@ -261,14 +261,14 @@ export class LogTimeDataService {
       const result: LogLineTimeRangeDuration = { listAllHeader, listVisualHeader, listLogLine: nextListLogLine, range, filter: filterAst };
       return result;
     },
-    
+
   });
 
   // calculated output depended on listLogLine$ and listFilterCondition$
   public readonly listLogLineFilteredCondition = this.depThis.createProperty({
-    name: 'LogTimeDataService_listLogLineFilteredCondition',
+    name: 'listLogLineFilteredCondition',
     initialValue: [] as LogLine[],
-    
+
   }).withSource({
     sourceDependency: {
       listLogLineAll: this.listLogLineAll.dependencyInner(),
@@ -280,15 +280,15 @@ export class LogTimeDataService {
         d.listFilterCondition);
       return result;
     },
-    
+
   }
   );
   public readonly $listLogLineFilteredCondition = this.listLogLineFilteredCondition.asSignal();
 
   public readonly listLogLineTimeZoomed = this.depThis.createProperty({
-    name: 'LogTimeDataService_listLogLineTimeZoomed',
+    name: 'listLogLineTimeZoomed',
     initialValue: [] as LogLine[],
-    
+
   }).withSource(
     {
       sourceDependency:
@@ -313,15 +313,15 @@ export class LogTimeDataService {
           });
           return result;
         },
-      
+
     }
   );
 
   // calculated output depended on listLogLineFilteredCondition$ and rangeFilter$
   public readonly listLogLineFilteredTime = this.depThis.createProperty({
-    name: 'LogTimeDataService_listLogLineFilteredTime',
+    name: 'listLogLineFilteredTime',
     initialValue: [] as LogLine[],
-    
+
   }).withSource(
     {
       sourceDependency:
@@ -348,22 +348,22 @@ export class LogTimeDataService {
           });
           return result;
         },
-      
+
     }
   );
 
   // input
   public readonly currentLogLineId = this.depThis.createProperty({
-    name: 'LogTimeDataService_currentLogLineId',
+    name: 'currentLogLineId',
     initialValue: null as (number | null),
-    
+
   });
 
   // depended listLogLineFiltered$ currentLogLineId$
   public readonly currentLogLine = this.depThis.createProperty<LogLine | null>({
-    name: 'LogTimeDataService_currentLogLine',
+    name: 'currentLogLine',
     initialValue: null as (LogLine | null),
-    
+
   }).withSource(
     {
       sourceDependency:
@@ -377,13 +377,13 @@ export class LogTimeDataService {
           const result = dataTimeFiltered.listLogLine.find(item => item.id === currentLogLineId) ?? null;
           return result;
         },
-      
+
     });
 
   public readonly currentLogTimestamp = this.depThis.createProperty<ZonedDateTime | null>({
-    name: 'LogTimeDataService_currentLogTimestamp',
+    name: 'currentLogTimestamp',
     initialValue: null,
-    
+
   }).withSource(
     {
       sourceDependency: {
@@ -393,21 +393,21 @@ export class LogTimeDataService {
         const result = getLogLineTimestampValue(currentLogLine);
         return result;
       },
-      
+
     }
   );
 
   // input
   public readonly listLogLineIdHighlighted = this.depThis.createProperty({
-    name: 'LogTimeDataService_listLogLineIdHighlighted',
+    name: 'listLogLineIdHighlighted',
     initialValue: new Set<string>(),
-    
+
   });
 
   public readonly rangeCurrentSelected = this.depThis.createProperty<TimeRangeOrNull>({
-    name: 'LogTimeDataService_rangeCurrentSelected',
+    name: 'rangeCurrentSelected',
     initialValue: Object.freeze({ start: null, finish: null }),
-    
+
   }).withSource({
     sourceDependency: {
       currentLogLine: this.currentLogLine.dependencyInner(),
@@ -416,7 +416,7 @@ export class LogTimeDataService {
       const ts = getLogLineTimestampValue(currentLogLine);
       return createTimeRangeOrNull(ts, ts);
     },
-    
+
   });
 
   constructor() {
@@ -463,7 +463,7 @@ export class LogTimeDataService {
 
 }
 
-function calcStartFinish(value: LogLine[]) {
+function calcStartFinish(value: readonly LogLine[]) {
   if (0 === value.length) {
     return createTimeRangeDuration(epoch0, epoch1);
   } else {

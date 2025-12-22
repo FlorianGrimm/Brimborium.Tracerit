@@ -6,10 +6,15 @@ svg.my-icon {
 
 html {
     margin: 0;
+
 }
 
 body {
     margin: 0;
+}
+
+* {
+    font-family: monospace;
 }
 
 $scollbar-height: 25px;
@@ -234,7 +239,8 @@ table.table-tracerit {
     }
 
     .search-icon {
-        left: 0.75rem;
+        left: 0.5rem;
+        top: 4px;
         position: absolute;
         color: var(--quaternary-contrast);
     }
@@ -243,7 +249,7 @@ table.table-tracerit {
         width: 13rem;
         font-size: 1rem;
         border-radius: 0.25rem;
-        padding: 0.75rem 0.5rem 0.75rem 2.5rem;
+        padding: 4px 0.5rem 4px 2.5rem;        
         color: var(--primary-contrast);
         outline-color: var(--hot-pink);
         border: 1px solid var(--quinary-contrast);
@@ -271,7 +277,7 @@ table.table-tracerit {
     font-size: 0.9rem;
 
 
-    
+
     .no-results {
         padding: 1rem;
     }
@@ -300,7 +306,7 @@ table.table-tracerit {
 
     [ngOption][data-active='true'] {
         outline-offset: -2px;
-         outline: 2px solid var(--hot-pink);
+        outline: 2px solid var(--hot-pink);
     }
 
     [ngOption][aria-selected='true'] {

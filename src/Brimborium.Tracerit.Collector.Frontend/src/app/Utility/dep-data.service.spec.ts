@@ -16,32 +16,45 @@ describe('DepDataService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+
+    const subscription = new Subscription();
+    const objectA = { subscription: subscription };
+    const depThis = service.wrap(objectA);
+    depThis.executePropertyInitializer();
+    expect(depThis).toBeTruthy();
   });
 
   it('property should be created', () => {
     const subscription = new Subscription();
+    const objectA = { subscription: subscription };
+    const depThis = service.wrap(objectA);
 
-    const property = service.createProperty({
+    const property = depThis.createProperty({
       name: 'test',
       initialValue: 1,
-      subscription: subscription,
     });
+    depThis.executePropertyInitializer();
+
     expect(property).toBeTruthy();
-    expect(property.name).toEqual('test');
+    expect(property.name).toMatch(/Object\-\d+-test\-\d+/);
     expect(property.getValue()).toEqual(1);
   });
 
   it('property get/set', () => {
     const subscription = new Subscription();
+    const objectA = { subscription: subscription };
+    const depThis = service.wrap(objectA);
 
-    const property = service.createProperty({
+
+    const property = depThis.createProperty({
       name: 'test',
       initialValue: 1,
-      subscription: subscription,
     });
     expect(property).toBeTruthy();
-    expect(property.name).toEqual('test');
+    expect(property.name).toMatch(/Object\-\d+-test\-\d+/);
     expect(property.getValue()).toEqual(1);
+    
+    depThis.executePropertyInitializer();
 
     property.setValue(2);
     expect(property.getValue()).toEqual(2);
@@ -49,25 +62,28 @@ describe('DepDataService', () => {
 
   it('property dep', () => {
     const subscription = new Subscription();
-    const propertyA = service.createProperty<number>({
+    const objectA = { subscription: subscription };
+    const depThis = service.wrap(objectA);
+
+    const propertyA = depThis.createProperty<number>({
       name: 'testA',
       initialValue: 1,
-      subscription: subscription,
     });
-    //debugger;
-    const propertyB = service.createProperty({
+    
+    const propertyB = depThis.createProperty({
       name: 'testB',
       initialValue: 1,
-      subscription: subscription
     }).withSource({
       sourceDependency: { propA: propertyA.dependencyInner() },
       sourceTransform: (d) => { return d.propA + 1; }
     });
 
+    depThis.executePropertyInitializer();
+
     expect(propertyA._getListSinkTrigger().length).toEqual(1);
 
     expect(propertyA).toBeTruthy();
-    expect(propertyA.name).toEqual('testA');
+    expect(propertyA.name).toMatch(/Object\-\d+-testA\-\d+/);
     expect(propertyA.getValue()).toEqual(1);
 
     propertyA.setValue(2);
@@ -83,23 +99,23 @@ describe('DepDataService', () => {
 
   it('property dep 2 ui and inner', () => {
     const subscription = new Subscription();
-    const propertyA = service.createProperty<number>({
+    const objectA = { subscription: subscription };
+    const depThis = service.wrap(objectA);
+
+    const propertyA = depThis.createProperty<number>({
       name: 'testA',
       initialValue: 1,
-      subscription: subscription,
     });
-    const propertyB = service.createProperty<number>({
+    const propertyB = depThis.createProperty<number>({
       name: 'testB',
       initialValue: 1,
-      subscription: subscription,
     });
 
     const listReport: string[] = [];
-    const propertyRUi = service.createProperty({
+    const propertyRUi = depThis.createProperty({
       name: 'testRUi',
       initialValue: 1,
       report: (property, msg, value) => { listReport.push(`${property.name}-${value}`); },
-      subscription: subscription
     }).withSource({
       sourceDependency: {
         propA: propertyA.dependencyUi(),
@@ -108,11 +124,10 @@ describe('DepDataService', () => {
       sourceTransform: (d) => { return d.propA + d.propB; }
     });
 
-    const propertyRInner = service.createProperty({
+    const propertyRInner = depThis.createProperty({
       name: 'testRInner',
       initialValue: 1,
       report: (property, msg, value) => { listReport.push(`${property.name}-${value}`); },
-      subscription: subscription,
     }).withSource({
       sourceDependency: {
         propA: propertyA.dependencyInner(),
@@ -121,50 +136,55 @@ describe('DepDataService', () => {
       sourceTransform: (d) => { return d.propA + d.propB; }
     });
 
+    depThis.executePropertyInitializer();
+
     expect(propertyRUi.getValue()).toEqual(2);
     expect(propertyRInner.getValue()).toEqual(2);
 
-    expect(listReport).toEqual(['testRUi-2', 'testRInner-2']);
+    
+    expect(listReport).toEqual([`${propertyRUi.name}-2`, `${propertyRInner.name}-2`]);
 
     propertyA.setValue(2);
     expect(propertyRUi.getValue()).toEqual(3);
     expect(propertyRInner.getValue()).toEqual(3);
-    expect(listReport).toEqual(['testRUi-2', 'testRInner-2', 'testRInner-3', 'testRUi-3']);
+    expect(listReport).toEqual([`${propertyRUi.name}-2`, `${propertyRInner.name}-2`, `${propertyRInner.name}-3`, `${propertyRUi.name}-3`]);
 
     subscription.unsubscribe();
   });
 
   it('property dep repeat', () => {
+
     const subscription = new Subscription();
-    const propertyA = service.createProperty<number>({
+    const objectA = { subscription: subscription };
+    const depThis = service.wrap(objectA);
+
+    const propertyA = depThis.createProperty<number>({
       name: 'testA',
       initialValue: 1,
-      subscription: subscription,
     });
-    const propertyB = service.createProperty<number>({
+    const propertyB = depThis.createProperty<number>({
       name: 'testB',
       initialValue: 1,
-      subscription: subscription,
     });
 
-    const propertyRUi = service.createProperty({
+    const propertyRUi = depThis.createProperty({
       name: 'testRUi',
       initialValue: 1,
-      subscription: subscription,
     }).withSource({
       sourceDependency: { propA: propertyA.dependencyInner(), propB: propertyB.dependencyInner() },
       sourceTransform: (d) => { return d.propA + d.propB; }
     });
 
 
-    const propertyRInner = service.createProperty({
+    const propertyRInner = depThis.createProperty({
       name: 'testRInner',
       initialValue: 1,
-      subscription: subscription,
     }).withSource({
       sourceDependency: { propA: propertyA.dependencyInner(), propB: propertyB.dependencyInner() },
       sourceTransform: (d) => { return d.propA + d.propB; }
     });
+
+    depThis.executePropertyInitializer();
 
     expect(propertyRUi.getValue()).toEqual(2);
     expect(propertyRInner.getValue()).toEqual(2);
@@ -179,43 +199,47 @@ describe('DepDataService', () => {
   });
 
   it('property dep inner UI', () => {
-    let index=1;
-    const objectA = {};
+    let index = 1;
+        const subscription = new Subscription();
+    const objectA = {subscription: subscription};
     const depDataService = new DepDataService();
-    const enhancedObjectA = depDataService.wrap(objectA);
-    const propertyA = enhancedObjectA.createProperty<string>({
+    const depThis = depDataService.wrap(objectA);
+
+    const propertyA = depThis.createProperty<string>({
       name: 'testA',
       initialValue: "A",
     });
-    const propertyB = enhancedObjectA.createProperty<string>({
+    const propertyB = depThis.createProperty<string>({
       name: 'testB',
       initialValue: "B",
     });
-    const propertyC = enhancedObjectA.createProperty<string>({
+    const propertyC = depThis.createProperty<string>({
       name: 'testC',
       initialValue: "C",
     }).withSource({
       sourceDependency: { propA: propertyA.dependencyInner(), propB: propertyB.dependencyUi() },
-      sourceTransform: ({ propA, propB }) => { return `${index++}-${propA}-${propB}`;}
+      sourceTransform: ({ propA, propB }) => { return `${index++}-${propA}-${propB}`; }
     });
-    const propertyD = enhancedObjectA.createProperty<string>({
+    const propertyD = depThis.createProperty<string>({
       name: 'testD',
       initialValue: "D",
     }).withSource({
       sourceDependency: { propA: propertyA.dependencyPublic(), propC: propertyB.dependencyPublic() },
-      sourceTransform: ({ propA, propC }) => { return `${index++}-${propA}-${propC}`;}
+      sourceTransform: ({ propA, propC }) => { return `${index++}-${propA}-${propC}`; }
     });
-    
-    const propertyE = enhancedObjectA.createProperty<string>({
+
+    const propertyE = depThis.createProperty<string>({
       name: 'testE',
       initialValue: "E",
     }).withSource({
       sourceDependency: { propB: propertyB.dependencyGate(), propC: propertyB.dependencyPublic() },
-      sourceTransform: ({ propB, propC }, currentValue) => { 
+      sourceTransform: ({ propB, propC }, currentValue) => {
         if (propB !== "BB") { return currentValue; }
         return `${index++}-${propB}-${propC}`;
       }
     });
+
+    depThis.executePropertyInitializer();
 
     expect(propertyC.getValue()).toEqual('1-A-B');
     expect(propertyD.getValue()).toEqual('2-A-B');
@@ -235,29 +259,33 @@ describe('DepDataService', () => {
   });
 
   it('property dep loop abort', () => {
-    let index=1;
-    const objectA = {};
+    let index = 1;
+    const subscription = new Subscription();      
+    const objectA = { subscription: subscription };
     const depDataService = new DepDataService();
-    const enhancedObjectA = depDataService.wrap(objectA);
-    const propertyA = enhancedObjectA.createProperty<string>({
+    const depThis = depDataService.wrap(objectA);
+
+    const propertyA = depThis.createProperty<string>({
       name: 'testA',
       initialValue: "A",
     });
-    const propertyB = enhancedObjectA.createProperty<string>({
+    const propertyB = depThis.createProperty<string>({
       name: 'testB',
       initialValue: "B",
     });
 
     propertyA.withSource({
       sourceDependency: { propB: propertyB.dependencyPublic() },
-      sourceTransform: ({ propB }) => { return `${index++}-A-${propB}`;}
+      sourceTransform: ({ propB }) => { return `${index++}-A-${propB}`; }
     });
 
     propertyB.withSource({
       sourceDependency: { propA: propertyA.dependencyPublic() },
-      sourceTransform: ({ propA }) => { return `${index++}-B-${propA}`;}
+      sourceTransform: ({ propA }) => { return `${index++}-B-${propA}`; }
     });
 
-    expect(index).toBeLessThan(10);    
+    depThis.executePropertyInitializer();
+
+    expect(index).toBeLessThan(10);
   })
 });

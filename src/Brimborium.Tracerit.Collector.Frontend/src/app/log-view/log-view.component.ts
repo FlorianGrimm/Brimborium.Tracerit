@@ -6,8 +6,8 @@ import { Duration, ZonedDateTime } from '@js-joda/core';
 import { Subscription, combineLatest, tap } from 'rxjs';
 import { LucideAngularModule, Funnel, FunnelX, Eye, EyeOff, GripVertical, Menu, Regex } from 'lucide-angular';
 
-import { DataService } from '@app/Utility/data-service';
-import { getVisualHeader } from '@app/Utility/propertyHeaderUtility';
+import { DataService, HeaderUpdate } from '@app/Utility/data-service';
+import { getVisualHeader, updateHeaderWidth } from '@app/Utility/propertyHeaderUtility';
 import { emptyHeaderAndLogLine, emptyLogLineTimeRangeDuration, epoch0, epoch01RangeDuration, epoch1, getEffectiveRange, HeaderAndLogLine, LogLineTimeRangeDuration, setTimeRangeDurationIfChanged, setTimeRangeIfChanged, TimeRangeDuration, TimeRangeOrNull } from '@app/Utility/time-range';
 import { getLogLineTimestampValue, LogLine, LogLineValue, PropertyHeader, TraceInformation, TypeValue } from '../Api';
 
@@ -74,9 +74,9 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
 
   // State - Headers  
-  public readonly listAllHeader = this.depThis.createProperty({
-    name: 'LogView_listAllHeader',
-    initialValue: [] as PropertyHeader[],
+  public readonly listAllHeader = this.depThis.createProperty<readonly PropertyHeader[]>({
+    name: 'listAllHeader',
+    initialValue: [],
   }).withSource({
     sourceDependency: {
       listAllHeader: this.dataService.listAllHeader.dependencyPublic()
@@ -85,9 +85,9 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   public readonly listAllHeader$ = this.listAllHeader.asObserable();
-  public readonly listCurrentHeader = this.depThis.createProperty({
-    name: 'LogView_listCurrentHeader',
-    initialValue: [] as PropertyHeader[],
+  public readonly listCurrentHeader = this.depThis.createProperty<readonly PropertyHeader[]>({
+    name: 'listCurrentHeader',
+    initialValue: [],
     report: (property, message, value) => {
       console.log(`${property.name} ${message}`, value);
     },
@@ -101,27 +101,27 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // State - Log lines
   public readonly dataComplete = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataComplete',
+    name: 'dataComplete',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
     this.logTimeDataService.dataComplete.dependencyPublic());
   public readonly $dataComplete = this.dataComplete.asSignal();
 
   public readonly dataZoom = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataZoom',
+    name: 'dataZoom',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
     this.logTimeDataService.dataZoom.dependencyPublic());
 
   public readonly dataTimeFiltered = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogTimeDataService_dataTimeFiltered',
+    name: 'dataTimeFiltered',
     initialValue: emptyLogLineTimeRangeDuration,
   }).withSourceIdentity(
-    this.logTimeDataService.dataTimeFiltered.dependencyPublic()  );
+    this.logTimeDataService.dataTimeFiltered.dependencyPublic());
   public readonly $dataTimeFiltered = this.dataTimeFiltered.asSignal();
 
   public readonly dataFilteredCondition = this.depThis.createProperty<LogLineTimeRangeDuration>({
-    name: 'LogView_dataFilteredCondition',
+    name: 'dataFilteredCondition',
     initialValue: emptyLogLineTimeRangeDuration,
     sideEffect: {
       fn: (value) => {
@@ -130,13 +130,13 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       requestAnimationFrame: true
     },
   }).withSourceIdentity(
-    this.logTimeDataService.dataFilteredCondition.dependencyPublic()  );
+    this.logTimeDataService.dataFilteredCondition.dependencyPublic());
   public readonly $dataFilteredCondition = this.dataFilteredCondition.asSignal();
 
   // State - Selection & Highlighting
   public readonly $selectedLogLineId = signal<number | null>(null);
   public readonly selectedLogLineIdProp = this.depThis.createProperty<number | null>({
-    name: 'LogView_selectedLogLineId',
+    name: 'selectedLogLineId',
     initialValue: null,
     input: { input: this.$selectedLogLineId },
     compare: (a, b) => (a === b),
@@ -148,7 +148,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   public readonly highlightedLogLineId = this.depThis.createProperty<number | null>({
-    name: 'LogView_highlightedLogLineId',
+    name: 'highlightedLogLineId',
     initialValue: null,
     compare: (a, b) => (a === b),
     //input: { input: this.$highlightedLogLineId },
@@ -156,7 +156,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly $highlightedLogLineId = this.highlightedLogLineId.asSignal();
 
   public readonly selectedLogLine = this.depThis.createProperty({
-    name: 'LogView_selectedLogLine',
+    name: 'selectedLogLine',
     initialValue: null as (LogLine | null),
   }).withSource(
     {
@@ -176,7 +176,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly $selectedLogLine = this.selectedLogLine.asSignal();
 
   public readonly headerId = this.depThis.createProperty<PropertyHeader | undefined>({
-    name: 'LogView_headerId',
+    name: 'headerId',
     initialValue: undefined,
     compare: (a, b) => (a === b),
   }).withSource({
@@ -194,7 +194,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // State - Time ranges
   public readonly rangeZoom = this.depThis.createProperty<TimeRangeDuration>({
-    name: 'LogView_rangeZoom',
+    name: 'rangeZoom',
     initialValue: epoch01RangeDuration,
   }).withSource(
     {
@@ -207,7 +207,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   );
 
   public readonly rangeFilter = this.depThis.createProperty<TimeRangeDuration>({
-    name: 'LogView_rangeFilter',
+    name: 'rangeFilter',
     initialValue: epoch01RangeDuration,
   }).withSource(
     {
@@ -220,7 +220,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   );
 
   public readonly gridHeaderWidth = this.depThis.createProperty({
-    name: 'LogView_gridHeaderWidth',
+    name: 'gridHeaderWidth',
     initialValue: 100,
     compare: (a, b) => a === b,
   }).withSource(
@@ -229,8 +229,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
         dataFilteredCondition: this.dataFilteredCondition.dependencyInner(),
       },
       sourceTransform:
-        ({ dataFilteredCondition }) => {
-          const oldGridHeaderWidth: number = this.gridHeaderWidth.getValue();
+        ({ dataFilteredCondition }, oldGridHeaderWidth, scope) => {
           if (0 === dataFilteredCondition.listLogLine.length) {
             return oldGridHeaderWidth;
           }
@@ -239,13 +238,31 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
             return oldGridHeaderWidth;
           }
 
+          const updateHeaders: HeaderUpdate[] = [];
+
           let nextWidth = 150;
           for (const header of dataFilteredCondition.listVisualHeader) {
             if (header.width < 2) {
-              header.width = this.measureHeader(header, dataFilteredCondition.listLogLine);
-              // console.log("header", header);
+              const headerUpdate = this.measureHeader(header, dataFilteredCondition.listLogLine);
+              if (headerUpdate != null) {
+                updateHeaders.push(headerUpdate);
+                nextWidth += headerUpdate.update.width ?? 0;
+              } else {
+                nextWidth += header.width;;
+              }
+            } else {
+              nextWidth += header.width;
             }
-            nextWidth += header.width;
+          }
+          if (updateHeaders.length > 0) {
+            console.log('updateHeaders', updateHeaders);
+            this.dataService.updateHeaders(updateHeaders);
+            // scope.addTriggerToQueue({
+            //   executeTrigger: () => {
+            //     this.dataService.updateHeaders(updateHeaders);
+            //   },
+            //   name: 'updateHeaders',
+            // }, "UI");
           }
           return nextWidth;
         },
@@ -299,7 +316,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public readonly displayWidth = this.depThis.createProperty<number>({
-    name: 'LogView_displayWidth',
+    name: 'displayWidth',
     initialValue: 0,
   });
 
@@ -316,7 +333,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public readonly detailsHeaderContent = this.depThis.createProperty<LogLineValueWithHeader[]>({
-    name: 'LogView_detailsHeaderContent',
+    name: 'detailsHeaderContent',
     initialValue: [] as LogLineValueWithHeader[],
   }).withSource({
     sourceDependency: {
@@ -331,7 +348,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly $detailsHeaderContent = this.detailsHeaderContent.asSignal();
 
   public readonly detailsBodyContent = this.depThis.createProperty<LogLineValueWithHeader[]>({
-    name: 'LogView_detailsBodyContent',
+    name: 'detailsBodyContent',
     initialValue: [] as LogLineValueWithHeader[],
   }).withSource({
     sourceDependency: {
@@ -469,10 +486,15 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Column management
   onDropHeader(event: CdkDragDrop<PropertyHeader[]>): void {
-    const headers = this.listCurrentHeader.getValue();
+    const headers = this.listCurrentHeader.getValue().slice();
     moveItemInArray(headers, event.previousIndex, event.currentIndex);
-    headers.forEach((h, i) => h.visualHeaderIndex = i);
-    this.listCurrentHeader.setValue([...headers]);
+    const updates = headers
+      .map((h, i) => ({ header: h, update: { visualHeaderIndex: i } }))
+      .filter(t => t.header.visualHeaderIndex !== t.update.visualHeaderIndex)
+      ;
+    this.dataService.updateHeaders(updates);
+    // headers.forEach((h, i) => h.visualHeaderIndex = i);
+    // this.listCurrentHeader.setValue([...headers]);
   }
 
   onToggleColumn(header: PropertyHeader): void {
@@ -566,13 +588,15 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   onAutoSize(header: PropertyHeader) {
     this.cleanupResize();
     const { listLogLine } = this.dataFilteredCondition.getValue();
-    this.measureHeader(header, listLogLine);
+    const headerUpdate = this.measureHeader(header, listLogLine);
+    if (headerUpdate == null) { return; }
+    this.dataService.updateHeaders([headerUpdate]);
     this.updateGridHeader();
     this.dataService.listAllHeader.setValue(this.listAllHeader.getValue());
   }
 
   private measureCanvas?: HTMLCanvasElement | undefined;
-  measureHeader(header: PropertyHeader, listLogLine: LogLine[]) {
+  measureHeader(header: PropertyHeader, listLogLine: readonly LogLine[]): HeaderUpdate | null {
     let nextWidth = 100;
     let nextMaxContent = '';
     for (const logLine of listLogLine) {
@@ -608,11 +632,12 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (nextWidth < width) { nextWidth = width; }
       }
     }
+    const update = updateHeaderWidth(header, nextWidth);
+    if (update == null) { return null; }
+    const headerUpdate: HeaderUpdate =
+      { header: header, update: update }
 
-    header.width = nextWidth;
-    header.headerCellStyle = { width: `${nextWidth}px` };
-    header.dataCellStyle = { width: `${nextWidth}px` };
-    return nextWidth;
+    return headerUpdate;
   }
 
   updateGridHeader() {
@@ -674,7 +699,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   getDetailsHeaderContent(logLine: LogLine): LogLineValueWithHeader[] {
     const iter = logLine.data.values();
     const result: LogLineValueWithHeader[] = [];
-    const mapName = this.dataService.mapName;
+    const mapName = this.dataService.mapHeaderByName;
     for (const value of iter) {
       const header = mapName.get(value.name)!;
       if (header.visualDetailHeaderIndex >= 0) {
@@ -690,7 +715,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   getDetailsBodyContent(logLine: LogLine): LogLineValueWithHeader[] {
     const iter = logLine.data.values();
     const result: LogLineValueWithHeader[] = [];
-    const mapName = this.dataService.mapName;
+    const mapName = this.dataService.mapHeaderByName;
     for (const value of iter) {
       const header = mapName.get(value.name)!;
       if (header.visualDetailHeaderIndex < 0) {
@@ -793,7 +818,7 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public readonly showSearch = this.depThis.createProperty<boolean>({
-    name: 'LogView_showSearch',
+    name: 'showSearch',
     initialValue: false,
     compare: (a, b) => a === b,
     sideEffect: {
@@ -821,12 +846,12 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public readonly searchText = this.depThis.createProperty<string>({
-    name: 'LogView_searchText',
+    name: 'searchText',
     initialValue: "",
     compare: (a, b) => a === b,
   });
   public readonly searchResult = this.depThis.createProperty<SearchResult>({
-    name: 'LogView_searchResult',
+    name: 'searchResult',
     initialValue: { listLogLineId: [], listLogLine: [], currentIndex: 0 },
     transform: (value) => Object.freeze(value),
     compare: (a, b) => Object.is(a, b),

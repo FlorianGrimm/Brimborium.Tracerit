@@ -96,7 +96,7 @@ export class FilterAstNodeComponent {
     if (node == null) { throw new Error('node is null'); }
     if (filterAstManager == null) { throw new Error('filterAstManager is null'); }
 
-    filterAstManager.setPropertyName(name);
+    filterAstManager.setPropertyName(name, node);
   }
 
   onAppendListChild() {

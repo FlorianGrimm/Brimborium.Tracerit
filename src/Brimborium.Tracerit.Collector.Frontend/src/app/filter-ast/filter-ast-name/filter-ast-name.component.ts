@@ -65,9 +65,9 @@ export class FilterAstNameComponent {
   });
   readonly $query = this.query.asSignal();
 
-  readonly listPropertyHeader = this.depThis.createProperty({
+  readonly listPropertyHeader = this.depThis.createProperty<readonly PropertyHeader[]>({
     name: 'listPropertyHeader',
-    initialValue: [] as PropertyHeader[],
+    initialValue: [],
     report: (property, message, value) => {
       console.log(`${property.name} ${message}`, value);
     },
@@ -100,16 +100,32 @@ export class FilterAstNameComponent {
     });
   }
 
-  onNameChanged(value: string) {
+  onNameChanged(value: string, mustMatch: boolean) {
     this.query.setValue(value);
-    const  listPropertyHeader = this.listPropertyHeader.getValue();
-    if (listPropertyHeader.length === 1) {
-      const header = listPropertyHeader[0]
-      if (this.query.getValue() !== value){
-        this.query.setValue(header.name);
+    const listPropertyHeader = this.listPropertyHeader.getValue();
+    if (mustMatch) {
+      if (listPropertyHeader.length === 1) {
+        const header = listPropertyHeader[0]
+        if (this.query.getValue() !== value) {
+          this.query.setValue(header.name);
+        }
+        this.filterAstManager().setPropertyHeader(header, this.uiNode());
+      } else {
+        this.filterAstManager().setPropertyHeader(null, this.uiNode());
       }
-      this.filterAstManager().setPropertyName(value, this.uiNode());
     }
   }
 
+  onComboBoxToggle() {
+    const combobox = this.combobox();
+    if (combobox) {
+      const expanded = combobox.expanded()
+      if (expanded) {
+        combobox.close();
+      } else {
+        combobox.open();
+      }
+    }
+    
+  }
 }

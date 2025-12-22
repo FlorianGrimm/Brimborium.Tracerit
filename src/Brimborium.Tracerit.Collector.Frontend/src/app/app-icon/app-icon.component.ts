@@ -3,6 +3,8 @@ import {
   ChartNoAxesGantt,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   CirclePlus,
   ClipboardCopy,
   ClipboardMinus,
@@ -36,6 +38,8 @@ export class AppIconComponent {
   public readonly TraceView = ChartNoAxesGantt;
   public readonly ChevronLeft = ChevronLeft;
   public readonly ChevronRight = ChevronRight;
+  public readonly ComboBoxOpen = ChevronDown;
+  public readonly ComboBoxClose = ChevronUp;
   public readonly ZoomIn = ZoomIn;
   public readonly ZoomOut = ZoomOut;
   public readonly Eye = Eye;
