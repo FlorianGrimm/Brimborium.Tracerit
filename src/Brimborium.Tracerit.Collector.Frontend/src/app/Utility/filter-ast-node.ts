@@ -19,6 +19,13 @@ export type UIFilterAstNode = {
     value: LogLineValue | undefined;
 }
 
+export const emptyUIFilterAstNode:UIFilterAstNode=Object.freeze({
+    id:'',
+    operator:'eq',
+    listChild:undefined,
+    value:undefined,
+});
+
 export type OutputFilterAstNode = {
     nextNode: UIFilterAstNode | undefined;
     nextNodeRoot: UIFilterAstNode | undefined;

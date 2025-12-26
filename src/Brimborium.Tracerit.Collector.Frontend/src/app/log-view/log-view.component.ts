@@ -517,7 +517,8 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
     //this.dataService.listAllHeader.setValue(this.listAllHeader.getValue());
-    this.dataService.listAllHeader.fireTrigger();
+    // TODO
+    // this.dataService.listAllHeader.fireTrigger();
     this.updateGridHeader();
 
   }
@@ -938,7 +939,8 @@ export class LogViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   public doSearch() {
     window.requestAnimationFrame(() => {
-      this.searchResult.fireTrigger();
+      // TODO
+      // this.searchResult.fireTrigger();
       const searchResult = this.searchResult.getValue();
       if (0 < searchResult.listLogLine.length) {
         this.scrollToSearchResult(searchResult);

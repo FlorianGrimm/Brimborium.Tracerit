@@ -108,20 +108,25 @@ export class FilterAstManager {
         this.setRootNodeUi(nextUiNodeRoot).setSelection(nextSelection);
     }
 
-    setPropertyName(name: string|null, node: UIFilterAstNode) {
+    setPropertyName(name: string | null, node: UIFilterAstNode) {
 
     }
-    setPropertyHeader(header: PropertyHeader|null, node: UIFilterAstNode) {
+    setPropertyHeader(header: PropertyHeader | null, node: UIFilterAstNode) {
         if (header == null) {
-            const value :(LogLineValue|undefined | null)= (node.value == null)
-                ? undefined 
-                : ({...node.value, name: "" });
-            const nextNode : UIFilterAstNode = {
+            if (node.value?.name == null) { return false; }
+            const value: (LogLineValue | undefined | null) = (node.value == null)
+                ? undefined
+                : ({ ...node.value, name: "" });
+            const nextNode: UIFilterAstNode = {
                 ...node,
                 value: value,
             };
             this.replaceUiNode(nextNode);
+            return true;
         } else {
+            if (header.name == node.value?.name) {
+                return false;
+            }
             const typeValue = header.typeValue;
             const value = getValidLogLineValue(typeValue, node.value?.value);
             const nextNode = {
@@ -133,6 +138,7 @@ export class FilterAstManager {
                 }
             };
             this.replaceUiNode(nextNode);
+            return true;
         }
     }
 

@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  Check,
   CirclePlus,
   ClipboardCopy,
   ClipboardMinus,
@@ -32,6 +33,7 @@ export class AppIconComponent {
   public readonly DirectoryList = FileStack;
   public readonly Close = SquareX;
   public readonly Search = Search;
+  public readonly Check = Check;
   public readonly Filter = Funnel;
   public readonly FilterX = FunnelX;
   public readonly Highlight = Spotlight;

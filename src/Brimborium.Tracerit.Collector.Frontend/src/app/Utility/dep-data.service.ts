@@ -1,6 +1,7 @@
 import {
   effect, Injectable, Signal, signal, untracked, WritableSignal,
   OnDestroy, OnInit,
+  EffectRef,
 } from '@angular/core';
 import { Duration, ZonedDateTime } from '@js-joda/core';
 import { BehaviorSubject, InteropObservable, Subscribable, Subscription } from 'rxjs';
@@ -18,7 +19,23 @@ export type DepDataPropertySourceValue<TS> = {
   [name in keyof TS]: TS[name];
 }
 
-export type DepDataPropertyArgumentsE<V> = {
+export type DepDataPropertyForSignalArgumentsE<V> = {
+  /* name is used for debugging. */
+  name: string;
+
+  /* compare is used to compare the new value with the old value - if compare returns true the new value is not set. */
+  compare?: ((a: V, b: V) => boolean) | undefined;
+
+  /* sideEffect is called after the value is set. */
+  sideEffect?: DepDataSideEffectTriggerArguments<V>;
+
+  enableReport?: boolean;
+
+  /* report is called after the value is set - before the dependcies and sideEffect is called. */
+  report?: ReportFN<V> | undefined;
+};
+
+export type DepDataPropertyValueArgumentsE<V> = {
   /* name is used for debugging. */
   name: string;
 
@@ -43,25 +60,32 @@ export type DepDataPropertyArgumentsE<V> = {
   /* report is called after the value is set - before the dependcies and sideEffect is called. */
   report?: ReportFN<V> | undefined;
 };
-export type DepDataPropertyArguments<V> =
-  DepDataPropertyArgumentsE<V>
-  & {
-    objectName: string;
-    objectIndex: number;
-    propertyName: string;
-    propertyIndex: number;
-    /* subscription is used to unsubscribe all dependcies and sideEffect. */
-    subscription: Subscription;
-  }
+
+export type DepDataPropertyEnhancedObjectArguments = {
+  objectName: string;
+  objectIndex: number;
+  propertyName: string;
+  propertyIndex: number;
+  /* subscription is used to unsubscribe all dependcies and sideEffect. */
+  subscription: Subscription;
+};
+
+export type DepDataPropertyValueArgumentsComplete<V> =
+  DepDataPropertyValueArgumentsE<V>
+  & DepDataPropertyEnhancedObjectArguments;
+
+export type DepDataPropertyForSignalArgumentsComplete<V> =
+  DepDataPropertyForSignalArgumentsE<V>
+  & DepDataPropertyEnhancedObjectArguments;
 
 export type DepDataPropertyInputArguments<V> = {
   input: Signal<V>;
-}
+};
 
 export type DepDataPropertyInputAndTransformArguments<S, V> = {
   input: Signal<S>;
-  transform: (value: S) => V;
-}
+  transform: (value: S, currentValue: V, logicalTime: number) => V;
+};
 
 export type DepDataPropertyTrigger = {
   name?: string | undefined;
@@ -158,17 +182,17 @@ export class DepDataService {
       this.report(property, message, value);
     } else {
       if (value === undefined) {
-        console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, undefined);
+        console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, undefined);
       } else if (value === null) {
-        console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, null);
+        console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, null);
       } else if (Array.isArray(value)) {
-        console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, value.length);
+        console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, value.length);
       } else if (value instanceof ZonedDateTime) {
-        console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, value.toString());
+        console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, value.toString());
       } else if (value instanceof Duration) {
-        console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, value.toString());
+        console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, value.toString());
       } else if (value instanceof Date) {
-        console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, value.toISOString());
+        console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, value.toISOString());
       } else {
         if (typeof value === 'object') {
           const listKey = Object.keys(value);
@@ -195,12 +219,12 @@ export class DepDataService {
               } catch {
               }
             }
-            console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, valueToString);
+            console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, valueToString);
             return;
           }
         }
         {
-          console.log(`Property ${property.name}-${property.propertyIndex}-${property.logicalTime} ${message}`, value);
+          console.log(`Property ${property.name}-${property.objectPropertyIdentity.propertyIndex}-${property.logicalTime} ${message}`, value);
         }
       }
     }
@@ -279,10 +303,10 @@ export class DepDataPropertyEnhancedObject {
 
   /** creates a new property. */
   public createProperty<V>(
-    args: DepDataPropertyArgumentsE<V>
-  ): DepDataProperty<V> {
+    args: DepDataPropertyValueArgumentsE<V>
+  ): DepDataPropertyValue<V> {
     const propertyIndex = this.nextPropertyIndex()
-    const argsWithSubscription: DepDataPropertyArguments<V> = {
+    const argsComplete: DepDataPropertyValueArgumentsComplete<V> = {
       name: `${this.objectName}-${this.objectIndex}-${args.name}-${propertyIndex}`,
       objectName: this.objectName,
       objectIndex: this.objectIndex,
@@ -297,8 +321,31 @@ export class DepDataPropertyEnhancedObject {
       report: args.report,
       subscription: this.subscription
     };
-    return new DepDataProperty<V>(argsWithSubscription, this.depDataService, this.nextPropertyIndex(), this.depDataPropertyInitializer);
+    return new DepDataPropertyValue<V>(argsComplete, this.depDataService, this.nextPropertyIndex(), this.depDataPropertyInitializer);
   }
+
+  public createPropertyForSignal<V>(
+    signal: WritableSignal<V>,
+    args: DepDataPropertyForSignalArgumentsE<V>
+  ): DepDataPropertyForSignal<V> {
+    const propertyIndex = this.nextPropertyIndex()
+    const argsComplete: DepDataPropertyForSignalArgumentsComplete<V> = {
+      name: `${this.objectName}-${this.objectIndex}-${args.name}-${propertyIndex}`,
+      objectName: this.objectName,
+      objectIndex: this.objectIndex,
+      propertyName: args.name,
+      propertyIndex: propertyIndex,
+      compare: args.compare,
+      sideEffect: args.sideEffect,
+      enableReport: args.enableReport,
+      report: args.report,
+      subscription: this.subscription
+    };
+    return new DepDataPropertyForSignal<V>(
+      signal,
+      argsComplete, this.depDataService, this.nextPropertyIndex(), this.depDataPropertyInitializer);
+  }
+
 
 
   public dependencyInput<V>(input: Signal<V>): IDepDataPropertyDependency<V> {
@@ -388,199 +435,59 @@ export type DepDataPropertyWithSourceDelayed<TS, V> =
     fnDelayed: (args: DepDataPropertyWithSourceDelayed<TS, V>, scope: DepDataServiceExecutionScope) => void;
   }
 
-/** property - with a value if set the 
- * value can be transformed
- * and can be compared with the old value (and skipped if equal)
- * and the value is set.
- * Than the dependencies are recalculated and the sideEffects are called. 
- */
-export class DepDataProperty<V> implements InteropObservable<V> {
+export interface DepDataProperty<V> extends InteropObservable<V> {
+  readonly name: string;
+  readonly objectPropertyIdentity: ObjectPropertyIdentity;
+  //readonly propertyIndex: number;
+  logicalTime: number;
+
+  getValue(): V;
+  setValue(value: V): void;
+
+  // dependencyInner(): IDepDataPropertyDependency<V>;
+  // dependencyPublic(): IDepDataPropertyDependency<V>;
+  // dependencyUi(): IDepDataPropertyDependency<V>;
+  // dependencyGate(): IDepDataPropertyDependency<V>;
+
+  // withSource<TS>(
+  //   args: DepDataPropertyWithSource<TS, V>
+  // ): this;
+  // withSourceIdentity(
+  //   dependency: IDepDataPropertyDependency<V>
+  // ): this;
+
+  addSinkTrigger(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind): void;
+  removeSinkTrigger(trigger: DepDataPropertyTrigger): void;
+
+  // asSignal(): Signal<V>;
+  // asObserable(): BehaviorSubject<V>;
+
+  // _getListSinkTrigger(): { trigger: DepDataPropertyTrigger, kind: string }[]
+}
+
+export class DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObservable<V> {
   public readonly name: string;
-  public value: V;
   public logicalTime: number = 0;
-  public subscription: Subscription;
-  private _transform: ((value: V) => V) | undefined;
-  private _compare: ((a: V, b: V) => boolean) | undefined;
-  private _enableReport: boolean;
-  private _report: ReportFN<V> | undefined;
-  private _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
-  private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
-  private objectPropertyIdentity: ObjectPropertyIdentity;
+  public readonly subscription: Subscription;
+  public readonly objectPropertyIdentity: ObjectPropertyIdentity;
+  protected _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
 
   constructor(
-    args: DepDataPropertyArguments<V>,
-    private _service: DepDataService,
-    public readonly propertyIndex: number,
-    private depDataPropertyInitializer?: DepDataPropertyInitializer
+    protected _service: DepDataService,
+    protected depDataPropertyInitializer: DepDataPropertyInitializer,
+    name: string,
+    subscription: Subscription,
+    objectPropertyIdentity: ObjectPropertyIdentity
+
   ) {
-    this.name = args.name;
-    this.objectPropertyIdentity = {
-      objectName: args.objectName,
-      objectIndex: args.objectIndex,
-      propertyName: args.propertyName,
-      propertyIndex: args.propertyIndex,
-    };
-
-    this._transform = args.transform;
-    this._compare = args.compare;
-    this._enableReport = args.enableReport ?? false;
-    this._report = args.report;
-    this.subscription = args.subscription;
-    this.value = args.initialValue;
-    this.sideEffect = args.sideEffect;
-    this._listSinkTrigger.name = this.name;
-
-    // input as a source for prop
-    if (args.input != null) {
-      const argsInput = args.input as DepDataPropertyInputArguments<V> | DepDataPropertyInputAndTransformArguments<any, V>;
-      const inputSignal = argsInput.input;
-      if ("function" === typeof (argsInput as DepDataPropertyInputAndTransformArguments<any, V>).transform) {
-        const transform = (argsInput as DepDataPropertyInputAndTransformArguments<any, V>).transform;
-        const watcher = effect(() => {
-          const valueS = inputSignal();
-          untracked(() => {
-            const valueV = transform(valueS);
-            this.setValue(valueV);
-          });
-        });
-        this.subscription.add(() => { watcher.destroy(); });
-      } else {
-        const watcher = effect(() => {
-          const valueV = inputSignal();
-          untracked(() => {
-            this.setValue(valueV);
-          });
-        });
-        this.subscription.add(() => { watcher.destroy(); });
-      }
-    }
+    this.name = name;
+    this.subscription = subscription;
+    this.objectPropertyIdentity = objectPropertyIdentity;
   }
 
-  [Symbol.observable](): Subscribable<V> {
-    return this.asObserable();
-  }
+  public getValue(): V { return undefined! as any; }
+  public setValue(value: V): void { }
 
-  public getValue(): V {
-    return this.value;
-  }
-
-  private _WatchDog: number = 0;
-
-  public setValue(value: V) {
-    if (this.closed) {
-      this._service.onReportError(this, 'DepDataProperty.setValue', new Error("closed"));
-      return;
-    }
-    if (this._transform != null) {
-      value = this._transform(value);
-    }
-    if (this._compare != null) {
-      if (this._compare(this.value, value)) {
-        return;
-      }
-    }
-    const transaction = this._service.start({
-      name: this.name
-    });
-
-    this.value = value;
-    if (this.logicalTime == transaction.id) {
-      if (10 < (this._WatchDog++)) {
-        debugger;
-        throw new Error("WatchDog");
-      }
-    } else {
-      this._WatchDog = 0;
-      this.logicalTime = transaction.id;
-    }
-
-    const logEntry: LogEntry = {
-      objectPropertyIdentity: this.objectPropertyIdentity,
-      logicalTime: this.logicalTime,
-      watchDog: this._WatchDog,
-      message: 'setValue',
-      value: value,
-    };
-    this._service.addLog(logEntry);
-    if (this._report != null) {
-      this._report(this, 'set', value);
-    }
-    if (this._enableReport) {
-      this._service.onReport(this, 'set', value);
-    }
-
-
-    try {
-      for (const trigger of this._listSinkTrigger) {
-        transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
-      }
-      if (this.signal != null) {
-        transaction.addTriggerToQueue(this.signal, "UI");
-      }
-      if (this.subject != null) {
-        transaction.addTriggerToQueue(this.subject, "UI");
-      }
-      if (this.sideEffect != null) {
-        transaction.addTriggerOrExecute(new DepDataSideEffectTrigger<V>(this.sideEffect, value), this.sideEffect.kind ?? "UI");
-      }
-    } finally {
-      transaction.executeTrigger();
-    }
-  }
-
-  public fireTrigger() {
-    if (this.closed) {
-      this._service.onReportError(this, 'DepDataProperty.setValue', new Error("closed"));
-      return;
-    }
-
-    const value = this.value;
-    const transaction = this._service.start({
-      name: this.name
-    });
-    if (this.logicalTime == transaction.id) {
-      if (10 < (this._WatchDog++)) {
-        debugger;
-        throw new Error("WatchDog");
-      }
-    } else {
-      this._WatchDog = 0;
-      this.logicalTime = transaction.id;
-    }
-
-    if (this._report != null) {
-      this._report(this, 'fireTrigger', value);
-    }
-    this._service.onReport(this, 'fireTrigger', value);
-
-    try {
-      for (const trigger of this._listSinkTrigger) {
-        transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
-      }
-      if (this.signal != null) {
-        transaction.addTriggerToQueue(this.signal, "UI");
-      }
-      if (this.subject != null) {
-        transaction.addTriggerToQueue(this.subject, "UI");
-      }
-      if (this.sideEffect != null) {
-        transaction.addTriggerOrExecute(new DepDataSideEffectTrigger<V>(this.sideEffect, value), this.sideEffect.kind ?? "UI");
-      }
-    } finally {
-      transaction.executeTrigger();
-    }
-  }
-
-  /** use this as a dependency. */
-  public dependencyInner(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependency<V>("Inner", this); };
-
-  /** use this as a dependency. */
-  public dependencyPublic(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependency<V>("Public", this); };
-
-  /** use this as a dependency. */
-  public dependencyUi(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependency<V>("UI", this); };
-
-  public dependencyGate(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependencyGate<V>(this); };
 
   private listSource: DepDataServiceSource<V, any>[] | undefined = undefined;
 
@@ -607,6 +514,17 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     }
     return this;
   }
+
+  /** use this as a dependency. */
+  public dependencyInner(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependency<V>("Inner", this); };
+
+  /** use this as a dependency. */
+  public dependencyPublic(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependency<V>("Public", this); };
+
+  /** use this as a dependency. */
+  public dependencyUi(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependency<V>("UI", this); };
+
+  public dependencyGate(): IDepDataPropertyDependency<V> { return new DepDataPropertyDependencyGate<V>(this); };
 
   public withSourceIdentity(
     dependency: IDepDataPropertyDependency<V>
@@ -660,21 +578,290 @@ export class DepDataProperty<V> implements InteropObservable<V> {
     this._listSinkTrigger.remove(trigger);
   }
 
-  private signal: DepDataServiceSignal<V> | undefined;
-  public asSignal(): Signal<V> {
-    const signal = this.signal ??= new DepDataServiceSignal<V>(this);
-    return signal.readonlySignal;
+  [Symbol.observable](): Subscribable<V> {
+    return this.asObserable();
   }
 
-  private subject: DepDataServiceSubject<V> | undefined;
+  protected subject: DepDataServiceSubject<V> | undefined;
   public asObserable(): BehaviorSubject<V> {
     const subject = this.subject ??= new DepDataServiceSubject<V>(this);
     return subject;
   }
 
+
   _getListSinkTrigger(): { trigger: DepDataPropertyTrigger, kind: string }[] {
     return Array.from(this._listSinkTrigger);
   }
+}
+
+/** property - with a value if set the 
+ * value can be transformed
+ * and can be compared with the old value (and skipped if equal)
+ * and the value is set.
+ * Than the dependencies are recalculated and the sideEffects are called. 
+ */
+export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObservable<V> {
+  public value: V;
+  private _transform: ((value: V) => V) | undefined;
+  private _compare: ((a: V, b: V) => boolean) | undefined;
+  private _enableReport: boolean;
+  private _report: ReportFN<V> | undefined;
+  private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
+
+  constructor(
+    args: DepDataPropertyValueArgumentsComplete<V>,
+    service: DepDataService,
+    public readonly propertyIndex: number,
+    depDataPropertyInitializer: DepDataPropertyInitializer
+  ) {
+    super(
+      service,
+      depDataPropertyInitializer,
+      args.name,
+      args.subscription,
+      {
+        objectName: args.objectName,
+        objectIndex: args.objectIndex,
+        propertyName: args.propertyName,
+        propertyIndex: args.propertyIndex,
+      });
+
+    this._transform = args.transform;
+    this._compare = args.compare;
+    this._enableReport = args.enableReport ?? false;
+    this._report = args.report;
+    this.value = args.initialValue;
+    this.sideEffect = args.sideEffect;
+    this._listSinkTrigger.name = this.name;
+
+    // input as a source for prop
+    if (args.input != null) {
+      const argsInput = args.input as DepDataPropertyInputArguments<V> | DepDataPropertyInputAndTransformArguments<any, V>;
+      const inputSignal = argsInput.input;
+      if ("function" === typeof (argsInput as DepDataPropertyInputAndTransformArguments<any, V>).transform) {
+        const transform = (argsInput as DepDataPropertyInputAndTransformArguments<any, V>).transform;
+        const watcher = effect(() => {
+          const valueS = inputSignal();
+          untracked(() => {
+            const valueV = transform(valueS, this.getValue(), this.logicalTime);
+            this.setValue(valueV);
+          });
+        });
+        this.subscription.add(() => { watcher.destroy(); });
+      } else {
+        const watcher = effect(() => {
+          const valueV = inputSignal();
+          untracked(() => {
+            this.setValue(valueV);
+          });
+        });
+        this.subscription.add(() => { watcher.destroy(); });
+      }
+    }
+  }
+
+  public override getValue(): V {
+    return this.value;
+  }
+
+  private _WatchDog: number = 0;
+
+  public override setValue(value: V) {
+    if (this.closed) {
+      this._service.onReportError(this, 'DepDataProperty.setValue', new Error("closed"));
+      return;
+    }
+    if (this._transform != null) {
+      value = this._transform(value);
+    }
+    if (this._compare != null) {
+      if (this._compare(this.value, value)) {
+        return;
+      }
+    }
+    const transaction = this._service.start({
+      name: this.name
+    });
+
+    this.value = value;
+    if (this.logicalTime == transaction.id) {
+      if (10 < (this._WatchDog++)) {
+        debugger;
+        throw new Error("WatchDog");
+      }
+    } else {
+      this._WatchDog = 0;
+      this.logicalTime = transaction.id;
+    }
+
+    const logEntry: LogEntry = {
+      objectPropertyIdentity: this.objectPropertyIdentity,
+      logicalTime: this.logicalTime,
+      watchDog: this._WatchDog,
+      message: 'setValue',
+      value: value,
+    };
+    this._service.addLog(logEntry);
+    if (this._report != null) {
+      this._report(this, 'set', value);
+    }
+    if (this._enableReport) {
+      this._service.onReport(this, 'set', value);
+    }
+
+    try {
+      for (const trigger of this._listSinkTrigger) {
+        transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
+      }
+      if (this.signal != null) {
+        transaction.addTriggerToQueue(this.signal, "UI");
+      }
+      if (this.subject != null) {
+        transaction.addTriggerToQueue(this.subject, "UI");
+      }
+      if (this.sideEffect != null) {
+        transaction.addTriggerOrExecute(new DepDataSideEffectTrigger<V>(this.sideEffect, value), this.sideEffect.kind ?? "UI");
+      }
+    } finally {
+      transaction.executeTrigger();
+    }
+  }
+
+  private signal: DepDataServiceReadonlySignal<V> | undefined;
+  public asSignal(): Signal<V> {
+    const signal = this.signal ??= new DepDataServiceReadonlySignal<V>(this);
+    return signal.readonlySignal;
+  }
+}
+
+export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObservable<V> {
+  public value: V;
+  private _compare: ((a: V, b: V) => boolean) | undefined;
+  private _enableReport: boolean;
+  private _report: ReportFN<V> | undefined;
+  private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
+
+  constructor(
+    public readonly signal: WritableSignal<V>,
+    args: DepDataPropertyForSignalArgumentsComplete<V>,
+    _service: DepDataService,
+    public readonly propertyIndex: number,
+    depDataPropertyInitializer: DepDataPropertyInitializer
+  ) {
+    super(
+      _service,
+      depDataPropertyInitializer,
+      args.name,
+      args.subscription,
+      {
+        objectName: args.objectName,
+        objectIndex: args.objectIndex,
+        propertyName: args.propertyName,
+        propertyIndex: args.propertyIndex,
+      });
+
+
+    this._compare = args.compare;
+    this._enableReport = args.enableReport ?? false;
+    this._report = args.report;
+    this.sideEffect = args.sideEffect;
+    this._listSinkTrigger.name = this.name;
+
+    this.signal = signal;
+
+    {
+      let initialValue: V = undefined! as any;
+      // initial value
+      untracked(() => { initialValue = signal(); });
+      this.value = initialValue;
+    }
+
+    // handle changed value
+    {
+      const effectRef = effect(() => {
+        const valueS = signal();
+        console.log("signal value ",valueS)
+        this.setValueFromSignal(valueS);
+      })
+      this.subscription.add(() => {
+        effectRef.destroy();
+      });
+    }
+  }
+
+  public override getValue(): V {
+    return this.value;
+  }
+
+  private _WatchDog: number = 0;
+
+  public override  setValue(value: V) {
+    // set the signal, effect will call setValueFromSignal
+    this.signal.set(value);
+  }
+
+  private setValueFromSignal(value: V) {
+    const oldValue = this.value;
+    this.value = value;
+    if (this.closed) {
+      this._service.onReportError(this, 'DepDataProperty.setValue', new Error("closed"));
+      return;
+    }
+    if (this._compare != null) {
+      if (this._compare(oldValue, value)) {
+        return;
+      }
+    }
+    const transaction = this._service.start({
+      name: this.name
+    });
+    if (this.logicalTime == transaction.id) {
+      if (10 < (this._WatchDog++)) {
+        debugger;
+        throw new Error("WatchDog");
+      }
+    } else {
+      this._WatchDog = 0;
+      this.logicalTime = transaction.id;
+    }
+
+    const logEntry: LogEntry = {
+      objectPropertyIdentity: this.objectPropertyIdentity,
+      logicalTime: this.logicalTime,
+      watchDog: this._WatchDog,
+      message: 'setValue',
+      value: value,
+    };
+    this._service.addLog(logEntry);
+    if (this._report != null) {
+      this._report(this, 'set', value);
+    }
+    if (this._enableReport) {
+      this._service.onReport(this, 'set', value);
+    }
+
+    try {
+      for (const trigger of this._listSinkTrigger) {
+        transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
+      }
+      // if (this.signal != null) {
+      //   transaction.addTriggerToQueue(this.signal, "UI");
+      // }
+      if (this.subject != null) {
+        transaction.addTriggerToQueue(this.subject, "UI");
+      }
+      if (this.sideEffect != null) {
+        transaction.addTriggerOrExecute(new DepDataSideEffectTrigger<V>(this.sideEffect, value), this.sideEffect.kind ?? "UI");
+      }
+    } finally {
+      transaction.executeTrigger();
+    }
+  }
+
+  public asSignal(): Signal<V> {
+    return this.signal;
+  }
+
 }
 
 class DepDataServiceSubject<V> extends BehaviorSubject<V> {
@@ -695,10 +882,12 @@ class DepDataServiceSubject<V> extends BehaviorSubject<V> {
   }
 }
 
-class DepDataServiceSignal<V> {
+class DepDataServiceReadonlySignal<V> {
   public name: string | undefined = undefined;
   public writableSignal: WritableSignal<V>;
+  private untracked: boolean = false;
   public readonlySignal: Signal<V>;
+
   constructor(
     public readonly property: DepDataProperty<V>
   ) {
