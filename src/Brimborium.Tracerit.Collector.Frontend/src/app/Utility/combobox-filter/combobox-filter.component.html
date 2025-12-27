@@ -1,6 +1,6 @@
 <div ngCombobox #combobox="ngCombobox" [readonly]="true">
   <div class="combobox-input-container">
-    <input ngComboboxInput placeholder="Select a country..." [value]="getInputLabel(value()(),listOption())" />
+    <input ngComboboxInput placeholder="Select a country..." [value]="inputLabel()" />
     <span-lucide [img]="appIcon.ComboBoxOpen" class="icon arrow-icon" translate="no" aria-hidden="true"></span-lucide>
   </div>
   <ng-template ngComboboxPopupContainer>

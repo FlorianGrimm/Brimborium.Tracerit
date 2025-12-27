@@ -13,13 +13,13 @@ import {
 } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { LucideAngularModule, Plus, Minus } from 'lucide-angular';
-import { emptyUIFilterAstNode, getValidLogLineValue, mapFilterOperatorsDisplayByOperator, replaceUiNode } from '@app/Utility/filter-ast-node';
-import { DataService } from '@app/Utility/data-service';
-import { initialUIFilterAstNodeSelection, OutputFilterAstNode, UIFilterAstNode, UIFilterAstNodeSelection } from '@app/Utility/filter-ast-node';
-import { FilterAstNodeValue } from "@app/filter-ast/filter-ast-node-value.component/filter-ast-node-value.component";
-import { LogLineValue, PropertyHeader } from '@app/Api';
+import { emptyUIFilterAstNode, getValidLogLineValue, mapFilterOperatorsDisplayByOperator, replaceUiNode } from '../../Utility/filter-ast-node';
+import { DataService } from '../../Utility/data-service';
+import { initialUIFilterAstNodeSelection, OutputFilterAstNode, UIFilterAstNode, UIFilterAstNodeSelection } from '../../Utility/filter-ast-node';
+import { FilterAstNodeValue } from '../../filter-ast/filter-ast-node-value.component/filter-ast-node-value.component';
+import { LogLineValue, PropertyHeader } from '../../Api';
 import { FilterAstManager } from '../filter-ast-manager';
-import { AppIconComponent } from '@app/app-icon/app-icon.component';
+import { AppIconComponent } from '../../app-icon/app-icon.component';
 import { CdkContextMenuTrigger } from "@angular/cdk/menu";
 import {
   Combobox,
@@ -29,7 +29,7 @@ import {
 } from '@angular/aria/combobox';
 import { Listbox, Option } from '@angular/aria/listbox';
 import { OverlayModule } from '@angular/cdk/overlay';
-import { DepDataService } from '@app/Utility/dep-data.service';
+import { DepDataService } from '../../Utility/dep-data.service';
 
 @Component({
   selector: 'app-filter-ast-name',
@@ -68,6 +68,16 @@ export class FilterAstNameComponent {
   options = viewChildren<Option<string>>(Option);
   /** A reference to the ng aria combobox. */
   combobox = viewChild<Combobox<string>>(Combobox);
+
+  readonly listAllHeaderSortedByName = this.depThis.createProperty<readonly PropertyHeader[]>({
+    name: 'listAllHeaderSortedByName',
+    initialValue: []
+  })
+  .withSource({
+    sourceDependency: { listAllHeaderSortedByName: this.dataService.listAllHeaderSortedByName.dependencyPublic(), },
+    sourceTransform: ({ listAllHeaderSortedByName }) => (listAllHeaderSortedByName)
+  })
+  ;
 
   readonly uiNodeValueName = this.depThis.createProperty<string>({
     name: 'uiNodeValueName',
@@ -171,25 +181,25 @@ export class FilterAstNameComponent {
       }
     });
     afterRenderEffect(() => {
-        const selectedHeader = this.$selectedHeader();
-        if (selectedHeader.length > 0) {
-          untracked(() => {
-            this.dialog()?.close();
-            //this.value.set(this.$selectedHeader()[0]);
-            this.listPropertyHeaderFilter.setValue('');
-            const filterAstManager = this.filterAstManager();
-            const uiNode = this.uiNode();
-            if (filterAstManager == null || uiNode == null) { return; }
-            const nextValue = (1 === selectedHeader.length)
-              ? selectedHeader[0]
-              : null;
-            const currentName = uiNode.value?.name ?? null;
-            const nextName = nextValue?.name ?? null;
-            if (currentName == nextName) { return; }
-            filterAstManager.setPropertyHeader(nextValue, uiNode);
-          }
-          );
+      const selectedHeader = this.$selectedHeader();
+      if (selectedHeader.length > 0) {
+        untracked(() => {
+          this.dialog()?.close();
+          //this.value.set(this.$selectedHeader()[0]);
+          this.listPropertyHeaderFilter.setValue('');
+          const filterAstManager = this.filterAstManager();
+          const uiNode = this.uiNode();
+          if (filterAstManager == null || uiNode == null) { return; }
+          const nextValue = (1 === selectedHeader.length)
+            ? selectedHeader[0]
+            : null;
+          const currentName = uiNode.value?.name ?? null;
+          const nextName = nextValue?.name ?? null;
+          if (currentName == nextName) { return; }
+          filterAstManager.setPropertyHeader(nextValue, uiNode);
         }
+        );
+      }
     });
     afterRenderEffect(() => this.listbox()?.scrollActiveItemIntoView());
   }

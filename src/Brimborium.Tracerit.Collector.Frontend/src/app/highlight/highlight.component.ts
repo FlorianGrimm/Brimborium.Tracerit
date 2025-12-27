@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { FilterEditComponent } from "@app/filter-ast/filter-edit.component/filter-edit.component";
-import { ComboboxFilterComponent } from '@app/Utility/combobox-filter/combobox-filter.component';
+import { FilterEditComponent } from "../filter-ast/filter-edit.component/filter-edit.component";
+//import { ComboboxFilterComponent } from '@app/Utility/combobox-filter/combobox-filter.component';
 
 @Component({
   selector: 'app-highlight',
-  imports: [FilterEditComponent,
-    ComboboxFilterComponent
+  imports: [
+    FilterEditComponent,
+    //ComboboxFilterComponent
   ],
   templateUrl: './highlight.component.html',
   styleUrl: './highlight.component.scss',
