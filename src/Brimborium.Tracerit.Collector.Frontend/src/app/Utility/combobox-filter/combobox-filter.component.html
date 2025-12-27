@@ -1,41 +1,32 @@
 <div ngCombobox #combobox="ngCombobox" [readonly]="true">
   <div class="combobox-input-container">
-    <input ngComboboxInput placeholder="Select a country..." [value]="value()" />
-    <span class="material-symbols-outlined icon arrow-icon" translate="no" aria-hidden="true"
-      >arrow_drop_down</span
-    >
+    <input ngComboboxInput placeholder="Select a country..." [value]="getInputLabel(value()(),listOption())" />
+    <span-lucide [img]="appIcon.ComboBoxOpen" class="icon arrow-icon" translate="no" aria-hidden="true"></span-lucide>
   </div>
   <ng-template ngComboboxPopupContainer>
     <dialog ngComboboxDialog class="dialog">
       <div ngCombobox #combobox="ngCombobox" filterMode="manual" [alwaysExpanded]="true">
         <div class="combobox-input-container">
-          <span class="material-symbols-outlined icon search-icon" translate="no" aria-hidden="true"
-            >search</span
-          >
-          <input
-            ngComboboxInput
-            class="combobox-input"
-            placeholder="Search..."
-            [(value)]="searchString"
-          />
+          <span-lucide [img]="appIcon.Search" class="icon search-icon" translate="no" aria-hidden="true"></span-lucide>
+          <input ngComboboxInput class="combobox-input" placeholder="Search..." [(value)]="$searchString" />
         </div>
         <ng-template ngComboboxPopupContainer>
-          @if (options().length === 0) {
-            <div class="no-results">No results found</div>
-          }
-          <div ngListbox [(values)]="selectedCountries">
-            @for (option of options(); track option) {
-              <div ngOption [value]="option" [label]="option">
-                <span class="option-label">{{ option }}</span>
-                <span
-                  class="material-symbols-outlined icon check-icon"
-                  translate="no"
-                  aria-hidden="true"
-                  >check</span
-                >
-              </div>
+          @if (listOptionFiltered().length === 0) {
+          <div class="no-results">No results found</div>
+          }@else {
+          @let idProp=idProperty();
+          @let labelProp=labelProperty();
+          @if(idProp && labelProp){
+          <div ngListbox [(values)]="listSelected">
+            @for (option of listOptionFiltered(); track getLabel(option)) {
+            <div ngOption [value]="option" [label]="getLabel(option)">
+              <span class="option-label">{{ getLabel(option) }}</span>
+              <span-lucide [img]="appIcon.Check" class="icon check-icon" translate="no"
+                aria-hidden="true">check</span-lucide>
+            </div>
             }
           </div>
+          }}
         </ng-template>
       </div>
     </dialog>

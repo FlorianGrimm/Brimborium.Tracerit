@@ -17,6 +17,21 @@ body {
     font-family: monospace;
 }
 
+.app-light {
+    --font-color: #000000;
+    --border-color: #000000;
+    --page-background-color: #ffffff;
+    --shadow-color: #e0e0e0;
+    --control-color: #cccccc;
+    --primary-contrast: #7b62d3;
+    --focus-color: #5f32ff;
+    --active-background-color: #666;
+    --active-text-color: #fff;
+    --inactive-background-color: #eee;
+    --inactive-text-color: #000;
+    
+}
+
 $scollbar-height: 25px;
 $scollbar-width: 25px;
 $aside-width: 48px;

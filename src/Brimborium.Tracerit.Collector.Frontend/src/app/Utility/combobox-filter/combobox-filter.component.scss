@@ -1,10 +1,12 @@
 @import url('https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined');
+/*
 :host {
   display: flex;
   justify-content: center;
   font-family: var(--inter-font);
   --border-color: color-mix(in srgb, var(--full-contrast) 20%, var(--page-background));
 }
+*/
 [ngCombobox] {
   position: relative;
   width: 100%;
@@ -30,8 +32,8 @@
   padding: 0.7rem 1rem;
 }
 [ngCombobox]:focus-within [ngComboboxInput] {
-  outline: 1.5px solid var(--vivid-pink);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--vivid-pink) 25%, transparent);
+  outline: 1.5px solid var(--border-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--border-color) 25%, transparent);
 }
 .icon {
   width: 24px;
@@ -92,11 +94,11 @@
 }
 [ngOption][data-active='true'] {
   outline-offset: -2px;
-  outline: 2px solid var(--vivid-pink);
+  outline: 2px solid var(--focus-color);
 }
 [ngOption][aria-selected='true'] {
-  color: var(--vivid-pink);
-  background-color: color-mix(in srgb, var(--vivid-pink) 5%, transparent);
+  color: var(--focus-color);
+  background-color: color-mix(in srgb, var(--focus-color) 5%, transparent);
 }
 [ngOption]:not([aria-selected='true']) .check-icon {
   display: none;

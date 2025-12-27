@@ -1,4 +1,9 @@
 <h1>Highlight</h1>
-<app-combobox-filter></app-combobox-filter>
+<app-combobox-filter [value]="value"
+ [listOption]="listOption"
+idProperty="id" labelProperty="value"
+></app-combobox-filter>
+<hr/>
+{{value()}}
 <h1>Highlight</h1>
 <app-filter-edit></app-filter-edit>

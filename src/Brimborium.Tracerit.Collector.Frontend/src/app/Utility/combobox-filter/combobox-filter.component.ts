@@ -4,9 +4,13 @@ import {
   ComboboxInput,
   ComboboxPopupContainer,
 } from '@angular/aria/combobox';
-import {Listbox, Option} from '@angular/aria/listbox';
-import {afterRenderEffect, Component, computed, signal, untracked, viewChild} from '@angular/core';
-import {FormsModule} from '@angular/forms';
+import { Listbox, Option } from '@angular/aria/listbox';
+import { afterRenderEffect, Component, computed, input, output, signal, untracked, viewChild, WritableSignal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { AppIconComponent } from '@app/app-icon/app-icon.component';
+import { LucideAngularModule } from "lucide-angular";
+import { OverlayModule } from '@angular/cdk/overlay';
+import { WritableSignalLike } from '@angular/aria/private';
 
 @Component({
   selector: 'app-combobox-filter',
@@ -18,22 +22,31 @@ import {FormsModule} from '@angular/forms';
     Listbox,
     Option,
     FormsModule,
+    OverlayModule,
+    LucideAngularModule
   ],
   templateUrl: './combobox-filter.component.html',
   styleUrl: './combobox-filter.component.scss',
 })
-export class ComboboxFilterComponent {
-  dialog = viewChild(ComboboxDialog);
-  listbox = viewChild<Listbox<string>>(Listbox);
-  combobox = viewChild<Combobox<string>>(Combobox);
-  value = signal('');
-  searchString = signal('');
-  options = computed(() =>
-    ALL_COUNTRIES.filter((country) =>
-      country.toLowerCase().startsWith(this.searchString().toLowerCase()),
-    ),
-  );
-  selectedCountries = signal<string[]>([]);
+export class ComboboxFilterComponent<V, I extends keyof V, L extends keyof V> {
+  readonly appIcon = new AppIconComponent();
+
+  readonly dialog = viewChild(ComboboxDialog);
+  readonly listbox = viewChild<Listbox<string>>(Listbox);
+  readonly combobox = viewChild<Combobox<string>>(Combobox);
+  readonly value = input.required<WritableSignal<string>>();
+  readonly $searchString = signal('');
+  readonly searchStringChanged = output<string>();
+
+  readonly listOption = input.required<V[]>();
+  readonly idProperty = input.required<I>();
+  readonly labelProperty = input.required<L>();
+  readonly listOptionFiltered = computed(() => {
+    const searchString = this.$searchString().toLocaleLowerCase();
+    const listOption = this.listOption();
+    return listOption.filter(item => this.getLabel(item).toLocaleLowerCase().startsWith(searchString));
+  });
+  listSelected = signal<V[]>([]);
   constructor() {
     afterRenderEffect(() => {
       if (this.dialog() && this.combobox()?.expanded()) {
@@ -42,15 +55,20 @@ export class ComboboxFilterComponent {
       }
     });
     afterRenderEffect(() => {
-      if (this.selectedCountries().length > 0) {
+      if (this.listSelected().length > 0) {
         untracked(() => this.dialog()?.close());
-        this.value.set(this.selectedCountries()[0]);
-        this.searchString.set('');
+        const label = this.getLabel(this.listSelected()[0]);
+        const value = this.value();
+        value.set(label);
+        this.$searchString.set('');
       }
     });
     afterRenderEffect(() => this.listbox()?.scrollActiveItemIntoView());
+    computed(() => {
+      const value = this.$searchString();
+      this.searchStringChanged.emit(value);
+    });
   }
-  // TODO(wagnermaciel): Switch to using the CDK for positioning.
   positionDialog() {
     const dialog = this.dialog()!;
     const combobox = this.combobox()!;
@@ -62,201 +80,20 @@ export class ComboboxFilterComponent {
       dialog.element.style.left = `${comboboxRect.left - 1}px`;
     }
   }
+  getInputLabel(id: string, listOption:V[]) {  
+    const matches = listOption.filter(item => this.getId(item) == id);
+    if (1 === matches.length) {
+      return this.getLabel(matches[0]);
+    } else {
+      return "";
+    }
+  }
+  getId(option: V): string {
+    const idProperty = this.idProperty();
+    return option[idProperty] as string;
+  }
+  getLabel(option: V): string {
+    const labelProperty = this.labelProperty();
+    return option[labelProperty] as string;
+  }
 }
-const ALL_COUNTRIES = [
-  'Afghanistan',
-  'Albania',
-  'Algeria',
-  'Andorra',
-  'Angola',
-  'Antigua and Barbuda',
-  'Argentina',
-  'Armenia',
-  'Australia',
-  'Austria',
-  'Azerbaijan',
-  'Bahamas',
-  'Bahrain',
-  'Bangladesh',
-  'Barbados',
-  'Belarus',
-  'Belgium',
-  'Belize',
-  'Benin',
-  'Bhutan',
-  'Bolivia',
-  'Bosnia and Herzegovina',
-  'Botswana',
-  'Brazil',
-  'Brunei',
-  'Bulgaria',
-  'Burkina Faso',
-  'Burundi',
-  'Cabo Verde',
-  'Cambodia',
-  'Cameroon',
-  'Canada',
-  'Central African Republic',
-  'Chad',
-  'Chile',
-  'China',
-  'Colombia',
-  'Comoros',
-  'Congo (Congo-Brazzaville)',
-  'Costa Rica',
-  "Côte d'Ivoire",
-  'Croatia',
-  'Cuba',
-  'Cyprus',
-  'Czechia (Czech Republic)',
-  'Democratic Republic of the Congo',
-  'Denmark',
-  'Djibouti',
-  'Dominica',
-  'Dominican Republic',
-  'Ecuador',
-  'Egypt',
-  'El Salvador',
-  'Equatorial Guinea',
-  'Eritrea',
-  'Estonia',
-  'Eswatini (fmr. ""Swaziland"")',
-  'Ethiopia',
-  'Fiji',
-  'Finland',
-  'France',
-  'Gabon',
-  'Gambia',
-  'Georgia',
-  'Germany',
-  'Ghana',
-  'Greece',
-  'Grenada',
-  'Guatemala',
-  'Guinea',
-  'Guinea-Bissau',
-  'Guyana',
-  'Haiti',
-  'Holy See',
-  'Honduras',
-  'Hungary',
-  'Iceland',
-  'India',
-  'Indonesia',
-  'Iran',
-  'Iraq',
-  'Ireland',
-  'Israel',
-  'Italy',
-  'Jamaica',
-  'Japan',
-  'Jordan',
-  'Kazakhstan',
-  'Kenya',
-  'Kiribati',
-  'Kuwait',
-  'Kyrgyzstan',
-  'Laos',
-  'Latvia',
-  'Lebanon',
-  'Lesotho',
-  'Liberia',
-  'Libya',
-  'Liechtenstein',
-  'Lithuania',
-  'Luxembourg',
-  'Madagascar',
-  'Malawi',
-  'Malaysia',
-  'Maldives',
-  'Mali',
-  'Malta',
-  'Marshall Islands',
-  'Mauritania',
-  'Mauritius',
-  'Mexico',
-  'Micronesia',
-  'Moldova',
-  'Monaco',
-  'Mongolia',
-  'Montenegro',
-  'Morocco',
-  'Mozambique',
-  'Myanmar (formerly Burma)',
-  'Namibia',
-  'Nauru',
-  'Nepal',
-  'Netherlands',
-  'New Zealand',
-  'Nicaragua',
-  'Niger',
-  'Nigeria',
-  'North Korea',
-  'North Macedonia',
-  'Norway',
-  'Oman',
-  'Pakistan',
-  'Palau',
-  'Palestine State',
-  'Panama',
-  'Papua New Guinea',
-  'Paraguay',
-  'Peru',
-  'Philippines',
-  'Poland',
-  'Portugal',
-  'Qatar',
-  'Romania',
-  'Russia',
-  'Rwanda',
-  'Saint Kitts and Nevis',
-  'Saint Lucia',
-  'Saint Vincent and the Grenadines',
-  'Samoa',
-  'San Marino',
-  'Sao Tome and Principe',
-  'Saudi Arabia',
-  'Senegal',
-  'Serbia',
-  'Seychelles',
-  'Sierra Leone',
-  'Singapore',
-  'Slovakia',
-  'Slovenia',
-  'Solomon Islands',
-  'Somalia',
-  'South Africa',
-  'South Korea',
-  'South Sudan',
-  'Spain',
-  'Sri Lanka',
-  'Sudan',
-  'Suriname',
-  'Sweden',
-  'Switzerland',
-  'Syria',
-  'Tajikistan',
-  'Tanzania',
-  'Thailand',
-  'Timor-Leste',
-  'Togo',
-  'Tonga',
-  'Trinidad and Tobago',
-  'Tunisia',
-  'Turkey',
-  'Turkmenistan',
-  'Tuvalu',
-  'Uganda',
-  'Ukraine',
-  'United Arab Emirates',
-  'United Kingdom',
-  'United States of America',
-  'Uruguay',
-  'Uzbekistan',
-  'Vanuatu',
-  'Venezuela',
-  'Vietnam',
-  'Yemen',
-  'Zambia',
-  'Zimbabwe',
-];
