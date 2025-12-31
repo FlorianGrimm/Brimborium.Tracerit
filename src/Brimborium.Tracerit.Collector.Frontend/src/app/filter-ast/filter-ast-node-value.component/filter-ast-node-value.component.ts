@@ -3,9 +3,12 @@ import { LogLineValue, TypeValue } from '@app/Api';
 import { initialUIFilterAstNodeSelection, OutputFilterAstNode, replaceUiNode, UIFilterAstNode, UIFilterAstNodeSelection } from '@app/Utility/filter-ast-node';
 import { Instant, ZonedDateTime, ZoneId } from '@js-joda/core';
 import { FilterAstManager } from '../filter-ast-manager';
+import { ComboboxFilterComponent } from '../../Utility/combobox-filter/combobox-filter.component';
 @Component({
   selector: 'app-filter-ast-node-value',
-  imports: [],
+  imports: [
+    ComboboxFilterComponent
+  ],
   templateUrl: './filter-ast-node-value.component.html',
   styleUrl: './filter-ast-node-value.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -147,5 +150,5 @@ export class FilterAstNodeValue {
     filterAstManager.replaceUiNode(nextNode);   
   }
 
-  listLevels = ['trace', 'debug','information', 'warning', 'error'];
+  readonly listLevels = ['trace', 'debug','information', 'warning', 'error'].map(item=>({level:item}));
 }

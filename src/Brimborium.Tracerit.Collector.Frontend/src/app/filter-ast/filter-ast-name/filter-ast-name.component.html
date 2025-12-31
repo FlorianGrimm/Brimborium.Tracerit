@@ -1,31 +1,5 @@
-<div ngCombobox #combobox="ngCombobox" [readonly]="true">
-    <div class="combobox-input-container">
-        <input ngComboboxInput placeholder="property name" [value]="$uiNodeValueName()" />
-        <lucide-icon [img]="appIcon.ComboBoxOpen" class="icon arrow-icon" translate="no" aria-hidden="true"></lucide-icon>
-    </div>
-    <ng-template ngComboboxPopupContainer>
-        <dialog ngComboboxDialog class="dialog">
-            <div ngCombobox #combobox="ngCombobox" filterMode="manual" [alwaysExpanded]="true">
-                <div class="combobox-input-container">
-                    <lucide-icon [img]="appIcon.Search" class="icon search-icon" translate="no" aria-hidden="true">x</lucide-icon>
-                    <input ngComboboxInput class="combobox-input" placeholder="Search..."
-                        [(value)]="$listPropertyHeaderFilter" />
-                </div>
-                <ng-template ngComboboxPopupContainer>
-                    @if ($listPropertyHeader().length === 0) {
-                    <div class="no-results">No results found</div>
-                    }
-                    <div ngListbox [(values)]="$selectedHeader">
-                        @for (header of $listPropertyHeader(); track header.id) {
-                        <div ngOption [value]="header" [label]="header.name">
-                            <span class="option-label">{{ header.name }}</span>
-                            <lucide-icon [img]="appIcon.Check" class="check-icon" translate="no"
-                                aria-hidden="true"></lucide-icon>
-                        </div>
-                        }
-                    </div>
-                </ng-template>
-            </div>
-        </dialog>
-    </ng-template>
-</div>
+<app-combobox-filter 
+    [value]="$uiNodeValueName()" (valueChanged)="uiNodeValueName.setValue($event)"
+    [listOption]="$listAllHeaderSortedByName()"
+    idProperty="name" labelProperty="name" placeholder="property name"
+></app-combobox-filter>

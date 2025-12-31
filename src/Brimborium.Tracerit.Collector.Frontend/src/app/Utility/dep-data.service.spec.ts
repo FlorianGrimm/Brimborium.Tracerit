@@ -53,7 +53,7 @@ describe('DepDataService', () => {
     expect(property).toBeTruthy();
     expect(property.name).toMatch(/Object\-\d+-test\-\d+/);
     expect(property.getValue()).toEqual(1);
-    
+
     depThis.executePropertyInitializer();
 
     property.setValue(2);
@@ -69,7 +69,7 @@ describe('DepDataService', () => {
       name: 'testA',
       initialValue: 1,
     });
-    
+
     const propertyB = depThis.createProperty({
       name: 'testB',
       initialValue: 1,
@@ -141,7 +141,7 @@ describe('DepDataService', () => {
     expect(propertyRUi.getValue()).toEqual(2);
     expect(propertyRInner.getValue()).toEqual(2);
 
-    
+
     expect(listReport).toEqual([`${propertyRUi.name}-2`, `${propertyRInner.name}-2`]);
 
     propertyA.setValue(2);
@@ -200,8 +200,8 @@ describe('DepDataService', () => {
 
   it('property dep inner UI', () => {
     let index = 1;
-        const subscription = new Subscription();
-    const objectA = {subscription: subscription};
+    const subscription = new Subscription();
+    const objectA = { subscription: subscription };
     const depDataService = new DepDataService();
     const depThis = depDataService.wrap(objectA);
 
@@ -260,7 +260,7 @@ describe('DepDataService', () => {
 
   it('property dep loop abort', () => {
     let index = 1;
-    const subscription = new Subscription();      
+    const subscription = new Subscription();
     const objectA = { subscription: subscription };
     const depDataService = new DepDataService();
     const depThis = depDataService.wrap(objectA);
@@ -287,5 +287,96 @@ describe('DepDataService', () => {
     depThis.executePropertyInitializer();
 
     expect(index).toBeLessThan(10);
-  })
+  });
+
+
+  it('property dep prio', () => {
+    let index = 1;
+    const subscription = new Subscription();
+    const objectA = { subscription: subscription };
+    const depDataService = new DepDataService();
+    const depThis = depDataService.wrap(objectA);
+
+    const propertyA = depThis.createProperty<string>({
+      name: 'testA',
+      initialValue: "A",
+      enableReport:true,
+    });
+    const propertyB = depThis.createProperty<string>({
+      name: 'testB',
+      initialValue: "B",
+      enableReport:true,
+    });
+    
+    const propertyE = depThis.createProperty<string>({
+      name: 'testE',
+      initialValue: "E",
+      enableReport:true,
+    });
+    const propertyF = depThis.createProperty<string>({
+      name: 'testF',
+      initialValue: "F",
+      enableReport:true,
+    });
+
+    const propertyC = depThis.createProperty<string>({
+      name: 'testC',
+      initialValue: "C",
+      enableReport:true,
+    });
+    const propertyD = depThis.createProperty<string>({
+      name: 'testD',
+      initialValue: "D",
+      enableReport:true,
+    });
+
+    propertyD.withSource({
+      sourceDependency: { propC: propertyC.dependencyInner(), propB: propertyB.dependencyInner() },
+      //sourceTransform: ({ propC, propB }) => { return `(${index++}-${propC}-${propB})`; }
+      sourceTransform: ({ propC, propB }) => { return `D(${propC}-${propB})`; }
+    });
+
+    propertyC.withSource({
+      sourceDependency: { propE: propertyE.dependencyInner(), propB: propertyB.dependencyInner() },
+      //sourceTransform: ({ propA, propB }) => { return `(${index++}-${propA}-${propB})`; }
+      sourceTransform: ({ propE, propB }) => { return `C(${propE}-${propB})`; }
+    });
+
+    propertyE.withSource({
+      sourceDependency: { propA: propertyA.dependencyInner() },
+      sourceTransform: ({ propA }) => `E(${propA})`
+    });
+    propertyF.withSource({
+      sourceDependency: { propB: propertyB.dependencyInner() },
+      sourceTransform: ({ propB }) => `F(${propB})`
+    });
+
+    depThis.executePropertyInitializer();
+
+    index=100;
+    const listReport:string[]=[] ;
+    depDataService.report=(property, message, value)=>{
+      listReport.push(`${property.objectPropertyIdentity.propertyName}-${value}`);
+    };
+    const scope = depDataService.start({});
+    propertyB.setValue("b");
+    propertyA.setValue("a");
+    expect(propertyE.getIsDirty(), "propertyE").toBe(true);
+    expect(propertyF.getIsDirty(), "propertyF").toBe(true);
+
+    expect(propertyC.getIsDirty(), "propertyC").toBe(true);
+    expect(propertyD.getIsDirty(), "propertyD").toBe(true);
+
+    scope.executeTrigger();
+    const actualD = propertyD.getValue();
+    expect(actualD).toBe("D(C(E(a)-b)-b)");
+    expect(listReport[0]).toBe("testB-b");
+    expect(listReport[1]).toBe("testA-a");
+    expect(listReport[2]).toBe("");
+    expect(listReport[3]).toBe("");
+    expect(listReport.length).toBe(4);
+    
+  });
+
+
 });

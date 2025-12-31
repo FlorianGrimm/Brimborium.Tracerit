@@ -1,6 +1,6 @@
 <div ngCombobox #combobox="ngCombobox" [readonly]="true">
   <div class="combobox-input-container">
-    <input ngComboboxInput placeholder="Select a country..." [value]="inputLabel()" />
+    <input ngComboboxInput [placeholder]="placeholder()" [value]="inputLabel()" (onfocus)="onfocus.emit()" />
     <span-lucide [img]="appIcon.ComboBoxOpen" class="icon arrow-icon" translate="no" aria-hidden="true"></span-lucide>
   </div>
   <ng-template ngComboboxPopupContainer>
@@ -8,7 +8,7 @@
       <div ngCombobox #combobox="ngCombobox" filterMode="manual" [alwaysExpanded]="true">
         <div class="combobox-input-container">
           <span-lucide [img]="appIcon.Search" class="icon search-icon" translate="no" aria-hidden="true"></span-lucide>
-          <input ngComboboxInput class="combobox-input" placeholder="Search..." [(value)]="$searchString" />
+          <input ngComboboxInput class="combobox-input" placeholder="{{placeholder()}} ..." [(value)]="$searchString" />
         </div>
         <ng-template ngComboboxPopupContainer>
           @if (listOptionFiltered().length === 0) {

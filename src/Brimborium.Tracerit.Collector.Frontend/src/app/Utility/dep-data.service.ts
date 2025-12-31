@@ -87,10 +87,11 @@ export type DepDataPropertyInputAndTransformArguments<S, V> = {
   transform: (value: S, currentValue: V, logicalTime: number) => V;
 };
 
-export type DepDataPropertyTrigger = {
+export interface DepDataPropertyTrigger {
   name?: string | undefined;
-  setDirty?: (() => boolean);
+  setDirty(): boolean;
   executeTrigger(scope: DepDataServiceExecutionScope): void;
+  getDirtyDeps(): number;
 };
 
 export type DepDataPropertyTriggerKind =
@@ -164,7 +165,7 @@ export class DepDataService {
     try {
       action();
     } finally {
-      transaction.executeTrigger();
+      transaction.executeTrigger(transaction);
     }
   }
 
@@ -401,6 +402,7 @@ export class DepDataPropertyInitializer {
     const listDelayed = this._ListDelayed;
     this._ListDelayed = undefined;
     if (listDelayed == null) { return; }
+    if (this.that == null) { return; }
     const scope = service.start({
       name: 'DepDataPropertyInitializer.execute'
     });
@@ -409,7 +411,7 @@ export class DepDataPropertyInitializer {
         delayed.fnDelayed(delayed, scope);
       }
     } finally {
-      scope.executeTrigger();
+      scope.executeTrigger(scope);
     }
     this.that = undefined;;
   }
@@ -440,9 +442,10 @@ export interface DepDataProperty<V> extends InteropObservable<V> {
   readonly objectPropertyIdentity: ObjectPropertyIdentity;
   //readonly propertyIndex: number;
   logicalTime: number;
+  weight: number;
 
   getValue(): V;
-  setValue(value: V): void;
+  setValue(value: V, scope?: DepDataServiceExecutionScope): void;
 
   // dependencyInner(): IDepDataPropertyDependency<V>;
   // dependencyPublic(): IDepDataPropertyDependency<V>;
@@ -458,7 +461,8 @@ export interface DepDataProperty<V> extends InteropObservable<V> {
 
   addSinkTrigger(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind): void;
   removeSinkTrigger(trigger: DepDataPropertyTrigger): void;
-
+  getDirtyDeps(): number;
+  getIsDirty(): boolean;
   // asSignal(): Signal<V>;
   // asObserable(): BehaviorSubject<V>;
 
@@ -467,10 +471,14 @@ export interface DepDataProperty<V> extends InteropObservable<V> {
 
 export class DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObservable<V> {
   public readonly name: string;
-  public logicalTime: number = 0;
   public readonly subscription: Subscription;
   public readonly objectPropertyIdentity: ObjectPropertyIdentity;
-  protected _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
+
+  public _listSource: DepDataServiceSource<V, any>[] | undefined = undefined;
+  public _listSinkTrigger: ListDepDataPropertyTriggerAndKind = new ListDepDataPropertyTriggerAndKind();
+
+  public logicalTime: number = 0;
+  public weight: number = 0;
 
   constructor(
     protected _service: DepDataService,
@@ -485,11 +493,36 @@ export class DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObserv
     this.objectPropertyIdentity = objectPropertyIdentity;
   }
 
-  public getValue(): V { return undefined! as any; }
-  public setValue(value: V): void { }
+  public getValue(): V {
+    throw new Error("getValue is abstact");
+  }
+  public setValue(value: V, scope?: DepDataServiceExecutionScope): void {
+    throw new Error("setValue is abstact");
+  }
 
+  getDirtyDeps(): number {
+    if (this._listSource == null) {
+      return 0;
+    } else {
+      let result = 0;
+      for (let index = 0; index < this._listSource.length; index++) {
+        const source = this._listSource[index];
+        result += source.getDirtyDeps();
+      }
+      return result;
+    }
+  }
 
-  private listSource: DepDataServiceSource<V, any>[] | undefined = undefined;
+  getIsDirty(): boolean {
+    if (this._listSource != null) {
+      for (const source of this._listSource) {
+        if (source.getIsDirty()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   public withSource<TS>(
     args: DepDataPropertyWithSource<TS, V>
@@ -504,7 +537,7 @@ export class DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObserv
       try {
         this._internalWithSource(args, scope);
       } finally {
-        scope.executeTrigger();
+        scope.executeTrigger(scope);
       }
     } else {
       args.depDataPropertyInitializer.add({
@@ -549,16 +582,20 @@ export class DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObserv
     const source = new DepDataServiceSource<V, TS>(args.sourceDependency, args.sourceTransform, this, this._service);
     subscription.add(source);
 
-    const listSource = (this.listSource ??= []);
+    const listSource = (this._listSource ??= []);
     listSource.push(source);
+    const sourceWeight = source.getWeight()
+    if (this.weight < sourceWeight) {
+      this.weight = sourceWeight;
+    }
+    this._listSource.sort((a, b) => a.weight - b.weight);
     source.updateValue(scope);
-
     return this;
   }
 
   unsubscribe(): void {
-    const listSource = this.listSource;
-    this.listSource = undefined;
+    const listSource = this._listSource;
+    this._listSource = undefined;
     if (listSource != null) {
       for (const source of listSource) {
         source.unsubscribe();
@@ -588,7 +625,6 @@ export class DepDataPropertyBase<V> implements DepDataProperty<V>, InteropObserv
     return subject;
   }
 
-
   _getListSinkTrigger(): { trigger: DepDataPropertyTrigger, kind: string }[] {
     return Array.from(this._listSinkTrigger);
   }
@@ -607,6 +643,7 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements D
   private _enableReport: boolean;
   private _report: ReportFN<V> | undefined;
   private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
+  private sideEffectTrigger: DepDataSideEffectTrigger<V> | undefined;
 
   constructor(
     args: DepDataPropertyValueArgumentsComplete<V>,
@@ -631,7 +668,14 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements D
     this._enableReport = args.enableReport ?? false;
     this._report = args.report;
     this.value = args.initialValue;
-    this.sideEffect = args.sideEffect;
+    if (args.sideEffect == null) {
+      this.sideEffect = undefined;
+      this.sideEffectTrigger = undefined;
+    } else {
+      this.sideEffect = args.sideEffect;
+      const kind = args.sideEffect.kind ?? "UI";
+      this.sideEffectTrigger = new DepDataSideEffectTrigger<V>(this, this.sideEffect, kind);
+    }
     this._listSinkTrigger.name = this.name;
 
     // input as a source for prop
@@ -666,7 +710,7 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements D
 
   private _WatchDog: number = 0;
 
-  public override setValue(value: V) {
+  public override setValue(value: V, scope?: DepDataServiceExecutionScope) {
     if (this.closed) {
       this._service.onReportError(this, 'DepDataProperty.setValue', new Error("closed"));
       return;
@@ -679,7 +723,7 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements D
         return;
       }
     }
-    const transaction = this._service.start({
+    const transaction = scope ?? this._service.start({
       name: this.name
     });
 
@@ -711,7 +755,8 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements D
 
     try {
       for (const trigger of this._listSinkTrigger) {
-        transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
+        //transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
+        transaction.addTriggerToQueue(trigger.trigger, trigger.kind);
       }
       if (this.signal != null) {
         transaction.addTriggerToQueue(this.signal, "UI");
@@ -719,11 +764,14 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> implements D
       if (this.subject != null) {
         transaction.addTriggerToQueue(this.subject, "UI");
       }
-      if (this.sideEffect != null) {
-        transaction.addTriggerOrExecute(new DepDataSideEffectTrigger<V>(this.sideEffect, value), this.sideEffect.kind ?? "UI");
+      if (this.sideEffect != null && this.sideEffectTrigger != null) {
+        //transaction.addTriggerOrExecute(this.sideEffectTrigger, this.sideEffectTrigger.kind);
+        transaction.addTriggerToQueue(this.sideEffectTrigger, this.sideEffectTrigger.kind);
       }
     } finally {
-      transaction.executeTrigger();
+      if (scope == null) {
+        transaction.executeTrigger(transaction);
+      }
     }
   }
 
@@ -740,6 +788,8 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
   private _enableReport: boolean;
   private _report: ReportFN<V> | undefined;
   private sideEffect: DepDataSideEffectTriggerArguments<V> | undefined;
+  private sideEffectTrigger: DepDataSideEffectTrigger<V> | undefined;
+  private signalSetScope: DepDataServiceExecutionScope | undefined;
 
   constructor(
     public readonly signal: WritableSignal<V>,
@@ -764,7 +814,14 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
     this._compare = args.compare;
     this._enableReport = args.enableReport ?? false;
     this._report = args.report;
-    this.sideEffect = args.sideEffect;
+    if (args.sideEffect == null) {
+      this.sideEffect = undefined;
+      this.sideEffectTrigger = undefined;
+    } else {
+      this.sideEffect = args.sideEffect;
+      const kind = args.sideEffect.kind ?? "UI";
+      this.sideEffectTrigger = new DepDataSideEffectTrigger<V>(this, this.sideEffect, kind);
+    }
     this._listSinkTrigger.name = this.name;
 
     this.signal = signal;
@@ -780,8 +837,11 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
     {
       const effectRef = effect(() => {
         const valueS = signal();
-        console.log("signal value ",valueS)
-        this.setValueFromSignal(valueS);
+        console.log("signal value ", valueS);
+        const scope = this.signalSetScope;
+        this.signalSetScope = undefined;
+
+        this.setValueFromSignal(valueS, scope);
       })
       this.subscription.add(() => {
         effectRef.destroy();
@@ -795,12 +855,13 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
 
   private _WatchDog: number = 0;
 
-  public override  setValue(value: V) {
+  public override  setValue(value: V, scope?: DepDataServiceExecutionScope) {
     // set the signal, effect will call setValueFromSignal
+    this.signalSetScope = scope;
     this.signal.set(value);
   }
 
-  private setValueFromSignal(value: V) {
+  private setValueFromSignal(value: V, scope?: DepDataServiceExecutionScope) {
     const oldValue = this.value;
     this.value = value;
     if (this.closed) {
@@ -812,7 +873,7 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
         return;
       }
     }
-    const transaction = this._service.start({
+    const transaction = scope ?? this._service.start({
       name: this.name
     });
     if (this.logicalTime == transaction.id) {
@@ -842,7 +903,8 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
 
     try {
       for (const trigger of this._listSinkTrigger) {
-        transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
+        //transaction.addTriggerOrExecute(trigger.trigger, trigger.kind);
+        transaction.addTriggerToQueue(trigger.trigger, trigger.kind);
       }
       // if (this.signal != null) {
       //   transaction.addTriggerToQueue(this.signal, "UI");
@@ -850,11 +912,14 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
       if (this.subject != null) {
         transaction.addTriggerToQueue(this.subject, "UI");
       }
-      if (this.sideEffect != null) {
-        transaction.addTriggerOrExecute(new DepDataSideEffectTrigger<V>(this.sideEffect, value), this.sideEffect.kind ?? "UI");
+      if (this.sideEffect != null && this.sideEffectTrigger != null) {
+        //transaction.addTriggerOrExecute(this.sideEffectTrigger, this.sideEffectTrigger.kind);
+        transaction.addTriggerToQueue(this.sideEffectTrigger, this.sideEffectTrigger.kind);
       }
     } finally {
-      transaction.executeTrigger();
+      if (scope == null) {
+        transaction.executeTrigger(transaction);
+      }
     }
   }
 
@@ -864,7 +929,7 @@ export class DepDataPropertyForSignal<V> extends DepDataPropertyBase<V> implemen
 
 }
 
-class DepDataServiceSubject<V> extends BehaviorSubject<V> {
+class DepDataServiceSubject<V> extends BehaviorSubject<V> implements DepDataPropertyTrigger {
   public name: string | undefined = undefined;
   constructor(
     public readonly property: DepDataProperty<V>
@@ -873,16 +938,34 @@ class DepDataServiceSubject<V> extends BehaviorSubject<V> {
     this.name = `subject-${property.name}`;
   }
 
+  private isDirty: boolean = false;
+  setDirty(): boolean {
+    if (this.isDirty) {
+      return false;
+    } else {
+      this.isDirty = true;
+      return true;
+    }
+  }
+
+  getDirtyDeps(): number {
+    return 0;
+  }
+
   override next(value: V) {
     this.property.setValue(value);
   }
 
   public executeTrigger(/* scope: DepDataServiceExecutionScope */) {
-    super.next(this.property.getValue());
+    try {
+      super.next(this.property.getValue());
+    } finally {
+      this.isDirty = false;
+    }
   }
 }
 
-class DepDataServiceReadonlySignal<V> {
+class DepDataServiceReadonlySignal<V> implements DepDataPropertyTrigger {
   public name: string | undefined = undefined;
   public writableSignal: WritableSignal<V>;
   private untracked: boolean = false;
@@ -897,10 +980,28 @@ class DepDataServiceReadonlySignal<V> {
     this.readonlySignal = this.writableSignal.asReadonly();
   }
 
+  private isDirty: boolean = false;
+  setDirty(): boolean {
+    if (this.isDirty) {
+      return false;
+    } else {
+      this.isDirty = true;
+      return true;
+    }
+  }
+
+  getDirtyDeps(): number {
+    return 0;
+  }
+
   public executeTrigger() {
-    const value = this.property.getValue();
-    // console.log('executeTrigger-signal', this.property.name, value);
-    this.writableSignal.set(value);
+    try {
+      const value = this.property.getValue();
+      // console.log('executeTrigger-signal', this.property.name, value);
+      this.writableSignal.set(value);
+    } finally {
+      this.isDirty = false;
+    }
   }
 }
 
@@ -910,7 +1011,9 @@ export interface IDepDataPropertyDependency<V> {
   readonly sourceProperty: DepDataProperty<V>;
   addSinkTrigger(trigger: DepDataPropertyTrigger): void;
   removeSinkTrigger(trigger: DepDataPropertyTrigger): void;
-  setDirty?: () => boolean;
+  getWeight(): number;
+  setDirty(): boolean;
+  getDirtyDepsNoRecursive(): number;
   executeTrigger(scope: DepDataServiceExecutionScope): void;
 }
 
@@ -938,6 +1041,10 @@ export class DepDataPropertyDependency<V> implements IDepDataPropertyDependency<
     this.trigger = undefined;
   }
 
+  getWeight(): number {
+    return this.sourceProperty.weight;
+  }
+
   public setDirty(): boolean {
     if (this.trigger == null) {
       return false;
@@ -953,13 +1060,30 @@ export class DepDataPropertyDependency<V> implements IDepDataPropertyDependency<
     }
   }
 
+  getDirtyDepsNoRecursive(): number {
+    if (this.sourceProperty.getIsDirty()) {
+      return 1;
+    } else {
+      return 0;
+    }
+    //return this.sourceProperty.getDirtyDeps();
+  }
+
+  getDirtyDeps(): number {
+    if (this.sourceProperty.getIsDirty()) {
+      return 1; // + this.sourceProperty.getDirtyDeps();
+    } else {
+      return 0;
+    }
+  }
+
   public executeTrigger(scope: DepDataServiceExecutionScope) {
     if (this.trigger == null) { return; }
     this.trigger.executeTrigger(scope);
   }
 }
 
-export class DepDataPropertyDependencyGate<V> implements IDepDataPropertyDependency<V> {
+export class DepDataPropertyDependencyGate<V> implements IDepDataPropertyDependency<V>, DepDataPropertyTrigger {
   public name: string | undefined = undefined;
   public readonly kind: DepDataPropertyTriggerKind = "Inner";
 
@@ -983,8 +1107,20 @@ export class DepDataPropertyDependencyGate<V> implements IDepDataPropertyDepende
     this.trigger = undefined;
   }
 
+  getWeight(): number {
+    return this.sourceProperty.weight;
+  }
+
   public setDirty(): boolean {
     return false;
+  }
+
+  getDirtyDepsNoRecursive(): number {
+    return 0;
+  }
+
+  getDirtyDeps(): number {
+    return 0;
   }
 
   public executeTrigger() { }
@@ -1007,13 +1143,24 @@ export class DepDataServiceSource<V, TS> {
     }
   }
 
-
   public unsubscribe() {
     for (const key in this.sourceDependency) {
       const sd = this.sourceDependency[key]
       sd.removeSinkTrigger(this);
     }
   }
+
+  weight: number = 0;
+  getWeight(): number {
+    let result = 0;
+    for (const key in this.sourceDependency) {
+      const sd = this.sourceDependency[key]
+      result += (1 + sd.getWeight());
+    }
+    this.weight = result;
+    return result;
+  }
+
 
   public updateValue(scope: DepDataServiceExecutionScope): V {
     // this.service.onReport(this.targetProperty, 'updatingValue', this.targetProperty.value);
@@ -1047,6 +1194,15 @@ export class DepDataServiceSource<V, TS> {
       this._isDirty = true;
       return true;
     }
+  }
+
+  getDirtyDeps(): number {
+    let result = (this._isDirty) ? 1 : 0;
+    for (const key in this.sourceDependency) {
+      const sd = this.sourceDependency[key]
+      result += sd.getDirtyDepsNoRecursive();
+    }
+    return result;
   }
 
   public executeTrigger(scope: DepDataServiceExecutionScope) {
@@ -1176,12 +1332,13 @@ export class DepDataServiceExecutionScope {
   }
 
   public addTriggerOrExecute(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind) {
-    if ("Inner" === kind) {
-      // console.log('executeOneTrigger', this._listTrigger.name, trigger.name);
-      this.executeOneTrigger(trigger);
-    } else {
-      this.addTriggerToQueue(trigger, kind);
-    }
+    // if ("Inner" === kind) {
+    //   // console.log('executeOneTrigger', this._listTrigger.name, trigger.name);
+    //   this.executeOneTrigger(trigger);
+    // } else {
+    //   this.addTriggerToQueue(trigger, kind);
+    // }
+    this.addTriggerToQueue(trigger, kind);
   }
 
   public addTriggerToQueue(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind) {
@@ -1190,32 +1347,34 @@ export class DepDataServiceExecutionScope {
     if (trigger.setDirty != null) {
       if (trigger.setDirty()) {
         this._listTrigger.add(trigger, kind);
-        if (this._root) { this.autoDelayExecuteTrigger(); }
+        if (this._root) { this.autoDelayExecuteTrigger(this); }
       } else {
       }
     } else {
       this._listTrigger.add(trigger, kind);
-      if (this._root) { this.autoDelayExecuteTrigger(); }
+      if (this._root) { this.autoDelayExecuteTrigger(this); }
     }
   }
 
-  public executeTrigger() {
+  public executeTrigger(scope?: DepDataServiceExecutionScope) {
+    const scopeUsed = scope ?? this;
     if (this._delayedExecution) {
-      this.autoDelayExecuteTrigger();
+      this.autoDelayExecuteTrigger(scopeUsed);
     } else {
-      this._internalExecuteTrigger();
+      this._internalExecuteTrigger(scopeUsed);
     }
   }
 
-  private _internalExecuteTrigger() {
+  private _internalExecuteTrigger(scope: DepDataServiceExecutionScope) {
     if (this.mode === 2) { return; }
     while (0 < this._listTrigger.length) {
       for (const trigger of this._listTrigger.getPartialListAndClear()) {
-        try {
-          trigger.executeTrigger(this);
-        } catch (error) {
-          this._Service.onReportError(this, 'DepDataServiceExecutionScope', error);
-        }
+        this.executeOneTrigger(trigger, scope);
+        // try {
+        //   trigger.executeTrigger(scope);
+        // } catch (error) {
+        //   this._Service.onReportError(this, 'DepDataServiceExecutionScope', error);
+        // }
       }
     }
     if (this._root) {
@@ -1226,18 +1385,18 @@ export class DepDataServiceExecutionScope {
   }
 
   private _autoTrigger = false;
-  private autoDelayExecuteTrigger() {
+  private autoDelayExecuteTrigger(scope: DepDataServiceExecutionScope) {
     if (this._autoTrigger) { return; }
     this._autoTrigger = true;
     window.requestAnimationFrame(() => {
       this._autoTrigger = false;
-      this._internalExecuteTrigger();
+      this._internalExecuteTrigger(scope);
     });
   }
 
-  private executeOneTrigger(trigger: DepDataPropertyTrigger) {
+  private executeOneTrigger(trigger: DepDataPropertyTrigger, scope: DepDataServiceExecutionScope) {
     try {
-      trigger.executeTrigger(this);
+      trigger.executeTrigger(scope);
     } catch (error) {
       this._Service.onReportError(this, 'DepDataServiceExecutionScope', error);
     }
@@ -1250,34 +1409,132 @@ export type DepDataSideEffectTriggerArguments<V> = {
   requestAnimationFrame?: boolean;
 };
 
-export class DepDataSideEffectTrigger<V> {
+export class DepDataSideEffectTrigger<V> implements DepDataPropertyTrigger {
   public name: string | undefined = undefined;
 
   constructor(
+    public sourceProperty: DepDataProperty<V>,
     private args: DepDataSideEffectTriggerArguments<V>,
-    private value: V
+    public kind: DepDataPropertyTriggerKind
   ) {
-    this.name = `sideEffect-${args.fn.name}`;
+    this.name = `sideEffect-${sourceProperty.name}`;
   }
 
-  executeTrigger() {
+  private isDirty: boolean = false;
+  setDirty(): boolean {
+    if (this.isDirty) {
+      return false;
+    } else {
+      this.isDirty = true;
+      return true;
+    }
+  }
+
+  getDirtyDeps(): number {
+    return 0;
+  }
+
+  executeTrigger(scope: DepDataServiceExecutionScope) {
     if (true === this.args.requestAnimationFrame) {
       window.requestAnimationFrame(() => {
         try {
-          this.args.fn(this.value);
-        } catch {
+          const value = this.sourceProperty.getValue();
+          this.args.fn(value);
+        } finally {
+          this.isDirty = false;
         }
       });
     } else {
       try {
-        this.args.fn(this.value);
-      } catch {
+        const value = this.sourceProperty.getValue();
+        this.args.fn(value);
+      } finally {
+        this.isDirty = true;
       }
     }
   }
-
 };
 
+export class ListDepDataPropertyTriggerAndKind {
+  private _listTrigger: DepDataPropertyTriggerAndKind[] = [];
+  public name: string | undefined = undefined;
+
+  constructor() { }
+  public [Symbol.iterator](): Iterator<DepDataPropertyTriggerAndKind> {
+    let current = -1;
+    return {
+      next: () => {
+        ++current;
+        if (current < this._listTrigger.length) {
+          const value: DepDataPropertyTriggerAndKind = this._listTrigger[current];
+          return ({ value: value, done: false });
+        } else {
+          return ({ value: undefined, done: true });
+        }
+      }
+    };
+  }
+
+  public add(trigger: DepDataPropertyTrigger, kind: DepDataPropertyTriggerKind) {
+    this._listTrigger.push({ trigger: trigger, kind: kind });
+  }
+
+  public remove(trigger: DepDataPropertyTrigger) {
+    const index = this._listTrigger.findIndex(t => Object.is(t, trigger));
+    if (index >= 0) {
+      this._listTrigger.splice(index, 1);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public get length() {
+    return this._listTrigger.length;
+  }
+
+  public getPartialListAndClear(): DepDataPropertyTrigger[] {
+    if (0 === this._listTrigger.length) {
+      return [] as DepDataPropertyTrigger[];
+    } else {
+      const result = this._listTrigger.splice(0, this._listTrigger.length);
+      return result.map(item => item.trigger);
+    }
+  }
+
+  public getNext(): (DepDataPropertyTrigger | undefined) {
+    if (0 === this._listTrigger.length) {
+      return undefined;
+    } else {
+      let index: number = 0;
+      if (1 < this._listTrigger.length) {
+        const trigger = this._listTrigger[index].trigger;
+        let indexDirtyDeps = trigger.getDirtyDeps();
+        if (0 === indexDirtyDeps) {
+          // use this index
+        } else {
+          for (let betterIndex = 1; betterIndex < this._listTrigger.length; betterIndex++) {
+            const betterTrigger = this._listTrigger[betterIndex].trigger;
+            let betterDirtyDeps = betterTrigger.getDirtyDeps();
+            if (0 === betterDirtyDeps) {
+              this._listTrigger.splice(betterIndex, 1);
+              return betterTrigger;
+            } else if (betterDirtyDeps < indexDirtyDeps) {
+              betterDirtyDeps = indexDirtyDeps;
+            }
+          }
+        }
+      }
+      return this._listTrigger.splice(index, 1)[0].trigger;
+    }
+  }
+  public clear(): void {
+    if (0 === this._listTrigger.length) {
+      this._listTrigger.length = 0;
+    }
+  }
+}
+/*
 export class ListDepDataPropertyTriggerAndKind {
   private _listTrigger: DepDataPropertyTrigger[] = [];
   private _CountInner = 0;
@@ -1379,3 +1636,4 @@ export class ListDepDataPropertyTriggerAndKind {
     this._CountUi = 0;
   }
 }
+*/

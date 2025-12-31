@@ -37,21 +37,25 @@ export class ComboboxFilterComponent<Item=any, Id=any> {
   
   readonly value = input.required<Id>();
   readonly valueChanged = output<Id>();
-
-  readonly inputLabel = signal<string>('');
-
-  readonly $searchString = signal<string>('');
-  readonly searchStringChanged = output<string>();
-
-  readonly listOption = input.required<Item[]>();
+  
+  readonly placeholder = input<string>('');
+  readonly listOption = input.required<readonly Item[]>();
   readonly idProperty = input.required<keyof Item>();
   readonly labelProperty = input.required<keyof Item>();
+
+  readonly inputLabel = signal<string>('');
+    
+  readonly $searchString = signal<string>('');
+  readonly searchStringChanged = output<string>();
   readonly listOptionFiltered = computed(() => {
     const searchString = this.$searchString().toLocaleLowerCase();
     const listOption = this.listOption();
     return listOption.filter(item => this.getLabel(item).toLocaleLowerCase().startsWith(searchString));
   });
   listSelected = signal<Item[]>([]);
+
+  readonly onfocus=output();
+
   constructor() {
     computed(() => {
       const value=this.value();
@@ -93,7 +97,8 @@ export class ComboboxFilterComponent<Item=any, Id=any> {
       dialog.element.style.left = `${comboboxRect.left - 1}px`;
     }
   }
-  getInputLabel(id: V[I], listOption: V[]) {
+
+  getInputLabel(id: Id, listOption:readonly Item[]) {
     const matches = listOption.filter(item => this.getId(item) == id);
     if (1 === matches.length) {
       return this.getLabel(matches[0]);
@@ -101,17 +106,22 @@ export class ComboboxFilterComponent<Item=any, Id=any> {
       return "";
     }
   }
-  getId(option: V): V[I] {
+
+  getId(option: Item): Id {
     const idProperty = this.idProperty();
-    return option[idProperty];
+    if (idProperty){
+      return option[idProperty] as Id;
+    } else {
+      return option as any as Id;
+    }    
   }
-  getLabel(option: V): string {
+
+  getLabel(option: Item): string {
     const labelProperty = this.labelProperty();
     if (labelProperty){
       return option[labelProperty] as string;
     } else {
       return option as string;
     }
-
   }
 }

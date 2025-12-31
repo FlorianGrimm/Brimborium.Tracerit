@@ -51,10 +51,10 @@ export class FilterAstManager {
             };
         }
         if (Object.is(this.rootNode, rootNode)) {
-            console.log("setRootNode is", this.rootNode, rootNode);
+            // console.log("setRootNode is", this.rootNode, rootNode);
             return this;
         } else {
-            console.log("setRootNode is not ", this.rootNode, rootNode);
+            // console.log("setRootNode is not ", this.rootNode, rootNode);
             this.rootNode = rootNode;
             const uiNodeRoot = convertFilterAstNodeToUIFilterAstNode(rootNode);
             this.$uiNodeRoot.set(uiNodeRoot);
@@ -112,6 +112,7 @@ export class FilterAstManager {
 
     }
     setPropertyHeader(header: PropertyHeader | null, node: UIFilterAstNode) {
+        debugger;
         if (header == null) {
             if (node.value?.name == null) { return false; }
             const value: (LogLineValue | undefined | null) = (node.value == null)

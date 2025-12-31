@@ -8,11 +8,13 @@
     } @else if (uiTypeValue === 'int') {
         <input type="number" [valueAsNumber]="valueInt()" (change)="setValueInt($event.target.valueAsNumber)" (focus)="onFocus()" />
     } @else if (uiTypeValue === 'lvl') {
-        <select (change)="setValueLvl($event)" (focus)="onFocus()">
-            @for (level of listLevels; track $index) {
-                <option  [value]="level" [selected]="level === valueStr()">{{level}}</option>
-            }
-        </select>
+        <app-combobox-filter 
+            [value]="uiNode().value?.value ?? ''"
+            [listOption]="listLevels"
+            idProperty="level" labelProperty="level" placeholder="level"
+            (focus)="onFocus()"
+        ></app-combobox-filter>
+
     } @else if (uiTypeValue === 'dt' ) {
         <input type="datetime-local" [valueAsDate]="valueDateTime()" (change)="setValueDt($event.target.valueAsDate)" (focus)="onFocus()" />
     } @else if (uiTypeValue === 'dto') {

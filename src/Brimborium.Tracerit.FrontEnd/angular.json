@@ -1,0 +1,63 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "npm",
+    "analytics": "2bc7ad01-c39e-4a55-a600-21007272c242"
+  },
+  "newProjectRoot": "projects",
+  "projects": {
+    "DepData": {
+      "projectType": "library",
+      "root": "projects/dep-data",
+      "sourceRoot": "projects/dep-data/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/dep-data/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/dep-data/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/dep-data/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "frontend": {
+      "projectType": "library",
+      "root": "projects/frontend",
+      "sourceRoot": "projects/frontend/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/frontend/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/frontend/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/frontend/tsconfig.spec.json"
+          }
+        }
+      }
+    }
+  }
+}
