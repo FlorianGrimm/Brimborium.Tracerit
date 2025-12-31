@@ -370,12 +370,26 @@ export class DepDataObject implements Unsubscribable {
 
     return result;
   }
-
   public createPropertyWrapSignal<V>(
     signal: WritableSignal<V>,
     args?: DepDataPropertyWrapSignalArgument<V> | undefined
   ): DepDataPropertyWrapSignal<V> {
     const result = new DepDataPropertyWrapSignal<V>(signal, args, this, this.depIdentityService);
+
+    if (this.listDepDataPropertyInitilizer == null) {
+      this.listDepDataPropertyInitilizer = [];
+      window.requestAnimationFrame(() => { this.ensureInitializeIsCalled(); });
+    }
+    this.listDepDataPropertyInitilizer.push(result);
+
+    return result;
+  }
+
+  public createPropertyWrapWritableSignal<V>(
+    signal: WritableSignal<V>,
+    args?: DepDataPropertyWrapSignalArgument<V> | undefined
+  ): DepDataPropertyWrapWritableSignal<V> {
+    const result = new DepDataPropertyWrapWritableSignal<V>(signal, args, this, this.depIdentityService);
 
     if (this.listDepDataPropertyInitilizer == null) {
       this.listDepDataPropertyInitilizer = [];
@@ -667,6 +681,102 @@ export class DepDataPropertyValue<V> extends DepDataPropertyBase<V> {
 }
 
 export class DepDataPropertyWrapSignal<V> extends DepDataPropertyBase<V> {
+  signal: Signal<V>;
+  value: V;
+  private effectRef: EffectRef | undefined;
+  constructor(
+    signal: Signal<V>,
+    args: DepDataPropertyWrapSignalArgument<V> | undefined,
+    depThis: DepDataObject,
+    depIdentityService: DepIdentityService
+  ) {
+    super(args, depThis, depIdentityService);
+    this.signal = signal;
+    {
+      let valueS: V = undefined as any;
+      untracked(() => { valueS = signal(); });
+      this.value = valueS;
+    }
+
+    this.effectRef = effect(() => {
+      const valueS = signal();
+      const scope = this._setValueScope;
+      if (scope == null) {
+        if (this.equal(this.value, valueS)) {
+          this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.effect from signal: equal quick exit", 0, { value: valueS });
+          return;
+        } else {
+          this.value = valueS;
+          this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.effect from signal", 0, { value: valueS });
+          this.setValueFromSignal(valueS, scope);
+        }
+      } else {
+        this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.effect from setValue", scope.scopeIndex, { value: valueS });
+        this._setValueScope = undefined;
+      }
+    });
+  }
+
+  override unsubscribe(): void {
+    this.effectRef?.destroy();
+    this.effectRef = undefined;
+    super.unsubscribe();
+  }
+
+  override getValue(): V {
+    return this.value;
+  }
+
+  override setValue(value: V, scope?: DepDataServiceExecutionScope): void {
+    if (this.equal(this.value, value)) {
+      this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.setValue: equal quick exit", scope?.scopeIndex ?? 0, { value: value });
+      return;
+    } else {
+      this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.setValue to signal", scope?.scopeIndex ?? 0, { value: value });      
+      this.setValueFromSignal(value, scope);
+    }
+  }
+
+
+  private _setValueScope: DepDataServiceExecutionScope | undefined;
+  private setValueFromSignal(value: V, scope?: DepDataServiceExecutionScope): void {
+    const listDepDataDependencySource = this.listDependencySource;
+    const listEffect = this.listEffect
+
+    if ((0 === (listDepDataDependencySource?.length ?? 0))
+      && (0 === (listEffect?.length ?? 0))
+    ) {
+      const scopeIndex = (scope?.scopeIndex) ?? (this.depThis.depIdentityService.nextScopeIndex());
+      this.valueVersion = scopeIndex;
+      this.value = value;
+      this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.setValueFromSignal: set value - with DependencySource", scopeIndex, { value: value });
+    } else {
+      const transaction = scope ?? this.depDataService.startScope();
+      this.valueVersion = transaction.scopeIndex;
+      this.value = value;
+      this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.setValueFromSignal: set value - with DependencySource", transaction.scopeIndex, { value: value });
+
+      if (listDepDataDependencySource != null) {
+        for (const depDataSource of listDepDataDependencySource) {
+          depDataSource.notifyValueChanged(transaction);
+        }
+      }
+
+      if (listEffect != null) {
+        for (const effect of listEffect) {
+          transaction.addEffect(effect);
+        }
+      }
+
+      if (scope == null) {
+        this.depDataService.log(ReportLogLevel.trace, this.objectPropertyIdentifier, "DepDataPropertyWrapSignal.setValueFromSignal: commit-ing", transaction.scopeIndex, { value: value });
+        transaction.commit();
+      }
+    }
+  }
+}
+
+export class DepDataPropertyWrapWritableSignal<V> extends DepDataPropertyBase<V> {
   signal: WritableSignal<V>;
   value: V;
   private effectRef: EffectRef | undefined;
@@ -723,6 +833,7 @@ export class DepDataPropertyWrapSignal<V> extends DepDataPropertyBase<V> {
       this._setValueScope = transaction;
       this.signal.set(value);
       if (this._setValueScope == null) {
+        // should not be as I understand...
       } else {
         this.setValueFromSignal(value, scope);
         //this._setValueScope = undefined;
@@ -802,8 +913,10 @@ export class DepDataDependency<V, TS> implements IDepDataDependencySink<V>, IDep
     for (const key in args.sourceDependency) {
       const dep = args.sourceDependency[key];
       if (isSignal(dep)) {
-        throw new Error("TODO");
-        // const depSignal = dep as Signal<TS[typeof key]>;
+        const depSignal = dep as Signal<TS[typeof key]>;
+        this.depThis.createPropertyWrapWritableSignal(depSignal, {
+          name: `${this.targetProperty.objectPropertyIdentifier.fullName}-${key}`
+        })
         // depThis.createPropertyWrapSignal
         // const depDataProperty=new DepDataPropertyF<TS[typeof key]>();
         // sourceDependency[key]=depDataProperty;
